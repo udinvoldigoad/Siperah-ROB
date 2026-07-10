@@ -1,0 +1,11 @@
+{
+  "name": "siperah-rob",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "check": "node scripts/architecture-smoke.mjs",
+    "frontend:build": "npm --prefix frontend run build",
+    "backend:test": "composer --working-dir=backend test"
+  }
+}
