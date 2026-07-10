@@ -33,8 +33,9 @@ export function PortalPage() {
 
         /* Full-Width Editorial Header */
         .landing-header-full {
-          position: sticky;
+          position: fixed;
           top: 0;
+          left: 0;
           z-index: 100;
           display: flex;
           align-items: center;
@@ -135,7 +136,7 @@ export function PortalPage() {
         .hero-section {
           max-width: 1200px;
           margin: 0 auto;
-          padding: 140px 40px 100px;
+          padding: 180px 40px 100px;
           text-align: center;
           position: relative;
           z-index: 10;
