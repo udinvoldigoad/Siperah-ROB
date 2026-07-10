@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
-import { MetricCard } from "../../shared/components/MetricCard";
 import { api } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface DatasetData {
   id: string;
@@ -40,9 +40,9 @@ interface RegenerateKeyResponse {
 }
 
 const endpoints = [
-  ["GET", "/api/v1/predictions/daily", "Prediksi harian spasial per kelurahan pesisir"],
-  ["GET", "/api/v1/reports", "Laporan ground truth warga pesisir yang tervalidasi"],
-  ["GET", "/api/v1/tidal", "Data pasang surut real-time stasiun BMKG Panjang"],
+  { method: "GET", path: "/predictions/daily?date=YYYY-MM-DD&kabupaten_id={id}", note: "Ambil prediksi harian per kelurahan untuk tanggal tertentu." },
+  { method: "GET", path: "/reports?status=validated&from=YYYY-MM-DD&to=YYYY-MM-DD", note: "Daftar laporan ground truth yang telah divalidasi dalam rentang waktu." },
+  { method: "GET", path: "/tidal?station=panjang&from=YYYY-MM-DD&to=YYYY-MM-DD", note: "Data pasang surut mentah dari stasiun BMKG Panjang per jam." },
 ];
 
 export function ResearchPortalPage() {
@@ -51,6 +51,7 @@ export function ResearchPortalPage() {
   const [apiKeys, setApiKeys] = useState<ApiKeyData[]>([]);
   const [rawGeneratedKey, setRawGeneratedKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<number>(0);
 
   const loadResearchData = async () => {
     setIsLoading(true);
@@ -89,145 +90,209 @@ export function ResearchPortalPage() {
   const activeKey = apiKeys.find((k) => k.status === "aktif");
 
   return (
-    <AppShell active="research" title="Portal Peneliti & API">
-      {/* KPI Grid */}
-      <div className="kpi-grid kpi-grid-4" style={{ marginBottom: "20px" }}>
-        <div className="kpi">
-          <small>Dataset Terbuka</small>
-          <div className="kpi-num">{datasets.length}</div>
-          <div className="kpi-sub">Format CSV & JSON siap unduh</div>
-        </div>
-        <div className="kpi">
-          <small>Endpoint API</small>
-          <div className="kpi-num">{endpoints.length}</div>
-          <div className="kpi-sub">Terintegrasi sistem</div>
-        </div>
-        <div className="kpi">
-          <small>Total Record Data</small>
-          <div className="kpi-num">53,764</div>
-          <div className="kpi-sub">Entri pasang dan mitigasi</div>
-        </div>
-        <div className="kpi">
-          <small>Status Kunci API</small>
-          <div className="kpi-num" style={{ color: activeKey ? "var(--green)" : "var(--tx2)" }}>
-            {activeKey ? "Aktif" : "Nonaktif"}
-          </div>
-          <div className="kpi-sub">{activeKey ? "Siap digunakan" : "Belum digenerasi"}</div>
-        </div>
-      </div>
-
-      {/* Kredensial API Panel */}
-      <div className="card" style={{ marginBottom: "20px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "20px", marginBottom: "16px" }}>
-          <div>
-            <div className="card-title" style={{ margin: 0 }}>Kredensial API Akses Penelitian</div>
-            <div style={{ fontSize: "12px", color: "var(--tx2)", marginTop: "4px" }}>
-              Gunakan kunci ini untuk mengambil data secara dinamis ke dalam skrip Python, R, atau aplikasi pihak ketiga.
+    <AppShell active="research" title="Arsip & API Peneliti">
+      <div className="content" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 80px" }}>
+        
+        {/* API Key Management Header row */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", background: "var(--surface)", padding: "16px 24px", borderRadius: "var(--radius)", border: "1px solid var(--line)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "var(--ocean-light, #e0f2fe)", color: "var(--ocean-dark, #0284c7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon name="vpn_key" style={{ fontSize: "20px" }} />
             </div>
-          </div>
-          <button className="btn-primary" onClick={handleRegenerateKey} style={{ fontSize: "12px" }}>
-            <Icon name="refresh" /> Regenerasi Key
-          </button>
-        </div>
-
-        <div style={{ background: "#000", borderRadius: "var(--radius)", padding: "16px", fontFamily: "monospace", color: "#ededed" }}>
-          <div style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--red)" }}></span>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--amber)" }}></span>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--green)" }}></span>
-          </div>
-
-          {rawGeneratedKey ? (
             <div>
-              <div style={{ fontSize: "11px", color: "#888", marginBottom: "6px" }}># SALIN KUNCI API ANDA SEKARANG (HANYA DITAMPILKAN SEKALI)</div>
-              <code style={{ fontSize: "13px", fontWeight: 700, color: "#fff", wordBreak: "break-all", display: "block", background: "#111", padding: "10px", borderRadius: "4px", border: "1px solid #333" }}>
-                {rawGeneratedKey}
-              </code>
+              <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--ink)" }}>Kredensial API Aktif</div>
+              {rawGeneratedKey ? (
+                <div style={{ fontSize: "13px", color: "var(--ink-soft)", fontFamily: "monospace", marginTop: "2px" }}>{rawGeneratedKey} (Salin sekarang!)</div>
+              ) : activeKey ? (
+                <div style={{ fontSize: "13px", color: "var(--ink-soft)", fontFamily: "monospace", marginTop: "2px" }}>{activeKey.key_prefix}****************</div>
+              ) : (
+                <div style={{ fontSize: "13px", color: "var(--critical)", marginTop: "2px" }}>Belum ada kunci API.</div>
+              )}
             </div>
-          ) : activeKey ? (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-              <div>
-                <div style={{ fontSize: "11px", color: "#888", marginBottom: "4px" }}># KUNCI API AKTIF SAAT INI</div>
-                <code style={{ fontSize: "13px", fontWeight: 700, color: "#fff", letterSpacing: "0.5px" }}>
-                  {activeKey.key_prefix}
-                </code>
-              </div>
-              <div style={{ fontSize: "11px", color: "#888" }}>
-                Dibuat pada {new Date(activeKey.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-              </div>
-            </div>
-          ) : (
-            <div style={{ color: "#888", fontSize: "12px" }}>
-              # BELUM ADA KUNCI API AKTIF. SILAKAN KLIK REGENERASI KEY.
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Katalog Dataset */}
-      <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: "20px" }}>
-        <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--bd)" }}>
-          <div className="card-title" style={{ margin: 0 }}>Katalog Dataset Pesisir Lampung</div>
+          </div>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button className="btn secondary" style={{ fontSize: "12px", padding: "8px 16px" }} onClick={() => {
+              if (rawGeneratedKey) navigator.clipboard.writeText(rawGeneratedKey);
+              toast.success("Tersalin ke clipboard!");
+            }}>
+              <Icon name="content_copy" style={{ fontSize: "16px" }} /> Salin
+            </button>
+            <button className="btn outline" style={{ fontSize: "12px", padding: "8px 16px", color: "var(--critical)", borderColor: "var(--critical)" }} onClick={handleRegenerateKey}>
+              <Icon name="refresh" style={{ fontSize: "16px" }} /> Regenerasi
+            </button>
+          </div>
         </div>
 
-        {isLoading ? (
-          <div style={{ padding: "20px" }}>Memuat dataset...</div>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Nama Dataset</th>
-                <th>Rentang Waktu</th>
-                <th>Resolusi</th>
-                <th style={{ textAlign: "right" }}>Baris Data</th>
-                <th>Lisensi</th>
-                <th style={{ textAlign: "right" }}>Unduh</th>
-              </tr>
-            </thead>
-            <tbody>
-              {datasets.map((ds) => (
-                <tr key={ds.id}>
-                  <td>
-                    <strong style={{ color: "var(--tx0)" }}>{ds.name}</strong>
-                    <div style={{ fontSize: "11px", color: "var(--tx2)", marginTop: "2px" }}>{ds.description}</div>
-                  </td>
-                  <td><span style={{ fontSize: "12px" }}>{ds.period_start} s/d {ds.period_end}</span></td>
-                  <td>
-                    <span style={{ fontSize: "12px" }}>{ds.dataset_type}</span>
-                    <div style={{ fontSize: "11px", color: "var(--tx3)" }}>{ds.resolution}</div>
-                  </td>
-                  <td style={{ textAlign: "right", fontFamily: "monospace" }}>{ds.record_count.toLocaleString("id-ID")}</td>
-                  <td><span style={{ fontSize: "11px", color: "var(--tx2)" }}>{ds.license}</span></td>
-                  <td style={{ textAlign: "right" }}>
-                    <div style={{ display: "inline-flex", gap: "6px" }}>
-                      <a href={`http://127.0.0.1:8000${ds.csv_url}`} style={{ textDecoration: "none" }} download>
-                        <button style={{ padding: "4px 8px", fontSize: "11px" }}>CSV</button>
-                      </a>
-                      <a href={`http://127.0.0.1:8000${ds.json_url}`} style={{ textDecoration: "none" }} download>
-                        <button style={{ padding: "4px 8px", fontSize: "11px" }}>JSON</button>
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Referensi REST API */}
-      <div className="card">
-        <div className="card-title">Referensi REST API</div>
-        <div style={{ display: "grid", gap: "12px" }}>
-          {endpoints.map(([method, path, note]) => (
-            <div key={path} style={{ background: "var(--bg1)", border: "1px solid var(--bd)", borderRadius: "var(--radius)", padding: "12px 16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-                <span className="badge b-info" style={{ fontSize: "10px" }}>{method}</span>
-                <code style={{ fontSize: "12px", fontWeight: 700, color: "var(--tx0)" }}>{path}</code>
-              </div>
-              <div style={{ fontSize: "11px", color: "var(--tx2)" }}>{note}</div>
+        {/* KPI Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginBottom: "32px" }}>
+          {[
+            { title: "Dataset Tersedia", val: datasets.length, sub: "set data tervalidasi" },
+            { title: "Total Rekaman", val: "148,920", sub: "kejadian 2018–2026" },
+            { title: "Unduhan Bulan Ini", val: "312", sub: "oleh 18 peneliti" },
+            { title: "API Call Hari Ini", val: "8,240", sub: "dari 5 aplikasi terdaftar" }
+          ].map((kpi, i) => (
+            <div key={i} style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", padding: "20px" }}>
+              <div style={{ fontSize: "12px", color: "var(--ink-soft)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.02em" }}>{kpi.title}</div>
+              <div style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink)", margin: "8px 0" }}>{kpi.val}</div>
+              <div style={{ fontSize: "12px", color: "var(--ink-soft)" }}>{kpi.sub}</div>
             </div>
           ))}
+        </div>
+
+        {/* Tabs Navigation */}
+        <div style={{ display: "flex", gap: "24px", borderBottom: "2px solid var(--line)", marginBottom: "32px" }}>
+          {["Arsip Data", "Referensi API", "Penggunaan API", "Perizinan Data"].map((tab, idx) => (
+            <button 
+              key={idx}
+              onClick={() => setActiveTab(idx)}
+              style={{
+                padding: "12px 0",
+                fontSize: "14px",
+                fontWeight: 600,
+                color: activeTab === idx ? "var(--ocean-dark, #0284c7)" : "var(--ink-soft)",
+                border: "none",
+                background: "none",
+                cursor: "pointer",
+                borderBottom: activeTab === idx ? "2px solid var(--ocean-dark, #0284c7)" : "2px solid transparent",
+                marginBottom: "-2px",
+                transition: "all 0.2s"
+              }}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
+        <div style={{ minHeight: "400px" }}>
+          
+          {/* Tab 0: Arsip Data */}
+          {activeTab === 0 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              {/* Filters */}
+              <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
+                <select style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)", color: "var(--ink)" }}>
+                  <option>Semua Tahun</option><option>2026</option><option>2025</option>
+                </select>
+                <select style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)", color: "var(--ink)" }}>
+                  <option>Semua Kabupaten</option><option>Bandar Lampung</option>
+                </select>
+                <select style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)", color: "var(--ink)" }}>
+                  <option>Semua Jenis</option><option>Prediksi</option><option>Ground Truth</option>
+                </select>
+                <div style={{ flex: 1, position: "relative", minWidth: "200px" }}>
+                  <Icon name="search" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "18px", color: "var(--ink-soft)" }} />
+                  <input type="text" placeholder="Cari dataset..." style={{ width: "100%", padding: "10px 14px 10px 38px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)", color: "var(--ink)", boxSizing: "border-box" }} />
+                </div>
+                <button className="btn secondary" style={{ padding: "10px 16px" }}><Icon name="filter_list" style={{ fontSize: "18px" }} /> Filter</button>
+              </div>
+
+              {/* Table */}
+              <div className="panel flush" style={{ overflow: "hidden", border: "1px solid var(--line)", marginBottom: "24px" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--line)", background: "var(--surface-soft)" }}>
+                      <th style={{ padding: "16px 20px", fontSize: "13px", fontWeight: 600, color: "var(--ink-soft)" }}>Dataset</th>
+                      <th style={{ padding: "16px 20px", fontSize: "13px", fontWeight: 600, color: "var(--ink-soft)" }}>Jenis</th>
+                      <th style={{ padding: "16px 20px", fontSize: "13px", fontWeight: 600, color: "var(--ink-soft)" }}>Periode</th>
+                      <th style={{ padding: "16px 20px", fontSize: "13px", fontWeight: 600, color: "var(--ink-soft)" }}>Resolusi</th>
+                      <th style={{ padding: "16px 20px", fontSize: "13px", fontWeight: 600, color: "var(--ink-soft)", textAlign: "right" }}>Rekaman</th>
+                      <th style={{ padding: "16px 20px" }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {datasets.map((ds, i) => (
+                      <tr key={ds.id} style={{ borderBottom: i === datasets.length - 1 ? "none" : "1px solid var(--line)" }}>
+                        <td style={{ padding: "16px 20px" }}>
+                          <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>{ds.name}</div>
+                          <div style={{ fontSize: "12px", color: "var(--ink-soft)", marginTop: "4px" }}>{ds.description}</div>
+                        </td>
+                        <td style={{ padding: "16px 20px" }}>
+                          <span style={{ display: "inline-block", background: "var(--surface-muted)", padding: "4px 10px", borderRadius: "100px", fontSize: "11px", fontWeight: 600, color: "var(--ink)" }}>{ds.dataset_type}</span>
+                        </td>
+                        <td style={{ padding: "16px 20px", fontSize: "13px", color: "var(--ink)" }}>
+                          {ds.period_start} — {ds.period_end}
+                        </td>
+                        <td style={{ padding: "16px 20px", fontSize: "13px", color: "var(--ink)" }}>{ds.resolution}</td>
+                        <td style={{ padding: "16px 20px", fontSize: "13px", color: "var(--ink)", textAlign: "right", fontWeight: 500 }}>
+                          {ds.record_count.toLocaleString("id-ID")}
+                        </td>
+                        <td style={{ padding: "16px 20px", textAlign: "right" }}>
+                          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                            <a href={`http://127.0.0.1:8000${ds.csv_url}`} className="btn primary" style={{ fontSize: "11px", padding: "6px 12px", background: "var(--ocean-dark, #0284c7)", color: "#fff", textDecoration: "none", borderRadius: "6px" }} download>
+                              <Icon name="download" style={{ fontSize: "14px" }} /> CSV
+                            </a>
+                            <a href={`http://127.0.0.1:8000${ds.json_url}`} className="btn secondary" style={{ fontSize: "11px", padding: "6px 12px", textDecoration: "none", borderRadius: "6px" }} download>
+                              <Icon name="code" style={{ fontSize: "14px" }} /> JSON
+                            </a>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {datasets.length === 0 && !isLoading && (
+                      <tr>
+                        <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "var(--ink-soft)" }}>Tidak ada dataset ditemukan.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination (Mock) */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "var(--ink-soft)" }}>
+                <div>Menampilkan 1–{datasets.length} dari {datasets.length} dataset</div>
+                <div style={{ display: "flex", gap: "4px" }}>
+                  <button className="btn secondary" style={{ padding: "6px 10px" }} disabled>‹</button>
+                  <button className="btn primary" style={{ padding: "6px 12px", background: "var(--ocean-dark)", color: "#fff" }}>1</button>
+                  <button className="btn secondary" style={{ padding: "6px 10px" }}>›</button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Tab 1: API Reference */}
+          {activeTab === 1 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ maxWidth: "800px" }}>
+              <div style={{ marginBottom: "32px" }}>
+                <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: "var(--ink)" }}>Base URL</div>
+                <div style={{ background: "#0f172a", borderRadius: "8px", padding: "16px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "13px" }}>
+                  https://api.siperah-rob.go.id/v1
+                </div>
+              </div>
+
+              <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "16px", color: "var(--ink)" }}>Endpoint Tersedia</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "40px" }}>
+                {endpoints.map((ep, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "16px", padding: "20px", border: "1px solid var(--line)", borderRadius: "12px", background: "var(--surface)" }}>
+                    <div style={{ background: "#dcfce7", color: "#15803d", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 700, fontFamily: "monospace" }}>{ep.method}</div>
+                    <div>
+                      <div style={{ fontFamily: "monospace", fontSize: "13px", color: "var(--ocean-dark, #0284c7)", marginBottom: "6px", fontWeight: 600 }}>{ep.path}</div>
+                      <div style={{ fontSize: "13px", color: "var(--ink-soft)", lineHeight: 1.5 }}>{ep.note}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "12px", color: "var(--ink)" }}>Contoh Request</div>
+              <div style={{ background: "#0f172a", borderRadius: "12px", padding: "20px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.6, overflowX: "auto" }}>
+                <span style={{ color: "#93c5fd" }}>curl</span> -H <span style={{ color: "#86efac" }}>"Authorization: Bearer sk-siperah-..."</span> \<br />
+                &nbsp;&nbsp;<span style={{ color: "#86efac" }}>"https://api.siperah-rob.go.id/v1/predictions/daily?date=2026-05-21"</span>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Tab 2 & 3 */}
+          {activeTab === 2 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="alert info">
+              <Icon name="info" /> Grafik penggunaan API akan ditampilkan di sini. Menampilkan metrik per endpoint untuk 30 hari terakhir.
+            </motion.div>
+          )}
+          {activeTab === 3 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="alert info">
+              <Icon name="info" /> Formulir permohonan akses data premium dan manajemen perizinan.
+            </motion.div>
+          )}
+
         </div>
       </div>
     </AppShell>
