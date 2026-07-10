@@ -1,25 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg: #FAF9F6;
+  --bg: #f1f5f9;
   --surface: #ffffff;
-  --surface-soft: #F5F3ED;
-  --surface-muted: #E6E4DF;
-  --ink: #121314;
-  --ink-soft: #5C5E61;
-  --line: #E6E4DF;
-  --accent: #1E40AF;
-  --accent-dark: #122456;
-  --accent-soft: #EEF2F6;
-  --critical: #B91C1C;
-  --high: #C2410C;
-  --medium: #A16207;
-  --low: #15803D;
-  --radius: 12px;
-  --sidebar: 280px;
+  --surface-soft: #f8fafc;
+  --surface-muted: #e2e8f0;
+  --ink: #0f172a;
+  --ink-soft: #475569;
+  --line: #e2e8f0;
+  --accent: #1d4ed8;
+  --accent-dark: #1e40af;
+  --accent-soft: #eff6ff;
+  --critical: #dc2626;
+  --high: #ea580c;
+  --medium: #d97706;
+  --low: #16a34a;
+  --radius: 8px;
+  --sidebar: 240px;
   background: var(--bg);
   color: var(--ink);
-  font-family: "Outfit", sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -263,7 +263,7 @@ p { color: var(--ink-soft); line-height: 1.62; max-width: 66ch; }
 }
 .app-shell.sidebar-collapsed { --sidebar-width: 76px; }
 .sidebar {
-  background: #121314;
+  background: #0f172a;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   color: #dbe7f5;
   bottom: 0;
