@@ -31,36 +31,29 @@ export function PortalPage() {
           padding-bottom: 120px;
         }
 
-        /* Nav Pill Header */
-        .header-container {
-          display: flex;
-          justify-content: center;
-          padding: 24px 20px 0;
+        /* Full-Width Editorial Header */
+        .landing-header-full {
           position: sticky;
           top: 0;
           z-index: 100;
-        }
-        .landing-nav-pill {
           display: flex;
           align-items: center;
           justify-content: space-between;
           width: 100%;
-          max-width: 1100px;
-          height: 64px;
-          padding: 0 28px;
-          background: rgba(250, 249, 246, 0.75);
+          height: 72px;
+          padding: 0 60px;
+          background: rgba(250, 249, 246, 0.9);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(230, 228, 223, 0.6);
-          border-radius: 100px;
-          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
+          border-bottom: 1px solid var(--border-color);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.01);
         }
         .brand-link {
           display: flex;
           align-items: center;
           gap: 10px;
           font-weight: 800;
-          font-size: 1.1rem;
+          font-size: 1.15rem;
           letter-spacing: -0.02em;
           color: var(--ink-primary);
           text-decoration: none;
@@ -69,54 +62,69 @@ export function PortalPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 28px;
-          height: 28px;
+          width: 30px;
+          height: 30px;
           background: var(--ink-primary);
           color: #fff;
           border-radius: 6px;
-          font-size: 1.05rem;
+          font-size: 1.1rem;
         }
         .nav-links-wrap {
           display: flex;
           align-items: center;
-          gap: 36px;
+          gap: 40px;
         }
         .nav-links-wrap a {
-          font-size: 0.88rem;
-          font-weight: 500;
+          font-size: 0.92rem;
+          font-weight: 600;
           color: var(--ink-muted);
           text-decoration: none;
           transition: color 0.2s ease;
+          position: relative;
         }
         .nav-links-wrap a:hover {
           color: var(--ink-primary);
         }
+        .nav-links-wrap a::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          left: 0;
+          width: 0;
+          height: 2px;
+          background: var(--accent-blue);
+          transition: width 0.2s ease;
+        }
+        .nav-links-wrap a:hover::after {
+          width: 100%;
+        }
         .header-actions {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 16px;
         }
         .btn-link-login {
-          font-size: 0.88rem;
+          font-size: 0.92rem;
           font-weight: 600;
           color: var(--ink-primary);
           text-decoration: none;
-          padding: 8px 18px;
+          padding: 8px 16px;
           transition: opacity 0.2s ease;
         }
         .btn-link-login:hover {
           opacity: 0.8;
         }
         .btn-nav-primary {
-          font-size: 0.88rem;
+          font-size: 0.92rem;
           font-weight: 600;
           color: #fff;
           background: var(--ink-primary);
           border: 1px solid var(--ink-primary);
           border-radius: 100px;
-          padding: 8px 20px;
+          padding: 10px 24px;
           text-decoration: none;
           transition: all 0.2s ease;
+          box-shadow: 0 4px 12px rgba(18, 19, 20, 0.08);
         }
         .btn-nav-primary:hover {
           background: transparent;
@@ -501,27 +509,25 @@ export function PortalPage() {
       {/* Grid Ambient Background Pattern */}
       <div className="ambient-grid"></div>
 
-      {/* Navigation Floating Header */}
-      <div className="header-container">
-        <header className="landing-nav-pill">
-          <a className="brand-link" href="#/">
-            <div className="brand-logo-icon">
-              <Icon name="water_drop" />
-            </div>
-            SIPERAH-RoB
-          </a>
-          <nav className="nav-links-wrap">
-            <a href="#/map">Peta Publik</a>
-            <a href="#/awam">Mode Awam</a>
-            <a href="#/onboarding">Panduan Warga</a>
-            <a href="#/research">Portal Peneliti</a>
-          </nav>
-          <div className="header-actions">
-            <a className="btn-link-login" href="#/login">Masuk</a>
-            <a className="btn-nav-primary" href="#/map">Buka Peta</a>
+      {/* Full-Width Header */}
+      <header className="landing-header-full">
+        <a className="brand-link" href="#/">
+          <div className="brand-logo-icon">
+            <Icon name="water_drop" />
           </div>
-        </header>
-      </div>
+          SIPERAH-RoB
+        </a>
+        <nav className="nav-links-wrap">
+          <a href="#/map">Peta Publik</a>
+          <a href="#/awam">Mode Awam</a>
+          <a href="#/onboarding">Panduan Warga</a>
+          <a href="#/research">Portal Peneliti</a>
+        </nav>
+        <div className="header-actions">
+          <a className="btn-link-login" href="#/login">Masuk</a>
+          <a className="btn-nav-primary" href="#/map">Buka Peta</a>
+        </div>
+      </header>
 
       {/* Cinematic Center Hero */}
       <section className="hero-section">
