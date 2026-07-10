@@ -584,10 +584,10 @@ export function PortalPage() {
           {/* Card 1: Portal Publik (col-span-8) */}
           <div className="bento-card-el card-span-8">
             <div>
-              <span className="card-meta-title">Public Portal & Community</span>
-              <h3>Peta Risiko Publik & Mitigasi Warga</h3>
+              <span className="card-meta-title">Public Access</span>
+              <h3>Portal Publik</h3>
               <p>
-                Visualisasi interaktif 4 level kerawanan banjir rob di 283 kelurahan pesisir Lampung. Dilengkapi fitur pelaporan kejadian nyata secara mobile dengan geolokasi otomatis.
+                Akses peta interaktif peringatan dini bahaya rob, panduan mitigasi, dan laporan ground truth untuk masyarakat umum.
               </p>
               
               <div className="card-preview-container">
@@ -595,100 +595,76 @@ export function PortalPage() {
               </div>
             </div>
             <div className="card-links-row">
-              <a className="card-action-link" href="#/map">Peta Interaktif <Icon name="arrow_forward" /></a>
-              <a className="card-action-link" href="#/awam">Mode Awam Mobile <Icon name="arrow_forward" /></a>
-              <a className="card-action-link" href="#/reports">Lapor Kejadian <Icon name="arrow_forward" /></a>
+              <a className="card-action-link" href="#/map">Akses Sistem <Icon name="arrow_forward" /></a>
               <a className="card-action-link" href="#/onboarding">Panduan Mitigasi <Icon name="arrow_forward" /></a>
             </div>
           </div>
 
-          {/* Card 2: BPBD Command Center (col-span-4) - Dark Theme for Contrast */}
+          {/* Card 2: Dashboard BPBD (col-span-4) - Dark Theme for Contrast */}
           <div className="bento-card-el card-span-4 dark-theme">
             <div>
-              <span className="card-meta-title">Command Center</span>
-              <h3>BPBD Lampung Command Center</h3>
+              <span className="card-meta-title">BPBD Command Center</span>
+              <h3>Dashboard BPBD</h3>
               <p>
-                Akses panel kontrol kebencanaan. BPBD Provinsi mengawasi prioritas tanggapan lintas kabupaten berdasarkan populasi, sementara Operator memvalidasi data ground truth warga.
+                Pusat kendali dan monitoring prediksi risiko, analisis dampak, dan manajemen logistik untuk operator dan pengambil keputusan.
               </p>
               
-              {/* Visual Element: Mini statistics indicators */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", margin: "24px 0" }}>
                 <div style={{ background: "rgba(255,255,255,0.06)", padding: "16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                  <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", fontWeight: 700 }}>Kelurahan Bahaya</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: 800, marginTop: "4px", color: "#EF4444" }}>42</div>
+                  <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", fontWeight: 700 }}>Kelurahan Pantau</div>
+                  <div style={{ fontSize: "1.8rem", fontWeight: 800, marginTop: "4px", color: "var(--accent-soft)" }}>283</div>
                 </div>
                 <div style={{ background: "rgba(255,255,255,0.06)", padding: "16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                  <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", fontWeight: 700 }}>Antrean Lapor</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: 800, marginTop: "4px", color: "#F59E0B" }}>12</div>
+                  <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", fontWeight: 700 }}>Akurasi Model</div>
+                  <div style={{ fontSize: "1.8rem", fontWeight: 800, marginTop: "4px", color: "#10B981" }}>87%</div>
                 </div>
               </div>
             </div>
             <div className="card-links-row">
-              <a className="card-action-link" href="#/province">BPBD Provinsi <Icon name="arrow_forward" /></a>
-              <a className="card-action-link" href="#/operator">Operator Wilayah <Icon name="arrow_forward" /></a>
+              <a className="card-action-link" href="#/login">Masuk Dashboard <Icon name="arrow_forward" /></a>
             </div>
           </div>
 
-          {/* Card 3: Peneliti & API (col-span-4) */}
+          {/* Card 3: Portal Peneliti & API (col-span-4) */}
           <div className="bento-card-el card-span-4">
             <div>
-              <span className="card-meta-title">Research Archive</span>
-              <h3>Repositori Data & Developer API</h3>
+              <span className="card-meta-title">Research Archive & API</span>
+              <h3>Portal Peneliti & API</h3>
               <p>
-                Dukung studi kebencanaan. Peneliti terdaftar dapat mengekspor dataset riwayat banjir pasang surut (CSV/JSON), membaca dokumentasi endpoint, dan mengelola API key.
+                Akses repositori dataset riwayat, unduh data prediksi, dan manajemen kunci API untuk kebutuhan penelitian.
               </p>
               
-              {/* Visual Element: Mock Code snippet */}
               <div style={{ background: "rgba(18,19,20,0.03)", padding: "14px", borderRadius: "12px", border: "1px solid var(--border-color)", fontFamily: "monospace", fontSize: "0.75rem", margin: "24px 0", color: "var(--ink-muted)" }}>
                 <div>GET /v1/predictions</div>
-                <div style={{ color: "#059669", marginTop: "2px" }}>Authorization: Bearer key_01a...</div>
+                <div style={{ color: "#1E40AF", marginTop: "2px" }}>Authorization: Bearer key_api...</div>
               </div>
             </div>
             <div className="card-links-row">
-              <a className="card-action-link" href="#/research">Akses Portal Peneliti <Icon name="arrow_forward" /></a>
+              <a className="card-action-link" href="#/research">Akses Data <Icon name="arrow_forward" /></a>
             </div>
           </div>
 
-          {/* Card 4: Tata Kelola & Admin (col-span-8) */}
+          {/* Card 4: Administrator (col-span-8) */}
           <div className="bento-card-el card-span-8">
             <div>
-              <span className="card-meta-title">System Admin</span>
-              <h3>Tata Kelola Akun & Audit Aktivitas</h3>
+              <span className="card-meta-title">System Administration</span>
+              <h3>Administrator</h3>
               <p>
-                Portal administrasi sistem. Menyetujui pendaftaran akun petugas kebencanaan baru, mengonfigurasi role-based access control, dan meninjau pencatatan aktivitas terenkripsi (audit log).
+                Kelola akses pengguna, konfigurasi sistem, dan pantau log aktivitas (audit log) sistem secara keseluruhan.
               </p>
               
-              {/* Visual Element: Mini audit logs table preview */}
-              <div className="card-preview-container">
-                <table className="mock-logs-table">
-                  <thead>
-                    <tr>
-                      <th>Pengguna</th>
-                      <th>Aksi</th>
-                      <th>Hasil</th>
-                      <th>Waktu</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><strong>Operator Kalianda</strong></td>
-                      <td>Validasi Laporan</td>
-                      <td><span className="status-badge success">Sukses</span></td>
-                      <td>12 detik lalu</td>
-                    </tr>
-                    <tr>
-                      <td><strong>Admin BPBD</strong></td>
-                      <td>Ubah Role Pengguna</td>
-                      <td><span className="status-badge success">Sukses</span></td>
-                      <td>5 menit lalu</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div className="card-preview-container" style={{ padding: "20px", background: "var(--surface-soft)", minHeight: "100px", display: "flex", alignItems: "center", gap: "16px" }}>
+                <div style={{ background: "#fff", width: "42px", height: "42px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--line)" }}>
+                  <Icon name="security" style={{ color: "var(--accent)" }} />
+                </div>
+                <div>
+                  <strong style={{ display: "block", fontSize: "0.95rem" }}>Sistem Keamanan & Akuntabilitas Terjamin</strong>
+                  <span style={{ fontSize: "0.84rem", color: "var(--ink-soft)" }}>Seluruh perubahan hak akses, enkripsi log aktivitas, dan tindakan admin dicatat ke dalam database.</span>
+                </div>
               </div>
             </div>
             <div className="card-links-row">
-              <a className="card-action-link" href="#/admin">Kelola Pengguna <Icon name="arrow_forward" /></a>
-              <a className="card-action-link" href="#/audit">Lihat Audit Log <Icon name="arrow_forward" /></a>
+              <a className="card-action-link" href="#/admin">Kelola Sistem <Icon name="arrow_forward" /></a>
             </div>
           </div>
         </div>
