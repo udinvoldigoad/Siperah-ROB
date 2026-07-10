@@ -3,6 +3,7 @@ import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { useToast } from "../../shared/components/Toast";
 import { api } from "../../shared/api/client";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface NotificationSettings {
   channels: string[];
@@ -15,6 +16,16 @@ interface NotificationSettings {
 interface NotificationSettingsResponse {
   data: NotificationSettings;
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+};
 
 export function NotificationSettingsPage() {
   const toast = useToast();
@@ -30,7 +41,6 @@ export function NotificationSettingsPage() {
   const [newRegion, setNewRegion] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // Load Settings (Read)
   const fetchSettings = async () => {
     try {
       const res = await api<NotificationSettingsResponse>("/notifications/settings");
@@ -56,7 +66,6 @@ export function NotificationSettingsPage() {
     fetchSettings();
   }, []);
 
-  // Toggle Handlers
   const toggleChannel = (channel: string) => {
     setChannels((prev) =>
       prev.includes(channel) ? prev.filter((c) => c !== channel) : [...prev, channel]
@@ -69,30 +78,25 @@ export function NotificationSettingsPage() {
     );
   };
 
-  // Add Region (Create)
   const handleAddRegion = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanRegion = newRegion.trim();
     if (!cleanRegion) return;
-
     if (monitoredRegions.includes(cleanRegion)) {
       toast.info(`Wilayah "${cleanRegion}" sudah terpantau.`);
       return;
     }
-
     setMonitoredRegions((prev) => [...prev, cleanRegion]);
     setNewRegion("");
     setShowAddForm(false);
     toast.success(`Menambahkan ${cleanRegion} ke antrean pantau.`);
   };
 
-  // Remove Region (Delete)
   const handleRemoveRegion = (region: string) => {
     setMonitoredRegions((prev) => prev.filter((r) => r !== region));
     toast.info(`Menghapus ${region} dari antrean.`);
   };
 
-  // Save Settings (Update)
   const handleSave = async () => {
     setIsLoading(true);
     try {
@@ -106,7 +110,7 @@ export function NotificationSettingsPage() {
           monitored_regions: monitoredRegions,
         }),
       });
-      toast.success("Pengaturan notifikasi berhasil disimpan ke database!");
+      toast.success("Pengaturan notifikasi berhasil disimpan!");
     } catch (err: any) {
       toast.error(err.message || "Gagal menyimpan pengaturan.");
     } finally {
@@ -114,384 +118,272 @@ export function NotificationSettingsPage() {
     }
   };
 
+  const activeChannelsCount = channels.length;
+  const activeEventsCount = eventTypes.length;
+
   return (
     <AppShell active="notifications" title="Pengaturan Notifikasi">
-      <style>{`
-        .settings-wrap {
-          max-width: 640px;
-          margin: 0 auto;
-        }
-        .settings-section {
-          margin-bottom: 24px;
-        }
-        .settings-section-title {
-          font-size: 11px;
-          font-weight: 700;
-          color: var(--tx2);
-          text-transform: uppercase;
-          letter-spacing: .5px;
-          margin-bottom: 12px;
-        }
-        .setting-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 14px 16px;
-          background: var(--bg0);
-          border: 1px solid var(--bd);
-          border-radius: var(--radius);
-          margin-bottom: 8px;
-        }
-        .setting-row:last-child {
-          margin-bottom: 0;
-        }
-        .setting-left {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .setting-icon {
-          width: 36px;
-          height: 36px;
-          border-radius: var(--radius);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 18px;
-          flex-shrink: 0;
-        }
-        .setting-label {
-          font-size: 13px;
-          font-weight: 500;
-          color: var(--tx0);
-        }
-        .setting-desc {
-          font-size: 11px;
-          color: var(--tx2);
-          margin-top: 1px;
-        }
-        .cb-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 14px 16px;
-          border-bottom: 1px solid var(--bd);
-          font-size: 13px;
-        }
-        .cb-row:last-child {
-          border-bottom: none;
-        }
+      <motion.div variants={containerVariants} initial="hidden" animate="show" className="content" style={{ maxWidth: 1000, margin: "0 auto", paddingBottom: 60 }}>
         
-        /* Styled switch toggle input */
-        .toggle-switch {
-          position: relative;
-          width: 44px;
-          height: 24px;
-        }
-        .toggle-switch input {
-          opacity: 0;
-          width: 0;
-          height: 0;
-        }
-        .toggle-track {
-          position: absolute;
-          cursor: pointer;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: var(--bd);
-          transition: .2s;
-          border-radius: 24px;
-        }
-        .toggle-thumb {
-          position: absolute;
-          content: "";
-          height: 18px;
-          width: 18px;
-          left: 3px;
-          bottom: 3px;
-          background-color: white;
-          transition: .2s;
-          border-radius: 50%;
-          box-shadow: var(--sh-sm);
-        }
-        input:checked + .toggle-track {
-          background-color: var(--blue);
-        }
-        input:checked + .toggle-track .toggle-thumb {
-          transform: translateX(20px);
-        }
-      `}</style>
+        {/* KPI Grid */}
+        <motion.div variants={itemVariants} className="metric-grid" style={{ marginBottom: 32 }}>
+          <div className={`metric-card ${activeChannelsCount > 0 ? "success" : "warning"}`}>
+            <span>Saluran Aktif</span>
+            <strong>{activeChannelsCount}</strong>
+            <small>Media penerimaan notifikasi</small>
+          </div>
+          <div className="metric-card">
+            <span>Peristiwa Dipantau</span>
+            <strong>{activeEventsCount}</strong>
+            <small>Jenis peringatan & update</small>
+          </div>
+          <div className={`metric-card ${quietHoursEnabled ? "critical" : ""}`}>
+            <span>Jam Sunyi</span>
+            <strong>{quietHoursEnabled ? "Aktif" : "Nonaktif"}</strong>
+            <small>{quietHoursEnabled ? `${quietStart} - ${quietEnd}` : "Menerima notif 24/7"}</small>
+          </div>
+          <div className="metric-card">
+            <span>Wilayah Area</span>
+            <strong>{monitoredRegions.length}</strong>
+            <small>Area spesifik difilter</small>
+          </div>
+        </motion.div>
 
-      <div className="settings-wrap">
-        {/* Channels */}
-        <div className="settings-section">
-          <div className="settings-section-title">Saluran Notifikasi</div>
+        {/* 2-Column Layout for Settings */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
           
-          <div className="setting-row">
-            <div className="setting-left">
-              <div className="setting-icon" style={{ background: "var(--bg2)" }}>
-                <Icon name="notifications" style={{ color: "var(--tx1)", fontSize: "18px" }} />
-              </div>
-              <div>
-                <div className="setting-label">Push notifikasi browser</div>
-                <div className="setting-desc">Notifikasi real-time di browser Anda</div>
-              </div>
-            </div>
-            <label className="toggle-switch">
-              <input 
-                type="checkbox" 
-                checked={channels.includes("browser")} 
-                onChange={() => toggleChannel("browser")} 
-              />
-              <span className="toggle-track"><span className="toggle-thumb"></span></span>
-            </label>
-          </div>
-
-          <div className="setting-row">
-            <div className="setting-left">
-              <div className="setting-icon" style={{ background: "var(--bg2)" }}>
-                <Icon name="mail" style={{ color: "var(--tx1)", fontSize: "18px" }} />
-              </div>
-              <div>
-                <div className="setting-label">Email</div>
-                <div className="setting-desc">andi.saputra@bpbd.lampung.go.id</div>
-              </div>
-            </div>
-            <label className="toggle-switch">
-              <input 
-                type="checkbox" 
-                checked={channels.includes("email")} 
-                onChange={() => toggleChannel("email")} 
-              />
-              <span className="toggle-track"><span className="toggle-thumb"></span></span>
-            </label>
-          </div>
-
-          <div className="setting-row">
-            <div className="setting-left">
-              <div className="setting-icon" style={{ background: "var(--bg2)" }}>
-                <Icon name="chat" style={{ color: "var(--tx1)", fontSize: "18px" }} />
-              </div>
-              <div>
-                <div className="setting-label">WhatsApp</div>
-                <div className="setting-desc">+62 812-xxxx-xxxx</div>
-              </div>
-            </div>
-            <label className="toggle-switch">
-              <input 
-                type="checkbox" 
-                checked={channels.includes("whatsapp")} 
-                onChange={() => toggleChannel("whatsapp")} 
-              />
-              <span className="toggle-track"><span className="toggle-thumb"></span></span>
-            </label>
-          </div>
-
-          <div className="setting-row">
-            <div className="setting-left">
-              <div className="setting-icon" style={{ background: "var(--bg2)" }}>
-                <Icon name="smartphone" style={{ color: "var(--tx1)", fontSize: "18px" }} />
-              </div>
-              <div>
-                <div className="setting-label">SMS</div>
-                <div className="setting-desc">Tersedia untuk operator BPBD</div>
-              </div>
-            </div>
-            <label className="toggle-switch">
-              <input 
-                type="checkbox" 
-                checked={channels.includes("sms")} 
-                onChange={() => toggleChannel("sms")} 
-              />
-              <span className="toggle-track"><span className="toggle-thumb"></span></span>
-            </label>
-          </div>
-        </div>
-
-        {/* Event Subscriptions */}
-        <div className="settings-section">
-          <div className="settings-section-title">Berlangganan Peristiwa</div>
-          <div className="card" style={{ padding: 0 }}>
-            <div className="cb-row">
-              <div>
-                <div style={{ fontWeight: 500 }}>Peringatan bahaya Sangat Tinggi</div>
-                <div style={{ fontSize: "11px", color: "var(--tx2)" }}>Wilayah pantau Anda mencapai kelas Sangat Tinggi</div>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={eventTypes.includes("bahaya_sangat_tinggi")} 
-                onChange={() => toggleEventType("bahaya_sangat_tinggi")} 
-                style={{ accentColor: "var(--blue)", width: "16px", height: "16px" }}
-              />
-            </div>
+          {/* Left Column */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
             
-            <div className="cb-row">
-              <div>
-                <div style={{ fontWeight: 500 }}>Laporan ground truth baru</div>
-                <div style={{ fontSize: "11px", color: "var(--tx2)" }}>Ada laporan warga di wilayah pantau Anda</div>
+            {/* Channels Panel */}
+            <motion.div variants={itemVariants} className="panel">
+              <div style={{ marginBottom: "20px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Icon name="cell_tower" style={{ color: "var(--accent)" }} /> Saluran Komunikasi
+                </h3>
+                <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--ink-soft)" }}>Pilih media pengiriman notifikasi ke perangkat Anda.</p>
               </div>
-              <input 
-                type="checkbox" 
-                checked={eventTypes.includes("laporan_ground_truth")} 
-                onChange={() => toggleEventType("laporan_ground_truth")} 
-                style={{ accentColor: "var(--blue)", width: "16px", height: "16px" }}
-              />
-            </div>
 
-            <div className="cb-row">
-              <div>
-                <div style={{ fontWeight: 500 }}>Pemberitahuan pembaruan model</div>
-                <div style={{ fontSize: "11px", color: "var(--tx2)" }}>Model diperbarui dengan data pasang surut terbaru</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {[
+                  { id: "browser", icon: "notifications", title: "Push Notifikasi Browser", desc: "Notifikasi real-time di desktop/mobile" },
+                  { id: "email", icon: "mail", title: "Email Instansi", desc: "Pesan dikirim ke email Anda" },
+                  { id: "whatsapp", icon: "chat", title: "WhatsApp Peringatan", desc: "Pesan instan via WhatsApp bot" },
+                  { id: "sms", icon: "smartphone", title: "SMS Darurat", desc: "Hanya untuk peringatan kritis" }
+                ].map((ch) => (
+                  <div key={ch.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                      <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "var(--surface-soft)", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Icon name={ch.icon} style={{ fontSize: "20px", color: "var(--ink-soft)" }} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>{ch.title}</div>
+                        <div style={{ fontSize: "12px", color: "var(--ink-soft)", marginTop: "2px" }}>{ch.desc}</div>
+                      </div>
+                    </div>
+                    {/* Switch */}
+                    <label style={{ position: "relative", width: "44px", height: "24px", cursor: "pointer" }}>
+                      <input 
+                        type="checkbox" 
+                        checked={channels.includes(ch.id)} 
+                        onChange={() => toggleChannel(ch.id)} 
+                        style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
+                      />
+                      <span style={{ 
+                        position: "absolute", top: 0, left: 0, right: 0, bottom: 0, 
+                        background: channels.includes(ch.id) ? "var(--accent)" : "var(--line)", 
+                        borderRadius: "24px", transition: "0.3s" 
+                      }}>
+                        <span style={{ 
+                          position: "absolute", height: "18px", width: "18px", left: "3px", bottom: "3px", 
+                          background: "#fff", borderRadius: "50%", transition: "0.3s",
+                          transform: channels.includes(ch.id) ? "translateX(20px)" : "translateX(0)" 
+                        }} />
+                      </span>
+                    </label>
+                  </div>
+                ))}
               </div>
-              <input 
-                type="checkbox" 
-                checked={eventTypes.includes("pembaruan_model")} 
-                onChange={() => toggleEventType("pembaruan_model")} 
-                style={{ accentColor: "var(--blue)", width: "16px", height: "16px" }}
-              />
-            </div>
+            </motion.div>
 
-            <div className="cb-row">
-              <div>
-                <div style={{ fontWeight: 500 }}>Ringkasan harian harian</div>
-                <div style={{ fontSize: "11px", color: "var(--tx2)" }}>Laporan singkat kondisi risiko pukul 06:00 WIB</div>
+            {/* Quiet Hours Panel */}
+            <motion.div variants={itemVariants} className="panel">
+              <div style={{ marginBottom: "20px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Icon name="do_not_disturb_on" style={{ color: "var(--critical)" }} /> Jam Sunyi (DND)
+                </h3>
               </div>
-              <input 
-                type="checkbox" 
-                checked={eventTypes.includes("ringkasan_harian")} 
-                onChange={() => toggleEventType("ringkasan_harian")} 
-                style={{ accentColor: "var(--blue)", width: "16px", height: "16px" }}
-              />
-            </div>
-
-            <div className="cb-row">
-              <div>
-                <div style={{ fontWeight: 500 }}>Peringatan BMKG pasang ekstrem</div>
-                <div style={{ fontSize: "11px", color: "var(--tx2)" }}>Notifikasi dari stasiun cuaca dan pasang BMKG resmi</div>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={eventTypes.includes("peringatan_bmkg")} 
-                onChange={() => toggleEventType("peringatan_bmkg")} 
-                style={{ accentColor: "var(--blue)", width: "16px", height: "16px" }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Quiet Hours */}
-        <div className="settings-section">
-          <div className="settings-section-title">Jam Sunyi (Tidak Diganggu)</div>
-          <div className="card">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-              <div>
-                <div style={{ fontSize: "13px", fontWeight: 500 }}>Aktifkan jam sunyi</div>
-                <div style={{ fontSize: "11px", color: "var(--tx2)", marginTop: "1px" }}>Notifikasi non-kritis ditahan selama jam ini</div>
-              </div>
-              <label className="toggle-switch">
-                <input 
-                  type="checkbox" 
-                  checked={quietHoursEnabled} 
-                  onChange={(e) => setQuietHoursEnabled(e.target.checked)} 
-                />
-                <span className="toggle-track"><span className="toggle-thumb"></span></span>
-              </label>
-            </div>
-            
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "12px" }}>
-              <div>
-                <label style={{ fontSize: "11px", fontWeight: 500, color: "var(--tx2)", display: "block", marginBottom: "5px" }}>Mulai jam sunyi</label>
-                <input 
-                  type="time" 
-                  value={quietStart} 
-                  disabled={!quietHoursEnabled}
-                  onChange={(e) => setQuietStart(e.target.value)}
-                  style={{ width: "100%", padding: "9px 12px", border: "1px solid var(--bd)", borderRadius: "var(--radius)", fontSize: "13px" }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: "11px", fontWeight: 500, color: "var(--tx2)", display: "block", marginBottom: "5px" }}>Selesai jam sunyi</label>
-                <input 
-                  type="time" 
-                  value={quietEnd} 
-                  disabled={!quietHoursEnabled}
-                  onChange={(e) => setQuietEnd(e.target.value)}
-                  style={{ width: "100%", padding: "9px 12px", border: "1px solid var(--bd)", borderRadius: "var(--radius)", fontSize: "13px" }}
-                />
-              </div>
-            </div>
-
-            <div style={{ background: "var(--amber-bg)", border: "1px solid #fde68a", borderRadius: "var(--radius)", padding: "10px 12px", fontSize: "11px", color: "var(--amber)", display: "flex", alignItems: "center", gap: "8px" }}>
-              <Icon name="warning" style={{ fontSize: "14px", color: "var(--amber)" }} />
-              Peringatan Sangat Tinggi dan darurat tetap dikirim meskipun jam sunyi aktif.
-            </div>
-          </div>
-        </div>
-
-        {/* Wilayah Pantau */}
-        <div className="settings-section">
-          <div className="settings-section-title">Wilayah Pantau</div>
-          <div className="card">
-            <div style={{ fontSize: "12px", color: "var(--tx2)", marginBottom: "12px" }}>Notifikasi akan dikirim untuk kelurahan/kecamatan berikut:</div>
-            
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
-              {monitoredRegions.map((region) => (
-                <span key={region} style={{ background: "var(--bg1)", border: "1px solid var(--bd)", borderRadius: "999px", padding: "4px 12px", fontSize: "11px", display: "flex", alignItems: "center", gap: "5px" }}>
-                  {region} 
-                  <button 
-                    onClick={() => handleRemoveRegion(region)}
-                    style={{ border: "none", background: "none", cursor: "pointer", padding: "0 0 0 2px", fontSize: "12px", color: "var(--tx3)", display: "flex", alignItems: "center" }}
-                  >
-                    &times;
-                  </button>
-                </span>
-              ))}
-
-              {showAddForm ? (
-                <form onSubmit={handleAddRegion} style={{ display: "inline-flex", gap: "6px", alignItems: "center" }}>
+              
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>Aktifkan mode jam sunyi</div>
+                  <div style={{ fontSize: "12px", color: "var(--ink-soft)", marginTop: "2px" }}>Tahan notifikasi non-kritis selama periode ini</div>
+                </div>
+                <label style={{ position: "relative", width: "44px", height: "24px", cursor: "pointer" }}>
                   <input 
-                    type="text" 
-                    placeholder="Nama wilayah..." 
-                    value={newRegion}
-                    onChange={(e) => setNewRegion(e.target.value)}
-                    autoFocus
-                    style={{ padding: "4px 8px", border: "1px solid var(--bd)", borderRadius: "var(--radius)", fontSize: "11px" }}
+                    type="checkbox" 
+                    checked={quietHoursEnabled} 
+                    onChange={(e) => setQuietHoursEnabled(e.target.checked)} 
+                    style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
                   />
-                  <button type="submit" style={{ padding: "4px 8px", fontSize: "11px", background: "var(--brand)", color: "#fff", borderColor: "var(--brand)" }}>Tambah</button>
-                  <button type="button" onClick={() => setShowAddForm(false)} style={{ padding: "4px 8px", fontSize: "11px" }}>Batal</button>
-                </form>
-              ) : (
-                <button 
-                  onClick={() => setShowAddForm(true)}
-                  style={{ background: "none", border: "1px dashed var(--bd)", borderRadius: "999px", padding: "4px 12px", fontSize: "11px", color: "var(--blue)", cursor: "pointer" }}
-                >
-                  <Icon name="add" style={{ fontSize: "11px", verticalAlign: "middle", marginRight: "3px" }} /> Tambah wilayah
-                </button>
-              )}
-            </div>
+                  <span style={{ 
+                    position: "absolute", top: 0, left: 0, right: 0, bottom: 0, 
+                    background: quietHoursEnabled ? "var(--critical)" : "var(--line)", 
+                    borderRadius: "24px", transition: "0.3s" 
+                  }}>
+                    <span style={{ 
+                      position: "absolute", height: "18px", width: "18px", left: "3px", bottom: "3px", 
+                      background: "#fff", borderRadius: "50%", transition: "0.3s",
+                      transform: quietHoursEnabled ? "translateX(20px)" : "translateX(0)" 
+                    }} />
+                  </span>
+                </label>
+              </div>
+
+              <AnimatePresence>
+                {quietHoursEnabled && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px", paddingTop: "16px", borderTop: "1px solid var(--line)" }}>
+                      <div>
+                        <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-soft)", display: "block", marginBottom: "6px" }}>Mulai (WIB)</label>
+                        <input 
+                          type="time" 
+                          value={quietStart} 
+                          onChange={(e) => setQuietStart(e.target.value)}
+                          style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--line)", borderRadius: "var(--radius)", fontSize: "14px", color: "var(--ink)", background: "var(--surface)" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-soft)", display: "block", marginBottom: "6px" }}>Selesai (WIB)</label>
+                        <input 
+                          type="time" 
+                          value={quietEnd} 
+                          onChange={(e) => setQuietEnd(e.target.value)}
+                          style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--line)", borderRadius: "var(--radius)", fontSize: "14px", color: "var(--ink)", background: "var(--surface)" }}
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              <div style={{ background: "var(--warning-soft)", border: "1px solid #fde68a", borderRadius: "var(--radius)", padding: "12px 16px", fontSize: "12px", color: "#92400e", display: "flex", gap: "12px", alignItems: "start", marginTop: "8px" }}>
+                <Icon name="warning" style={{ fontSize: "18px", color: "#d97706", flexShrink: 0 }} />
+                <div style={{ lineHeight: 1.5 }}>
+                  Peringatan <strong>Sangat Tinggi</strong> dan darurat evakuasi akan <strong>tetap dikirimkan</strong> meskipun jam sunyi sedang aktif.
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Right Column */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            
+            {/* Event Subscriptions Panel */}
+            <motion.div variants={itemVariants} className="panel flush">
+              <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Icon name="checklist" style={{ color: "var(--success)" }} /> Berlangganan Peristiwa
+                </h3>
+              </div>
+              <div>
+                {[
+                  { id: "bahaya_sangat_tinggi", title: "Peringatan bahaya Sangat Tinggi", desc: "Wilayah pantau mencapai kelas Sangat Tinggi" },
+                  { id: "laporan_ground_truth", title: "Laporan warga (Ground Truth)", desc: "Ada laporan kerusakan baru dari relawan/warga" },
+                  { id: "pembaruan_model", title: "Pembaruan model AI", desc: "Model spasial diperbarui dengan data pasang terbaru" },
+                  { id: "ringkasan_harian", title: "Ringkasan metrik harian", desc: "Laporan harian kondisi risiko masuk pada 06:00 WIB" },
+                  { id: "peringatan_bmkg", title: "Peringatan cuaca ekstrem BMKG", desc: "Peringatan resmi dari stasiun maritim Panjang" },
+                ].map((event) => (
+                  <label 
+                    key={event.id} 
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--line)", cursor: "pointer", transition: "background 0.2s" }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--surface-soft)"}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 600, color: "var(--ink)", fontSize: "14px" }}>{event.title}</div>
+                      <div style={{ fontSize: "12px", color: "var(--ink-soft)", marginTop: "2px" }}>{event.desc}</div>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={eventTypes.includes(event.id)} 
+                      onChange={() => toggleEventType(event.id)} 
+                      style={{ accentColor: "var(--accent)", width: "18px", height: "18px", cursor: "pointer" }}
+                    />
+                  </label>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Monitored Regions Panel */}
+            <motion.div variants={itemVariants} className="panel">
+              <h3 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 12px 0", display: "flex", alignItems: "center", gap: "8px" }}>
+                <Icon name="my_location" style={{ color: "var(--brand)" }} /> Wilayah Pantau
+              </h3>
+              <p style={{ fontSize: "13px", color: "var(--ink-soft)", margin: "0 0 16px 0", lineHeight: 1.5 }}>
+                Batasi notifikasi hanya untuk kelurahan atau kecamatan tertentu. Kosongkan untuk menerima notifikasi seluruh area Provinsi.
+              </p>
+              
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+                <AnimatePresence>
+                  {monitoredRegions.map((region) => (
+                    <motion.span 
+                      key={region} 
+                      initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
+                      style={{ background: "var(--brand-soft)", border: "1px solid var(--brand)", borderRadius: "20px", padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: "var(--brand)", display: "flex", alignItems: "center", gap: "6px" }}
+                    >
+                      {region} 
+                      <button 
+                        onClick={() => handleRemoveRegion(region)}
+                        style={{ border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--brand)", padding: 0 }}
+                        title="Hapus wilayah"
+                      >
+                        <Icon name="close" style={{ fontSize: "14px" }} />
+                      </button>
+                    </motion.span>
+                  ))}
+                </AnimatePresence>
+
+                {showAddForm ? (
+                  <form onSubmit={handleAddRegion} style={{ display: "inline-flex", gap: "8px", alignItems: "center" }}>
+                    <input 
+                      type="text" 
+                      placeholder="Contoh: Kel. Sukaraja" 
+                      value={newRegion}
+                      onChange={(e) => setNewRegion(e.target.value)}
+                      autoFocus
+                      style={{ padding: "8px 12px", border: "1px solid var(--accent)", borderRadius: "var(--radius)", fontSize: "12px", outline: "none" }}
+                    />
+                    <button type="submit" className="btn primary" style={{ padding: "6px 12px", fontSize: "12px", minHeight: "32px" }}>Tambah</button>
+                    <button type="button" onClick={() => setShowAddForm(false)} className="btn secondary" style={{ padding: "6px 12px", fontSize: "12px", minHeight: "32px" }}>Batal</button>
+                  </form>
+                ) : (
+                  <button 
+                    onClick={() => setShowAddForm(true)}
+                    style={{ background: "none", border: "1px dashed var(--line)", borderRadius: "20px", padding: "6px 12px", fontSize: "12px", fontWeight: 500, color: "var(--ink-soft)", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}
+                    onMouseOver={(e) => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
+                    onMouseOut={(e) => { e.currentTarget.style.color = "var(--ink-soft)"; e.currentTarget.style.borderColor = "var(--line)"; }}
+                  >
+                    <Icon name="add" style={{ fontSize: "14px" }} /> Tambah Area Pantau
+                  </button>
+                )}
+              </div>
+            </motion.div>
+
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", paddingTop: "4px" }}>
-          <button 
-            type="button" 
-            onClick={fetchSettings}
-            style={{ background: "var(--bg1)", borderColor: "var(--bd)", color: "var(--tx2)" }}
-          >
-            Batal
+        <motion.div variants={itemVariants} style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "32px", paddingTop: "24px", borderTop: "1px solid var(--line)" }}>
+          <button type="button" onClick={fetchSettings} className="btn secondary" style={{ minWidth: "100px" }}>Batal</button>
+          <button className="btn primary" onClick={handleSave} disabled={isLoading} style={{ minWidth: "160px" }}>
+            <Icon name="save" /> {isLoading ? "Menyimpan..." : "Simpan Perubahan"}
           </button>
-          <button 
-            className="btn-primary" 
-            onClick={handleSave} 
-            disabled={isLoading}
-          >
-            <Icon name="save" style={{ fontSize: "13px" }} /> {isLoading ? "Menyimpan..." : "Simpan Perubahan"}
-          </button>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </AppShell>
   );
 }

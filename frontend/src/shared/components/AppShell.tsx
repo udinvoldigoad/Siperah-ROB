@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { motion } from "framer-motion";
 import { navItems } from "../../app/navigation";
 import { Icon } from "./Icon";
 import { Breadcrumbs, type BreadcrumbItem } from "./Breadcrumbs";
@@ -44,7 +45,6 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
             <span className="brand-mark"><Icon name="water_drop" /></span>
             <span className="brand-copy">
               <strong>SIPERAH-RoB</strong>
-              <span>Prediksi Risiko Banjir Rob Lampung</span>
             </span>
           </a>
           <button
@@ -87,14 +87,14 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
                   type="button" 
                   className="user-trigger"
                   onClick={() => setUserMenuOpen((v) => !v)}
-                  style={{ border: "none", background: "transparent" }}
+                  style={{ border: "none", background: "transparent", display: "flex", alignItems: "center", gap: "10px", textAlign: "left", cursor: "pointer" }}
                 >
-                  <div className="user-avatar">BP</div>
-                  <div className="user-info">
-                    <strong>Operator BPBD</strong>
-                    <span>Prov. Lampung</span>
+                  <div className="user-avatar" style={{ background: "var(--accent)", color: "#fff", width: "36px", height: "36px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "14px" }}>BP</div>
+                  <div className="user-info" style={{ display: "flex", flexDirection: "column" }}>
+                    <strong style={{ fontSize: "13px", color: "var(--ink)", lineHeight: 1.2 }}>Operator BPBD</strong>
+                    <span style={{ fontSize: "11px", color: "var(--ink-soft)" }}>Prov. Lampung</span>
                   </div>
-                  <Icon name={isUserMenuOpen ? "expand_less" : "expand_more"} />
+                  <Icon name={isUserMenuOpen ? "expand_less" : "expand_more"} style={{ color: "var(--ink-soft)" }} />
                 </button>
                 
                 {isUserMenuOpen && (
@@ -121,7 +121,14 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
             )}
           </div>
         </div>
-        <div className="app-content">{children}</div>
+        <motion.div 
+          className="app-content"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
+          {children}
+        </motion.div>
       </div>
     </div>
   );
