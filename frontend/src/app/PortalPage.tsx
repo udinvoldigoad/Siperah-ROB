@@ -7,23 +7,23 @@ export function PortalPage() {
       {/* Google Fonts Load */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
 
       <style>{`
         /* Elite Design System Styles */
         .siperah-landing-root {
-          --bg-primary: #FAF9F6;
+          --bg-primary: #f1f5f9;
           --bg-card: #FFFFFF;
-          --bg-card-dark: #121314;
-          --ink-primary: #121314;
-          --ink-muted: #5C5E61;
-          --border-color: #E6E4DF;
-          --accent-blue: #1E40AF;
-          --accent-blue-soft: #EEF2F6;
+          --bg-card-dark: #0f172a;
+          --ink-primary: #0f172a;
+          --ink-muted: #475569;
+          --border-color: #e2e8f0;
+          --accent-blue: #1d4ed8;
+          --accent-blue-soft: #eff6ff;
           
           background-color: var(--bg-primary);
           color: var(--ink-primary);
-          font-family: 'Outfit', sans-serif;
+          font-family: 'Inter', sans-serif;
           min-height: 100vh;
           width: 100%;
           position: relative;
@@ -43,7 +43,7 @@ export function PortalPage() {
           width: 100%;
           height: 72px;
           padding: 0 60px;
-          background: rgba(250, 249, 246, 0.9);
+          background: rgba(241, 245, 249, 0.9);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-bottom: 1px solid var(--border-color);
@@ -65,7 +65,7 @@ export function PortalPage() {
           justify-content: center;
           width: 30px;
           height: 30px;
-          background: var(--ink-primary);
+          background: linear-gradient(135deg, #1e40af, #3b82f6);
           color: #fff;
           border-radius: 6px;
           font-size: 1.1rem;
@@ -224,9 +224,9 @@ export function PortalPage() {
           width: 100%;
           height: 100vh;
           background-image: 
-            radial-gradient(circle at 50% 30%, rgba(30, 64, 175, 0.04) 0%, transparent 60%),
-            linear-gradient(rgba(230, 228, 223, 0.15) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(230, 228, 223, 0.15) 1px, transparent 1px);
+            radial-gradient(circle at 50% 30%, rgba(37, 99, 235, 0.04) 0%, transparent 60%),
+            linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
           background-size: 100% 100%, 80px 80px, 80px 80px;
           background-position: center;
           z-index: 1;
@@ -239,7 +239,7 @@ export function PortalPage() {
           overflow: hidden;
           border-top: 1px solid var(--border-color);
           border-bottom: 1px solid var(--border-color);
-          background: rgba(250, 249, 246, 0.5);
+          background: rgba(241, 245, 249, 0.5);
           padding: 24px 0;
           margin-bottom: 140px;
         }
