@@ -1,23 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
 :root {
-  --bg: #f3f6fa;
+  --bg: #FAF9F6;
   --surface: #ffffff;
-  --surface-soft: #f8fafc;
-  --surface-muted: #e8eef5;
-  --ink: #111827;
-  --ink-soft: #5b6678;
-  --line: #d8e0e9;
-  --accent: #155aa9;
-  --accent-dark: #0e3f76;
-  --accent-soft: #e7f0fb;
-  --critical: #b42318;
-  --high: #c2410c;
-  --medium: #a16207;
-  --low: #15803d;
-  --radius: 8px;
+  --surface-soft: #F5F3ED;
+  --surface-muted: #E6E4DF;
+  --ink: #121314;
+  --ink-soft: #5C5E61;
+  --line: #E6E4DF;
+  --accent: #1E40AF;
+  --accent-dark: #122456;
+  --accent-soft: #EEF2F6;
+  --critical: #B91C1C;
+  --high: #C2410C;
+  --medium: #A16207;
+  --low: #15803D;
+  --radius: 12px;
   --sidebar: 280px;
   background: var(--bg);
   color: var(--ink);
-  font-family: "Inter", Aptos, "Segoe UI", system-ui, sans-serif;
+  font-family: "Outfit", sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -261,7 +263,7 @@ p { color: var(--ink-soft); line-height: 1.62; max-width: 66ch; }
 }
 .app-shell.sidebar-collapsed { --sidebar-width: 76px; }
 .sidebar {
-  background: #10233b;
+  background: #121314;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   color: #dbe7f5;
   bottom: 0;
