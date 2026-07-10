@@ -77,127 +77,113 @@ export function AuditLogPage() {
   };
 
   return (
-    <AppShell active="audit" title="Audit Log Aktivitas" subtitle="Rekaman jejak tindakan sistem kebencanaan untuk akuntabilitas keamanan.">
-      <div className="stack" style={{ gap: "40px", padding: "12px 0" }}>
-        
-        {/* Metric Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "24px" }}>
-          <MetricCard metric={{ label: "Berhasil", value: String(successCount), note: "Aktivitas berjalan aman", tone: "success" }} />
-          <MetricCard metric={{ label: "Akses Ditolak", value: String(deniedCount), note: "Potensi masalah keamanan", tone: "critical" }} />
-          <MetricCard metric={{ label: "Sebagian Berhasil", value: String(partialCount), note: "Perlu pemeriksaan berkala" }} />
-          <MetricCard metric={{ label: "Total Catatan", value: String(logs.length), note: "Entri log tersimpan" }} />
+    <AppShell active="audit" title="Audit Log Aktivitas">
+      {/* KPI Grid */}
+      <div className="kpi-grid kpi-grid-4" style={{ marginBottom: "20px" }}>
+        <div className="kpi">
+          <small>Berhasil</small>
+          <div className="kpi-num" style={{ color: "#16a34a" }}>{successCount}</div>
+          <div className="kpi-sub">Aktivitas berjalan aman</div>
+        </div>
+        <div className="kpi">
+          <small>Akses Ditolak</small>
+          <div className="kpi-num" style={{ color: "#dc2626" }}>{deniedCount}</div>
+          <div className="kpi-sub">Potensi masalah keamanan</div>
+        </div>
+        <div className="kpi">
+          <small>Sebagian Berhasil</small>
+          <div className="kpi-num">{partialCount}</div>
+          <div className="kpi-sub">Perlu pemeriksaan berkala</div>
+        </div>
+        <div className="kpi">
+          <small>Total Catatan</small>
+          <div className="kpi-num">{logs.length}</div>
+          <div className="kpi-sub">Entri log tersimpan</div>
+        </div>
+      </div>
+
+      {/* Audit Log Card */}
+      <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: "20px" }}>
+        <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--bd)" }}>
+          <div className="card-title" style={{ margin: 0 }}>Jejak Aktivitas Sistem</div>
         </div>
 
-        {/* Audit Log Panel */}
-        <section 
-          className="panel" 
-          style={{ 
-            padding: "36px", 
-            borderRadius: "20px", 
-            background: "var(--surface)", 
-            border: "1px solid var(--line)", 
-            boxShadow: "0 12px 40px rgba(18, 19, 20, 0.02)"
-          }}
-        >
-          <div style={{ marginBottom: "28px" }}>
-            <h2 style={{ fontSize: "1.35rem", fontWeight: 800, letterSpacing: "-0.02em", margin: 0, color: "var(--ink)" }}>Jejak Aktivitas Sistem</h2>
-            <p style={{ fontSize: "0.92rem", color: "var(--ink-soft)", margin: "6px 0 0 0", lineHeight: 1.5 }}>Menampilkan payload log operasional terbaru untuk pencegahan malfungsi dan pelanggaran otorisasi.</p>
-          </div>
+        {/* Filter Bar */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", padding: "12px 16px", background: "var(--bg1)", borderBottom: "1px solid var(--bd)" }}>
+          <select value={action} onChange={(e) => setAction(e.target.value)} style={{ fontSize: "12px", padding: "6px 10px" }}>
+            <option value="">Semua Aksi</option>
+            <option value="approve_user">Approve User</option>
+            <option value="reject_user">Reject User</option>
+            <option value="reports.validate">Validasi Laporan</option>
+            <option value="auth.login">Login</option>
+          </select>
 
-          {/* Filter Bar */}
-          <section style={{ display: "flex", flexWrap: "wrap", gap: "16px", background: "var(--surface-soft)", padding: "20px", borderRadius: "16px", border: "1px solid var(--line)", marginBottom: "28px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexGrow: 1, minWidth: "180px" }}>
-              <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--ink-soft)" }}>Tindakan (Action)</span>
-              <select value={action} onChange={(e) => setAction(e.target.value)} style={{ padding: "10px 14px", borderRadius: "100px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontWeight: 600, fontSize: "0.88rem" }}>
-                <option value="">Semua Aksi</option>
-                <option value="approve_user">Approve User</option>
-                <option value="reject_user">Reject User</option>
-                <option value="reports.validate">Validasi Laporan</option>
-                <option value="auth.login">Login</option>
-              </select>
+          <select value={outcome} onChange={(e) => setOutcome(e.target.value)} style={{ fontSize: "12px", padding: "6px 10px" }}>
+            <option value="">Semua Hasil</option>
+            <option value="success">Berhasil</option>
+            <option value="fail">Gagal</option>
+            <option value="denied">Ditolak</option>
+            <option value="partial">Sebagian</option>
+          </select>
+
+          <input 
+            type="text" 
+            placeholder="Cari aktor, target..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ fontSize: "12px", padding: "6px 10px", flex: 1, border: "1px solid var(--bd)", borderRadius: "var(--radius)" }}
+          />
+        </div>
+
+        {/* Audit Logs Table */}
+        <div>
+          {isLoading ? (
+            <div style={{ padding: "20px" }}>Memuat log audit...</div>
+          ) : logs.length === 0 ? (
+            <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--tx3)" }}>
+              <Icon name="history_toggle_off" style={{ fontSize: "32px" }} />
+              <div style={{ fontWeight: 600, marginTop: "8px" }}>Log Kosong</div>
+              <div style={{ fontSize: "12px" }}>Tidak ada log yang cocok.</div>
             </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexGrow: 1, minWidth: "180px" }}>
-              <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--ink-soft)" }}>Status Hasil</span>
-              <select value={outcome} onChange={(e) => setOutcome(e.target.value)} style={{ padding: "10px 14px", borderRadius: "100px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontWeight: 600, fontSize: "0.88rem" }}>
-                <option value="">Semua Hasil</option>
-                <option value="success">Berhasil</option>
-                <option value="fail">Gagal</option>
-                <option value="denied">Ditolak</option>
-                <option value="partial">Sebagian</option>
-              </select>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexGrow: 2, minWidth: "240px" }}>
-              <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--ink-soft)" }}>Pencarian Kata Kunci</span>
-              <div style={{ position: "relative" }}>
-                <input 
-                  type="text" 
-                  placeholder="Cari actor, target, atau log ID..." 
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  style={{ padding: "10px 14px 10px 42px", width: "100%", borderRadius: "100px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: "0.88rem" }}
-                />
-                <Icon name="search" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--ink-soft)" }} />
-              </div>
-            </div>
-          </section>
-
-          {/* Audit Logs Table */}
-          <div style={{ overflowX: "auto" }}>
-            {isLoading ? (
-              <div style={{ textAlign: "center", padding: "64px 0", color: "var(--ink-soft)" }}>
-                <Icon name="progress_activity" style={{ animation: "spin 1s linear infinite", fontSize: "2.2rem", marginBottom: "12px", color: "var(--accent)" }} />
-                <div>Memuat catatan log audit...</div>
-              </div>
-            ) : logs.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "64px 0", color: "var(--ink-soft)", border: "1px dashed var(--line)", borderRadius: "16px" }}>
-                <div style={{ background: "var(--surface-soft)", width: "64px", height: "64px", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
-                  <Icon name="history_toggle_off" style={{ fontSize: "2rem", color: "var(--ink-soft)" }} />
-                </div>
-                <h3 style={{ fontSize: "1.1rem", fontWeight: 800, margin: "0 0 6px 0", color: "var(--ink)" }}>Log Kosong</h3>
-                <p style={{ margin: 0, fontSize: "0.88rem" }}>Tidak ada catatan log aktivitas yang cocok.</p>
-              </div>
-            ) : (
-              <table className="data-table" style={{ minWidth: 820, width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ borderBottom: "2px solid var(--line)", fontSize: "0.88rem", fontWeight: 800, color: "var(--ink-soft)" }}>
-                    <th style={{ textAlign: "left", padding: "14px 16px" }}>Waktu Kejadian</th>
-                    <th style={{ textAlign: "left", padding: "14px 16px" }}>Pengguna (Actor)</th>
-                    <th style={{ textAlign: "left", padding: "14px 16px" }}>Akses Role</th>
-                    <th style={{ textAlign: "left", padding: "14px 16px" }}>Aksi (Action)</th>
-                    <th style={{ textAlign: "left", padding: "14px 16px" }}>Sumber Daya (Target)</th>
-                    <th style={{ textAlign: "right", padding: "14px 16px" }}>Hasil</th>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Waktu Kejadian</th>
+                  <th>Aktor</th>
+                  <th>Role</th>
+                  <th>Aksi</th>
+                  <th>Target</th>
+                  <th style={{ textAlign: "right" }}>Hasil</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map((log) => (
+                  <tr key={log.id}>
+                    <td><span style={{ fontSize: "12px" }}>{formatDate(log.created_at)}</span></td>
+                    <td style={{ fontWeight: 500 }}>{log.actor_name}</td>
+                    <td>
+                      <span className="badge b-neutral" style={{ textTransform: "capitalize" }}>
+                        {log.actor_role.replace("bpbd_", "BPBD ").replace("_", " ")}
+                      </span>
+                    </td>
+                    <td><code style={{ fontSize: "11px" }}>{log.action}</code></td>
+                    <td><span style={{ fontSize: "12px" }}>{log.target_resource || "-"}</span></td>
+                    <td style={{ textAlign: "right" }}>
+                      <span className={`badge ${
+                        log.outcome === "success" ? "b-done" :
+                        log.outcome === "denied" ? "b-vhi" :
+                        log.outcome === "fail" ? "b-vhi" : "b-pending"
+                      }`}>
+                        {outcomes[log.outcome] || log.outcome}
+                      </span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {logs.map((log) => (
-                    <tr 
-                      key={log.id} 
-                      style={{ borderBottom: "1px solid var(--line)", transition: "background 0.2s ease" }}
-                      className="table-row-hover"
-                    >
-                      <td style={{ padding: "20px 16px", fontSize: "0.88rem", color: "var(--ink-soft)" }}>{formatDate(log.created_at)}</td>
-                      <td style={{ padding: "20px 16px", fontWeight: 700, color: "var(--ink)" }}>{log.actor_name}</td>
-                      <td style={{ padding: "20px 16px" }}>
-                        <span className="badge severity-sedang" style={{ textTransform: "capitalize", fontSize: "0.78rem", fontWeight: 700, background: "var(--accent-soft)", borderColor: "var(--line)", color: "var(--accent-dark)" }}>
-                          {log.actor_role.replace("bpbd_", "BPBD ").replace("_", " ")}
-                        </span>
-                      </td>
-                      <td style={{ padding: "20px 16px", fontFamily: "monospace", fontSize: "0.85rem", color: "var(--ink)" }}>{log.action}</td>
-                      <td style={{ padding: "20px 16px", color: "var(--ink-soft)", fontSize: "0.88rem" }}>{log.target_resource || "-"}</td>
-                      <td style={{ padding: "20px 16px", textAlign: "right" }}>
-                        <span className={`badge ${log.outcome === "success" ? "severity-ringan" : log.outcome === "denied" ? "severity-sangat_parah" : log.outcome === "fail" ? "severity-parah" : "status-menunggu"}`} style={{ fontSize: "0.78rem", fontWeight: 700 }}>
-                          {outcomes[log.outcome] || log.outcome}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </section>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </AppShell>
   );

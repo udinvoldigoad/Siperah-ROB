@@ -105,7 +105,7 @@ export function LoginPage() {
   return (
     <main className="login-layout">
       {/* Visual Left Banner */}
-      <section style={{ position: "relative", overflow: "hidden", borderRadius: 28, background: "linear-gradient(160deg, #0f172a, #1e3a5f)", color: "#fff", padding: 48, minHeight: 640 }}>
+      <section style={{ position: "relative", overflow: "hidden", borderRadius: "var(--radius)", background: "linear-gradient(160deg, #0f172a, #1e3a5f)", color: "#fff", padding: 48, minHeight: 640 }}>
         <div style={{ position: "relative", zIndex: 1 }}>
           <a className="brand" href="#/" style={{ color: "#fff", marginBottom: 28 }}><Icon name="water_drop" />SIPERAH-RoB</a>
           <h1 style={{ color: "#fff", fontSize: 56, maxWidth: 420, lineHeight: 1.1, fontWeight: 900 }}>Pantau ancaman banjir rob secara real-time</h1>
@@ -117,7 +117,7 @@ export function LoginPage() {
               ["283", "Kelurahan pesisir"],
               ["87%", "Akurasi model"],
             ].map(([value, label]) => (
-              <div key={label} style={{ background: "rgba(255,255,255,.08)", borderRadius: 16, padding: 14 }}>
+              <div key={label} style={{ background: "rgba(255,255,255,.08)", borderRadius: "var(--radius)", padding: 14 }}>
                 <div style={{ fontSize: 24, fontWeight: 800, color: "#bfdbfe" }}>{value}</div>
                 <div style={{ fontSize: 10, color: "rgba(255,255,255,.56)", marginTop: 4 }}>{label}</div>
               </div>
@@ -127,7 +127,7 @@ export function LoginPage() {
       </section>
 
       {/* Form Right Panel */}
-      <section className="panel" style={{ padding: 40, borderRadius: 28 }}>
+      <section className="panel" style={{ padding: 40, borderRadius: "var(--radius)" }}>
         <div style={{ display: "flex", gap: 0, marginBottom: 28, borderBottom: "2px solid var(--line)" }}>
           {[
             ["login", "Masuk"],

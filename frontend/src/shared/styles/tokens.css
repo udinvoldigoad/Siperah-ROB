@@ -1294,3 +1294,206 @@ code {
   font-size: 0.78rem;
   color: var(--ink-soft);
 }
+
+/* ==========================================================================
+   Classic Mockup Layout Styles (Recreated from Downloads/rob/_app.css)
+   ========================================================================== */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-topbar {
+  height: 52px;
+  background: var(--bg0);
+  border-bottom: 1px solid var(--bd);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tx1);
+}
+
+.breadcrumb-sep {
+  color: var(--tx3);
+  font-size: 10px;
+}
+
+.breadcrumb-current {
+  color: var(--tx2);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-actions select {
+  font-size: 12px;
+  padding: 6px 10px;
+  background: #fff;
+  border: 1px solid var(--bd);
+  border-radius: var(--radius);
+  color: var(--tx1);
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--bd);
+}
+
+.app-content {
+  padding: 20px;
+  flex: 1;
+}
+
+.alert-banner {
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--bd);
+}
+
+.alert-red {
+  background: var(--red-bg);
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.alert-warn {
+  background: var(--amber-bg);
+  border-color: #fde68a;
+  color: var(--amber);
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: #fff;
+  border: 1px solid var(--brand);
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary:hover {
+  background: #1e40af;
+}
+
+.kpi-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.kpi-grid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.kpi {
+  background: var(--bg0);
+  border: 1px solid var(--bd);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.kpi small {
+  font-size: 11px;
+  color: var(--tx2);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.kpi-num {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--tx0);
+  margin: 6px 0;
+}
+
+.kpi-sub {
+  font-size: 11px;
+  color: var(--tx3);
+}
+
+.card {
+  background: var(--bg0);
+  border: 1px solid var(--bd);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tx0);
+  margin-bottom: 16px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--bd);
+}
+
+.data-table th {
+  background: var(--bg1);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tx2);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.data-table td {
+  font-size: 13px;
+}
+
+.badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.b-info { background: var(--blue-bg); color: var(--blue); }
+.b-done { background: var(--green-bg); color: var(--green); }
+.b-neutral { background: var(--bg2); color: var(--tx2); }
+.b-pending { background: var(--amber-bg); color: var(--amber); }
+.b-vhi { background: var(--red-bg); color: var(--red); }
+.b-hi { background: #fff7ed; color: #ea580c; }
+.b-med { background: var(--amber-bg); color: var(--amber); }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+}
