@@ -1,13 +1,23 @@
+import { useEffect, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { MetricCard } from "../../shared/components/MetricCard";
+import { api } from "../../shared/api/client";
+import { useToast } from "../../shared/components/Toast";
+import { Icon } from "../../shared/components/Icon";
 
-const logs = [
-  ["09 Jul 2026 06:44", "Herman Wijaya", "bpbd_operator", "reports.validate", "GT-LPG-881", "success"],
-  ["09 Jul 2026 06:20", "Warga Mode Awam", "warga", "reports.create", "ROB-20260708-230944-T3GM", "success"],
-  ["09 Jul 2026 05:58", "Siti Aminah", "peneliti", "api.datasets.export", "Ground Truth Tervalidasi", "success"],
-  ["08 Jul 2026 23:10", "Budi Santoso", "admin", "users.approve", "akun peneliti", "partial"],
-  ["08 Jul 2026 22:41", "Anonim", "public", "auth.login", "admin@siperah.local", "denied"],
-];
+interface AuditLogData {
+  id: string;
+  actor_name: string;
+  actor_role: string;
+  action: string;
+  target_resource: string | null;
+  outcome: "success" | "fail" | "denied" | "partial";
+  created_at: string;
+}
+
+interface AuditLogResponse {
+  data: AuditLogData[];
+}
 
 const outcomes: Record<string, string> = {
   success: "Berhasil",
@@ -17,52 +27,163 @@ const outcomes: Record<string, string> = {
 };
 
 export function AuditLogPage() {
-  const successCount = logs.filter(([, , , , , outcome]) => outcome === "success").length;
-  const deniedCount = logs.filter(([, , , , , outcome]) => outcome === "denied").length;
-  const partialCount = logs.filter(([, , , , , outcome]) => outcome === "partial").length;
+  const toast = useToast();
+  const [logs, setLogs] = useState<AuditLogData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Filters
+  const [action, setAction] = useState("");
+  const [outcome, setOutcome] = useState("");
+  const [search, setSearch] = useState("");
+
+  const fetchLogs = async () => {
+    setIsLoading(true);
+    try {
+      const query = new URLSearchParams();
+      if (action) query.append("action", action);
+      if (outcome) query.append("outcome", outcome);
+      if (search) query.append("search", search);
+
+      const res = await api<AuditLogResponse>(`/admin/audit-logs?${query.toString()}`);
+      setLogs(res.data);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal memuat log audit.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, [action, outcome, search]);
+
+  const successCount = logs.filter((l) => l.outcome === "success").length;
+  const deniedCount = logs.filter((l) => l.outcome === "denied").length;
+  const partialCount = logs.filter((l) => l.outcome === "partial").length;
+
+  const formatDate = (isoStr: string) => {
+    try {
+      const date = new Date(isoStr);
+      return date.toLocaleString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (e) {
+      return isoStr;
+    }
+  };
 
   return (
-    <AppShell active="audit" title="Audit Log" subtitle="Jejak aksi penting untuk keamanan, validasi, dan kepatuhan operasional.">
-      <div className="stack">
-        <div className="metric-grid">
-          <MetricCard metric={{ label: "Berhasil", value: String(successCount), note: "Aktivitas aman", tone: "success" }} />
-          <MetricCard metric={{ label: "Ditolak", value: String(deniedCount), note: "Perlu cek akses", tone: "critical" }} />
-          <MetricCard metric={{ label: "Sebagian", value: String(partialCount), note: "Perlu review" }} />
-          <MetricCard metric={{ label: "Total log", value: String(logs.length), note: "Entri terbaru" }} />
+    <AppShell active="audit" title="Audit Log Aktivitas">
+      {/* KPI Grid */}
+      <div className="kpi-grid kpi-grid-4" style={{ marginBottom: "20px" }}>
+        <div className="kpi">
+          <small>Berhasil</small>
+          <div className="kpi-num" style={{ color: "#16a34a" }}>{successCount}</div>
+          <div className="kpi-sub">Aktivitas berjalan aman</div>
+        </div>
+        <div className="kpi">
+          <small>Akses Ditolak</small>
+          <div className="kpi-num" style={{ color: "#dc2626" }}>{deniedCount}</div>
+          <div className="kpi-sub">Potensi masalah keamanan</div>
+        </div>
+        <div className="kpi">
+          <small>Sebagian Berhasil</small>
+          <div className="kpi-num">{partialCount}</div>
+          <div className="kpi-sub">Perlu pemeriksaan berkala</div>
+        </div>
+        <div className="kpi">
+          <small>Total Catatan</small>
+          <div className="kpi-num">{logs.length}</div>
+          <div className="kpi-sub">Entri log tersimpan</div>
+        </div>
+      </div>
+
+      {/* Audit Log Card */}
+      <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: "20px" }}>
+        <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--bd)" }}>
+          <div className="card-title" style={{ margin: 0 }}>Jejak Aktivitas Sistem</div>
         </div>
 
-        <section className="panel" style={{ display: "grid", gap: 14 }}>
-          <div className="section-head">
-            <div>
-              <h2>Aktivitas terbaru</h2>
-              <p>Payload detail disimpan untuk investigasi, tetapi hanya ringkasan yang ditampilkan di daftar utama.</p>
+        {/* Filter Bar */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", padding: "12px 16px", background: "var(--bg1)", borderBottom: "1px solid var(--bd)" }}>
+          <select value={action} onChange={(e) => setAction(e.target.value)} style={{ fontSize: "12px", padding: "6px 10px" }}>
+            <option value="">Semua Aksi</option>
+            <option value="approve_user">Approve User</option>
+            <option value="reject_user">Reject User</option>
+            <option value="reports.validate">Validasi Laporan</option>
+            <option value="auth.login">Login</option>
+          </select>
+
+          <select value={outcome} onChange={(e) => setOutcome(e.target.value)} style={{ fontSize: "12px", padding: "6px 10px" }}>
+            <option value="">Semua Hasil</option>
+            <option value="success">Berhasil</option>
+            <option value="fail">Gagal</option>
+            <option value="denied">Ditolak</option>
+            <option value="partial">Sebagian</option>
+          </select>
+
+          <input 
+            type="text" 
+            placeholder="Cari aktor, target..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ fontSize: "12px", padding: "6px 10px", flex: 1, border: "1px solid var(--bd)", borderRadius: "var(--radius)" }}
+          />
+        </div>
+
+        {/* Audit Logs Table */}
+        <div>
+          {isLoading ? (
+            <div style={{ padding: "20px" }}>Memuat log audit...</div>
+          ) : logs.length === 0 ? (
+            <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--tx3)" }}>
+              <Icon name="history_toggle_off" style={{ fontSize: "32px" }} />
+              <div style={{ fontWeight: 600, marginTop: "8px" }}>Log Kosong</div>
+              <div style={{ fontSize: "12px" }}>Tidak ada log yang cocok.</div>
             </div>
-          </div>
-
-          <section className="filter-bar" style={{ marginBottom: 2 }}>
-            <label>Cari<input defaultValue="" placeholder="Actor, action, target" /></label>
-            <label>Outcome<select defaultValue=""><option value="">Semua</option><option>success</option><option>fail</option><option>denied</option><option>partial</option></select></label>
-            <label>Aksi<select defaultValue=""><option value="">Semua aksi</option><option>reports.validate</option><option>users.approve</option><option>auth.login</option></select></label>
-          </section>
-
-          <div style={{ overflowX: "auto" }}>
-            <table className="data-table" style={{ minWidth: 820 }}>
-              <thead><tr><th>Waktu</th><th>Actor</th><th>Role</th><th>Action</th><th>Target</th><th>Outcome</th></tr></thead>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Waktu Kejadian</th>
+                  <th>Aktor</th>
+                  <th>Role</th>
+                  <th>Aksi</th>
+                  <th>Target</th>
+                  <th style={{ textAlign: "right" }}>Hasil</th>
+                </tr>
+              </thead>
               <tbody>
-                {logs.map(([time, actor, role, action, target, outcome]) => (
-                  <tr key={`${time}-${action}`}>
-                    <td>{time}</td>
-                    <td>{actor}</td>
-                    <td><span className="badge status-menunggu" style={{ minHeight: 26, padding: "4px 8px" }}>{role}</span></td>
-                    <td>{action}</td>
-                    <td>{target}</td>
-                    <td><span className={`badge outcome-${outcome}`}>{outcomes[outcome]}</span></td>
+                {logs.map((log) => (
+                  <tr key={log.id}>
+                    <td><span style={{ fontSize: "12px" }}>{formatDate(log.created_at)}</span></td>
+                    <td style={{ fontWeight: 500 }}>{log.actor_name}</td>
+                    <td>
+                      <span className="badge b-neutral" style={{ textTransform: "capitalize" }}>
+                        {log.actor_role.replace("bpbd_", "BPBD ").replace("_", " ")}
+                      </span>
+                    </td>
+                    <td><code style={{ fontSize: "11px" }}>{log.action}</code></td>
+                    <td><span style={{ fontSize: "12px" }}>{log.target_resource || "-"}</span></td>
+                    <td style={{ textAlign: "right" }}>
+                      <span className={`badge ${
+                        log.outcome === "success" ? "b-done" :
+                        log.outcome === "denied" ? "b-vhi" :
+                        log.outcome === "fail" ? "b-vhi" : "b-pending"
+                      }`}>
+                        {outcomes[log.outcome] || log.outcome}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </section>
+          )}
+        </div>
       </div>
     </AppShell>
   );

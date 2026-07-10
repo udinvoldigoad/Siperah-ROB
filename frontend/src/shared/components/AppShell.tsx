@@ -8,7 +8,7 @@ const SIDEBAR_STORAGE_KEY = "siperah-sidebar";
 export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
   active: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   breadcrumbs?: BreadcrumbItem[];
   children: ReactNode;
 }) {
@@ -72,54 +72,57 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
           ))}
         </nav>
       </aside>
-      <main className="workspace">
-        <header className="topbar">
-          <div>
-            {breadcrumbs && <Breadcrumbs items={breadcrumbs} />}
-            <h1>{title}</h1>
-            <p>{subtitle}</p>
+      <div className="app-main">
+        <div className="app-topbar">
+          <div className="breadcrumb">
+            <Icon name="dashboard" style={{ fontSize: "16px", color: "var(--tx2)" }} />
+            <span className="breadcrumb-sep"><Icon name="chevron_right" style={{ fontSize: "10px" }} /></span>
+            <span className="breadcrumb-current">{title}</span>
           </div>
           
-          {isUserLoggedIn ? (
-            <div className="user-profile-menu" ref={userMenuRef}>
-              <button 
-                type="button" 
-                className="user-trigger"
-                onClick={() => setUserMenuOpen((v) => !v)}
-              >
-                <div className="user-avatar">BP</div>
-                <div className="user-info">
-                  <strong>Operator BPBD</strong>
-                  <span>Prov. Lampung</span>
-                </div>
-                <Icon name={isUserMenuOpen ? "expand_less" : "expand_more"} />
-              </button>
-              
-              {isUserMenuOpen && (
-                <div style={{
-                  position: "absolute",
-                  top: "calc(100% + 8px)",
-                  right: 0,
-                  background: "var(--surface)",
-                  border: "1px solid var(--line)",
-                  borderRadius: "var(--radius)",
-                  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                  minWidth: "180px",
-                  display: "grid",
-                  padding: "8px",
-                  zIndex: 10
-                }}>
-                  <a href="#/profile" className="btn secondary" style={{ justifyContent: "flex-start", border: "none", background: "transparent" }}>Profil Saya</a>
-                  <a href="#/login" className="btn secondary" style={{ justifyContent: "flex-start", border: "none", color: "var(--critical)", background: "transparent" }}>Keluar</a>
-                </div>
-              )}
-            </div>
-          ) : (
-            <a className="btn secondary topbar-action" href="#/login">Masuk</a>
-          )}
-        </header>
-        <section className="content">{children}</section>
-      </main>
+          <div className="topbar-actions">
+            {isUserLoggedIn ? (
+              <div className="user-profile-menu" ref={userMenuRef}>
+                <button 
+                  type="button" 
+                  className="user-trigger"
+                  onClick={() => setUserMenuOpen((v) => !v)}
+                  style={{ border: "none", background: "transparent" }}
+                >
+                  <div className="user-avatar">BP</div>
+                  <div className="user-info">
+                    <strong>Operator BPBD</strong>
+                    <span>Prov. Lampung</span>
+                  </div>
+                  <Icon name={isUserMenuOpen ? "expand_less" : "expand_more"} />
+                </button>
+                
+                {isUserMenuOpen && (
+                  <div style={{
+                    position: "absolute",
+                    top: "calc(100% + 8px)",
+                    right: 0,
+                    background: "var(--surface)",
+                    border: "1px solid var(--bd)",
+                    borderRadius: "var(--radius)",
+                    boxShadow: "var(--sh-md)",
+                    minWidth: "180px",
+                    display: "grid",
+                    padding: "8px",
+                    zIndex: 10
+                  }}>
+                    <a href="#/profile" className="btn secondary" style={{ justifyContent: "flex-start", border: "none", background: "transparent" }}>Profil Saya</a>
+                    <a href="#/login" className="btn secondary" style={{ justifyContent: "flex-start", border: "none", color: "var(--critical)", background: "transparent" }}>Keluar</a>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <a className="btn-primary" href="#/login">Masuk</a>
+            )}
+          </div>
+        </div>
+        <div className="app-content">{children}</div>
+      </div>
     </div>
   );
 }

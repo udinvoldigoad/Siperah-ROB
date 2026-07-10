@@ -1,142 +1,234 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { MetricCard } from "../../shared/components/MetricCard";
 import { useToast } from "../../shared/components/Toast";
 import { Skeleton } from "../../shared/components/Skeleton";
-import { fetchOperatorReports, operatorReports, severityLabels, statusLabels, updateOperatorReportStatus, type OperatorReport } from "../reports/reportData";
+import { fetchOperatorReports, severityLabels, updateOperatorReportStatus, type OperatorReport } from "../reports/reportData";
+import { Icon } from "../../shared/components/Icon";
 
 export function OperatorDashboardPage() {
   const [reports, setReports] = useState<OperatorReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const toast = useToast();
-  const toastRef = useRef(toast);
-  toastRef.current = toast;
+
+  const loadReports = async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchOperatorReports();
+      setUsersReport(data);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal memuat antrean laporan.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const setUsersReport = (data: any) => {
+    const mapped = data.map((item: any) => ({
+      id: item.id || item.db_id,
+      code: item.report_code,
+      village: item.village,
+      district: item.district,
+      regency: item.regency,
+      severity: item.severity,
+      status: item.status,
+      incidentTime: item.incident_time,
+      submittedAt: item.created_at ? new Date(item.created_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "Baru",
+      waterHeightCm: item.water_height_cm,
+      description: item.description,
+    }));
+    setReports(mapped);
+  };
 
   useEffect(() => {
-    let cancelled = false;
-    setIsLoading(true);
-    fetchOperatorReports()
-      .then((data) => {
-        if (!cancelled) setReports(data);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setReports(operatorReports);
-          toastRef.current.info("Backend belum tersedia. Menampilkan data contoh.");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setTimeout(() => setIsLoading(false), 800);
-      });
-    return () => { cancelled = true; };
+    loadReports();
   }, []);
 
-  async function handleValidate(report: OperatorReport) {
+  const handleValidate = async (report: OperatorReport) => {
     try {
       await updateOperatorReportStatus(report.id, "divalidasi");
       setReports((current) => current.filter((item) => item.id !== report.id));
-      toast.success(`Laporan ${report.code} berhasil divalidasi.`);
-    } catch {
-      toast.error("Status laporan belum tersimpan. Cek koneksi backend.");
+      toast.success(`Laporan ${report.code} berhasil divalidasi ke database.`);
+    } catch (err: any) {
+      toast.error("Gagal melakukan validasi laporan.");
     }
-  }
+  };
 
-  const pendingCount = reports.filter((report) => report.status === "menunggu").length;
-  const criticalCount = reports.filter((report) => report.severity === "parah" || report.severity === "sangat_parah").length;
+  const handleReject = async (report: OperatorReport) => {
+    try {
+      await updateOperatorReportStatus(report.id, "ditolak", "Ditolak oleh operator BPBD");
+      setReports((current) => current.filter((item) => item.id !== report.id));
+      toast.info(`Laporan ${report.code} telah ditolak.`);
+    } catch (err: any) {
+      toast.error("Gagal melakukan penolakan laporan.");
+    }
+  };
+
+  const pendingCount = reports.filter((r) => r.status === "menunggu").length;
+  const criticalCount = reports.filter((r) => r.severity === "parah" || r.severity === "sangat_parah").length;
 
   return (
-    <AppShell active="operator" title="Dashboard Operator BPBD" subtitle="Validasi laporan, pemantauan wilayah kerja, dan respon cepat untuk laporan ground truth.">
-      <div className="stack">
-        <div className="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+    <AppShell active="operator" title="Dashboard Operator BPBD">
+      {/* Alert Banner */}
+      <div className="alert-banner alert-red" style={{ marginBottom: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <Icon name="warning" style={{ fontSize: "18px", color: "var(--red)" }} />
           <div>
-            <strong style={{ display: "block", marginBottom: 3 }}>Peringatan aktif</strong>
-            <span>Pasang puncak diprediksi 21-23 Mei 2026. Prioritaskan laporan yang bertanda sangat tinggi.</span>
-          </div>
-          <a className="btn secondary" href="#/province">Lihat ringkasan provinsi</a>
-        </div>
-
-        <div className="metric-grid">
-          <MetricCard metric={{ label: "Laporan menunggu", value: String(pendingCount), note: `${reports.length} total laporan`, tone: "critical" }} />
-          <MetricCard metric={{ label: "Laporan divalidasi", value: "128", note: "Hari ini", tone: "success" }} />
-          <MetricCard metric={{ label: "Prioritas tinggi", value: String(criticalCount), note: "Perlu respons cepat" }} />
-          <MetricCard metric={{ label: "Respons rata-rata", value: "12 m", note: "Di bawah SLA" }} />
-        </div>
-
-        <section className="panel">
-          <div className="section-head">
-            <div>
-              <h2>Antrean laporan warga</h2>
-              <p>Laporan terbaru yang perlu diverifikasi operator wilayah.</p>
+            <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)" }}>
+              {pendingCount} laporan baru masuk · perlu verifikasi segera
             </div>
-            <div className="queue-tools">
-              <span>{reports.length} laporan terbaru</span>
-              <a className="btn secondary" href="#/reports">Tambah laporan</a>
+            <div style={{ fontSize: "11px", color: "var(--red)", marginTop: "1px" }}>
+              Utamakan validasi laporan dengan tingkat keparahan Sangat Parah.
             </div>
           </div>
-          <div className="report-list" role="list" aria-label="Antrean laporan warga">
+        </div>
+        <a className="btn-primary" href="#/province" style={{ fontSize: "11px", padding: "6px 12px" }}>
+          Ringkasan Provinsi <Icon name="arrow_forward" style={{ fontSize: "12px" }} />
+        </a>
+      </div>
+
+      {/* KPI Grid */}
+      <div className="kpi-grid kpi-grid-4" style={{ marginBottom: "20px" }}>
+        <div className="kpi">
+          <small>Kelurahan pantau aktif</small>
+          <div className="kpi-num">24</div>
+          <div className="kpi-sub">kecamatan pesisir</div>
+        </div>
+        <div className="kpi">
+          <small>Bahaya Sangat Tinggi</small>
+          <div className="kpi-num" style={{ color: "var(--red)" }}>{criticalCount}</div>
+          <div className="kpi-sub">kelurahan hari ini</div>
+        </div>
+        <div className="kpi">
+          <small>Laporan menunggu</small>
+          <div className="kpi-num" style={{ color: "var(--amber)" }}>{pendingCount}</div>
+          <div className="kpi-sub">perlu validasi</div>
+        </div>
+        <div className="kpi">
+          <small>Validasi bulan ini</small>
+          <div className="kpi-num" style={{ color: "var(--green)" }}>47</div>
+          <div className="kpi-sub">laporan disetujui</div>
+        </div>
+      </div>
+
+      {/* Main Content Layout */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        {/* Antrean Moderasi */}
+        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--bd)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="card-title" style={{ margin: 0 }}>Antrian Laporan Masuk</div>
+            <span className="badge b-vhi">{pendingCount} baru</span>
+          </div>
+
+          <div>
             {isLoading ? (
-              <div style={{ display: "grid", gap: 1, background: "var(--line)" }}>
-                {[1, 2, 3].map((i) => (
-                  <div key={i} style={{ background: "#fff", padding: "14px 16px", display: "grid", gridTemplateColumns: "minmax(280px, 1fr) 112px 96px auto", gap: 14 }}>
-                    <div>
-                      <Skeleton width="180px" height="20px" style={{ marginBottom: "8px" }} />
-                      <Skeleton width="240px" height="14px" style={{ marginBottom: "12px" }} />
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <Skeleton width="60px" height="24px" borderRadius="12px" />
-                        <Skeleton width="80px" height="24px" borderRadius="12px" />
-                      </div>
-                    </div>
-                    <div>
-                      <Skeleton width="60px" height="12px" style={{ marginBottom: "6px" }} />
-                      <Skeleton width="40px" height="18px" />
-                    </div>
-                    <div>
-                      <Skeleton width="40px" height="12px" style={{ marginBottom: "6px" }} />
-                      <Skeleton width="50px" height="18px" />
-                    </div>
-                    <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                      <Skeleton width="70px" height="36px" borderRadius="var(--radius)" />
-                      <Skeleton width="86px" height="36px" borderRadius="var(--radius)" />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <div style={{ padding: "20px" }}>Memuat laporan...</div>
             ) : reports.length === 0 ? (
-              <div className="report-empty">
-                <strong>Tidak ada antrean</strong>
-                <span>Semua laporan prioritas sudah diproses.</span>
+              <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--tx3)" }}>
+                <Icon name="verified_user" style={{ fontSize: "32px", color: "var(--green)" }} />
+                <div style={{ fontWeight: 600, marginTop: "8px" }}>Antrean Bersih</div>
+                <div style={{ fontSize: "12px" }}>Semua laporan telah diverifikasi.</div>
               </div>
             ) : (
               reports.map((report) => (
-                <article className={`report-row severity-left-${report.severity}`} key={report.id} role="listitem">
-                  <div className="report-main">
-                    <a className="report-title" href={`#/operator/reports/${report.id}`}>{report.code} {report.village}</a>
-                    <p>{report.district}, {report.regency}. {report.submittedAt}</p>
-                    <div className="report-chips">
-                      <span className={`badge severity-${report.severity}`}>{severityLabels[report.severity]}</span>
-                      <span className={`badge status-${report.status}`}>{statusLabels[report.status]}</span>
+                <div key={report.id} style={{ padding: "14px 16px", borderBottom: "1px solid var(--bd)", background: report.severity === "sangat_parah" || report.severity === "parah" ? "var(--red-bg)" : "transparent" }}>
+                  <div style={{ display: "flex", alignItems: "start", justifyContent: "space-between", marginBottom: "8px" }}>
+                    <div>
+                      <div style={{ fontSize: "12px", fontWeight: 600 }}>Kel. {report.village} &bull; Kec. {report.district}</div>
+                      <div style={{ fontSize: "11px", color: "var(--tx2)", marginTop: "2px" }}>Dilaporkan: {report.submittedAt} &bull; oleh warga ({report.waterHeightCm ? `${report.waterHeightCm} cm` : "-"})</div>
                     </div>
+                    <span className={`badge ${
+                      report.severity === "sangat_parah" ? "b-vhi" :
+                      report.severity === "parah" ? "b-hi" :
+                      report.severity === "sedang" ? "b-med" : "b-low"
+                    }`}>
+                      {report.severity.replace("_", " ")}
+                    </span>
                   </div>
-                  <div className="report-measure">
-                    <span>Tinggi air</span>
-                    <strong>{report.waterHeightCm === null ? "-" : `${report.waterHeightCm} cm`}</strong>
+                  <div style={{ fontSize: "11px", color: "var(--tx2)", marginBottom: "10px", padding: "8px", background: "var(--bg1)", borderRadius: "var(--radius)" }}>
+                    "{report.description}"
                   </div>
-                  <div className="report-measure">
-                    <span>SLA</span>
-                    <strong>{report.status === "menunggu" ? "20 m" : "Review"}</strong>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button 
+                      style={{ background: "var(--green)", color: "#fff", borderColor: "var(--green)", fontSize: "11px", flex: 1, justifyContent: "center" }}
+                      onClick={() => handleValidate(report)}
+                    >
+                      <Icon name="check" style={{ fontSize: "12px" }} /> Validasi
+                    </button>
+                    <button 
+                      style={{ background: "var(--red)", color: "#fff", borderColor: "var(--red)", fontSize: "11px", flex: 1, justifyContent: "center" }}
+                      onClick={() => handleReject(report)}
+                    >
+                      <Icon name="close" style={{ fontSize: "12px" }} /> Tolak
+                    </button>
+                    <a href={`#/operator/reports/${report.id}`} style={{ textDecoration: "none" }}>
+                      <button style={{ fontSize: "11px", padding: "6px 10px" }}>
+                        <Icon name="visibility" style={{ fontSize: "12px" }} /> Detail
+                      </button>
+                    </a>
                   </div>
-                  <div className="report-actions">
-                    <a className="btn secondary" href={`#/operator/reports/${report.id}`}>Detail</a>
-                    <button className="btn primary" type="button" onClick={() => handleValidate(report)}>Validasi</button>
-                  </div>
-                </article>
+                </div>
               ))
             )}
           </div>
-        </section>
+        </div>
+
+        {/* Status Kelurahan */}
+        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--bd)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="card-title" style={{ margin: 0 }}>Status Kelurahan Bandar Lampung</div>
+            <a href="#/map" style={{ fontSize: "11px", color: "var(--blue)", textDecoration: "none" }}><Icon name="map" style={{ fontSize: "12px" }} /> Buka peta</a>
+          </div>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Kecamatan / Kelurahan</th>
+                <th>Bahaya</th>
+                <th style={{ textAlign: "right" }}>Pop. risiko</th>
+                <th>Update</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{ fontWeight: 500 }}>Telukbetung Selatan</td>
+                <td><span className="badge b-vhi">Sangat Tinggi</span></td>
+                <td style={{ textAlign: "right" }}>23,140</td>
+                <td><span style={{ fontSize: "11px", color: "var(--tx3)" }}>05:00</span></td>
+              </tr>
+              <tr>
+                <td style={{ fontWeight: 500 }}>Panjang</td>
+                <td><span className="badge b-hi">Tinggi</span></td>
+                <td style={{ textAlign: "right" }}>9,800</td>
+                <td><span style={{ fontSize: "11px", color: "var(--tx3)" }}>05:00</span></td>
+              </tr>
+              <tr>
+                <td style={{ fontWeight: 500 }}>Kangkung</td>
+                <td><span className="badge b-hi">Tinggi</span></td>
+                <td style={{ textAlign: "right" }}>7,200</td>
+                <td><span style={{ fontSize: "11px", color: "var(--tx3)" }}>05:00</span></td>
+              </tr>
+              <tr>
+                <td style={{ fontWeight: 500 }}>Way Halim Permai</td>
+                <td><span className="badge b-vhi">Sangat Tinggi</span></td>
+                <td style={{ textAlign: "right" }}>11,200</td>
+                <td><span style={{ fontSize: "11px", color: "var(--tx3)" }}>05:00</span></td>
+              </tr>
+              <tr>
+                <td style={{ fontWeight: 500 }}>Sukaraja</td>
+                <td><span className="badge b-vhi">Sangat Tinggi</span></td>
+                <td style={{ textAlign: "right" }}>8,760</td>
+                <td><span style={{ fontSize: "11px", color: "var(--tx3)" }}>05:00</span></td>
+              </tr>
+              <tr>
+                <td style={{ fontWeight: 500 }}>Labuhan Ratu</td>
+                <td><span className="badge b-med">Sedang</span></td>
+                <td style={{ textAlign: "right" }}>5,400</td>
+                <td><span style={{ fontSize: "11px", color: "var(--tx3)" }}>05:00</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </AppShell>
   );
 }
-
-

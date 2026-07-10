@@ -32,6 +32,8 @@ npm-debug.log*
 
 # === Database ===
 database/*.sqlite
+database/local-data/
+pg_server.log
 
 # === Misc ===
 .env

@@ -10,7 +10,10 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     headers.set("Content-Type", "application/json");
   }
 
-  if (options.token) {
+  const token = localStorage.getItem("siperah-token");
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  } else if (options.token) {
     headers.set("Authorization", `Bearer ${options.token}`);
   }
 

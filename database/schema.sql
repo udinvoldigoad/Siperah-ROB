@@ -1,3 +1,5 @@
+create extension if not exists postgis;
+
 create type user_role as enum ('warga', 'bpbd_operator', 'bpbd_provinsi', 'peneliti', 'admin');
 create type user_status as enum ('menunggu', 'aktif', 'nonaktif', 'ditolak');
 create type risk_class as enum ('rendah', 'sedang', 'tinggi', 'sangat_tinggi');

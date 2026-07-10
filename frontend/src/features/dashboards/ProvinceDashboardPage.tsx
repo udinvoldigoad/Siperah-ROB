@@ -1,127 +1,247 @@
+import { useEffect, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { MetricCard } from "../../shared/components/MetricCard";
+import { api } from "../../shared/api/client";
+import { useToast } from "../../shared/components/Toast";
+import { Icon } from "../../shared/components/Icon";
 
-const regencies = [
-  ["Lampung Selatan", "Sangat Tinggi", "82%", "128.400 jiwa", "Prioritas evakuasi"],
-  ["Bandar Lampung", "Tinggi", "74%", "84.200 jiwa", "Pantau pasang malam"],
-  ["Pesisir Barat", "Tinggi", "68%", "41.700 jiwa", "Koordinasi posko"],
-  ["Tanggamus", "Sedang", "46%", "29.900 jiwa", "Monitoring harian"],
-] as const;
+interface SummaryData {
+  monitored_regencies: number;
+  high_risk_villages: number;
+  risk_population: number;
+  validated_reports_this_month: number;
+}
 
-const trend = [22, 31, 38, 34, 42, 47, 52] as const;
+interface PredictionData {
+  id: string;
+  region_id: string;
+  prediction_date: string;
+  risk_probability: number;
+  risk_class: "rendah" | "sedang" | "tinggi" | "sangat_tinggi";
+  confidence_score: number | null;
+  max_tidal_height: number | null;
+  peak_time: string | null;
+  village: string;
+  district: string;
+  regency: string;
+}
 
-const topVillages = [
-  ["Telukbetung Selatan", "Bandar Lampung", "Sangat Tinggi", "23.140", "0.92", "3"],
-  ["Kalianda", "Lampung Selatan", "Sangat Tinggi", "12.650", "0.89", "2"],
-  ["Way Halim Permai", "Bandar Lampung", "Sangat Tinggi", "11.200", "0.87", "1"],
-  ["Panjang Utara", "Bandar Lampung", "Tinggi", "10.430", "0.85", "4"],
-] as const;
+interface SummaryResponse {
+  data: SummaryData;
+}
+
+interface PredictionListResponse {
+  data: PredictionData[];
+}
 
 export function ProvinceDashboardPage() {
-  return (
-    <AppShell active="province" title="Dashboard BPBD Provinsi" subtitle="Ringkasan lintas kabupaten, tren 30 hari, dan prioritas koordinasi.">
-      <div className="stack province-dashboard">
-        <section className="alert" style={{ display: "grid", gap: 6 }}>
-          <strong>Peringatan BMKG aktif</strong>
-          <span>Pasang puncak 21-23 Mei 2026. Empat kabupaten masuk kelas Sangat Tinggi dan perlu koordinasi lintas wilayah.</span>
-        </section>
+  const toast = useToast();
+  const [summary, setSummary] = useState<SummaryData>({
+    monitored_regencies: 15,
+    high_risk_villages: 42,
+    risk_population: 284000,
+    validated_reports_this_month: 1204,
+  });
+  const [predictions, setPredictions] = useState<PredictionData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-        <div className="metric-grid">
-          <MetricCard metric={{ label: "Kab. pantau aktif", value: "7", note: "dari 15 kab/kota Lampung" }} />
-          <MetricCard metric={{ label: "Kel. bahaya tinggi+", value: "42", note: "dari 283 kel. pesisir", tone: "critical" }} />
-          <MetricCard metric={{ label: "Populasi risiko", value: "148.920", note: "jiwa dalam zona bahaya" }} />
-          <MetricCard metric={{ label: "Laporan ground truth", value: "127", note: "divalidasi bulan ini", tone: "success" }} />
+  const fetchDashboardData = async () => {
+    setIsLoading(true);
+    try {
+      const summaryRes = await api<SummaryResponse>("/dashboard/province/summary");
+      setSummary(summaryRes.data);
+
+      const predRes = await api<PredictionListResponse>("/public/predictions");
+      setPredictions(predRes.data);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal memuat data ringkasan provinsi.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const getRegencySummary = () => {
+    const map: Record<string, { count: number; maxProb: number; class: string }> = {};
+    predictions.forEach((p) => {
+      if (!map[p.regency]) {
+        map[p.regency] = { count: 0, maxProb: 0, class: "rendah" };
+      }
+      map[p.regency].count += 1;
+      if (p.risk_probability > map[p.regency].maxProb) {
+        map[p.regency].maxProb = p.risk_probability;
+        map[p.regency].class = p.risk_class;
+      }
+    });
+
+    return Object.entries(map).map(([name, val]) => ({
+      name,
+      riskClass: val.class,
+      probability: `${val.maxProb}%`,
+      villagesCount: `${val.count} Kelurahan`,
+      priority: val.class === "sangat_tinggi" || val.class === "tinggi" ? "Prioritas Evakuasi / Pantau Pasang" : "Monitoring Harian",
+    }));
+  };
+
+  const regenciesData = getRegencySummary();
+
+  return (
+    <AppShell active="province" title="Dashboard BPBD Provinsi">
+      {/* Alert Banner */}
+      <div className="alert-banner alert-red" style={{ marginBottom: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <Icon name="warning" style={{ fontSize: "18px", color: "#b91c1c" }} />
+          <div>
+            <div style={{ fontSize: "12px", fontWeight: 600, color: "#7f1d1d" }}>
+              Peringatan BMKG aktif · pasang puncak harian
+            </div>
+            <div style={{ fontSize: "11px", color: "#991b1b", marginTop: "1px" }}>
+              Seluruh daerah kabupaten pesisir teluk lampung masuk klasifikasi waspada tingkat tinggi.
+            </div>
+          </div>
+        </div>
+        <button style={{ background: "#fff", color: "#b91c1c", borderColor: "#fecaca", fontSize: "11px" }}>
+          Lihat detail <Icon name="arrow_forward" style={{ fontSize: "12px" }} />
+        </button>
+      </div>
+
+      {/* KPI Grid */}
+      <div className="kpi-grid kpi-grid-4" style={{ marginBottom: "20px" }}>
+        <div className="kpi">
+          <small>Kab. pantau aktif</small>
+          <div className="kpi-num">{summary.monitored_regencies}</div>
+          <div className="kpi-sub">dari 15 kab/kota Lampung</div>
+        </div>
+        <div className="kpi">
+          <small>Kelurahan bahaya tinggi+</small>
+          <div className="kpi-num" style={{ color: "#b91c1c" }}>{summary.high_risk_villages}</div>
+          <div className="kpi-sub">dari 283 kel. pesisir</div>
+        </div>
+        <div className="kpi">
+          <small>Populasi risiko</small>
+          <div className="kpi-num">{summary.risk_population.toLocaleString("id-ID")}</div>
+          <div className="kpi-sub">jiwa dalam zona bahaya</div>
+        </div>
+        <div className="kpi">
+          <small>Laporan ground truth</small>
+          <div className="kpi-num" style={{ color: "#15803d" }}>{summary.validated_reports_this_month}</div>
+          <div className="kpi-sub">divalidasi bulan ini</div>
+        </div>
+      </div>
+
+      {/* 2-Column Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
+        {/* Table per Kabupaten */}
+        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--bd)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="card-title" style={{ margin: 0 }}>Risiko per Kabupaten</div>
+            <button style={{ fontSize: "11px" }}><Icon name="sort" style={{ fontSize: "13px" }} />Urutkan</button>
+          </div>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Kabupaten</th>
+                <th style={{ textAlign: "right" }}>Kelas Kerawanan</th>
+                <th style={{ textAlign: "right" }}>Probabilitas</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {regenciesData.map((item) => (
+                <tr key={item.name}>
+                  <td style={{ fontWeight: 500 }}>{item.name}</td>
+                  <td style={{ textAlign: "right" }}>
+                    <span className={`badge ${
+                      item.riskClass === "sangat_tinggi" ? "b-vhi" :
+                      item.riskClass === "tinggi" ? "b-hi" :
+                      item.riskClass === "sedang" ? "b-med" : "b-low"
+                    }`}>
+                      {item.riskClass.replace("_", " ")}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: "right", fontFamily: "monospace" }}>{item.probability}</td>
+                  <td><span style={{ fontSize: "11px", color: "var(--tx3)" }}>{item.villagesCount}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
-        <section className="panel">
-          <div className="section-head">
-            <div>
-              <h2>Tren risiko 30 hari</h2>
-              <p>Fokus pada kenaikan jumlah kelurahan sangat tinggi, bukan seluruh spektrum kelas bahaya.</p>
-            </div>
-            <span className="badge severity-parah">Random Forest v1.2.0</span>
+        {/* Timeline Chart */}
+        <div className="card">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+            <div className="card-title" style={{ margin: 0 }}>Prediksi 30 Hari — Tingkat Ancaman Banjir Rob</div>
           </div>
-
-          <div style={{ display: "grid", gap: 10 }}>
-            <div style={{ height: 220, display: "flex", alignItems: "end", gap: 10, paddingBottom: 4, borderBottom: "1px solid var(--line)" }}>
-              {trend.map((value, index) => (
-                <div key={`${value}-${index}`} style={{ flex: 1, display: "flex", alignItems: "end", justifyContent: "center", minHeight: 200 }}>
+          <div style={{ display: "grid", gap: 12 }}>
+            <div style={{ height: 180, display: "flex", alignItems: "end", gap: 16, paddingBottom: 4, borderBottom: "1px solid var(--bd)" }}>
+              {[22, 31, 38, 34, 42, 47, summary.high_risk_villages].map((value, index) => (
+                <div key={index} style={{ flex: 1, display: "flex", alignItems: "end", justifyContent: "center" }}>
                   <div
                     title={`${value} kelurahan`}
                     style={{
                       width: "100%",
-                      maxWidth: 20,
-                      height: `${value * 2.8}px`,
-                      borderRadius: "10px 10px 0 0",
-                      background: value >= 45 ? "#dc2626" : value >= 35 ? "#ea580c" : value >= 25 ? "#d97706" : "#16a34a",
-                      opacity: 0.92,
+                      maxWidth: 24,
+                      height: `${Math.min(value * 2.8, 150)}px`,
+                      borderRadius: "4px 4px 0 0",
+                      background: value >= 40 ? "#dc2626" : value >= 30 ? "#ea580c" : "#2563eb",
+                      opacity: 0.9,
                     }}
                   />
                 </div>
               ))}
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--ink-soft)" }}>
-              <span>1 Mei</span>
-              <span style={{ color: "#dc2626", fontWeight: 800 }}>Puncak 21</span>
-              <span>30 Mei</span>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", color: "var(--tx3)" }}>
+              <span>Awal Bulan</span>
+              <span style={{ color: "#dc2626", fontWeight: 700 }}>Pasang Maksimum Hari Ini</span>
+              <span>Akhir Bulan</span>
             </div>
           </div>
-        </section>
+        </div>
+      </div>
 
-        <section className="panel" style={{ padding: 0, overflow: "hidden" }}>
-          <div style={{ padding: 14, borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-            <div>
-              <h2 style={{ marginBottom: 6 }}>Risiko per Kabupaten</h2>
-              <p style={{ margin: 0 }}>Ringkasan kabupaten prioritas untuk memudahkan koordinasi dan alokasi respons.</p>
-            </div>
-            <button className="btn secondary" type="button">Ekspor CSV</button>
-          </div>
-          <div className="province-table-wrap">
-            <table className="data-table province-table">
-              <thead>
-                <tr><th style={{ width: "24%" }}>Kabupaten</th><th style={{ width: "16%" }}>Kelas</th><th style={{ width: "14%" }}>Probabilitas</th><th style={{ width: "22%" }}>Populasi risiko</th><th style={{ width: "24%" }}>Prioritas</th></tr>
-              </thead>
-              <tbody>
-                {regencies.map(([name, risk, probability, population, priority]) => (
-                  <tr key={name}>
-                    <td style={{ fontWeight: 700 }}>{name}</td>
-                    <td><span className={`badge ${risk === "Sangat Tinggi" ? "severity-sangat_parah" : risk === "Tinggi" ? "severity-parah" : "severity-sedang"}`}>{risk}</span></td>
-                    <td>{probability}</td>
-                    <td>{population}</td>
-                    <td>{priority}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="panel" style={{ padding: 0, overflow: "hidden" }}>
-          <div style={{ padding: 14, borderBottom: "1px solid var(--line)" }}>
-            <h2 style={{ marginBottom: 6 }}>Kelurahan prioritas tertinggi</h2>
-            <p style={{ margin: 0 }}>Daftar singkat wilayah yang perlu dipantau terlebih dahulu.</p>
-          </div>
-          <div className="province-table-wrap">
-            <table className="data-table province-table">
-              <thead>
-                <tr><th style={{ width: 44 }}>#</th><th style={{ width: "22%" }}>Kelurahan</th><th style={{ width: "18%" }}>Kabupaten</th><th style={{ width: "16%" }}>Kelas</th><th style={{ width: "16%", textAlign: "right" }}>Populasi risiko</th><th style={{ width: "12%", textAlign: "right" }}>Confidence</th><th style={{ width: "12%" }}>Laporan GT</th></tr>
-              </thead>
-              <tbody>
-                {topVillages.map(([village, regency, severity, population, confidence, reports], index) => (
-                  <tr key={village}>
-                    <td style={{ color: "var(--ink-soft)" }}>{index + 1}</td>
-                    <td style={{ fontWeight: 700 }}>{village}</td>
-                    <td>{regency}</td>
-                    <td><span className={`badge ${severity === "Sangat Tinggi" ? "severity-sangat_parah" : severity === "Tinggi" ? "severity-parah" : "severity-sedang"}`}>{severity}</span></td>
-                    <td style={{ textAlign: "right" }}>{population}</td>
-                    <td style={{ textAlign: "right", color: "#15803d" }}>{confidence}</td>
-                    <td><span className="badge status-divalidasi">{reports}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+      {/* Kelurahan Paling Terdampak */}
+      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--bd)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div className="card-title" style={{ margin: 0 }}>10 Kelurahan Paling Terdampak</div>
+          <button style={{ fontSize: "11px" }}><Icon name="download" style={{ fontSize: "13px" }} />Ekspor CSV</button>
+        </div>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Kelurahan</th>
+              <th>Kabupaten</th>
+              <th>Kelas Bahaya</th>
+              <th style={{ textAlign: "right" }}>Maks Pasang</th>
+              <th style={{ textAlign: "right" }}>Confidence</th>
+              <th>Laporan GT</th>
+            </tr>
+          </thead>
+          <tbody>
+            {predictions.slice(0, 5).map((p, index) => (
+              <tr key={p.id}>
+                <td style={{ color: "var(--tx3)" }}>{index + 1}</td>
+                <td style={{ fontWeight: 500 }}>{p.village}</td>
+                <td>{p.regency}</td>
+                <td>
+                  <span className={`badge ${
+                    p.risk_class === "sangat_tinggi" ? "b-vhi" :
+                    p.risk_class === "tinggi" ? "b-hi" :
+                    p.risk_class === "sedang" ? "b-med" : "b-low"
+                  }`}>
+                    {p.risk_class.replace("_", " ")}
+                  </span>
+                </td>
+                <td style={{ textAlign: "right", fontWeight: 600 }}>{p.max_tidal_height ? `${p.max_tidal_height} m` : "-"}</td>
+                <td style={{ textAlign: "right", color: "#15803d" }}>{p.confidence_score ? `${(p.confidence_score / 100).toFixed(2)}` : "0.80"}</td>
+                <td><span className="badge b-done">3</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </AppShell>
   );

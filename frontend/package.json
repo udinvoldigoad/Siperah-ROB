@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/geist-sans": "^5.2.5",
     "@vitejs/plugin-react": "^4.3.0",
     "echarts": "^5.5.0",
     "maplibre-gl": "^4.7.0",

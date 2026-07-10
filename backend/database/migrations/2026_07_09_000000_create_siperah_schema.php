@@ -7,7 +7,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::unprepared(file_get_contents(base_path('../database/schema.sql')));
+        $sql = file_get_contents(base_path('../database/schema.sql'));
+        $sql = str_replace('create extension if not exists postgis;', '', $sql);
+        DB::unprepared($sql);
     }
 
     public function down(): void
