@@ -231,8 +231,8 @@ export function NotificationSettingsPage() {
           
           <div className="setting-row">
             <div className="setting-left">
-              <div className="setting-icon" style={{ background: "#eff6ff" }}>
-                <Icon name="notifications" style={{ color: "#1d4ed8", fontSize: "18px" }} />
+              <div className="setting-icon" style={{ background: "var(--bg2)" }}>
+                <Icon name="notifications" style={{ color: "var(--tx1)", fontSize: "18px" }} />
               </div>
               <div>
                 <div className="setting-label">Push notifikasi browser</div>
@@ -251,8 +251,8 @@ export function NotificationSettingsPage() {
 
           <div className="setting-row">
             <div className="setting-left">
-              <div className="setting-icon" style={{ background: "#f0fdf4" }}>
-                <Icon name="mail" style={{ color: "#15803d", fontSize: "18px" }} />
+              <div className="setting-icon" style={{ background: "var(--bg2)" }}>
+                <Icon name="mail" style={{ color: "var(--tx1)", fontSize: "18px" }} />
               </div>
               <div>
                 <div className="setting-label">Email</div>
@@ -271,8 +271,8 @@ export function NotificationSettingsPage() {
 
           <div className="setting-row">
             <div className="setting-left">
-              <div className="setting-icon" style={{ background: "#f0fdf4" }}>
-                <Icon name="chat" style={{ color: "#25d366", fontSize: "18px" }} />
+              <div className="setting-icon" style={{ background: "var(--bg2)" }}>
+                <Icon name="chat" style={{ color: "var(--tx1)", fontSize: "18px" }} />
               </div>
               <div>
                 <div className="setting-label">WhatsApp</div>
@@ -291,8 +291,8 @@ export function NotificationSettingsPage() {
 
           <div className="setting-row">
             <div className="setting-left">
-              <div className="setting-icon" style={{ background: "#faf5ff" }}>
-                <Icon name="smartphone" style={{ color: "#7c3aed", fontSize: "18px" }} />
+              <div className="setting-icon" style={{ background: "var(--bg2)" }}>
+                <Icon name="smartphone" style={{ color: "var(--tx1)", fontSize: "18px" }} />
               </div>
               <div>
                 <div className="setting-label">SMS</div>
@@ -423,8 +423,8 @@ export function NotificationSettingsPage() {
               </div>
             </div>
 
-            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "var(--radius)", padding: "10px 12px", fontSize: "11px", color: "#92400e", display: "flex", alignItems: "center", gap: "8px" }}>
-              <Icon name="warning" style={{ fontSize: "14px", color: "#d97706" }} />
+            <div style={{ background: "var(--amber-bg)", border: "1px solid #fde68a", borderRadius: "var(--radius)", padding: "10px 12px", fontSize: "11px", color: "var(--amber)", display: "flex", alignItems: "center", gap: "8px" }}>
+              <Icon name="warning" style={{ fontSize: "14px", color: "var(--amber)" }} />
               Peringatan Sangat Tinggi dan darurat tetap dikirim meskipun jam sunyi aktif.
             </div>
           </div>
@@ -459,7 +459,7 @@ export function NotificationSettingsPage() {
                     autoFocus
                     style={{ padding: "4px 8px", border: "1px solid var(--bd)", borderRadius: "var(--radius)", fontSize: "11px" }}
                   />
-                  <button type="submit" style={{ padding: "4px 8px", fontSize: "11px", background: "var(--blue)", color: "#fff", borderColor: "var(--blue)" }}>Tambah</button>
+                  <button type="submit" style={{ padding: "4px 8px", fontSize: "11px", background: "var(--brand)", color: "#fff", borderColor: "var(--brand)" }}>Tambah</button>
                   <button type="button" onClick={() => setShowAddForm(false)} style={{ padding: "4px 8px", fontSize: "11px" }}>Batal</button>
                 </form>
               ) : (

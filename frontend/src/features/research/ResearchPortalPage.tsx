@@ -109,7 +109,7 @@ export function ResearchPortalPage() {
         </div>
         <div className="kpi">
           <small>Status Kunci API</small>
-          <div className="kpi-num" style={{ color: activeKey ? "#15803d" : "var(--tx2)" }}>
+          <div className="kpi-num" style={{ color: activeKey ? "var(--green)" : "var(--tx2)" }}>
             {activeKey ? "Aktif" : "Nonaktif"}
           </div>
           <div className="kpi-sub">{activeKey ? "Siap digunakan" : "Belum digenerasi"}</div>
@@ -130,34 +130,34 @@ export function ResearchPortalPage() {
           </button>
         </div>
 
-        <div style={{ background: "#0f172a", borderRadius: "var(--radius)", padding: "16px", fontFamily: "monospace", color: "#f8fafc" }}>
+        <div style={{ background: "#000", borderRadius: "var(--radius)", padding: "16px", fontFamily: "monospace", color: "#ededed" }}>
           <div style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#dc2626" }}></span>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#d97706" }}></span>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#16a34a" }}></span>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--red)" }}></span>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--amber)" }}></span>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--green)" }}></span>
           </div>
 
           {rawGeneratedKey ? (
             <div>
-              <div style={{ fontSize: "11px", color: "#94a3b8", marginBottom: "6px" }}># SALIN KUNCI API ANDA SEKARANG (HANYA DITAMPILKAN SEKALI)</div>
-              <code style={{ fontSize: "13px", fontWeight: 700, color: "#38bdf8", wordBreak: "break-all", display: "block", background: "rgba(255,255,255,0.05)", padding: "10px", borderRadius: "4px", border: "1px dashed rgba(56, 189, 248, 0.3)" }}>
+              <div style={{ fontSize: "11px", color: "#888", marginBottom: "6px" }}># SALIN KUNCI API ANDA SEKARANG (HANYA DITAMPILKAN SEKALI)</div>
+              <code style={{ fontSize: "13px", fontWeight: 700, color: "#fff", wordBreak: "break-all", display: "block", background: "#111", padding: "10px", borderRadius: "4px", border: "1px solid #333" }}>
                 {rawGeneratedKey}
               </code>
             </div>
           ) : activeKey ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
               <div>
-                <div style={{ fontSize: "11px", color: "#94a3b8", marginBottom: "4px" }}># KUNCI API AKTIF SAAT INI</div>
-                <code style={{ fontSize: "13px", fontWeight: 700, color: "#4ade80", letterSpacing: "0.5px" }}>
+                <div style={{ fontSize: "11px", color: "#888", marginBottom: "4px" }}># KUNCI API AKTIF SAAT INI</div>
+                <code style={{ fontSize: "13px", fontWeight: 700, color: "#fff", letterSpacing: "0.5px" }}>
                   {activeKey.key_prefix}
                 </code>
               </div>
-              <div style={{ fontSize: "11px", color: "#94a3b8" }}>
+              <div style={{ fontSize: "11px", color: "#888" }}>
                 Dibuat pada {new Date(activeKey.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
               </div>
             </div>
           ) : (
-            <div style={{ color: "#94a3b8", fontSize: "12px" }}>
+            <div style={{ color: "#888", fontSize: "12px" }}>
               # BELUM ADA KUNCI API AKTIF. SILAKAN KLIK REGENERASI KEY.
             </div>
           )}

@@ -72,12 +72,12 @@ export function OperatorDashboardPage() {
       {/* Alert Banner */}
       <div className="alert-banner alert-red" style={{ marginBottom: "20px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <Icon name="warning" style={{ fontSize: "18px", color: "#b91c1c" }} />
+          <Icon name="warning" style={{ fontSize: "18px", color: "var(--red)" }} />
           <div>
-            <div style={{ fontSize: "12px", fontWeight: 600, color: "#7f1d1d" }}>
+            <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)" }}>
               {pendingCount} laporan baru masuk · perlu verifikasi segera
             </div>
-            <div style={{ fontSize: "11px", color: "#991b1b", marginTop: "1px" }}>
+            <div style={{ fontSize: "11px", color: "var(--red)", marginTop: "1px" }}>
               Utamakan validasi laporan dengan tingkat keparahan Sangat Parah.
             </div>
           </div>
@@ -96,17 +96,17 @@ export function OperatorDashboardPage() {
         </div>
         <div className="kpi">
           <small>Bahaya Sangat Tinggi</small>
-          <div className="kpi-num" style={{ color: "#b91c1c" }}>{criticalCount}</div>
+          <div className="kpi-num" style={{ color: "var(--red)" }}>{criticalCount}</div>
           <div className="kpi-sub">kelurahan hari ini</div>
         </div>
         <div className="kpi">
           <small>Laporan menunggu</small>
-          <div className="kpi-num" style={{ color: "#d97706" }}>{pendingCount}</div>
+          <div className="kpi-num" style={{ color: "var(--amber)" }}>{pendingCount}</div>
           <div className="kpi-sub">perlu validasi</div>
         </div>
         <div className="kpi">
           <small>Validasi bulan ini</small>
-          <div className="kpi-num" style={{ color: "#15803d" }}>47</div>
+          <div className="kpi-num" style={{ color: "var(--green)" }}>47</div>
           <div className="kpi-sub">laporan disetujui</div>
         </div>
       </div>
@@ -131,7 +131,7 @@ export function OperatorDashboardPage() {
               </div>
             ) : (
               reports.map((report) => (
-                <div key={report.id} style={{ padding: "14px 16px", borderBottom: "1px solid var(--bd)", background: report.severity === "sangat_parah" || report.severity === "parah" ? "#fef9f9" : "transparent" }}>
+                <div key={report.id} style={{ padding: "14px 16px", borderBottom: "1px solid var(--bd)", background: report.severity === "sangat_parah" || report.severity === "parah" ? "var(--red-bg)" : "transparent" }}>
                   <div style={{ display: "flex", alignItems: "start", justifyContent: "space-between", marginBottom: "8px" }}>
                     <div>
                       <div style={{ fontSize: "12px", fontWeight: 600 }}>Kel. {report.village} &bull; Kec. {report.district}</div>
@@ -150,13 +150,13 @@ export function OperatorDashboardPage() {
                   </div>
                   <div style={{ display: "flex", gap: "8px" }}>
                     <button 
-                      style={{ background: "#15803d", color: "#fff", borderColor: "#15803d", fontSize: "11px", flex: 1, justifyContent: "center" }}
+                      style={{ background: "var(--green)", color: "#fff", borderColor: "var(--green)", fontSize: "11px", flex: 1, justifyContent: "center" }}
                       onClick={() => handleValidate(report)}
                     >
                       <Icon name="check" style={{ fontSize: "12px" }} /> Validasi
                     </button>
                     <button 
-                      style={{ background: "#dc2626", color: "#fff", borderColor: "#dc2626", fontSize: "11px", flex: 1, justifyContent: "center" }}
+                      style={{ background: "var(--red)", color: "#fff", borderColor: "var(--red)", fontSize: "11px", flex: 1, justifyContent: "center" }}
                       onClick={() => handleReject(report)}
                     >
                       <Icon name="close" style={{ fontSize: "12px" }} /> Tolak

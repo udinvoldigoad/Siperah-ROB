@@ -80,12 +80,12 @@ export function AdminUsersPage() {
       {pendingCount > 0 && (
         <div className="alert-banner alert-warn" style={{ marginBottom: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <Icon name="notification_important" style={{ fontSize: "18px", color: "#d97706" }} />
+            <Icon name="notification_important" style={{ fontSize: "18px", color: "var(--amber)" }} />
             <div>
-              <div style={{ fontSize: "12px", fontWeight: 600, color: "#78350f" }}>
-                Ada {pendingCount} permintaan akun menunggu persetujuan
+              <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--amber)" }}>
+                {pendingCount} Pendaftaran Baru
               </div>
-              <div style={{ fontSize: "11px", color: "#92400e", marginTop: "1px" }}>
+              <div style={{ fontSize: "11px", color: "var(--amber)", marginTop: "1px" }}>
                 Tinjau dan lakukan tindakan approve/reject pada tabel daftar pengguna di bawah.
               </div>
             </div>
@@ -102,7 +102,7 @@ export function AdminUsersPage() {
         </div>
         <div className="kpi">
           <small>Menunggu Approval</small>
-          <div className="kpi-num" style={{ color: "#d97706" }}>{pendingCount}</div>
+          <div className="kpi-num" style={{ color: "var(--amber)" }}>{pendingCount}</div>
           <div className="kpi-sub">Butuh validasi admin</div>
         </div>
         <div className="kpi">
@@ -200,13 +200,13 @@ export function AdminUsersPage() {
                         {user.status === "menunggu" ? (
                           <>
                             <button 
-                              style={{ background: "#15803d", color: "#fff", borderColor: "#15803d", fontSize: "11px", padding: "4px 8px" }}
+                              style={{ background: "var(--green)", color: "#fff", borderColor: "var(--green)", fontSize: "11px", padding: "4px 8px" }}
                               onClick={() => handleApprove(user.id, user.name)}
                             >
                               Setujui
                             </button>
                             <button 
-                              style={{ background: "#dc2626", color: "#fff", borderColor: "#dc2626", fontSize: "11px", padding: "4px 8px" }}
+                              style={{ background: "var(--red)", color: "#fff", borderColor: "var(--red)", fontSize: "11px", padding: "4px 8px" }}
                               onClick={() => handleReject(user.id, user.name)}
                             >
                               Tolak

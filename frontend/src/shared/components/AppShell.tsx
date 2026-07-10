@@ -37,7 +37,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
   const isUserLoggedIn = active !== "map" && active !== "onboarding" && active !== "reports" && active !== "awam";
 
   return (
-    <div className={`app-layout ${isSidebarOpen ? "" : "sidebar-collapsed"}`}>
+    <div className={`app-shell ${isSidebarOpen ? "" : "sidebar-collapsed"}`}>
       <aside className="sidebar">
         <div className="sidebar-top">
           <a className="brand-block" href="#/">
@@ -103,9 +103,9 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
                     top: "calc(100% + 8px)",
                     right: 0,
                     background: "var(--surface)",
-                    border: "1px solid var(--line)",
+                    border: "1px solid var(--bd)",
                     borderRadius: "var(--radius)",
-                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                    boxShadow: "var(--sh-md)",
                     minWidth: "180px",
                     display: "grid",
                     padding: "8px",

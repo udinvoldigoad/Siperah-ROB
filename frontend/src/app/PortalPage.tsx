@@ -217,7 +217,7 @@ export function PortalPage() {
         }
 
         /* Abstract Grid / Radial Background Details */
-        .ambient-grid {
+        .siperah-landing-root .ambient-grid {
           position: absolute;
           top: 0;
           left: 0;
