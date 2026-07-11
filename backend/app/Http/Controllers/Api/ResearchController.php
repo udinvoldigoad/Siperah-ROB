@@ -15,44 +15,6 @@ final class ResearchController
     {
         $datasets = DB::table('datasets')->get();
 
-        if ($datasets->isEmpty()) {
-            // Seed sample datasets on the fly
-            $samples = [
-                [
-                    'id' => (string) Str::uuid(),
-                    'name' => 'Data Historis Pasang Surut Teluk Lampung (2020-2025)',
-                    'description' => 'Dataset rekaman tinggi muka air laut per jam dari stasiun pengamatan BMKG Panjang, Teluk Lampung.',
-                    'dataset_type' => 'Tidal Height Timeseries',
-                    'period_start' => '2020-01-01',
-                    'period_end' => '2025-12-31',
-                    'resolution' => 'Hourly',
-                    'record_count' => 52560,
-                    'license' => 'Open Database License (ODbL)',
-                    'csv_url' => '/api/v1/tidal?format=csv',
-                    'json_url' => '/api/v1/tidal?format=json',
-                    'visibility' => 'peneliti',
-                ],
-                [
-                    'id' => (string) Str::uuid(),
-                    'name' => 'Ground Truth Validasi Banjir Rob Lampung (2026)',
-                    'description' => 'Kumpulan laporan verifikasi banjir rob oleh warga dan petugas kebencanaan yang telah divalidasi.',
-                    'dataset_type' => 'Geospatial Ground Truth',
-                    'period_start' => '2026-01-01',
-                    'period_end' => '2026-07-10',
-                    'resolution' => 'Event-based',
-                    'record_count' => 1204,
-                    'license' => 'Creative Commons Attribution (CC BY 4.0)',
-                    'csv_url' => '/api/v1/reports?format=csv',
-                    'json_url' => '/api/v1/reports?format=json',
-                    'visibility' => 'peneliti',
-                ]
-            ];
-            foreach ($samples as $sample) {
-                DB::table('datasets')->insert($sample);
-            }
-            $datasets = DB::table('datasets')->get();
-        }
-
         return response()->json(['data' => $datasets]);
     }
 
@@ -116,10 +78,46 @@ final class ResearchController
         return response()->json(['data' => $reports]);
     }
 
-    public function tidal(): JsonResponse
+    public function tidal(Request $request)
     {
-        $tidal = DB::table('tidal_data')->orderBy('recorded_at', 'desc')->limit(100)->get();
+        $query = DB::table('tidal_data')->orderBy('recorded_at', 'desc')->limit(500);
 
-        return response()->json(['data' => $tidal]);
+        if ($request->query('format') === 'csv') {
+            return response()->streamDownload(function () use ($query) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, ['ID', 'Station', 'Code', 'Recorded At', 'Height (m)', 'Source']);
+                foreach ($query->cursor() as $row) {
+                    fputcsv($file, [
+                        $row->id, $row->station_name, $row->station_code, 
+                        $row->recorded_at, $row->tidal_height, $row->source
+                    ]);
+                }
+                fclose($file);
+            }, 'tidal_data.csv', ['Content-Type' => 'text/csv']);
+        }
+
+        return response()->json(['data' => $query->get()]);
+    }
+
+    public function reportsExport(Request $request)
+    {
+        $query = DB::table('ground_truth_reports')->where('status', 'divalidasi')->orderBy('created_at', 'desc');
+
+        if ($request->query('format') === 'csv') {
+            return response()->streamDownload(function () use ($query) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, ['ID', 'Code', 'Region ID', 'Latitude', 'Longitude', 'Severity', 'Water Height (cm)', 'Incident Time']);
+                foreach ($query->cursor() as $row) {
+                    fputcsv($file, [
+                        $row->id, $row->report_code, $row->region_id,
+                        $row->latitude, $row->longitude, $row->severity,
+                        $row->water_height_cm, $row->incident_time
+                    ]);
+                }
+                fclose($file);
+            }, 'ground_truth_reports.csv', ['Content-Type' => 'text/csv']);
+        }
+
+        return response()->json(['data' => $query->get()]);
     }
 }
