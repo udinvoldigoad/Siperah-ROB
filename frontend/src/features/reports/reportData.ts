@@ -17,7 +17,7 @@ export type OperatorReport = {
   reporter: string;
   coordinates: string;
   description: string;
-  photos: string[];
+  photos: { name: string; url?: string }[];
 };
 
 type BackendReport = {
@@ -69,7 +69,7 @@ export const operatorReports: OperatorReport[] = [
     reporter: "Rudi Hartono",
     coordinates: "-5.450000, 105.266667",
     description: "Genangan masuk ke akses pasar dan menutup sebagian jalan warga. Arus lambat, kendaraan roda dua mulai dialihkan.",
-    photos: ["Akses pasar", "Jalan lingkungan"],
+    photos: [{ name: "Akses pasar" }, { name: "Jalan lingkungan" }],
   },
   {
     id: "gt-lpg-881",
@@ -85,7 +85,7 @@ export const operatorReports: OperatorReport[] = [
     reporter: "Maya Puspita",
     coordinates: "-5.382120, 105.274010",
     description: "Air menutup bahu jalan dekat drainase utama. Perlu cek ulang karena lokasi cukup jauh dari pesisir.",
-    photos: ["Drainase", "Bahu jalan"],
+    photos: [{ name: "Drainase" }, { name: "Bahu jalan" }],
   },
   {
     id: "gt-lpg-879",
@@ -101,7 +101,7 @@ export const operatorReports: OperatorReport[] = [
     reporter: "Nabila Putri",
     coordinates: "-5.447830, 105.262440",
     description: "Air masuk ke rumah warga di gang rendah. Beberapa kepala keluarga memindahkan barang ke lantai atas.",
-    photos: ["Gang rendah", "Rumah warga"],
+    photos: [{ name: "Gang rendah" }, { name: "Rumah warga" }],
   },
 ];
 
@@ -124,7 +124,10 @@ function mapReport(report: BackendReport): OperatorReport {
     reporter: report.reporter?.name ?? "Warga",
     coordinates: `${report.latitude}, ${report.longitude}`,
     description: report.description,
-    photos: (report.photos ?? []).map((photo) => photo.name ?? photo.url ?? "Foto laporan"),
+    photos: (report.photos ?? []).map((photo) => ({
+      name: photo.name ?? "Foto laporan",
+      url: photo.url,
+    })),
   };
 }
 

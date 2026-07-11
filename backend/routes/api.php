@@ -29,7 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Reports — semua user login bisa lihat & buat
     Route::get('/reports', [ReportController::class, 'index']);
     Route::get('/reports/{report}', [ReportController::class, 'show']);
-    Route::post('/reports', [ReportController::class, 'store'])->middleware('role:warga');
+    Route::post('/reports', [ReportController::class, 'store']);
 
     // BPBD & Admin — validasi laporan + dashboard
     Route::middleware('role:bpbd_operator,bpbd_provinsi,admin')->group(function () {

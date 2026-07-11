@@ -192,7 +192,7 @@ export function NotificationSettingsPage() {
                       <span style={{ 
                         position: "absolute", top: 0, left: 0, right: 0, bottom: 0, 
                         background: channels.includes(ch.id) ? "var(--accent)" : "var(--line)", 
-                        borderRadius: "24px", transition: "0.3s" 
+                        borderRadius: 8, transition: "0.3s" 
                       }}>
                         <span style={{ 
                           position: "absolute", height: "18px", width: "18px", left: "3px", bottom: "3px", 
@@ -229,7 +229,7 @@ export function NotificationSettingsPage() {
                   <span style={{ 
                     position: "absolute", top: 0, left: 0, right: 0, bottom: 0, 
                     background: quietHoursEnabled ? "var(--critical)" : "var(--line)", 
-                    borderRadius: "24px", transition: "0.3s" 
+                    borderRadius: 8, transition: "0.3s" 
                   }}>
                     <span style={{ 
                       position: "absolute", height: "18px", width: "18px", left: "3px", bottom: "3px", 
@@ -333,7 +333,7 @@ export function NotificationSettingsPage() {
                     <motion.span 
                       key={region} 
                       initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-                      style={{ background: "var(--brand-soft)", border: "1px solid var(--brand)", borderRadius: "20px", padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: "var(--brand)", display: "flex", alignItems: "center", gap: "6px" }}
+                      style={{ background: "var(--brand-soft)", border: "1px solid var(--brand)", borderRadius: 8, padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: "var(--brand)", display: "flex", alignItems: "center", gap: "6px" }}
                     >
                       {region} 
                       <button 
@@ -363,7 +363,7 @@ export function NotificationSettingsPage() {
                 ) : (
                   <button 
                     onClick={() => setShowAddForm(true)}
-                    style={{ background: "none", border: "1px dashed var(--line)", borderRadius: "20px", padding: "6px 12px", fontSize: "12px", fontWeight: 500, color: "var(--ink-soft)", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}
+                    style={{ background: "none", border: "1px dashed var(--line)", borderRadius: 8, padding: "6px 12px", fontSize: "12px", fontWeight: 500, color: "var(--ink-soft)", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}
                     onMouseOver={(e) => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
                     onMouseOut={(e) => { e.currentTarget.style.color = "var(--ink-soft)"; e.currentTarget.style.borderColor = "var(--line)"; }}
                   >

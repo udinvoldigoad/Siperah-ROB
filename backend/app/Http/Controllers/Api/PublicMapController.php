@@ -42,10 +42,7 @@ final class PublicMapController
 
         if ($lat && $lon) {
             $region = Region::where('coastal_flag', true)
-                ->selectRaw("*, 
-                    ABS(CAST(SPLIT_PART(REPLACE(REPLACE(REPLACE(geometry, 'MULTIPOLYGON(((', ''), ')))', ''), ',', ' '), ' ', 2) AS FLOAT) - ?) +
-                    ABS(CAST(SPLIT_PART(REPLACE(REPLACE(REPLACE(geometry, 'MULTIPOLYGON(((', ''), ')))', ''), ',', ' '), ' ', 1) AS FLOAT) - ?) AS dist", 
-                    [(float)$lat, (float)$lon])
+                ->selectRaw("*, ST_Distance(geometry, ST_SetSRID(ST_MakePoint(?, ?), 4326)) AS dist", [(float)$lon, (float)$lat])
                 ->orderBy('dist')
                 ->first();
         } else {

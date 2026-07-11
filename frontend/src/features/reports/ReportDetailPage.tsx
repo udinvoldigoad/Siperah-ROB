@@ -73,21 +73,25 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
             </div>
           </div>
 
-          <div className="detail-grid">
+          <dl className="detail-grid">
             <div><dt>Pelapor</dt><dd>{report.reporter}</dd></div>
             <div><dt>Wilayah</dt><dd>{report.village}, {report.district}</dd></div>
             <div><dt>Waktu kejadian</dt><dd>{report.incidentTime}</dd></div>
             <div><dt>Tinggi air</dt><dd>{report.waterHeightCm === null ? "-" : `${report.waterHeightCm} cm`}</dd></div>
             <div><dt>Koordinat</dt><dd>{report.coordinates}</dd></div>
             <div><dt>Status</dt><dd>{report.status === "menunggu" ? "Menunggu validasi" : report.status === "perlu_review" ? "Perlu review" : statusLabels[report.status]}</dd></div>
-          </div>
+          </dl>
 
           <section style={{ display: "grid", gap: 10 }}>
             <h2 style={{ marginBottom: 0 }}>Foto dokumentasi</h2>
             <div className="photo-grid">
-              {report.photos.map((photo) => (
-                <figure className="report-photo" key={photo}>
-                  <span>{photo}</span>
+              {report.photos.map((photo, i) => (
+                <figure className="report-photo" key={i} style={{ margin: 0, overflow: "hidden", borderRadius: "var(--radius)", border: "1px solid var(--line)", background: "var(--surface-soft)", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 120 }}>
+                  {photo.url ? (
+                    <img src={photo.url} alt={photo.name} style={{ width: "100%", height: "auto", display: "block", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontSize: "0.85rem", color: "var(--ink-soft)" }}>{photo.name}</span>
+                  )}
                 </figure>
               ))}
             </div>

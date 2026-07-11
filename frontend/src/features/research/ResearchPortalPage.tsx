@@ -131,7 +131,7 @@ export function ResearchPortalPage() {
             { title: "Unduhan Bulan Ini", val: "312", sub: "oleh 18 peneliti" },
             { title: "API Call Hari Ini", val: "8,240", sub: "dari 5 aplikasi terdaftar" }
           ].map((kpi, i) => (
-            <div key={i} style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", padding: "20px" }}>
+            <div key={i} style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 8, padding: "20px" }}>
               <div style={{ fontSize: "12px", color: "var(--ink-soft)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.02em" }}>{kpi.title}</div>
               <div style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink)", margin: "8px 0" }}>{kpi.val}</div>
               <div style={{ fontSize: "12px", color: "var(--ink-soft)" }}>{kpi.sub}</div>
@@ -263,7 +263,7 @@ export function ResearchPortalPage() {
               <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "16px", color: "var(--ink)" }}>Endpoint Tersedia</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "40px" }}>
                 {endpoints.map((ep, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "16px", padding: "20px", border: "1px solid var(--line)", borderRadius: "12px", background: "var(--surface)" }}>
+                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "16px", padding: "20px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface)" }}>
                     <div style={{ background: "#dcfce7", color: "#15803d", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 700, fontFamily: "monospace" }}>{ep.method}</div>
                     <div>
                       <div style={{ fontFamily: "monospace", fontSize: "13px", color: "var(--ocean-dark, #0284c7)", marginBottom: "6px", fontWeight: 600 }}>{ep.path}</div>
@@ -274,7 +274,7 @@ export function ResearchPortalPage() {
               </div>
 
               <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "12px", color: "var(--ink)" }}>Contoh Request</div>
-              <div style={{ background: "#0f172a", borderRadius: "12px", padding: "20px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.6, overflowX: "auto" }}>
+              <div style={{ background: "#0f172a", borderRadius: 8, padding: "20px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.6, overflowX: "auto" }}>
                 <span style={{ color: "#93c5fd" }}>curl</span> -H <span style={{ color: "#86efac" }}>"Authorization: Bearer sk-siperah-..."</span> \<br />
                 &nbsp;&nbsp;<span style={{ color: "#86efac" }}>"https://api.siperah-rob.go.id/v1/predictions/daily?date=2026-05-21"</span>
               </div>
