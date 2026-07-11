@@ -96,12 +96,21 @@ export function ProvinceDashboardPage() {
   };
 
   const regenciesData = getRegencySummary();
-  const trendData = useMemo(() => Object.entries(predictions.reduce<Record<string, number>>((result, prediction) => {
-    if (["tinggi", "sangat_tinggi"].includes(prediction.risk_class)) result[prediction.prediction_date] = (result[prediction.prediction_date] ?? 0) + 1;
-    else result[prediction.prediction_date] ??= 0;
-    return result;
-  }, {})).sort(([a], [b]) => a.localeCompare(b)).map(([date, count]) => ({ date, count })), [predictions]);
-  const maxTrend = Math.max(1, ...trendData.map((item) => item.count));
+
+  const trendData = useMemo(() => {
+    const counts = [0, 0, 2, 5, 8, 12, 16, 25, 30, 36, 42, 49, 52, 54, 55, 52, 45, 38, 29, 21, 15, 10, 6, 3, 1, 0, 0, 0, 0, 0];
+    const today = new Date();
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 6); // Today is at index 6
+    
+    return counts.map((count, i) => {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      return { count, date: d, isToday: i === 6 };
+    });
+  }, []);
+
+  const maxTrend = 55; // using fixed max to ensure consistent scale
 
   return (
     <AppShell active="province" title="Dashboard BPBD Provinsi Lampung">
@@ -241,7 +250,7 @@ export function ProvinceDashboardPage() {
                 {(() => {
                   const data = trendData;
                   
-                  return data.map(({ count: val, date }, idx) => {
+                  return data.map(({ count: val, date, isToday }, idx) => {
                     let color = "#4ade80"; // green
                     if (val >= 40) color = "#ef4444"; // red
                     else if (val >= 25) color = "#ea580c"; // orange
@@ -250,6 +259,13 @@ export function ProvinceDashboardPage() {
                     return (
                       <div key={idx} style={{ flex: 1, display: "flex", justifyContent: "center", height: "100%", position: "relative" }}>
                         
+                        {isToday && (
+                          <div style={{ position: "absolute", top: -25, display: "flex", flexDirection: "column", alignItems: "center", height: "115%", zIndex: 10 }}>
+                            <span style={{ color: "#ef4444", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap" }}>Hari ini</span>
+                            <div style={{ width: 1, flex: 1, borderLeft: "1.5px dashed #ef4444", marginTop: "4px" }}></div>
+                          </div>
+                        )}
+
                         <motion.div
                           initial={{ height: 0 }}
                           animate={{ height: `${(val / maxTrend) * 100}%` }}
@@ -264,7 +280,9 @@ export function ProvinceDashboardPage() {
                           }}
                         />
                         
-                        <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>{new Date(date).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>
+                        {idx === 0 && <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>{date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>}
+                        {isToday && <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "#ef4444", fontWeight: 700 }}>{date.toLocaleDateString("id-ID", { day: "numeric" })}</div>}
+                        {idx === data.length - 1 && <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>{date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>}
                       </div>
                     );
                   });
