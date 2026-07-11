@@ -70,8 +70,8 @@ export function ReportWizardPage() {
       toast.success(`Laporan terkirim. Kode verifikasi: ${response.data.report_code}.`);
       form.reset();
       setSelectedSeverity("parah");
-    } catch {
-      toast.error("Laporan belum terkirim. Cek isian dan coba lagi.");
+    } catch (error: any) {
+      toast.error(error.message || "Laporan belum terkirim. Cek isian dan coba lagi.");
     } finally {
       setIsSubmitting(false);
     }
@@ -116,7 +116,7 @@ export function ReportWizardPage() {
 
             <section style={{ display: "grid", gap: 8 }}>
               <label style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Peta lokasi</label>
-              <div style={{ height: 240, position: "relative", overflow: "hidden", borderRadius: 16, background: "linear-gradient(160deg, #a8d0e6, #c8e4f0)", border: "1px solid var(--line)" }}>
+              <div style={{ height: 240, position: "relative", overflow: "hidden", borderRadius: 8, background: "linear-gradient(160deg, #a8d0e6, #c8e4f0)", border: "1px solid var(--line)" }}>
                 <svg width="100%" height="100%" viewBox="0 0 640 240" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
                   <defs>
                     <linearGradient id="sea" x1="0" x2="0" y1="0" y2="1">
@@ -149,7 +149,7 @@ export function ReportWizardPage() {
                       style={{
                         border: `2px solid ${isSelected ? option.tone : "var(--line)"}`,
                         background: isSelected ? `${option.tone}12` : "var(--surface)",
-                        borderRadius: 16,
+                        borderRadius: 8,
                         padding: 16,
                         textAlign: "center",
                         cursor: "pointer",
@@ -223,7 +223,7 @@ export function ReportWizardPage() {
               </div>
             </div>
 
-            <div style={{ background: "var(--accent-soft)", border: "1px solid rgba(99, 102, 241, 0.2)", borderRadius: 16, padding: 16, display: "flex", alignItems: "start", gap: 12 }}>
+            <div style={{ background: "var(--accent-soft)", border: "1px solid rgba(99, 102, 241, 0.2)", borderRadius: 8, padding: 16, display: "flex", alignItems: "start", gap: 12 }}>
               <input type="checkbox" defaultChecked style={{ marginTop: 4, width: 16, height: 16, accentColor: "var(--accent)", flexShrink: 0 }} />
               <span style={{ fontSize: 12.5, color: "var(--ink)", lineHeight: 1.6 }}>Saya menyatakan bahwa data yang dilaporkan adalah informasi nyata yang saya saksikan sendiri. Data ini akan digunakan untuk meningkatkan model prediksi banjir rob SIPERAH-RoB.</span>
             </div>

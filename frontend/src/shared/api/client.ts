@@ -20,7 +20,23 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
   const response = await fetch(`${apiBase}${path}`, { ...options, headers });
 
   if (!response.ok) {
-    throw new Error(`API ${response.status}: ${response.statusText}`);
+    if (response.status === 401) {
+      localStorage.removeItem("siperah-token");
+      window.dispatchEvent(new CustomEvent("siperah-auth-expired"));
+      window.location.hash = "#/login";
+    }
+
+    let msg = `API ${response.status}: ${response.statusText}`;
+    try {
+      const errJson = await response.json();
+      if (errJson.message) msg = errJson.message;
+    } catch {}
+    
+    if (response.status === 401) {
+      msg = "Sesi Anda telah habis. Silakan login kembali.";
+    }
+    
+    throw new Error(msg);
   }
 
   return response.json() as Promise<T>;

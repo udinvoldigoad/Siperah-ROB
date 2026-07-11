@@ -96,7 +96,7 @@ export function PublicMapPage() {
               <text x="465" y="235" style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fill: "#1e3a5f", fontWeight: 700, filter: "drop-shadow(0 1px 2px rgba(255,255,255,0.8))" }}>Lampung Selatan</text>
             </svg>
 
-            <div style={{ position: "absolute", top: 80, right: 16, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(4px)", border: "1px solid var(--line)", borderRadius: 12, overflow: "hidden", boxShadow: "var(--sh-md)", display: "grid" }}>
+            <div style={{ position: "absolute", top: 80, right: 16, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(4px)", border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden", boxShadow: "var(--sh-md)", display: "grid" }}>
               <button type="button" style={{ width: 36, height: 36, border: "none", borderBottom: "1px solid var(--line)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} aria-label="Zoom in">
                 <Icon name="add" style={{ fontSize: 20, color: "var(--ink)" }} />
               </button>
@@ -105,7 +105,7 @@ export function PublicMapPage() {
               </button>
             </div>
 
-            <div style={{ position: "absolute", bottom: 16, left: 16, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(4px)", border: "1px solid var(--line)", borderRadius: 16, padding: "16px", boxShadow: "var(--sh-md)" }}>
+            <div style={{ position: "absolute", bottom: 16, left: 16, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(4px)", border: "1px solid var(--line)", borderRadius: 8, padding: "16px", boxShadow: "var(--sh-md)" }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: "var(--ink)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>Legenda Area</div>
               <div style={{ display: "grid", gap: 10 }}>
                 {[

@@ -750,8 +750,8 @@ export function PortalPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#10b981" }}></div><strong style={{ minWidth: "120px" }}>Rendah</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&lt;25% Probabilitas)</span></div>
             </div>
           </div>
-          <div style={{ order: 2, background: "var(--ocean-primary)", borderRadius: "32px", padding: "40px", height: "400px", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
-            <div style={{ width: "80%", height: "80%", background: "url('https://maps.wikimedia.org/osm-intl/12/3246/2117.png')", backgroundSize: "cover", borderRadius: "24px", border: "4px solid rgba(255,255,255,0.2)", position: "absolute", filter: "grayscale(30%) sepia(20%) hue-rotate(180deg)" }}></div>
+          <div style={{ order: 2, background: "var(--ocean-primary)", borderRadius: 8, padding: "40px", height: "400px", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+            <div style={{ width: "80%", height: "80%", background: "url('https://maps.wikimedia.org/osm-intl/12/3246/2117.png')", backgroundSize: "cover", borderRadius: 8, border: "4px solid rgba(255,255,255,0.2)", position: "absolute", filter: "grayscale(30%) sepia(20%) hue-rotate(180deg)" }}></div>
             <div style={{ position: "absolute", width: "40px", height: "40px", background: "#ef4444", borderRadius: "50%", top: "40%", left: "45%", boxShadow: "0 0 0 10px rgba(239,68,68,0.3)" }}></div>
             <div style={{ position: "absolute", width: "30px", height: "30px", background: "#f97316", borderRadius: "50%", top: "55%", left: "60%", boxShadow: "0 0 0 8px rgba(249,115,22,0.3)" }}></div>
           </div>
@@ -769,17 +769,17 @@ export function PortalPage() {
             Bantu kami memvalidasi model AI dengan membagikan kondisi riil di wilayah Anda. Prosesnya sangat mudah dan terintegrasi langsung dengan dashboard BPBD.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "24px", maxWidth: 900, margin: "0 auto" }}>
-            <div style={{ background: "var(--bg-primary)", padding: "32px", borderRadius: "24px", border: "1px solid var(--border-color)" }}>
+            <div style={{ background: "var(--bg-primary)", padding: "32px", borderRadius: 8, border: "1px solid var(--border-color)" }}>
               <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--accent-blue-soft)", color: "var(--accent-blue)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 800, fontSize: "1.2rem" }}>1</div>
               <h3 style={{ fontSize: "1.1rem", marginBottom: "12px", color: "var(--ink-primary)" }}>Tentukan Lokasi</h3>
               <p style={{ fontSize: "0.9rem", color: "var(--ink-muted)" }}>Pin lokasi Anda pada peta interaktif yang disediakan.</p>
             </div>
-            <div style={{ background: "var(--bg-primary)", padding: "32px", borderRadius: "24px", border: "1px solid var(--border-color)" }}>
+            <div style={{ background: "var(--bg-primary)", padding: "32px", borderRadius: 8, border: "1px solid var(--border-color)" }}>
               <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--accent-blue-soft)", color: "var(--accent-blue)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 800, fontSize: "1.2rem" }}>2</div>
               <h3 style={{ fontSize: "1.1rem", marginBottom: "12px", color: "var(--ink-primary)" }}>Isi Detail Keparahan</h3>
               <p style={{ fontSize: "0.9rem", color: "var(--ink-muted)" }}>Tulis tinggi genangan dan kondisi cuaca saat kejadian berlangsung.</p>
             </div>
-            <div style={{ background: "var(--bg-primary)", padding: "32px", borderRadius: "24px", border: "1px solid var(--border-color)" }}>
+            <div style={{ background: "var(--bg-primary)", padding: "32px", borderRadius: 8, border: "1px solid var(--border-color)" }}>
               <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--accent-blue-soft)", color: "var(--accent-blue)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 800, fontSize: "1.2rem" }}>3</div>
               <h3 style={{ fontSize: "1.1rem", marginBottom: "12px", color: "var(--ink-primary)" }}>Unggah & Kirim</h3>
               <p style={{ fontSize: "0.9rem", color: "var(--ink-muted)" }}>Sertakan foto bukti agar validasi oleh BPBD dapat berjalan cepat.</p>
@@ -808,7 +808,7 @@ export function PortalPage() {
           
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {faqData.map((item, i) => (
-              <div key={i} style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "24px", overflow: "hidden" }}>
+              <div key={i} style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 8, overflow: "hidden" }}>
                 <div 
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", padding: "24px", background: openFaq === i ? "var(--accent-blue-soft)" : "transparent", transition: "background 0.3s" }}

@@ -91,7 +91,7 @@ export function CitizenModePage() {
             style={{ 
               background: isDanger ? "linear-gradient(135deg, #e11d48 0%, #9f1239 100%)" : "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)", 
               color: "#fff", 
-              borderRadius: "24px", 
+              borderRadius: 8, 
               padding: "40px",
               boxShadow: isDanger ? "0 24px 48px rgba(225, 29, 72, 0.25)" : "0 24px 48px rgba(37, 99, 235, 0.25)",
               position: "relative",
@@ -231,7 +231,7 @@ export function CitizenModePage() {
                       key={title} 
                       whileHover={{ x: 4 }}
                       style={{ 
-                        borderRadius: 16, 
+                        borderRadius: 8, 
                         display: "flex", 
                         gap: 16, 
                         alignItems: "flex-start",

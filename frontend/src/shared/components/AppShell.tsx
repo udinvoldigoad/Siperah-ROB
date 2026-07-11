@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { navItems } from "../../app/navigation";
 import { Icon } from "./Icon";
 import { Breadcrumbs, type BreadcrumbItem } from "./Breadcrumbs";
+import { useToast } from "./Toast";
 
 const SIDEBAR_STORAGE_KEY = "siperah-sidebar";
 
@@ -13,6 +14,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
   breadcrumbs?: BreadcrumbItem[];
   children: ReactNode;
 }) {
+  const toast = useToast();
   const [isSidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem(SIDEBAR_STORAGE_KEY) !== "closed");
   const [isUserMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -33,6 +35,14 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
       return () => document.removeEventListener("mousedown", closeMenu);
     }
   }, [isUserMenuOpen, closeMenu]);
+
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      toast.error("Sesi Anda telah habis. Silakan login kembali.");
+    };
+    window.addEventListener("siperah-auth-expired", handleAuthExpired);
+    return () => window.removeEventListener("siperah-auth-expired", handleAuthExpired);
+  }, []);
 
   const isUserLoggedIn = !!localStorage.getItem("siperah-token");
 
@@ -71,7 +81,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
           ))}
         </nav>
         {isUserLoggedIn && (
-          <div style={{ marginTop: "auto", background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: "16px", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ marginTop: "auto", background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 8, padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               <strong style={{ fontSize: "14px", color: "var(--ink-primary)", lineHeight: 1.2 }}>Operator BPBD</strong>
               <span style={{ fontSize: "12px", color: "var(--ink-soft)" }}>Prov. Lampung</span>

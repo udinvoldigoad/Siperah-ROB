@@ -106,7 +106,7 @@ export function LoginPage() {
   const inputStyle = {
     width: "100%",
     padding: "14px 16px",
-    borderRadius: "12px",
+    borderRadius: 8,
     border: "1px solid var(--line)",
     background: "var(--bg)",
     fontSize: "14px",
@@ -184,7 +184,7 @@ export function LoginPage() {
         >
           {/* Logo for mobile */}
           <div className="mobile-only" style={{ marginBottom: "40px", textAlign: "center" }}>
-            <div style={{ display: "inline-flex", width: "48px", height: "48px", background: "var(--ocean-light)", color: "var(--ocean-dark)", borderRadius: "12px", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+            <div style={{ display: "inline-flex", width: "48px", height: "48px", background: "var(--ocean-light)", color: "var(--ocean-dark)", borderRadius: 8, alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
               <Icon name="water_drop" style={{ fontSize: "28px" }} />
             </div>
             <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 800 }}>SIPERAH-RoB</h2>
@@ -266,7 +266,7 @@ export function LoginPage() {
                 <button 
                   className="btn solid" 
                   type="submit" 
-                  style={{ width: "100%", background: "#1e40af", color: "#fff", padding: "16px", borderRadius: "12px", fontSize: "15px", fontWeight: 700, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(2, 132, 199, 0.25)", cursor: "pointer" }} 
+                  style={{ width: "100%", background: "#1e40af", color: "#fff", padding: "16px", borderRadius: 8, fontSize: "15px", fontWeight: 700, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(2, 132, 199, 0.25)", cursor: "pointer" }} 
                   disabled={isLoading}
                 >
                   {isLoading ? "Memproses..." : "Masuk ke Dashboard"}
@@ -351,7 +351,7 @@ export function LoginPage() {
                 <button 
                   className="btn solid" 
                   type="submit" 
-                  style={{ width: "100%", background: "#1e40af", color: "#fff", padding: "16px", borderRadius: "12px", fontSize: "15px", fontWeight: 700, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(2, 132, 199, 0.25)", cursor: "pointer" }} 
+                  style={{ width: "100%", background: "#1e40af", color: "#fff", padding: "16px", borderRadius: 8, fontSize: "15px", fontWeight: 700, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(2, 132, 199, 0.25)", cursor: "pointer" }} 
                   disabled={isLoading}
                 >
                   {isLoading ? "Memproses..." : "Daftar Akun"}

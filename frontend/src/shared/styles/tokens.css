@@ -13,7 +13,7 @@
   --high: #f97316; /* Vibrant Orange */
   --medium: #f59e0b; /* Vibrant Amber */
   --low: #10b981; /* Vibrant Emerald */
-  --radius: 16px; /* Soft premium corners */
+  --radius: 8px; /* Soft premium corners */
   --sidebar: 280px;
   background: var(--bg);
   color: var(--ink);
@@ -508,7 +508,6 @@ textarea { min-height: 100px; resize: vertical; }
   top: 0;
   z-index: 3;
 }
-.topbar {
 .topbar h1 {
   font-size: 1.58rem;
   line-height: 1.15;
