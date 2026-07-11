@@ -20,8 +20,24 @@ export type OperatorReport = {
   photos: string[];
 };
 
-type ReportListResponse = { data: OperatorReport[] };
-type ReportResponse = { data: OperatorReport };
+type BackendReport = {
+  id: string;
+  report_code: string;
+  latitude: number;
+  longitude: number;
+  severity: ReportSeverity;
+  status: ReportStatus;
+  incident_time: string;
+  created_at: string;
+  water_height_cm: number | null;
+  description: string;
+  region?: { village?: string; district?: string; regency?: string };
+  reporter?: { name?: string };
+  photos?: { name?: string; url?: string }[];
+};
+
+type ReportListResponse = { data: BackendReport[] };
+type ReportResponse = { data: BackendReport };
 
 export const severityLabels: Record<ReportSeverity, string> = {
   ringan: "Ringan",
@@ -93,14 +109,33 @@ export function findOperatorReport(id: string) {
   return operatorReports.find((report) => report.id === id);
 }
 
+function mapReport(report: BackendReport): OperatorReport {
+  return {
+    id: report.id,
+    code: report.report_code,
+    village: report.region?.village ?? "Wilayah tidak diketahui",
+    district: report.region?.district ?? "-",
+    regency: report.region?.regency ?? "-",
+    severity: report.severity,
+    status: report.status,
+    incidentTime: new Date(report.incident_time).toLocaleString("id-ID"),
+    submittedAt: new Date(report.created_at).toLocaleString("id-ID"),
+    waterHeightCm: report.water_height_cm,
+    reporter: report.reporter?.name ?? "Warga",
+    coordinates: `${report.latitude}, ${report.longitude}`,
+    description: report.description,
+    photos: (report.photos ?? []).map((photo) => photo.name ?? photo.url ?? "Foto laporan"),
+  };
+}
+
 export async function fetchOperatorReports() {
   const response = await api<ReportListResponse>("/reports?status=menunggu,perlu_review");
-  return response.data;
+  return response.data.map(mapReport);
 }
 
 export async function fetchOperatorReport(id: string) {
   const response = await api<ReportResponse>(`/reports/${id}`);
-  return response.data;
+  return mapReport(response.data);
 }
 
 export async function updateOperatorReportStatus(id: string, status: ReportStatus, rejectionReason?: string) {
@@ -109,5 +144,5 @@ export async function updateOperatorReportStatus(id: string, status: ReportStatu
     body: JSON.stringify({ status, rejection_reason: rejectionReason }),
   });
 
-  return response.data;
+  return mapReport(response.data);
 }

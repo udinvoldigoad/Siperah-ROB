@@ -27,29 +27,12 @@ export function OperatorDashboardPage() {
     setIsLoading(true);
     try {
       const data = await fetchOperatorReports();
-      setUsersReport(data);
+      setReports(data);
     } catch (err: any) {
       toast.error(err.message || "Gagal memuat antrean laporan.");
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const setUsersReport = (data: any) => {
-    const mapped = data.map((item: any) => ({
-      id: item.id || item.db_id,
-      code: item.report_code,
-      village: item.village,
-      district: item.district,
-      regency: item.regency,
-      severity: item.severity,
-      status: item.status,
-      incidentTime: item.incident_time,
-      submittedAt: item.created_at ? new Date(item.created_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "Baru",
-      waterHeightCm: item.water_height_cm,
-      description: item.description,
-    }));
-    setReports(mapped);
   };
 
   useEffect(() => {
