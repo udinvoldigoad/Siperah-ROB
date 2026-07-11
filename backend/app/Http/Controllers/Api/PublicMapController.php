@@ -2,79 +2,91 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Resources\PredictionResource;
+use App\Http\Resources\ReportResource;
+use App\Models\Prediction;
+use App\Models\Region;
+use App\Models\GroundTruthReport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 final class PublicMapController
 {
-    public function predictions(Request $request): JsonResponse
+    public function predictions(Request $request)
     {
-        $query = DB::table('predictions')
-            ->join('regions', 'predictions.region_id', '=', 'regions.id')
-            ->select('predictions.*', 'regions.village', 'regions.district', 'regions.regency', 'regions.geometry');
+        $query = Prediction::with('region')->orderBy('prediction_date', 'desc');
 
         if ($request->filled('regency')) {
-            $query->where('regions.regency', $request->query('regency'));
+            $query->whereHas('region', function ($q) use ($request) {
+                $q->where('regency', $request->query('regency'));
+            });
         }
 
-        $predictions = $query->orderBy('prediction_date', 'desc')->get();
-
-        // Seed default prediction if empty
-        if ($predictions->isEmpty()) {
-            $region = DB::table('regions')->first();
-            if ($region) {
-                DB::table('predictions')->insertOrIgnore([
-                    'id' => (string) \Illuminate\Support\Str::uuid(),
-                    'region_id' => $region->id,
-                    'prediction_date' => now()->format('Y-m-d'),
-                    'risk_probability' => 74.00,
-                    'risk_class' => 'tinggi',
-                    'confidence_score' => 88.00,
-                    'max_tidal_height' => 1.46,
-                    'peak_time' => '21:40:00',
-                    'model_version' => 'v1.0.0',
-                    'generated_at' => now(),
-                ]);
-                $predictions = $query->orderBy('prediction_date', 'desc')->get();
-            }
+        if ($request->filled('date')) {
+            $query->where('prediction_date', $request->query('date'));
         }
 
-        return response()->json([
-            'data' => $predictions,
-            'filters' => $request->only(['date', 'horizon', 'regency', 'layers']),
-        ]);
+        return PredictionResource::collection($query->paginate(200));
     }
 
     public function region(string $region): JsonResponse
     {
-        $data = DB::table('regions')->where('id', $region)->first();
+        $data = Region::findOrFail($region);
         return response()->json(['data' => $data]);
     }
 
     public function modeAwam(Request $request): JsonResponse
     {
-        $prediction = DB::table('predictions')
-            ->join('regions', 'predictions.region_id', '=', 'regions.id')
-            ->select('predictions.*', 'regions.village', 'regions.district', 'regions.regency')
+        $lat = $request->query('lat');
+        $lon = $request->query('lon');
+
+        if ($lat && $lon) {
+            $region = Region::where('coastal_flag', true)
+                ->selectRaw("*, 
+                    ABS(CAST(SPLIT_PART(REPLACE(REPLACE(REPLACE(geometry, 'MULTIPOLYGON(((', ''), ')))', ''), ',', ' '), ' ', 2) AS FLOAT) - ?) +
+                    ABS(CAST(SPLIT_PART(REPLACE(REPLACE(REPLACE(geometry, 'MULTIPOLYGON(((', ''), ')))', ''), ',', ' '), ' ', 1) AS FLOAT) - ?) AS dist", 
+                    [(float)$lat, (float)$lon])
+                ->orderBy('dist')
+                ->first();
+        } else {
+            $region = Region::where('coastal_flag', true)->first();
+        }
+
+        if (!$region) {
+            return response()->json(['data' => null, 'message' => 'Tidak ada data region']);
+        }
+
+        $prediction = Prediction::where('region_id', $region->id)
             ->orderBy('prediction_date', 'desc')
             ->first();
 
-        $nearby = DB::table('ground_truth_reports')
-            ->join('regions', 'ground_truth_reports.region_id', '=', 'regions.id')
-            ->select('ground_truth_reports.*', 'regions.village')
-            ->orderBy('ground_truth_reports.created_at', 'desc')
+        $forecast = Prediction::where('region_id', $region->id)
+            ->orderBy('prediction_date', 'asc')
+            ->limit(7)
+            ->get();
+
+        $nearby = GroundTruthReport::with(['region', 'photos'])
+            ->whereHas('region', function ($q) use ($region) {
+                $q->where('regency', $region->regency);
+            })
+            ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
 
         return response()->json([
             'data' => [
-                'village' => $prediction->village ?? 'Panjang Utara',
-                'risk_class' => $prediction->risk_class ?? 'tinggi',
-                'risk_probability' => $prediction->risk_probability ?? 74,
-                'max_tidal_height' => $prediction->max_tidal_height ?? 1.46,
-                'peak_time' => $prediction->peak_time ? substr($prediction->peak_time, 0, 5) : '21:40',
-                'nearby_reports' => $nearby,
+                'region' => [
+                    'id' => $region->id,
+                    'village' => $region->village,
+                    'district' => $region->district,
+                    'regency' => $region->regency,
+                ],
+                'risk_class' => $prediction->risk_class ?? 'rendah',
+                'risk_probability' => $prediction->risk_probability ?? 0,
+                'max_tidal_height' => $prediction->max_tidal_height ?? 0,
+                'peak_time' => $prediction?->peak_time ? substr($prediction->peak_time, 0, 5) : null,
+                'forecast' => PredictionResource::collection($forecast),
+                'nearby_reports' => ReportResource::collection($nearby),
             ],
         ]);
     }

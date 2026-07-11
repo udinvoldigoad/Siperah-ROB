@@ -7,6 +7,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // migrate:fresh drops tables but not PostgreSQL enum types
+        DB::unprepared('DROP TYPE IF EXISTS user_role, user_status, risk_class, report_severity, report_status, audit_outcome CASCADE;');
+
         $sql = file_get_contents(base_path('../database/schema.sql'));
         $sql = str_replace('create extension if not exists postgis;', '', $sql);
         DB::unprepared($sql);

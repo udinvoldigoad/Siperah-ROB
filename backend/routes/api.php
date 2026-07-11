@@ -13,26 +13,29 @@ use Illuminate\Support\Facades\Route;
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 
-// ponytail: open for local prototype; move behind auth/role middleware when login is wired to the frontend.
-Route::get('/reports', [ReportController::class, 'index']);
-Route::get('/reports/{report}', [ReportController::class, 'show']);
-Route::patch('/reports/{report}/status', [ReportController::class, 'updateStatus']);
-
+// ── Public (tanpa login) ─────────────────────────────────────────
 Route::prefix('public')->group(function () {
     Route::get('/predictions', [PublicMapController::class, 'predictions']);
     Route::get('/regions/{region}', [PublicMapController::class, 'region']);
     Route::get('/mode-awam', [PublicMapController::class, 'modeAwam']);
     Route::get('/onboarding', [PublicMapController::class, 'onboarding']);
-    Route::post('/reports', [ReportController::class, 'store']);
 });
 
+// ── Authenticated ────────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
+    // Reports — semua user login bisa lihat & buat
+    Route::get('/reports', [ReportController::class, 'index']);
+    Route::get('/reports/{report}', [ReportController::class, 'show']);
+    Route::post('/reports', [ReportController::class, 'store']);
+
+    // BPBD & Admin — validasi laporan + dashboard
     Route::middleware('role:bpbd_operator,bpbd_provinsi,admin')->group(function () {
         Route::post('/reports/{report}/validate', [ReportController::class, 'validateReport']);
         Route::post('/reports/{report}/reject', [ReportController::class, 'rejectReport']);
+        Route::patch('/reports/{report}/status', [ReportController::class, 'updateStatus']);
         Route::get('/dashboard/operator/summary', [DashboardController::class, 'operatorSummary']);
         Route::get('/dashboard/province/summary', [DashboardController::class, 'provinceSummary']);
     });

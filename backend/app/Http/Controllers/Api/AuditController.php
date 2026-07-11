@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Resources\AuditLogResource;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 final class AuditController
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request)
     {
-        $query = DB::table('audit_logs');
+        $query = AuditLog::with('actor')->orderBy('created_at', 'desc');
 
         if ($request->filled('action')) {
             $query->where('action', $request->query('action'));
@@ -29,11 +30,6 @@ final class AuditController
             });
         }
 
-        $logs = $query->orderBy('created_at', 'desc')->limit(100)->get();
-
-        return response()->json([
-            'data' => $logs,
-            'filters' => $request->only(['action', 'outcome', 'search'])
-        ]);
+        return AuditLogResource::collection($query->paginate(15));
     }
 }

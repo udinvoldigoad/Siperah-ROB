@@ -2,86 +2,69 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Resources\UserResource;
+use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 final class AdminController
 {
-    public function users(Request $request): JsonResponse
+    public function users(Request $request)
     {
-        $query = DB::table('users')
-            ->leftJoin('regions', 'users.region_id', '=', 'regions.id')
-            ->select('users.*', 'regions.village as region_name', 'regions.regency as region_regency');
+        $query = User::orderBy('created_at', 'desc');
 
         if ($request->filled('role')) {
-            $query->where('users.role', $request->query('role'));
+            $query->where('role', $request->query('role'));
         }
 
         if ($request->filled('status')) {
-            $query->where('users.status', $request->query('status'));
+            $query->where('status', $request->query('status'));
         }
 
-        if ($request->filled('search')) {
-            $search = '%' . $request->query('search') . '%';
-            $query->where(function ($q) use ($search) {
-                $q->where('users.name', 'like', $search)
-                  ->orWhere('users.email', 'like', $search)
-                  ->orWhere('regions.village', 'like', $search);
-            });
-        }
-
-        $users = $query->orderBy('users.created_at', 'desc')->get();
-
-        return response()->json([
-            'data' => $users,
-            'filters' => $request->only(['role', 'status', 'region_id', 'search'])
-        ]);
+        return UserResource::collection($query->paginate(15));
     }
 
-    public function approveUser(string $user): JsonResponse
+    public function approveUser(Request $request, string $user): JsonResponse
     {
-        DB::table('users')->where('id', $user)->update([
-            'status' => 'aktif',
-            'updated_at' => now(),
-        ]);
+        $userData = User::findOrFail($user);
+        $userData->update(['status' => 'aktif']);
 
-        $userData = DB::table('users')->where('id', $user)->first();
+        $actor = $request->user();
 
-        // Log audit log
-        DB::table('audit_logs')->insert([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
-            'actor_user_id' => null,
-            'actor_name' => 'System Admin',
-            'actor_role' => 'admin',
+        AuditLog::create([
+            'id' => (string) Str::uuid(),
+            'actor_user_id' => $actor?->id,
+            'actor_name' => $actor?->name ?? 'System',
+            'actor_role' => $actor?->role ?? 'admin',
             'action' => 'approve_user',
-            'target_resource' => $userData->email ?? $user,
+            'target_resource' => $userData->email,
             'outcome' => 'success',
-            'created_at' => now(),
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
         ]);
 
         return response()->json(['message' => 'User approved', 'id' => $user]);
     }
 
-    public function rejectUser(string $user): JsonResponse
+    public function rejectUser(Request $request, string $user): JsonResponse
     {
-        DB::table('users')->where('id', $user)->update([
-            'status' => 'ditolak',
-            'updated_at' => now(),
-        ]);
+        $userData = User::findOrFail($user);
+        $userData->update(['status' => 'ditolak']);
 
-        $userData = DB::table('users')->where('id', $user)->first();
+        $actor = $request->user();
 
-        // Log audit log
-        DB::table('audit_logs')->insert([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
-            'actor_user_id' => null,
-            'actor_name' => 'System Admin',
-            'actor_role' => 'admin',
+        AuditLog::create([
+            'id' => (string) Str::uuid(),
+            'actor_user_id' => $actor?->id,
+            'actor_name' => $actor?->name ?? 'System',
+            'actor_role' => $actor?->role ?? 'admin',
             'action' => 'reject_user',
-            'target_resource' => $userData->email ?? $user,
+            'target_resource' => $userData->email,
             'outcome' => 'success',
-            'created_at' => now(),
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
         ]);
 
         return response()->json(['message' => 'User rejected', 'id' => $user]);
@@ -90,18 +73,13 @@ final class AdminController
     public function updateUser(Request $request, string $user): JsonResponse
     {
         $data = $request->validate([
-            'role' => ['required', 'in:warga,bpbd_operator,bpbd_provinsi,peneliti,admin'],
-            'status' => ['required', 'in:menunggu,aktif,nonaktif,ditolak'],
-            'region_id' => ['nullable', 'uuid'],
+            'role' => ['required', 'string', 'in:warga,bpbd_operator,bpbd_provinsi,peneliti,admin'],
+            'institution' => ['nullable', 'string', 'max:150'],
         ]);
 
-        DB::table('users')->where('id', $user)->update([
-            'role' => $data['role'],
-            'status' => $data['status'],
-            'region_id' => $data['region_id'] ?? null,
-            'updated_at' => now(),
-        ]);
+        $userData = User::findOrFail($user);
+        $userData->update($data);
 
-        return response()->json(['message' => 'User updated', 'id' => $user]);
+        return response()->json(['message' => 'User updated', 'data' => new UserResource($userData)]);
     }
 }
