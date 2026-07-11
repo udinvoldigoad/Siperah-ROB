@@ -28,8 +28,7 @@ create table regions (
   regency varchar(100) not null,
   district varchar(100),
   village varchar(100),
-  -- ponytail: WKT text keeps local dev off PostGIS; use geometry(multipolygon, 4326) when spatial queries matter.
-  geometry text not null,
+  geometry geometry(MultiPolygon, 4326) not null,
   population integer,
   coastal_flag boolean not null default false,
   created_at timestamptz not null default now(),

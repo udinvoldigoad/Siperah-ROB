@@ -24,15 +24,22 @@ final class DatabaseSeeder extends Seeder
     private function seedRegions(): void
     {
         $regions = $this->regionData();
+        $postgisInstalled = (bool) DB::selectOne(
+            "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') AS installed"
+        )->installed;
+        $geometryValue = $postgisInstalled
+            ? 'ST_SetSRID(ST_GeomFromText(?), 4326)'
+            : '?';
 
         foreach ($regions as $r) {
             DB::statement(
                 "INSERT INTO regions (id, province, regency, district, village, geometry, population, coastal_flag, created_at, updated_at)
-                VALUES (?, 'Lampung', ?, ?, ?, ?, ?, true, now(), now())
+                VALUES (?, 'Lampung', ?, ?, ?, {$geometryValue}, ?, true, now(), now())
                 ON CONFLICT (id) DO UPDATE SET
                     regency = EXCLUDED.regency,
                     district = EXCLUDED.district,
                     village = EXCLUDED.village,
+                    geometry = EXCLUDED.geometry,
                     population = EXCLUDED.population,
                     updated_at = now()",
                 [$r['id'], $r['regency'], $r['district'], $r['village'], $r['geometry'], $r['population']],
