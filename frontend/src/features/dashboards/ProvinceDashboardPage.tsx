@@ -184,7 +184,7 @@ export function ProvinceDashboardPage() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 + (idx * 0.05) }}
-                    whileHover={{ backgroundColor: "var(--surface-soft)" }}
+                    
                     style={{ borderBottom: "1px solid var(--line)" }}
                   >
                     <td style={{ padding: "16px 24px", fontWeight: 600 }}>
@@ -298,7 +298,7 @@ export function ProvinceDashboardPage() {
               {predictions.slice(0, 5).map((p, index) => (
                 <motion.tr 
                   key={p.id}
-                  whileHover={{ backgroundColor: "var(--surface-soft)" }}
+                  
                   style={{ borderBottom: "1px solid var(--line)" }}
                 >
                   <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontWeight: 700 }}>{index + 1}</td>
