@@ -44,7 +44,27 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
     return () => window.removeEventListener("siperah-auth-expired", handleAuthExpired);
   }, []);
 
-  const isUserLoggedIn = !!localStorage.getItem("siperah-token");
+  let user: { name: string; role: string; region_id: string | null } | null = null;
+  try {
+    const userStr = localStorage.getItem("siperah-user");
+    if (userStr) user = JSON.parse(userStr);
+  } catch {}
+
+  const isUserLoggedIn = !!localStorage.getItem("siperah-token") && !!user;
+
+  const roleLabels: Record<string, string> = {
+    warga: "Warga",
+    bpbd_operator: "Operator BPBD",
+    bpbd_provinsi: "BPBD Provinsi",
+    admin: "Admin Sistem",
+    peneliti: "Peneliti"
+  };
+
+  const allowedNavItems = navItems.filter((item) => {
+    if (!item.roles) return true;
+    if (!user) return false;
+    return item.roles.includes(user.role);
+  });
 
   return (
     <div className={`app-shell ${isSidebarOpen ? "" : "sidebar-collapsed"}`}>
@@ -67,7 +87,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
           </button>
         </div>
         <nav style={{ flexGrow: 1 }}>
-          {navItems.map((item) => (
+          {allowedNavItems.map((item) => (
             <a
               key={item.href}
               aria-label={item.label}
@@ -80,11 +100,11 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
             </a>
           ))}
         </nav>
-        {isUserLoggedIn && (
+        {isUserLoggedIn && user && (
           <div style={{ marginTop: "auto", background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 8, padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              <strong style={{ fontSize: "14px", color: "var(--ink-primary)", lineHeight: 1.2 }}>Operator BPBD</strong>
-              <span style={{ fontSize: "12px", color: "var(--ink-soft)" }}>Prov. Lampung</span>
+              <strong style={{ fontSize: "14px", color: "var(--ink-primary)", lineHeight: 1.2 }}>{user.name}</strong>
+              <span style={{ fontSize: "12px", color: "var(--ink-soft)" }}>{roleLabels[user.role] || user.role}</span>
             </div>
             <a 
               href="#/" 

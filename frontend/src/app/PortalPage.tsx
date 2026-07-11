@@ -357,8 +357,8 @@ export function PortalPage() {
         }
 
         /* Bento Grid Math Span allocations (Zero-Gap Interlock) */
-        .card-span-8 { grid-column: span 8; }
-        .card-span-4 { grid-column: span 4; }
+        .card-span-7 { grid-column: span 7; }
+        .card-span-5 { grid-column: span 5; }
         
         .bento-card-el.dark-theme {
           background: var(--bg-card-dark);
@@ -635,7 +635,7 @@ export function PortalPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="bento-card-el card-span-8"
+            className="bento-card-el card-span-7"
           >
             <div>
               <span className="card-meta-title">Public Access</span>
@@ -660,7 +660,7 @@ export function PortalPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
-            className="bento-card-el card-span-4 dark-theme"
+            className="bento-card-el card-span-5 dark-theme"
           >
             <div>
               <span className="card-meta-title">BPBD Command Center</span>
@@ -668,8 +668,21 @@ export function PortalPage() {
               <p>
                 Pusat kendali dan monitoring prediksi risiko, analisis dampak, dan manajemen logistik untuk operator dan pengambil keputusan.
               </p>
-
-
+              
+              <div style={{ marginTop: 40, width: "100%", height: 180, background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", padding: 16, gap: 12 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                   <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ef4444" }} />
+                   <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#f59e0b" }} />
+                   <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#10b981" }} />
+                </div>
+                <div style={{ display: "flex", gap: 12, flex: 1 }}>
+                   <div style={{ width: "35%", height: "100%", background: "rgba(255,255,255,0.06)", borderRadius: 8 }} />
+                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+                     <div style={{ width: "100%", height: "35%", background: "rgba(255,255,255,0.06)", borderRadius: 8 }} />
+                     <div style={{ width: "100%", flex: 1, background: "rgba(255,255,255,0.03)", borderRadius: 8 }} />
+                   </div>
+                </div>
+              </div>
             </div>
             <div className="card-links-row">
               <a className="card-action-link" href="#/login">Masuk Dashboard <Icon name="arrow_forward" /></a>

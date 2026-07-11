@@ -149,3 +149,8 @@ export async function updateOperatorReportStatus(id: string, status: ReportStatu
 
   return mapReport(response.data);
 }
+
+export async function fetchUserHistoryReports() {
+  const response = await api<ReportListResponse>('/reports');
+  return response.data.map(mapReport);
+}
