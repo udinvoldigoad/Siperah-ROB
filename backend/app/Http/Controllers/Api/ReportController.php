@@ -5,8 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\StoreReportRequest;
 use App\Http\Requests\UpdateReportStatusRequest;
 use App\Http\Resources\ReportResource;
+use App\Models\AuditLog;
 use App\Models\GroundTruthReport;
 use App\Models\ReportPhoto;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -15,11 +20,13 @@ final class ReportController
 {
     public function index(Request $request)
     {
-        $query = GroundTruthReport::with(['region', 'reporter', 'validator', 'photos'])
+        $query = $this->accessibleReports($request->user())
+            ->with(['region', 'reporter', 'validator', 'photos'])
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('status')) {
-            $query->where('status', $request->query('status'));
+            $statuses = array_values(array_filter(explode(',', $request->query('status'))));
+            $query->whereIn('status', $statuses);
         }
 
         if ($request->filled('severity')) {
@@ -35,9 +42,10 @@ final class ReportController
         return ReportResource::collection($reports);
     }
 
-    public function show(string $report)
+    public function show(Request $request, string $report)
     {
         $reportData = GroundTruthReport::with(['region', 'reporter', 'validator', 'photos'])->findOrFail($report);
+        $this->ensureCanAccessReport($request->user(), $reportData);
         return new ReportResource($reportData);
     }
 
@@ -46,17 +54,21 @@ final class ReportController
         $data = $request->validated();
         $user = $request->user();
 
-        $regionId = $request->input('region_id');
-        if (!$regionId) {
-            $region = \App\Models\Region::where('coastal_flag', true)
-                ->selectRaw("id, 
-                    ABS(CAST(SPLIT_PART(REPLACE(REPLACE(REPLACE(geometry, 'MULTIPOLYGON(((', ''), ')))', ''), ',', ' '), ' ', 2) AS FLOAT) - ?) +
-                    ABS(CAST(SPLIT_PART(REPLACE(REPLACE(REPLACE(geometry, 'MULTIPOLYGON(((', ''), ')))', ''), ',', ' '), ' ', 1) AS FLOAT) - ?) AS dist", 
-                    [(float)$data['latitude'], (float)$data['longitude']])
-                ->orderBy('dist')
-                ->first();
-            $regionId = $region?->id;
+        $region = $this->resolveCoastalRegion((float) $data['latitude'], (float) $data['longitude']);
+
+        if (!$region) {
+            throw ValidationException::withMessages([
+                'latitude' => 'Lokasi laporan berada di luar wilayah pesisir yang dipantau.',
+            ]);
         }
+
+        if (isset($data['region_id']) && $data['region_id'] !== $region->id) {
+            throw ValidationException::withMessages([
+                'region_id' => 'Wilayah yang dipilih tidak sesuai dengan koordinat laporan.',
+            ]);
+        }
+
+        $regionId = $region->id;
 
         $report = GroundTruthReport::create([
             'id' => (string) Str::uuid(),
@@ -98,12 +110,15 @@ final class ReportController
     public function validateReport(Request $request, string $report): JsonResponse
     {
         $reportData = GroundTruthReport::findOrFail($report);
+        $this->ensureCanAccessReport($request->user(), $reportData);
+        $this->ensureReportCanBeReviewed($reportData);
         
         $reportData->update([
             'status' => 'divalidasi',
             'validated_by' => $request->user()->id,
             'validated_at' => now(),
         ]);
+        $this->writeAudit($request, 'validate_report', $reportData);
 
         return response()->json([
             'message' => 'Laporan divalidasi',
@@ -116,6 +131,8 @@ final class ReportController
         $request->validate(['reason' => ['required', 'string']]);
 
         $reportData = GroundTruthReport::findOrFail($report);
+        $this->ensureCanAccessReport($request->user(), $reportData);
+        $this->ensureReportCanBeReviewed($reportData);
 
         $reportData->update([
             'status' => 'ditolak',
@@ -123,6 +140,7 @@ final class ReportController
             'validated_at' => now(),
             'rejection_reason' => $request->input('reason'),
         ]);
+        $this->writeAudit($request, 'reject_report', $reportData);
 
         return response()->json([
             'message' => 'Laporan ditolak',
@@ -133,17 +151,147 @@ final class ReportController
     public function updateStatus(UpdateReportStatusRequest $request, string $report): JsonResponse
     {
         $reportData = GroundTruthReport::findOrFail($report);
+        $this->ensureCanAccessReport($request->user(), $reportData);
+        $this->ensureReportCanBeReviewed($reportData);
+
+        $status = $request->input('status');
 
         $reportData->update([
-            'status' => $request->input('status'),
+            'status' => $status,
             'rejection_reason' => $request->input('rejection_reason'),
-            'validated_by' => in_array($request->input('status'), ['divalidasi', 'ditolak']) ? $request->user()->id : null,
-            'validated_at' => in_array($request->input('status'), ['divalidasi', 'ditolak']) ? now() : null,
+            'validated_by' => in_array($status, ['divalidasi', 'ditolak']) ? $request->user()->id : null,
+            'validated_at' => in_array($status, ['divalidasi', 'ditolak']) ? now() : null,
         ]);
+        $this->writeAudit($request, 'update_report_status', $reportData);
 
         return response()->json([
             'message' => 'Status laporan diperbarui',
             'data' => new ReportResource($reportData)
         ]);
+    }
+
+    private function accessibleReports(User $user): Builder
+    {
+        $query = GroundTruthReport::query();
+
+        return match ($user->role) {
+            'warga' => $query->where('user_id', $user->id),
+            'bpbd_operator' => $this->scopeToOperatorRegency($query, $user),
+            'bpbd_provinsi', 'admin' => $query,
+            default => abort(403, 'Role ini tidak memiliki akses ke laporan ground truth.'),
+        };
+    }
+
+    private function ensureCanAccessReport(User $user, GroundTruthReport $report): void
+    {
+        if (in_array($user->role, ['bpbd_provinsi', 'admin'], true)) {
+            return;
+        }
+
+        if ($user->role === 'warga') {
+            abort_unless($report->user_id === $user->id, 403, 'Anda hanya dapat mengakses laporan sendiri.');
+            return;
+        }
+
+        if ($user->role === 'bpbd_operator') {
+            $regency = $this->operatorRegency($user);
+            $report->loadMissing('region');
+            abort_unless($report->region?->regency === $regency, 403, 'Laporan berada di luar wilayah kerja Anda.');
+            return;
+        }
+
+        abort(403, 'Role ini tidak memiliki akses ke laporan ground truth.');
+    }
+
+    private function scopeToOperatorRegency(Builder $query, User $user): Builder
+    {
+        $regency = $this->operatorRegency($user);
+
+        return $query->whereHas('region', fn (Builder $regionQuery) => $regionQuery->where('regency', $regency));
+    }
+
+    private function operatorRegency(User $user): string
+    {
+        abort_unless($user->region_id, 403, 'Akun operator belum memiliki wilayah kerja.');
+
+        $regency = \App\Models\Region::whereKey($user->region_id)->value('regency');
+        abort_unless($regency, 403, 'Wilayah kerja operator tidak valid.');
+
+        return $regency;
+    }
+
+    private function ensureReportCanBeReviewed(GroundTruthReport $report): void
+    {
+        abort_unless(
+            in_array($report->status, ['menunggu', 'perlu_review'], true),
+            409,
+            'Hanya laporan menunggu atau perlu_review yang dapat diproses.'
+        );
+    }
+
+    private function writeAudit(Request $request, string $action, GroundTruthReport $report): void
+    {
+        $actor = $request->user();
+
+        AuditLog::create([
+            'id' => (string) Str::uuid(),
+            'actor_user_id' => $actor->id,
+            'actor_name' => $actor->name,
+            'actor_role' => $actor->role,
+            'action' => $action,
+            'target_resource' => "ground_truth_reports:{$report->id}",
+            'outcome' => 'success',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'payload' => [
+                'report_code' => $report->report_code,
+                'status' => $report->status,
+                'region_id' => $report->region_id,
+            ],
+        ]);
+    }
+
+    /**
+     * Produksi memakai PostGIS. Fallback WKT hanya untuk database development
+     * lama agar pelaporan tetap dapat diuji sebelum ekstensi dipasang.
+     */
+    private function resolveCoastalRegion(float $latitude, float $longitude): ?\App\Models\Region
+    {
+        if ($this->postgisAvailable()) {
+            return \App\Models\Region::where('coastal_flag', true)
+                ->whereRaw(
+                    'ST_Covers(geometry, ST_SetSRID(ST_MakePoint(?, ?), 4326))',
+                    [$longitude, $latitude],
+                )
+                ->first();
+        }
+
+        return \App\Models\Region::where('coastal_flag', true)
+            ->get()
+            ->first(fn ($region) => $this->pointIsInsideWktBounds($region->geometry, $latitude, $longitude));
+    }
+
+    private function postgisAvailable(): bool
+    {
+        return (bool) DB::selectOne(
+            "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') AS installed"
+        )->installed;
+    }
+
+    private function pointIsInsideWktBounds(string $wkt, float $latitude, float $longitude): bool
+    {
+        preg_match_all('/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/', $wkt, $matches, PREG_SET_ORDER);
+
+        if ($matches === []) {
+            return false;
+        }
+
+        $longitudes = array_map(fn (array $match) => (float) $match[1], $matches);
+        $latitudes = array_map(fn (array $match) => (float) $match[2], $matches);
+
+        return $longitude >= min($longitudes)
+            && $longitude <= max($longitudes)
+            && $latitude >= min($latitudes)
+            && $latitude <= max($latitudes);
     }
 }

@@ -5,7 +5,9 @@ import { useToast } from "../../shared/components/Toast";
 
 type ReportResponse = {
   message: string;
-  report_code: string;
+  data: {
+    report_code: string;
+  };
 };
 
 const panjangUtaraRegionId = "11111111-1111-4111-8111-111111111111";
@@ -64,8 +66,8 @@ export function ReportWizardPage() {
     }
 
     try {
-      const response = await api<ReportResponse>("/public/reports", { method: "POST", body: payload });
-      toast.success(`Laporan terkirim. Kode verifikasi: ${response.report_code}.`);
+      const response = await api<ReportResponse>("/reports", { method: "POST", body: payload });
+      toast.success(`Laporan terkirim. Kode verifikasi: ${response.data.report_code}.`);
       form.reset();
       setSelectedSeverity("parah");
     } catch {
@@ -93,7 +95,7 @@ export function ReportWizardPage() {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: 32, alignItems: "start" }}>
-          <input type="hidden" name="coordinates" value="-5.4458, 105.2673" />
+          <input type="hidden" name="coordinates" value="-5.4500, 105.266667" />
           <input type="hidden" name="severity" value={selectedSeverity} />
 
           {/* Left Column: Form Fields */}
@@ -105,8 +107,8 @@ export function ReportWizardPage() {
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "var(--surface-soft)", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}>
                 <span className="material-symbols-outlined" style={{ color: "var(--accent)", fontSize: 20 }}>location_on</span>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>Kel. Sukaraja, Kec. Telukbetung Selatan</div>
-                  <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>-5.4458°, 105.2673° · Bandar Lampung</div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>Kel. Panjang Utara, Kec. Panjang</div>
+                  <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>-5.4500°, 105.266667° · Bandar Lampung</div>
                 </div>
                 <button type="button" className="btn secondary" style={{ marginLeft: "auto", minHeight: 32, padding: "6px 12px", fontSize: 12 }}>Ubah Lokasi</button>
               </div>
@@ -126,7 +128,7 @@ export function ReportWizardPage() {
                   <path d="M0,20 C80,10 200,15 300,25 C400,35 500,20 640,18 L640,180 C540,195 400,200 280,190 C160,180 80,185 0,190Z" fill="#dde8c0" />
                   <circle cx="320" cy="120" r="10" fill="#1d4ed8" opacity="0.8" />
                   <circle cx="320" cy="120" r="24" fill="#1d4ed8" opacity="0.22" />
-                  <text x="336" y="118" style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fill: "#1e3a5f", fontWeight: 600 }}>Kel. Sukaraja</text>
+                  <text x="336" y="118" style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fill: "#1e3a5f", fontWeight: 600 }}>Panjang Utara</text>
                 </svg>
                 <button type="button" className="btn secondary" style={{ position: "absolute", top: 12, right: 12, padding: "8px 12px", fontSize: 12 }}>
                   <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span> Edit pin
@@ -204,7 +206,7 @@ export function ReportWizardPage() {
               <h2 style={{ fontSize: "1.1rem", marginBottom: 20 }}>Ringkasan Laporan</h2>
               <div className="summary-grid" style={{ display: "grid", gap: 14 }}>
                 {[
-                  ["Lokasi", "Kel. Sukaraja"],
+                  ["Lokasi", "Kel. Panjang Utara"],
                   ["Keparahan", "Parah"],
                   ["Ketinggian air", "±45 cm"],
                   ["Waktu kejadian", "09:30 WIB"],
