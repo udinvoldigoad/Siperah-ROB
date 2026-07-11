@@ -264,7 +264,7 @@ export function ProvinceDashboardPage() {
                           }}
                         />
                         
-                        <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>{new Date(`${date}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>
+                        <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>{new Date(date).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>
                       </div>
                     );
                   });
