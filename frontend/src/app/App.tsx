@@ -42,10 +42,11 @@ export function App() {
     
     if (navItem && navItem.roles) {
       if (!user) {
-        window.location.hash = "#/login";
-        return null;
-      }
-      if (!navItem.roles.includes(user.role)) {
+        if (!navItem.roles.includes("guest")) {
+          window.location.hash = "#/login";
+          return null;
+        }
+      } else if (!navItem.roles.includes(user.role)) {
         window.location.hash = "#/";
         return null;
       }

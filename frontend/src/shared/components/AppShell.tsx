@@ -63,8 +63,8 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
 
   const allowedNavItems = navItems.filter((item) => {
     if (!item.roles) return true;
-    if (!user) return false;
-    return item.roles.includes(user.role);
+    if (!user) return item.roles.includes("guest");
+    return item.roles.includes(user.role) || (item.roles.includes("guest") && user.role === "warga");
   });
 
   return (
