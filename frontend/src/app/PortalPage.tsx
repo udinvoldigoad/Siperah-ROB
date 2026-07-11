@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const faqData = [
   {
     q: "Seberapa akurat prediksi banjir rob SIPERAH-RoB?",
-    a: "Model Random Forest SIPERAH-RoB mencapai akurasi 87% dengan precision 0.89 dan recall 0.85 berdasarkan evaluasi pada data historis 2018–2024. Performa tertinggi untuk jangkauan 0–3 hari ke depan."
+    a: "Prediksi digunakan sebagai alat kewaspadaan, bukan kepastian kejadian. Selalu gunakan informasi risiko bersama arahan resmi BPBD dan kondisi nyata di lapangan."
   },
   {
     q: "Data apa yang digunakan model prediksi?",
@@ -18,7 +18,7 @@ const faqData = [
   },
   {
     q: "Seberapa sering peta diperbarui?",
-    a: "Peta prediksi diperbarui setiap hari pukul 05:00 WIB menggunakan data pasang surut terkini dari BMKG. Saat terdapat peristiwa astronomi signifikan (perigee, ekuinoks), pembaruan dilakukan 2 kali sehari."
+    a: "Peta menampilkan data prediksi terbaru yang tersedia di sistem. Jadwal pembaruan mengikuti import data dan pipeline prediksi yang dikelola operator."
   }
 ];
 

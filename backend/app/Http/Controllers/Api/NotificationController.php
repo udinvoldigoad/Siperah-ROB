@@ -22,8 +22,8 @@ final class NotificationController
             $defaultSettings = [
                 'id' => (string) Str::uuid(),
                 'user_id' => $userId,
-                'channels' => json_encode(['push_browser', 'email', 'whatsapp']),
-                'event_types' => json_encode(['event_bahaya', 'event_laporan', 'event_pasang_ekstrem']),
+                'channels' => json_encode(['browser', 'email', 'whatsapp']),
+                'event_types' => json_encode(['bahaya_sangat_tinggi', 'laporan_ground_truth', 'peringatan_bmkg']),
                 'quiet_start' => '22:00:00',
                 'quiet_end' => '05:00:00',
                 'monitored_regions' => json_encode(['Panjang Utara', 'Kalianda', 'Teluk Betung']),
@@ -41,6 +41,36 @@ final class NotificationController
                 'monitored_regions' => is_string($settings->monitored_regions) ? json_decode($settings->monitored_regions) : $settings->monitored_regions,
             ]
         ]);
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $items = DB::table('notification_inbox')
+            ->where('user_id', $request->user()->id)
+            ->orderByDesc('created_at')
+            ->limit(30)
+            ->get()
+            ->map(fn ($item) => [
+                'id' => $item->id,
+                'type' => $item->type,
+                'title' => $item->title,
+                'body' => $item->body,
+                'data' => is_string($item->data) ? json_decode($item->data, true) : $item->data,
+                'read_at' => $item->read_at,
+                'created_at' => $item->created_at,
+            ]);
+
+        return response()->json(['data' => $items]);
+    }
+
+    public function markRead(Request $request, string $notification): JsonResponse
+    {
+        DB::table('notification_inbox')
+            ->where('id', $notification)
+            ->where('user_id', $request->user()->id)
+            ->update(['read_at' => now()]);
+
+        return response()->json(['message' => 'Notifikasi ditandai sudah dibaca.']);
     }
 
     public function update(Request $request): JsonResponse

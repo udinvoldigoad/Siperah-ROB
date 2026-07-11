@@ -22,7 +22,7 @@ class StoreReportRequest extends FormRequest
             'incident_time' => ['required', 'date'],
             'description' => ['required', 'string', 'max:1000'],
             'photos' => ['nullable', 'array', 'max:5'],
-            'photos.*' => ['image', 'max:5120'], // Max 5MB
+            'photos.*' => ['image', 'mimes:jpg,jpeg,png', 'max:2048'], // Maksimal 2 MB per foto sesuai SKPL
         ];
     }
 }

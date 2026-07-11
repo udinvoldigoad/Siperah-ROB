@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { api } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
-import { motion } from "framer-motion";
-import { getLampungMarineData, TideDataPoint, getMLPrediction } from "../../shared/api/weatherClient";
+import { motion, type Variants } from "framer-motion";
 
 interface SummaryData {
   monitored_regencies: number;
@@ -15,16 +14,13 @@ interface SummaryData {
 
 interface PredictionData {
   id: string;
-  region_id: string;
   prediction_date: string;
   risk_probability: number;
   risk_class: "rendah" | "sedang" | "tinggi" | "sangat_tinggi";
   confidence_score: number | null;
   max_tidal_height: number | null;
   peak_time: string | null;
-  village: string;
-  district: string;
-  regency: string;
+  region: { village: string | null; district: string | null; regency: string | null } | null;
 }
 
 interface SummaryResponse {
@@ -35,12 +31,12 @@ interface PredictionListResponse {
   data: PredictionData[];
 }
 
-const containerVariants: any = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { duration: 0.2 } }
 };
 
-const itemVariants: any = {
+const itemVariants: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { duration: 0.2 } }
 };
@@ -48,14 +44,12 @@ const itemVariants: any = {
 export function ProvinceDashboardPage() {
   const toast = useToast();
   const [summary, setSummary] = useState<SummaryData>({
-    monitored_regencies: 15,
-    high_risk_villages: 42,
-    risk_population: 284000,
-    validated_reports_this_month: 1204,
+    monitored_regencies: 0,
+    high_risk_villages: 0,
+    risk_population: 0,
+    validated_reports_this_month: 0,
   });
   const [predictions, setPredictions] = useState<PredictionData[]>([]);
-  const [tideData, setTideData] = useState<TideDataPoint[]>([]);
-  const [mlData, setMlData] = useState<number[]>([8, 12, 15, 20, 26, 34, 49, 45, 41, 34, 26, 20, 14, 8, 4, 3, 2, 3, 4, 7, 10, 12, 15, 11, 9, 6]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchDashboardData = async () => {
@@ -67,13 +61,6 @@ export function ProvinceDashboardPage() {
       const predRes = await api<PredictionListResponse>("/public/predictions");
       setPredictions(predRes.data);
 
-      const marineData = await getLampungMarineData();
-      setTideData(marineData);
-
-      const predictionData = await getMLPrediction();
-      if (predictionData && predictionData.length > 0) {
-        setMlData(predictionData);
-      }
     } catch (err: any) {
       toast.error(err.message || "Gagal memuat data ringkasan provinsi.");
     } finally {
@@ -88,13 +75,14 @@ export function ProvinceDashboardPage() {
   const getRegencySummary = () => {
     const map: Record<string, { count: number; maxProb: number; class: string }> = {};
     predictions.forEach((p) => {
-      if (!map[p.regency]) {
-        map[p.regency] = { count: 0, maxProb: 0, class: "rendah" };
+      const regency = p.region?.regency ?? "Wilayah tidak diketahui";
+      if (!map[regency]) {
+        map[regency] = { count: 0, maxProb: 0, class: "rendah" };
       }
-      map[p.regency].count += 1;
-      if (p.risk_probability > map[p.regency].maxProb) {
-        map[p.regency].maxProb = p.risk_probability;
-        map[p.regency].class = p.risk_class;
+      map[regency].count += 1;
+      if (p.risk_probability > map[regency].maxProb) {
+        map[regency].maxProb = p.risk_probability;
+        map[regency].class = p.risk_class;
       }
     });
 
@@ -108,7 +96,12 @@ export function ProvinceDashboardPage() {
   };
 
   const regenciesData = getRegencySummary();
-  const chartData = [22, 31, 38, 34, 42, 47, summary.high_risk_villages];
+  const trendData = useMemo(() => Object.entries(predictions.reduce<Record<string, number>>((result, prediction) => {
+    if (["tinggi", "sangat_tinggi"].includes(prediction.risk_class)) result[prediction.prediction_date] = (result[prediction.prediction_date] ?? 0) + 1;
+    else result[prediction.prediction_date] ??= 0;
+    return result;
+  }, {})).sort(([a], [b]) => a.localeCompare(b)).map(([date, count]) => ({ date, count })), [predictions]);
+  const maxTrend = Math.max(1, ...trendData.map((item) => item.count));
 
   return (
     <AppShell active="province" title="Dashboard BPBD Provinsi Lampung">
@@ -129,10 +122,10 @@ export function ProvinceDashboardPage() {
             </motion.div>
             <div>
               <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--ink)" }}>
-                Siaga 1: Peringatan Dini BMKG Aktif Hari Ini
+                {isLoading ? "Memuat peringatan risiko…" : `${summary.high_risk_villages} kelurahan berisiko tinggi sedang dipantau`}
               </div>
               <div style={{ fontSize: "13.5px", opacity: 0.85, marginTop: "2px" }}>
-                Diprediksi terjadi pasang laut maksimum di pesisir Teluk Lampung. Seluruh Posko BPBD harap bersiaga penuh.
+                Ringkasan ini dihitung dari prediksi risiko terbaru dan laporan yang telah tervalidasi di sistem.
               </div>
             </div>
           </div>
@@ -176,8 +169,7 @@ export function ProvinceDashboardPage() {
               </div>
               <button className="btn secondary" style={{ fontSize: "12px" }}><Icon name="sort" style={{ fontSize: "14px" }} /> Urutkan</button>
             </div>
-            <div className="table-responsive">
-              <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+            <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--line)" }}>
                   <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)" }}>Kabupaten/Kota</th>
@@ -189,10 +181,10 @@ export function ProvinceDashboardPage() {
                 {regenciesData.map((item, idx) => (
                   <motion.tr 
                     key={item.name}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 + (idx * 0.05) }}
-                    
+                    whileHover={{ backgroundColor: "var(--surface-soft)" }}
                     style={{ borderBottom: "1px solid var(--line)" }}
                   >
                     <td style={{ padding: "16px 24px", fontWeight: 600 }}>
@@ -209,17 +201,16 @@ export function ProvinceDashboardPage() {
                     </td>
                   </motion.tr>
                 ))}
-                </tbody>
-              </table>
-            </div>
+              </tbody>
+            </table>
           </motion.div>
 
           {/* ML Prediction Timeline Chart */}
           <motion.div variants={itemVariants} className="panel" style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)" }}>Prediksi 30 Hari — Jumlah Kelurahan Sangat Tinggi</h2>
-                <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--ink-soft)" }}>Model Machine Learning (AI) memprediksi lonjakan pasang maksimum di minggu ketiga.</p>
+                <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)" }}>Tren Prediksi — Kelurahan Risiko Tinggi</h2>
+                <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--ink-soft)" }}>Data aktual yang tersedia dari endpoint prediksi, dikelompokkan per tanggal.</p>
               </div>
               <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--ink-soft)" }}>
@@ -236,8 +227,8 @@ export function ProvinceDashboardPage() {
             
             <div style={{ position: "relative", height: 280, marginTop: "20px" }}>
               {/* Y-Axis Labels & Grid Lines */}
-              {[50, 30, 10, 0].map((tick) => (
-                <div key={tick} style={{ position: "absolute", bottom: `${(tick / 55) * 100}%`, width: "100%", display: "flex", alignItems: "center" }}>
+              {[maxTrend, Math.ceil(maxTrend / 2), 0].map((tick) => (
+                <div key={tick} style={{ position: "absolute", bottom: `${(tick / maxTrend) * 100}%`, width: "100%", display: "flex", alignItems: "center" }}>
                   <div style={{ width: "30px", fontSize: "12px", color: "var(--ink-soft)", fontWeight: 500, textAlign: "right", paddingRight: "12px" }}>
                     {tick}
                   </div>
@@ -248,31 +239,20 @@ export function ProvinceDashboardPage() {
               {/* Data Bars Container */}
               <div style={{ position: "absolute", left: "42px", right: 0, bottom: 0, height: "100%", display: "flex", alignItems: "flex-end", gap: "6px", paddingBottom: "2px" }}>
                 {(() => {
-                  const data = mlData;
-                  const todayIndex = 6; // Peak at 49
+                  const data = trendData;
                   
-                  return data.map((val, idx) => {
+                  return data.map(({ count: val, date }, idx) => {
                     let color = "#4ade80"; // green
                     if (val >= 40) color = "#ef4444"; // red
                     else if (val >= 25) color = "#ea580c"; // orange
                     else if (val >= 10) color = "#f59e0b"; // yellow-orange
 
-                    const isToday = idx === todayIndex;
-
                     return (
                       <div key={idx} style={{ flex: 1, display: "flex", justifyContent: "center", height: "100%", position: "relative" }}>
                         
-                        {/* Hari ini Marker */}
-                        {isToday && (
-                          <div style={{ position: "absolute", top: -25, display: "flex", flexDirection: "column", alignItems: "center", height: "115%", zIndex: 10 }}>
-                            <span style={{ color: "#ef4444", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap" }}>Hari ini</span>
-                            <div style={{ width: 1, flex: 1, borderLeft: "1.5px dashed #ef4444", marginTop: "4px" }}></div>
-                          </div>
-                        )}
-
                         <motion.div
                           initial={{ height: 0 }}
-                          animate={{ height: `${(val / 55) * 100}%` }}
+                          animate={{ height: `${(val / maxTrend) * 100}%` }}
                           transition={{ delay: 0.2 + (idx * 0.03), type: "spring", stiffness: 60 }}
                           style={{
                             width: "100%",
@@ -284,10 +264,7 @@ export function ProvinceDashboardPage() {
                           }}
                         />
                         
-                        {/* X-Axis Labels placed exactly under specific bars */}
-                        {idx === 0 && <div style={{ position: "absolute", bottom: -28, fontSize: "12px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>1 Mei</div>}
-                        {idx === todayIndex && <div style={{ position: "absolute", bottom: -28, fontSize: "12px", color: "#ef4444", fontWeight: 700 }}>21</div>}
-                        {idx === 14 && <div style={{ position: "absolute", bottom: -28, fontSize: "12px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>Mei 30</div>}
+                        <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>{new Date(`${date}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>
                       </div>
                     );
                   });
@@ -306,8 +283,7 @@ export function ProvinceDashboardPage() {
             </div>
             <button className="btn secondary" style={{ fontSize: "12px" }}><Icon name="download" style={{ fontSize: "14px" }} /> Ekspor CSV Data Utama</button>
           </div>
-          <div className="table-responsive">
-            <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+          <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
               <tr style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--line)" }}>
                 <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)", width: "40px" }}>#</th>
@@ -322,12 +298,12 @@ export function ProvinceDashboardPage() {
               {predictions.slice(0, 5).map((p, index) => (
                 <motion.tr 
                   key={p.id}
-                  
+                  whileHover={{ backgroundColor: "var(--surface-soft)" }}
                   style={{ borderBottom: "1px solid var(--line)" }}
                 >
                   <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontWeight: 700 }}>{index + 1}</td>
-                  <td style={{ padding: "16px 24px", fontWeight: 700 }}>{p.village}</td>
-                  <td style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>{p.district}, {p.regency}</td>
+                  <td style={{ padding: "16px 24px", fontWeight: 700 }}>{p.region?.village ?? "-"}</td>
+                  <td style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>{p.region?.district ?? "-"}, {p.region?.regency ?? "-"}</td>
                   <td style={{ padding: "16px 24px" }}>
                     <span className={`badge severity-${p.risk_class}`}>
                       {p.risk_class.replace("_", " ")}
@@ -338,14 +314,13 @@ export function ProvinceDashboardPage() {
                   </td>
                   <td style={{ padding: "16px 24px", textAlign: "center" }}>
                     <span style={{ display: "inline-block", background: "rgba(16, 185, 129, 0.1)", color: "var(--low)", padding: "4px 8px", borderRadius: "6px", fontSize: "12px", fontWeight: 700 }}>
-                      {p.confidence_score ? `${(p.confidence_score / 100).toFixed(2)}` : "0.80"}
+                      {p.confidence_score ? `${p.confidence_score.toFixed(2)}%` : "-"}
                     </span>
                   </td>
                 </motion.tr>
               ))}
             </tbody>
           </table>
-          </div>
         </motion.div>
       </motion.div>
     </AppShell>

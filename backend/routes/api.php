@@ -15,6 +15,7 @@ Route::post('/auth/register', [AuthController::class, 'register']);
 
 // ── Public (tanpa login) ─────────────────────────────────────────
 Route::prefix('public')->group(function () {
+    Route::get('/map', [PublicMapController::class, 'map']);
     Route::get('/predictions', [PublicMapController::class, 'predictions']);
     Route::get('/regions/{region}', [PublicMapController::class, 'region']);
     Route::get('/mode-awam', [PublicMapController::class, 'modeAwam']);
@@ -59,4 +60,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/notifications/settings', [NotificationController::class, 'show']);
     Route::put('/notifications/settings', [NotificationController::class, 'update']);
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
 });

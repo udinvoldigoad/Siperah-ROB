@@ -7,6 +7,16 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Mesin PostgreSQL lokal tanpa paket PostGIS tetap bisa dipakai untuk
+        // development. Query laporan memakai fallback WKT pada kondisi ini.
+        $postgisAvailable = (bool) DB::table('pg_available_extensions')
+            ->where('name', 'postgis')
+            ->exists();
+
+        if (!$postgisAvailable) {
+            return;
+        }
+
         DB::statement('CREATE EXTENSION IF NOT EXISTS postgis');
 
         $geometryType = DB::table('information_schema.columns')
@@ -50,6 +60,14 @@ return new class extends Migration
 
     public function down(): void
     {
+        $postgisInstalled = (bool) DB::table('pg_extension')
+            ->where('extname', 'postgis')
+            ->exists();
+
+        if (!$postgisInstalled) {
+            return;
+        }
+
         DB::statement('DROP INDEX IF EXISTS reports_location_gix');
         DB::statement('DROP INDEX IF EXISTS regions_geometry_gix');
         DB::statement('DROP TRIGGER IF EXISTS ground_truth_reports_location_sync ON ground_truth_reports');

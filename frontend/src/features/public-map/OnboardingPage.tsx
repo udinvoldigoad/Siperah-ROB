@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { motion, AnimatePresence } from "framer-motion";
+import { api } from "../../shared/api/client";
+
+type Prediction = { risk_class: string; risk_probability: number; region?: { village?: string | null; regency?: string | null } | null };
+type PredictionResponse = { data: Prediction[] };
 
 const faqData = [
   {
     q: "Seberapa akurat prediksi banjir rob SIPERAH-RoB?",
-    a: "Model Random Forest SIPERAH-RoB mencapai akurasi 87% dengan precision 0.89 dan recall 0.85 berdasarkan evaluasi pada data historis 2018–2024. Performa tertinggi untuk jangkauan 0–3 hari ke depan."
+    a: "Prediksi adalah alat kewaspadaan, bukan kepastian kejadian. Gunakan informasi risiko bersama arahan resmi BPBD dan kondisi nyata di lapangan."
   },
   {
     q: "Data apa yang digunakan model prediksi?",
@@ -18,12 +22,23 @@ const faqData = [
   },
   {
     q: "Seberapa sering peta diperbarui?",
-    a: "Peta prediksi diperbarui setiap hari pukul 05:00 WIB menggunakan data pasang surut terkini dari BMKG. Saat terdapat peristiwa astronomi signifikan (perigee, ekuinoks), pembaruan dilakukan 2 kali sehari."
+    a: "Peta menampilkan data prediksi terbaru yang tersedia di sistem. Waktu pembaruan mengikuti jadwal import data dan pipeline prediksi yang dikelola operator."
   }
 ];
 
 export function OnboardingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+
+  useEffect(() => {
+    void api<PredictionResponse>("/public/predictions").then((response) => setPredictions(response.data)).catch(() => undefined);
+  }, []);
+
+  const highestRisk = useMemo(() => predictions.reduce<Prediction | null>((highest, item) => {
+    const rank: Record<string, number> = { rendah: 1, sedang: 2, tinggi: 3, sangat_tinggi: 4 };
+    return !highest || (rank[item.risk_class] ?? 0) > (rank[highest.risk_class] ?? 0) ? item : highest;
+  }, null), [predictions]);
+  const highRiskCount = predictions.filter((item) => ["tinggi", "sangat_tinggi"].includes(item.risk_class)).length;
 
   return (
     <AppShell active="onboarding" title="Panduan Pengguna">
@@ -50,6 +65,10 @@ export function OnboardingPage() {
           <p style={{ fontSize: "1.1rem", color: "var(--ink-soft)", maxWidth: 640, margin: "0 auto", lineHeight: 1.6 }}>
             Pelajari anatomi banjir rob di pesisir Lampung, cara membaca peta probabilitas harian kami, serta peran Anda dalam melaporkan kejadian aktual di lapangan.
           </p>
+          <div style={{ margin: "24px auto 0", maxWidth: 620, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="panel" style={{ padding: 14, textAlign: "left" }}><span style={{ display: "block", fontSize: 12, color: "var(--ink-soft)" }}>Zona risiko tinggi dipantau</span><strong style={{ fontSize: 22 }}>{highRiskCount}</strong></div>
+            <div className="panel" style={{ padding: 14, textAlign: "left" }}><span style={{ display: "block", fontSize: 12, color: "var(--ink-soft)" }}>Risiko tertinggi saat ini</span><strong style={{ fontSize: 14 }}>{highestRisk ? `${highestRisk.region?.village ?? "Wilayah pesisir"} · ${Math.round(highestRisk.risk_probability)}%` : "Memuat data…"}</strong></div>
+          </div>
         </motion.div>
 
         {/* Feature 1: Alternating Layout Left */}
@@ -140,7 +159,7 @@ export function OnboardingPage() {
             </div>
           </div>
           <div style={{ marginTop: "40px" }}>
-            <a href="#/reports/new" className="btn solid" style={{ background: "var(--ocean-dark)", color: "#fff", padding: "14px 32px", borderRadius: "100px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            <a href="#/reports" className="btn solid" style={{ background: "var(--ocean-dark)", color: "#fff", padding: "14px 32px", borderRadius: "100px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
               Mulai Melapor Sekarang <Icon name="add_circle" />
             </a>
           </div>

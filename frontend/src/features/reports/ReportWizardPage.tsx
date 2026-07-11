@@ -42,6 +42,7 @@ export function ReportWizardPage() {
   const toast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSeverity, setSelectedSeverity] = useState<(typeof severityOptions)[number]["key"]>("parah");
+  const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,11 +71,25 @@ export function ReportWizardPage() {
       toast.success(`Laporan terkirim. Kode verifikasi: ${response.data.report_code}.`);
       form.reset();
       setSelectedSeverity("parah");
+      setSelectedPhotos([]);
     } catch (error: any) {
       toast.error(error.message || "Laporan belum terkirim. Cek isian dan coba lagi.");
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handlePhotos(files: FileList | null) {
+    const photos = Array.from(files ?? []);
+    if (photos.length > 5) {
+      toast.error("Maksimal 5 foto untuk satu laporan.");
+      return;
+    }
+    if (photos.some((photo) => photo.size > 2 * 1024 * 1024)) {
+      toast.error("Setiap foto maksimal berukuran 2 MB.");
+      return;
+    }
+    setSelectedPhotos(photos);
   }
 
   return (
@@ -195,8 +210,11 @@ export function ReportWizardPage() {
 
             <section style={{ display: "grid", gap: 8 }}>
               <label htmlFor="photos" style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Foto dokumentasi</label>
-              <input id="photos" name="photos" type="file" accept="image/png,image/jpeg" multiple style={{ padding: "12px 14px" }} />
-              <p className="form-note" style={{ marginTop: 8 }}>Laporan diverifikasi BPBD maksimal 1x24 jam sebelum dipakai sebagai ground truth.</p>
+              <input id="photos" name="photos" type="file" accept="image/png,image/jpeg" multiple onChange={(event) => handlePhotos(event.target.files)} style={{ padding: "12px 14px" }} />
+              <p className="form-note" style={{ marginTop: 8 }}>JPG/PNG, maksimal 5 foto dan 2 MB per foto. Laporan diverifikasi BPBD maksimal 1x24 jam.</p>
+              {selectedPhotos.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10, marginTop: 6 }}>
+                {selectedPhotos.map((photo) => <figure key={`${photo.name}-${photo.lastModified}`} style={{ margin: 0, border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden" }}><img src={URL.createObjectURL(photo)} alt={photo.name} style={{ display: "block", width: "100%", height: 84, objectFit: "cover" }} /><figcaption style={{ padding: 6, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{photo.name}</figcaption></figure>)}
+              </div>}
             </section>
           </div>
 
@@ -218,7 +236,7 @@ export function ReportWizardPage() {
                 ))}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                   <span style={{ color: "var(--ink-soft)", fontSize: 13 }}>Foto dilampirkan</span>
-                  <strong style={{ fontSize: 14 }}>2 foto</strong>
+                  <strong style={{ fontSize: 14 }}>{selectedPhotos.length} foto</strong>
                 </div>
               </div>
             </div>
