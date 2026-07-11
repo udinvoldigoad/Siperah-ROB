@@ -162,7 +162,7 @@ export function PublicMapPage() {
                       </div>
                     </div>
                     <Icon name="chevron_right" style={{ color: "var(--ink-soft)", fontSize: 18, marginTop: 4 }} />
-                  </motion.article>
+                  </article>
                 ))}
               </div>
 
