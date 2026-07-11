@@ -118,6 +118,7 @@ final class ReportController
             'validated_by' => $request->user()->id,
             'validated_at' => now(),
         ]);
+        $this->notifyReporterAboutStatus($reportData);
         $this->writeAudit($request, 'validate_report', $reportData);
 
         return response()->json([
@@ -140,6 +141,7 @@ final class ReportController
             'validated_at' => now(),
             'rejection_reason' => $request->input('reason'),
         ]);
+        $this->notifyReporterAboutStatus($reportData);
         $this->writeAudit($request, 'reject_report', $reportData);
 
         return response()->json([
@@ -162,6 +164,7 @@ final class ReportController
             'validated_by' => in_array($status, ['divalidasi', 'ditolak']) ? $request->user()->id : null,
             'validated_at' => in_array($status, ['divalidasi', 'ditolak']) ? now() : null,
         ]);
+        $this->notifyReporterAboutStatus($reportData);
         $this->writeAudit($request, 'update_report_status', $reportData);
 
         return response()->json([
@@ -248,6 +251,37 @@ final class ReportController
                 'status' => $report->status,
                 'region_id' => $report->region_id,
             ],
+        ]);
+    }
+
+    private function notifyReporterAboutStatus(GroundTruthReport $report): void
+    {
+        $settings = DB::table('notification_settings')->where('user_id', $report->user_id)->value('event_types');
+        $eventTypes = is_string($settings) ? json_decode($settings, true) : $settings;
+        if (is_array($eventTypes) && !in_array('laporan_ground_truth', $eventTypes, true) && !in_array('event_laporan', $eventTypes, true)) {
+            return;
+        }
+
+        $labels = [
+            'divalidasi' => 'Laporan divalidasi',
+            'ditolak' => 'Laporan ditolak',
+            'perlu_review' => 'Laporan perlu ditinjau',
+            'duplikat' => 'Laporan ditandai duplikat',
+        ];
+        $title = $labels[$report->status] ?? 'Status laporan diperbarui';
+        $body = "Laporan {$report->report_code} sekarang berstatus {$title}.";
+        if ($report->status === 'ditolak' && $report->rejection_reason) {
+            $body .= " Alasan: {$report->rejection_reason}";
+        }
+
+        DB::table('notification_inbox')->insert([
+            'id' => (string) Str::uuid(),
+            'user_id' => $report->user_id,
+            'type' => 'report_status',
+            'title' => $title,
+            'body' => $body,
+            'data' => json_encode(['report_id' => $report->id, 'report_code' => $report->report_code, 'status' => $report->status]),
+            'created_at' => now(),
         ]);
     }
 

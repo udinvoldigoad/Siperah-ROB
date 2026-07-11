@@ -3,7 +3,7 @@ import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { useToast } from "../../shared/components/Toast";
 import { api } from "../../shared/api/client";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 interface NotificationSettings {
   channels: string[];
@@ -17,12 +17,15 @@ interface NotificationSettingsResponse {
   data: NotificationSettings;
 }
 
-const containerVariants = {
+interface InboxItem { id: string; title: string; body: string; read_at: string | null; created_at: string; }
+interface InboxResponse { data: InboxItem[]; }
+
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } }
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
@@ -40,6 +43,7 @@ export function NotificationSettingsPage() {
   const [monitoredRegions, setMonitoredRegions] = useState<string[]>([]);
   const [newRegion, setNewRegion] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [inbox, setInbox] = useState<InboxItem[]>([]);
 
   const fetchSettings = async () => {
     try {
@@ -62,9 +66,23 @@ export function NotificationSettingsPage() {
     }
   };
 
+  const fetchInbox = async () => {
+    try {
+      const res = await api<InboxResponse>("/notifications");
+      setInbox(res.data);
+    } catch { /* Kotak masuk bersifat pelengkap; pengaturan tetap dapat digunakan. */ }
+  };
+
   useEffect(() => {
     fetchSettings();
+    fetchInbox();
   }, []);
+
+  const markRead = async (item: InboxItem) => {
+    if (item.read_at) return;
+    await api(`/notifications/${item.id}/read`, { method: "PATCH" });
+    setInbox((current) => current.map((entry) => entry.id === item.id ? { ...entry, read_at: new Date().toISOString() } : entry));
+  };
 
   const toggleChannel = (channel: string) => {
     setChannels((prev) =>
@@ -124,6 +142,10 @@ export function NotificationSettingsPage() {
   return (
     <AppShell active="notifications" title="Pengaturan Notifikasi">
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="content" style={{ maxWidth: 1000, margin: "0 auto", paddingBottom: 60 }}>
+        <motion.section variants={itemVariants} className="panel flush" style={{ marginBottom: 24 }}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "center" }}><div><h2 style={{ margin: 0, fontSize: "1rem" }}>Notifikasi terbaru</h2><p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--ink-soft)" }}>Perubahan status laporan Anda akan muncul di sini.</p></div><span className="badge status-menunggu">{inbox.filter((item) => !item.read_at).length} baru</span></div>
+          {inbox.length === 0 ? <p style={{ padding: "16px 20px", margin: 0, color: "var(--ink-soft)", fontSize: 13 }}>Belum ada notifikasi status laporan.</p> : <div>{inbox.slice(0, 5).map((item) => <button type="button" key={item.id} onClick={() => void markRead(item)} style={{ width: "100%", padding: "14px 20px", textAlign: "left", background: item.read_at ? "var(--surface)" : "var(--accent-soft)", border: "none", borderBottom: "1px solid var(--line)", cursor: "pointer" }}><strong style={{ display: "block", fontSize: 13 }}>{item.title}</strong><span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--ink-soft)" }}>{item.body}</span></button>)}</div>}
+        </motion.section>
         
         {/* KPI Grid */}
         <motion.div variants={itemVariants} className="metric-grid" style={{ marginBottom: 32 }}>
