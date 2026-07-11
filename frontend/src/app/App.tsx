@@ -13,6 +13,7 @@ import { ReportWizardPage } from "../features/reports/ReportWizardPage";
 import { ResearchPortalPage } from "../features/research/ResearchPortalPage";
 import { PortalPage } from "./PortalPage";
 import { ToastProvider } from "../shared/components/Toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 function currentRoute() {
   return window.location.hash.replace("#/", "") || "";
@@ -28,20 +29,22 @@ export function App() {
   }, []);
 
   const renderRoute = () => {
-    if (route === "login") return <LoginPage />;
-    if (route === "map") return <PublicMapPage />;
-    if (route === "awam") return <CitizenModePage />;
-    if (route === "onboarding") return <OnboardingPage />;
-    if (route === "reports") return <ReportWizardPage />;
-    if (route.startsWith("operator/reports/")) return <ReportDetailPage reportId={route.replace("operator/reports/", "")} />;
-    if (route === "operator") return <OperatorDashboardPage />;
-    if (route === "province") return <ProvinceDashboardPage />;
-    if (route === "research") return <ResearchPortalPage />;
-    if (route === "notifications") return <NotificationSettingsPage />;
-    if (route === "admin") return <AdminUsersPage />;
-    if (route === "audit") return <AuditLogPage />;
+    let Component;
+    if (route === "login") Component = <LoginPage />;
+    else if (route === "map") Component = <PublicMapPage />;
+    else if (route === "awam") Component = <CitizenModePage />;
+    else if (route === "onboarding") Component = <OnboardingPage />;
+    else if (route === "reports") Component = <ReportWizardPage />;
+    else if (route.startsWith("operator/reports/")) Component = <ReportDetailPage reportId={route.replace("operator/reports/", "")} />;
+    else if (route === "operator") Component = <OperatorDashboardPage />;
+    else if (route === "province") Component = <ProvinceDashboardPage />;
+    else if (route === "research") Component = <ResearchPortalPage />;
+    else if (route === "notifications") Component = <NotificationSettingsPage />;
+    else if (route === "admin") Component = <AdminUsersPage />;
+    else if (route === "audit") Component = <AuditLogPage />;
+    else Component = <PortalPage />;
 
-    return <PortalPage />;
+    return Component;
   };
 
   return (

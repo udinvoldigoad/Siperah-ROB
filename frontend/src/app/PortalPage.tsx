@@ -1,7 +1,30 @@
+import { useState } from "react";
 import { Icon } from "../shared/components/Icon";
 import { MapPreview } from "../shared/components/MapPreview";
+import { motion, AnimatePresence } from "framer-motion";
+
+const faqData = [
+  {
+    q: "Seberapa akurat prediksi banjir rob SIPERAH-RoB?",
+    a: "Model Random Forest SIPERAH-RoB mencapai akurasi 87% dengan precision 0.89 dan recall 0.85 berdasarkan evaluasi pada data historis 2018–2024. Performa tertinggi untuk jangkauan 0–3 hari ke depan."
+  },
+  {
+    q: "Data apa yang digunakan model prediksi?",
+    a: "Model mengintegrasikan data pasang surut dari BMKG, data batimetri dari BIG, data kependudukan BPS, data historis banjir rob 2018–2024, dan laporan ground truth dari warga yang telah divalidasi BPBD."
+  },
+  {
+    q: "Siapa saja yang bisa menggunakan SIPERAH-RoB?",
+    a: "Peta publik dapat diakses oleh siapa saja tanpa login. Fitur pelaporan tersedia untuk warga terdaftar. Dashboard BPBD dikhususkan untuk operator kabupaten/kota dan BPBD Provinsi Lampung."
+  },
+  {
+    q: "Seberapa sering peta diperbarui?",
+    a: "Peta prediksi diperbarui setiap hari pukul 05:00 WIB menggunakan data pasang surut terkini dari BMKG. Saat terdapat peristiwa astronomi signifikan (perigee, ekuinoks), pembaruan dilakukan 2 kali sehari."
+  }
+];
 
 export function PortalPage() {
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
   return (
     <div className="siperah-landing-root">
       {/* Google Fonts Load */}
@@ -65,9 +88,10 @@ export function PortalPage() {
           justify-content: center;
           width: 30px;
           height: 30px;
-          background: linear-gradient(135deg, #1e40af, #3b82f6);
-          color: #fff;
-          border-radius: 6px;
+          background: #ffffff;
+          color: #2563eb;
+          border: 2px solid #2563eb;
+          border-radius: 8px;
           font-size: 1.1rem;
         }
         .nav-links-wrap {
@@ -224,10 +248,11 @@ export function PortalPage() {
           width: 100%;
           height: 100vh;
           background-image: 
-            radial-gradient(circle at 50% 30%, rgba(37, 99, 235, 0.04) 0%, transparent 60%),
-            linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
-          background-size: 100% 100%, 80px 80px, 80px 80px;
+            linear-gradient(rgba(241, 245, 249, 0.6), rgba(241, 245, 249, 1)),
+            linear-gradient(rgba(148, 163, 184, 0.2) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(148, 163, 184, 0.2) 1px, transparent 1px),
+            url('/bg-laut.jpg');
+          background-size: 100% 100%, 80px 80px, 80px 80px, cover;
           background-position: center;
           z-index: 1;
           pointer-events: none;
@@ -521,34 +546,57 @@ export function PortalPage() {
         <nav className="nav-links-wrap">
           <a href="#/map">Peta Publik</a>
           <a href="#/awam">Mode Awam</a>
-          <a href="#/onboarding">Panduan Warga</a>
-          <a href="#/research">Portal Peneliti</a>
+          <a href="#panduan">Panduan</a>
         </nav>
         <div className="header-actions">
-          <a className="btn-link-login" href="#/login">Masuk</a>
+          {localStorage.getItem("siperah-token") ? (
+            <a className="btn-link-login" href="#/province">Dashboard</a>
+          ) : (
+            <a className="btn-link-login" href="#/login">Login</a>
+          )}
           <a className="btn-nav-primary" href="#/map">Buka Peta</a>
         </div>
       </header>
 
       {/* Cinematic Center Hero */}
       <section className="hero-section">
-        <span className="hero-kicker">WebGIS Kebencanaan Provinsi Lampung</span>
-        <h1>
-          Building better mitigation
-          <span className="inline-pill-img"></span>
-          against tidal floods.
-        </h1>
-        <p>
-          Portal informasi geografis terpadu pesisir Lampung. Menyajikan prediksi risiko berbasis machine learning, visualisasi kerentanan kelurahan, dan wadah verifikasi data lapangan.
-        </p>
-        <div className="hero-actions">
+        <motion.span
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="hero-kicker"
+          style={{ display: "inline-block", padding: "6px 16px", background: "rgba(37, 99, 235, 0.1)", color: "var(--accent-blue)", borderRadius: "100px", fontSize: "0.85rem", fontWeight: 700, marginBottom: "24px" }}
+        >
+          WebGIS Kebencanaan Provinsi Lampung
+        </motion.span>
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+        >
+          Sistem Prediksi Cerdas<br />
+          Banjir Rob Lampung.
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+        >
+          Peta digital interaktif untuk memantau prediksi risiko dan melaporkan kejadian banjir rob di kawasan pesisir Provinsi Lampung secara langsung.
+        </motion.p>
+        <motion.div
+          className="hero-actions"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+        >
           <a className="btn-hero-primary" href="#/map">
             Buka Peta Risiko
           </a>
           <a className="btn-hero-secondary" href="#/awam">
             Akses Mode Awam
           </a>
-        </div>
+        </motion.div>
       </section>
 
       {/* Infinite Scrolling Marquee Row */}
@@ -582,7 +630,13 @@ export function PortalPage() {
 
         <div className="bento-container-grid">
           {/* Card 1: Portal Publik (col-span-8) */}
-          <div className="bento-card-el card-span-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="bento-card-el card-span-8"
+          >
             <div>
               <span className="card-meta-title">Public Access</span>
               <h3>Portal Publik</h3>
@@ -598,10 +652,16 @@ export function PortalPage() {
               <a className="card-action-link" href="#/map">Akses Sistem <Icon name="arrow_forward" /></a>
               <a className="card-action-link" href="#/onboarding">Panduan Mitigasi <Icon name="arrow_forward" /></a>
             </div>
-          </div>
+          </motion.div>
 
           {/* Card 2: Dashboard BPBD (col-span-4) - Dark Theme for Contrast */}
-          <div className="bento-card-el card-span-4 dark-theme">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
+            className="bento-card-el card-span-4 dark-theme"
+          >
             <div>
               <span className="card-meta-title">BPBD Command Center</span>
               <h3>Dashboard BPBD</h3>
@@ -609,82 +669,187 @@ export function PortalPage() {
                 Pusat kendali dan monitoring prediksi risiko, analisis dampak, dan manajemen logistik untuk operator dan pengambil keputusan.
               </p>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", margin: "24px 0" }}>
-                <div style={{ background: "rgba(255,255,255,0.06)", padding: "16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                  <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", fontWeight: 700 }}>Kelurahan Pantau</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: 800, marginTop: "4px", color: "var(--accent-soft)" }}>283</div>
-                </div>
-                <div style={{ background: "rgba(255,255,255,0.06)", padding: "16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                  <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", fontWeight: 700 }}>Akurasi Model</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: 800, marginTop: "4px", color: "#10B981" }}>87%</div>
-                </div>
-              </div>
+
             </div>
             <div className="card-links-row">
               <a className="card-action-link" href="#/login">Masuk Dashboard <Icon name="arrow_forward" /></a>
             </div>
-          </div>
-
-          {/* Card 3: Portal Peneliti & API (col-span-4) */}
-          <div className="bento-card-el card-span-4">
-            <div>
-              <span className="card-meta-title">Research Archive & API</span>
-              <h3>Portal Peneliti & API</h3>
-              <p>
-                Akses repositori dataset riwayat, unduh data prediksi, dan manajemen kunci API untuk kebutuhan penelitian.
-              </p>
-
-              <div style={{ background: "rgba(18,19,20,0.03)", padding: "14px", borderRadius: "12px", border: "1px solid var(--border-color)", fontFamily: "monospace", fontSize: "0.75rem", margin: "24px 0", color: "var(--ink-muted)" }}>
-                <div>GET /v1/predictions</div>
-                <div style={{ color: "#1E40AF", marginTop: "2px" }}>Authorization: Bearer key_api...</div>
-              </div>
-            </div>
-            <div className="card-links-row">
-              <a className="card-action-link" href="#/research">Akses Data <Icon name="arrow_forward" /></a>
-            </div>
-          </div>
-
-          {/* Card 4: Administrator (col-span-8) */}
-          <div className="bento-card-el card-span-8">
-            <div>
-              <span className="card-meta-title">System Administration</span>
-              <h3>Administrator</h3>
-              <p>
-                Kelola akses pengguna, konfigurasi sistem, dan pantau log aktivitas (audit log) sistem secara keseluruhan.
-              </p>
-
-              <div className="card-preview-container" style={{ padding: "20px", background: "var(--surface-soft)", minHeight: "100px", display: "flex", alignItems: "center", gap: "16px" }}>
-                <div style={{ background: "#fff", width: "42px", height: "42px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--line)" }}>
-                  <Icon name="security" style={{ color: "var(--accent)" }} />
-                </div>
-                <div>
-                  <strong style={{ display: "block", fontSize: "0.95rem" }}>Sistem Keamanan & Akuntabilitas Terjamin</strong>
-                  <span style={{ fontSize: "0.84rem", color: "var(--ink-soft)" }}>Seluruh perubahan hak akses, enkripsi log aktivitas, dan tindakan admin dicatat ke dalam database.</span>
-                </div>
-              </div>
-            </div>
-            <div className="card-links-row">
-              <a className="card-action-link" href="#/admin">Kelola Sistem <Icon name="arrow_forward" /></a>
-            </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Floating Mitigation Help Trigger */}
-      <a className="mitigasi-trigger" href="#/onboarding" title="Panduan Mitigasi">
-        <Icon name="help" />
-      </a>
+      {/* Panduan Section */}
+      <section id="panduan" className="guide-section" style={{ maxWidth: '1200px', margin: '100px auto', padding: '0 40px' }}>
+        <motion.div
+          className="bento-header-wrap"
+          style={{ marginBottom: '60px' }}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <h2>Panduan</h2>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "60px", alignItems: "center", marginBottom: "120px" }}
+        >
+          <div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "var(--accent-blue-soft)", padding: "8px 16px", borderRadius: "100px", fontSize: "13px", fontWeight: 700, color: "var(--accent-blue)", marginBottom: "24px", textTransform: "uppercase", letterSpacing: "1px" }}>
+              <Icon name="warning" /> Faktor Utama
+            </div>
+            <ul style={{ margin: 0, padding: "0", listStyle: "none", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <li style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "1.15rem", fontWeight: 600, color: "var(--ink-primary)" }}>
+                <Icon name="check_circle" style={{ color: "var(--accent-blue)" }} /> Pasang tinggi (Perigee)
+              </li>
+              <li style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "1.15rem", fontWeight: 600, color: "var(--ink-primary)" }}>
+                <Icon name="check_circle" style={{ color: "var(--accent-blue)" }} /> Angin darat kencang
+              </li>
+              <li style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "1.15rem", fontWeight: 600, color: "var(--ink-primary)" }}>
+                <Icon name="check_circle" style={{ color: "var(--accent-blue)" }} /> Fase bulan purnama
+              </li>
+              <li style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "1.15rem", fontWeight: 600, color: "var(--ink-primary)" }}>
+                <Icon name="check_circle" style={{ color: "var(--accent-blue)" }} /> Penurunan muka tanah
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h2 style={{ fontSize: "3rem", fontWeight: 800, color: "var(--ink-primary)", marginBottom: "24px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>Apa itu <span style={{ color: "#0284c7" }}>Banjir Rob?</span></h2>
+            <p style={{ fontSize: "1.15rem", color: "var(--ink-muted)", lineHeight: 1.8, marginBottom: "40px" }}>
+              Banjir rob adalah genangan air laut yang meluap ke daratan, sering kali terjadi secara berulang. Di pesisir Lampung, fenomena ini tidak hanya dipicu oleh pasang surut astronomis, tetapi juga diperparah oleh cuaca ekstrem dan aktivitas manusia yang menyebabkan penurunan permukaan tanah.
+            </p>
+            <motion.a 
+              href="#/map" 
+              whileHover={{ y: -3, boxShadow: "0 15px 35px rgba(15,23,42,0.3)" }}
+              style={{ background: "#0f172a", color: "#fff", padding: "18px 36px", borderRadius: "100px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "12px", boxShadow: "0 10px 25px rgba(15,23,42,0.2)", fontSize: "1.05rem" }}
+            >
+              Lihat Peta Risiko <Icon name="arrow_forward" />
+            </motion.a>
+          </div>
+        </motion.div>
+
+        {/* Feature 2: Alternating Layout Right */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "48px", alignItems: "center", marginBottom: "100px" }}
+        >
+          <div style={{ order: 1 }}>
+            <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink)", marginBottom: "20px", letterSpacing: "-0.02em" }}>Cara Membaca Peta Prediksi</h2>
+            <p style={{ fontSize: "1.05rem", color: "var(--ink-soft)", lineHeight: 1.7, marginBottom: "32px" }}>
+              Sistem AI kami memproyeksikan probabilitas banjir ke dalam empat kelas warna yang intuitif. Hal ini memudahkan Anda dan pengambil kebijakan untuk memprioritaskan tindakan mitigasi pada area yang paling berisiko.
+            </p>
+            <div style={{ display: "grid", gap: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#ef4444" }}></div><strong style={{ minWidth: "120px" }}>Sangat Tinggi</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&gt;75% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#f97316" }}></div><strong style={{ minWidth: "120px" }}>Tinggi</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(50–75% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#f59e0b" }}></div><strong style={{ minWidth: "120px" }}>Sedang</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(25–50% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#10b981" }}></div><strong style={{ minWidth: "120px" }}>Rendah</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&lt;25% Probabilitas)</span></div>
+            </div>
+          </div>
+          <div style={{ order: 2, background: "var(--ocean-primary)", borderRadius: "32px", padding: "40px", height: "400px", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+            <div style={{ width: "80%", height: "80%", background: "url('https://maps.wikimedia.org/osm-intl/12/3246/2117.png')", backgroundSize: "cover", borderRadius: "24px", border: "4px solid rgba(255,255,255,0.2)", position: "absolute", filter: "grayscale(30%) sepia(20%) hue-rotate(180deg)" }}></div>
+            <div style={{ position: "absolute", width: "40px", height: "40px", background: "#ef4444", borderRadius: "50%", top: "40%", left: "45%", boxShadow: "0 0 0 10px rgba(239,68,68,0.3)" }}></div>
+            <div style={{ position: "absolute", width: "30px", height: "30px", background: "#f97316", borderRadius: "50%", top: "55%", left: "60%", boxShadow: "0 0 0 8px rgba(249,115,22,0.3)" }}></div>
+          </div>
+        </motion.div>
+
+        {/* Feature 3: Full Width Interactive Style */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "40px", padding: "60px", marginBottom: "80px", textAlign: "center" }}
+        >
+          <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink-primary)", marginBottom: "16px", letterSpacing: "-0.02em" }}>Cara Melaporkan Kejadian</h2>
+          <p style={{ fontSize: "1.05rem", color: "var(--ink-muted)", lineHeight: 1.7, maxWidth: 700, margin: "0 auto 48px" }}>
+            Bantu kami memvalidasi model AI dengan membagikan kondisi riil di wilayah Anda. Prosesnya sangat mudah dan terintegrasi langsung dengan dashboard BPBD.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "24px", maxWidth: 900, margin: "0 auto" }}>
+            <div style={{ background: "var(--bg-primary)", padding: "32px", borderRadius: "24px", border: "1px solid var(--border-color)" }}>
+              <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--accent-blue-soft)", color: "var(--accent-blue)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 800, fontSize: "1.2rem" }}>1</div>
+              <h3 style={{ fontSize: "1.1rem", marginBottom: "12px", color: "var(--ink-primary)" }}>Tentukan Lokasi</h3>
+              <p style={{ fontSize: "0.9rem", color: "var(--ink-muted)" }}>Pin lokasi Anda pada peta interaktif yang disediakan.</p>
+            </div>
+            <div style={{ background: "var(--bg-primary)", padding: "32px", borderRadius: "24px", border: "1px solid var(--border-color)" }}>
+              <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--accent-blue-soft)", color: "var(--accent-blue)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 800, fontSize: "1.2rem" }}>2</div>
+              <h3 style={{ fontSize: "1.1rem", marginBottom: "12px", color: "var(--ink-primary)" }}>Isi Detail Keparahan</h3>
+              <p style={{ fontSize: "0.9rem", color: "var(--ink-muted)" }}>Tulis tinggi genangan dan kondisi cuaca saat kejadian berlangsung.</p>
+            </div>
+            <div style={{ background: "var(--bg-primary)", padding: "32px", borderRadius: "24px", border: "1px solid var(--border-color)" }}>
+              <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--accent-blue-soft)", color: "var(--accent-blue)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 800, fontSize: "1.2rem" }}>3</div>
+              <h3 style={{ fontSize: "1.1rem", marginBottom: "12px", color: "var(--ink-primary)" }}>Unggah & Kirim</h3>
+              <p style={{ fontSize: "0.9rem", color: "var(--ink-muted)" }}>Sertakan foto bukti agar validasi oleh BPBD dapat berjalan cepat.</p>
+            </div>
+          </div>
+          <div style={{ marginTop: "40px" }}>
+            <a href="#/reports" className="btn solid" style={{ background: "var(--ocean-dark, #0f172a)", color: "#fff", padding: "14px 32px", borderRadius: "100px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+              Mulai Melapor Sekarang <Icon name="add_circle" />
+            </a>
+          </div>
+        </motion.div>
+
+        {/* Modern FAQ Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "60px", alignItems: "flex-start", marginBottom: "100px" }}
+        >
+          <div>
+            <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink-primary)", marginBottom: "16px", letterSpacing: "-0.02em" }}>FAQ</h2>
+            <p style={{ fontSize: "1.05rem", color: "var(--ink-muted)", lineHeight: 1.7 }}>
+              Pertanyaan umum mengenai penggunaan portal SIPERAH-RoB dan akurasi model prediksinya.
+            </p>
+          </div>
+          
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {faqData.map((item, i) => (
+              <div key={i} style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "24px", overflow: "hidden" }}>
+                <div 
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", padding: "24px", background: openFaq === i ? "var(--accent-blue-soft)" : "transparent", transition: "background 0.3s" }}
+                >
+                  <strong style={{ fontSize: "1.05rem", color: openFaq === i ? "var(--accent-blue)" : "var(--ink-primary)" }}>{item.q}</strong>
+                  <motion.div animate={{ rotate: openFaq === i ? 180 : 0 }}>
+                    <Icon name="expand_more" style={{ color: openFaq === i ? "var(--accent-blue)" : "var(--ink-muted)" }} />
+                  </motion.div>
+                </div>
+                <AnimatePresence>
+                  {openFaq === i && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }} 
+                      animate={{ height: "auto", opacity: 1 }} 
+                      exit={{ height: 0, opacity: 0 }}
+                      style={{ overflow: "hidden" }}
+                    >
+                      <div style={{ padding: "0 24px 24px", color: "var(--ink-muted)", lineHeight: 1.7, fontSize: "1rem" }}>
+                        {item.a}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </section>
 
       {/* Minimal Landing Footer */}
       <footer className="landing-footer">
-        <div className="footer-brand">
+        <div className="footer-brand" style={{ lineHeight: '1.6' }}>
+          <strong style={{ fontSize: '1.1rem', color: 'var(--ink-primary)' }}>SIPERAH-RoB</strong><br />
+          Sistem Informasi Prediksi Risiko Banjir Rob Terpadu<br />
           SIPERAH-RoB &copy; 2026. Institut Teknologi Sumatera
         </div>
-        <div className="footer-links">
-          <a href="#/map">Peta Publik</a>
-          <a href="#/awam">Mode Awam</a>
-          <a href="#/research">Akses API</a>
-          <a href="#/login">Login Petugas</a>
+        <div className="footer-links" style={{ flexDirection: 'column', gap: '8px', textAlign: 'right' }}>
+          <span><strong>Pusdalops BPBD Provinsi Lampung</strong></span>
+          <span>Jl. Beringin Raya No. 1, Teluk Betung, Bandar Lampung</span>
+          <span>Email: tanggap@bpbd.lampungprov.go.id</span>
+          <span>Hotline: (0721) 123456</span>
         </div>
       </footer>
     </div>

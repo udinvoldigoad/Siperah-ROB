@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { motion } from "framer-motion";
 import { navItems } from "../../app/navigation";
 import { Icon } from "./Icon";
 import { Breadcrumbs, type BreadcrumbItem } from "./Breadcrumbs";
@@ -33,18 +34,16 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
     }
   }, [isUserMenuOpen, closeMenu]);
 
-  // Static user state for demonstration purposes
-  const isUserLoggedIn = active !== "map" && active !== "onboarding" && active !== "reports" && active !== "awam";
+  const isUserLoggedIn = !!localStorage.getItem("siperah-token");
 
   return (
     <div className={`app-shell ${isSidebarOpen ? "" : "sidebar-collapsed"}`}>
-      <aside className="sidebar">
+      <aside className="sidebar" style={{ display: "flex", flexDirection: "column" }}>
         <div className="sidebar-top">
           <a className="brand-block" href="#/">
             <span className="brand-mark"><Icon name="water_drop" /></span>
             <span className="brand-copy">
               <strong>SIPERAH-RoB</strong>
-              <span>Prediksi Risiko Banjir Rob Lampung</span>
             </span>
           </a>
           <button
@@ -57,7 +56,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
             <Icon name={isSidebarOpen ? "menu_open" : "menu"} />
           </button>
         </div>
-        <nav>
+        <nav style={{ flexGrow: 1 }}>
           {navItems.map((item) => (
             <a
               key={item.href}
@@ -71,6 +70,22 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
             </a>
           ))}
         </nav>
+        {isUserLoggedIn && (
+          <div style={{ marginTop: "auto", background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: "16px", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              <strong style={{ fontSize: "14px", color: "var(--ink-primary)", lineHeight: 1.2 }}>Operator BPBD</strong>
+              <span style={{ fontSize: "12px", color: "var(--ink-soft)" }}>Prov. Lampung</span>
+            </div>
+            <a 
+              href="#/" 
+              onClick={() => localStorage.removeItem("siperah-token")}
+              style={{ color: "var(--critical)", display: "flex", alignItems: "center", gap: "8px", fontWeight: 600, fontSize: "14px", textDecoration: "none", marginTop: "4px" }}
+            >
+              <Icon name="logout" style={{ fontSize: "18px" }} />
+              <span>Logout</span>
+            </a>
+          </div>
+        )}
       </aside>
       <div className="app-main">
         <div className="app-topbar">
@@ -81,47 +96,19 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
           </div>
           
           <div className="topbar-actions">
-            {isUserLoggedIn ? (
-              <div className="user-profile-menu" ref={userMenuRef}>
-                <button 
-                  type="button" 
-                  className="user-trigger"
-                  onClick={() => setUserMenuOpen((v) => !v)}
-                  style={{ border: "none", background: "transparent" }}
-                >
-                  <div className="user-avatar">BP</div>
-                  <div className="user-info">
-                    <strong>Operator BPBD</strong>
-                    <span>Prov. Lampung</span>
-                  </div>
-                  <Icon name={isUserMenuOpen ? "expand_less" : "expand_more"} />
-                </button>
-                
-                {isUserMenuOpen && (
-                  <div style={{
-                    position: "absolute",
-                    top: "calc(100% + 8px)",
-                    right: 0,
-                    background: "var(--surface)",
-                    border: "1px solid var(--bd)",
-                    borderRadius: "var(--radius)",
-                    boxShadow: "var(--sh-md)",
-                    minWidth: "180px",
-                    display: "grid",
-                    padding: "8px",
-                    zIndex: 10
-                  }}>
-                    <a href="#/profile" className="btn secondary" style={{ justifyContent: "flex-start", border: "none", background: "transparent" }}>Profil Saya</a>
-                    <a href="#/login" className="btn secondary" style={{ justifyContent: "flex-start", border: "none", color: "var(--critical)", background: "transparent" }}>Keluar</a>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <a className="btn-primary" href="#/login">Masuk</a>
+            {isUserLoggedIn ? null : (
+              <a className="btn-primary" href="#/login">Login</a>
             )}
           </div>
         </div>
-        <div className="app-content">{children}</div>
+        <motion.div 
+          className="app-content"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
+          {children}
+        </motion.div>
       </div>
     </div>
   );

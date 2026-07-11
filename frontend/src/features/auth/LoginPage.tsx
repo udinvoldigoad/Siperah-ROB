@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Icon } from "../../shared/components/Icon";
 import { api } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface LoginResponse {
   access_token: string;
@@ -102,157 +103,274 @@ export function LoginPage() {
     }
   };
 
-  return (
-    <main className="login-layout">
-      {/* Visual Left Banner */}
-      <section style={{ position: "relative", overflow: "hidden", borderRadius: "var(--radius)", background: "linear-gradient(160deg, #0f172a, #1e3a5f)", color: "#fff", padding: 48, minHeight: 640 }}>
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <a className="brand" href="#/" style={{ color: "#fff", marginBottom: 28 }}><Icon name="water_drop" />SIPERAH-RoB</a>
-          <h1 style={{ color: "#fff", fontSize: 56, maxWidth: 420, lineHeight: 1.1, fontWeight: 900 }}>Pantau ancaman banjir rob secara real-time</h1>
-          <p style={{ color: "rgba(255,255,255,.72)", maxWidth: 480, fontSize: 16, marginBottom: 36, lineHeight: 1.5 }}>Akses peta risiko pesisir Lampung, prediksi model AI, dan laporan validasi lapangan terpadu.</p>
+  const inputStyle = {
+    width: "100%",
+    padding: "14px 16px",
+    borderRadius: "12px",
+    border: "1px solid var(--line)",
+    background: "var(--bg)",
+    fontSize: "14px",
+    color: "var(--ink)",
+    outline: "none",
+    transition: "border-color 0.2s, box-shadow 0.2s",
+    boxSizing: "border-box" as const,
+  };
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
-            {[
-              ["7", "Kabupaten dipantau"],
-              ["283", "Kelurahan pesisir"],
-              ["87%", "Akurasi model"],
-            ].map(([value, label]) => (
-              <div key={label} style={{ background: "rgba(255,255,255,.08)", borderRadius: "var(--radius)", padding: 14 }}>
-                <div style={{ fontSize: 24, fontWeight: 800, color: "#bfdbfe" }}>{value}</div>
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,.56)", marginTop: 4 }}>{label}</div>
-              </div>
-            ))}
-          </div>
+  const labelStyle = {
+    display: "block",
+    fontSize: "13px",
+    fontWeight: 600,
+    color: "var(--ink-soft)",
+    marginBottom: "8px"
+  };
+
+  return (
+    <main style={{ display: "flex", minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font)" }}>
+      {/* Visual Left Banner */}
+      <section style={{ 
+        flex: "1 1 50%", 
+        display: "none", 
+        position: "relative", 
+        overflow: "hidden", 
+        background: "linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 64, 175, 0.75) 100%), url('/bg-laut.jpg') center/cover no-repeat", 
+        color: "#fff", 
+        padding: "60px",
+        flexDirection: "column",
+        justifyContent: "space-between"
+      }} className="desktop-flex">
+        
+        {/* Abstract Oceanic Background */}
+        <div style={{ position: "absolute", top: "-10%", left: "-10%", width: "50%", height: "50%", background: "#3b82f6", borderRadius: "50%", filter: "blur(120px)", opacity: 0.5 }}></div>
+        <div style={{ position: "absolute", bottom: "-10%", right: "-10%", width: "60%", height: "60%", background: "#60a5fa", borderRadius: "50%", filter: "blur(140px)", opacity: 0.3 }}></div>
+
+        <div style={{ position: "relative", zIndex: 10 }}>
+          <a href="#/" style={{ display: "inline-flex", alignItems: "center", gap: "8px", color: "#fff", textDecoration: "none", fontWeight: 800, fontSize: "1.2rem", letterSpacing: "0.5px" }}>
+            <div style={{ width: "36px", height: "36px", background: "rgba(255,255,255,0.2)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(10px)" }}>
+              <Icon name="water_drop" style={{ fontSize: "20px" }} />
+            </div>
+            SIPERAH-RoB
+          </a>
+        </div>
+
+        <div style={{ position: "relative", zIndex: 10, maxWidth: "500px" }}>
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            style={{ color: "#fff", fontSize: "clamp(2.5rem, 4vw, 3.5rem)", lineHeight: 1.1, fontWeight: 900, margin: "0 0 24px", letterSpacing: "-0.02em" }}
+          >
+            Sistem Cerdas <br/><span style={{ color: "var(--ocean-light)" }}>Mitigasi Pesisir</span>
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            style={{ color: "rgba(255,255,255,0.8)", fontSize: "1.1rem", lineHeight: 1.6, marginBottom: "48px" }}
+          >
+            Akses platform terpadu untuk memantau ancaman banjir rob secara real-time, 
+            dilengkapi dengan prediksi AI tingkat lanjut dan validasi data berbasis komunitas.
+          </motion.p>
+
+
         </div>
       </section>
 
       {/* Form Right Panel */}
-      <section className="panel" style={{ padding: 40, borderRadius: "var(--radius)" }}>
-        <div style={{ display: "flex", gap: 0, marginBottom: 28, borderBottom: "2px solid var(--line)" }}>
-          {[
-            ["login", "Masuk"],
-            ["register", "Daftar"],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setMode(value as "login" | "register")}
-              style={{
-                padding: "10px 20px",
-                fontSize: 13,
-                fontWeight: 800,
-                color: mode === value ? "var(--accent)" : "var(--ink-soft)",
-                background: "none",
-                border: "none",
-                borderBottom: `2px solid ${mode === value ? "var(--accent)" : "transparent"}`,
-                marginBottom: -2,
-                cursor: "pointer",
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {mode === "login" ? (
-          <form className="form" style={{ gap: 16 }} onSubmit={handleLogin}>
-            <h2>Selamat datang</h2>
-            <label>
-              Email
-              <input 
-                type="email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                placeholder="email@instansi.go.id" 
-                required
-              />
-            </label>
-            <label>
-              Kata sandi
-              <input 
-                type="password" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                required
-              />
-            </label>
-            
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
-                <input type="checkbox" style={{ accentColor: "var(--accent)" }} />
-                Ingat saya
-              </label>
-              <a href="#" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700 }}>Lupa kata sandi?</a>
+      <section style={{ flex: "1 1 50%", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          style={{ width: "100%", maxWidth: "440px" }}
+        >
+          {/* Logo for mobile */}
+          <div className="mobile-only" style={{ marginBottom: "40px", textAlign: "center" }}>
+            <div style={{ display: "inline-flex", width: "48px", height: "48px", background: "var(--ocean-light)", color: "var(--ocean-dark)", borderRadius: "12px", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+              <Icon name="water_drop" style={{ fontSize: "28px" }} />
             </div>
+            <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 800 }}>SIPERAH-RoB</h2>
+          </div>
 
-            <button className="btn primary" type="submit" style={{ width: "100%" }} disabled={isLoading}>
-              {isLoading ? "Memproses..." : "Masuk"}
-            </button>
+          <div style={{ display: "flex", gap: "24px", marginBottom: "40px", borderBottom: "2px solid var(--line)" }}>
+            {[
+              ["login", "Masuk Akun"],
+              ["register", "Daftar Baru"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setMode(value as "login" | "register")}
+                style={{
+                  padding: "0 0 16px",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  color: mode === value ? "var(--ocean-dark)" : "var(--ink-soft)",
+                  background: "none",
+                  border: "none",
+                  borderBottom: `2px solid ${mode === value ? "var(--ocean-dark)" : "transparent"}`,
+                  marginBottom: "-2px",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
-            <div style={{ textAlign: "center", fontSize: 12, color: "var(--ink-soft)" }}>
-              Belum punya akun? <button type="button" onClick={() => setMode("register")} style={{ border: "none", background: "none", color: "var(--accent)", fontWeight: 800, cursor: "pointer", padding: 0 }}>Daftar sekarang</button>
-            </div>
-          </form>
-        ) : (
-          <form className="form" style={{ gap: 16 }} onSubmit={handleRegister}>
-            <h2>Buat akun baru</h2>
-            <label>
-              Nama lengkap
-              <input 
-                type="text" 
-                placeholder="Nama Lengkap Anda" 
-                value={regName} 
-                onChange={(e) => setRegName(e.target.value)} 
-                required
-              />
-            </label>
-            <label>
-              Instansi / wilayah kerja
-              <input 
-                type="text" 
-                placeholder="BPBD Provinsi Lampung / Pusdalops" 
-                value={regInstitution} 
-                onChange={(e) => setRegInstitution(e.target.value)} 
-              />
-            </label>
-            <label>
-              Role Akses
-              <select value={regRole} onChange={(e) => setRegRole(e.target.value)} required>
-                <option value="warga">Warga Biasa</option>
-                <option value="bpbd_operator">Operator BPBD Kabupaten/Kota</option>
-                <option value="bpbd_provinsi">BPBD Provinsi</option>
-                <option value="peneliti">Peneliti (Dataset API)</option>
-              </select>
-            </label>
-            <label>
-              Email
-              <input 
-                type="email" 
-                placeholder="email@instansi.go.id" 
-                value={regEmail} 
-                onChange={(e) => setRegEmail(e.target.value)} 
-                required
-              />
-            </label>
-            <label>
-              Kata sandi
-              <input 
-                type="password" 
-                placeholder="Minimal 6 karakter" 
-                value={regPassword} 
-                onChange={(e) => setRegPassword(e.target.value)} 
-                required
-              />
-            </label>
-            <button className="btn primary" type="submit" style={{ width: "100%" }} disabled={isLoading}>
-              {isLoading ? "Memproses..." : "Daftar"}
-            </button>
-            <div style={{ textAlign: "center", fontSize: 12, color: "var(--ink-soft)" }}>
-              Sudah punya akun? <button type="button" onClick={() => setMode("login")} style={{ border: "none", background: "none", color: "var(--accent)", fontWeight: 800, cursor: "pointer", padding: 0 }}>Masuk</button>
-            </div>
-          </form>
-        )}
+          <AnimatePresence mode="wait">
+            {mode === "login" ? (
+              <motion.form 
+                key="login"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                onSubmit={handleLogin}
+              >
+                <div style={{ marginBottom: "32px" }}>
+                  <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 8px", color: "var(--ink)" }}>Selamat datang</h2>
+                  <p style={{ color: "var(--ink-soft)", fontSize: "0.95rem", margin: 0 }}>Silakan masukkan kredensial Anda untuk melanjutkan.</p>
+                </div>
+
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={labelStyle}>Alamat Email</label>
+                  <input 
+                    type="email" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    placeholder="email@instansi.go.id" 
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <div style={{ marginBottom: "24px" }}>
+                  <label style={labelStyle}>Kata Sandi</label>
+                  <input 
+                    type="password" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    placeholder="••••••••"
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+                
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "32px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", cursor: "pointer", color: "var(--ink-soft)", fontWeight: 500 }}>
+                    <input type="checkbox" style={{ accentColor: "#1e40af", width: "16px", height: "16px", borderRadius: "4px" }} />
+                    Ingat saya
+                  </label>
+                  <a href="#" style={{ fontSize: "13px", color: "#1e40af", fontWeight: 700, textDecoration: "none" }}>Lupa kata sandi?</a>
+                </div>
+
+                <button 
+                  className="btn solid" 
+                  type="submit" 
+                  style={{ width: "100%", background: "#1e40af", color: "#fff", padding: "16px", borderRadius: "12px", fontSize: "15px", fontWeight: 700, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(2, 132, 199, 0.25)", cursor: "pointer" }} 
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Memproses..." : "Masuk ke Dashboard"}
+                </button>
+              </motion.form>
+            ) : (
+              <motion.form 
+                key="register"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                onSubmit={handleRegister}
+              >
+                <div style={{ marginBottom: "32px" }}>
+                  <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 8px", color: "var(--ink)" }}>Buat Akun Baru</h2>
+                  <p style={{ color: "var(--ink-soft)", fontSize: "0.95rem", margin: 0 }}>Daftar untuk melaporkan ground truth atau akses dashboard instansi.</p>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+                  <div>
+                    <label style={labelStyle}>Nama Lengkap</label>
+                    <input 
+                      type="text" 
+                      placeholder="John Doe" 
+                      value={regName} 
+                      onChange={(e) => setRegName(e.target.value)} 
+                      style={inputStyle}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Role Akses</label>
+                    <select 
+                      value={regRole} 
+                      onChange={(e) => setRegRole(e.target.value)} 
+                      style={{ ...inputStyle, cursor: "pointer", appearance: "none" }}
+                      required
+                    >
+                      <option value="warga">Warga Biasa</option>
+                      <option value="bpbd_operator">Operator BPBD</option>
+                      <option value="bpbd_provinsi">BPBD Provinsi</option>
+                      <option value="peneliti">Peneliti (API)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={labelStyle}>Instansi / Wilayah Kerja <span style={{ color: "var(--ink-soft)", fontWeight: 400 }}>(Opsional)</span></label>
+                  <input 
+                    type="text" 
+                    placeholder="Contoh: BPBD Provinsi Lampung / Desa X" 
+                    value={regInstitution} 
+                    onChange={(e) => setRegInstitution(e.target.value)} 
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={labelStyle}>Alamat Email</label>
+                  <input 
+                    type="email" 
+                    placeholder="email@instansi.go.id" 
+                    value={regEmail} 
+                    onChange={(e) => setRegEmail(e.target.value)} 
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <div style={{ marginBottom: "32px" }}>
+                  <label style={labelStyle}>Kata Sandi</label>
+                  <input 
+                    type="password" 
+                    placeholder="Minimal 6 karakter" 
+                    value={regPassword} 
+                    onChange={(e) => setRegPassword(e.target.value)} 
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <button 
+                  className="btn solid" 
+                  type="submit" 
+                  style={{ width: "100%", background: "#1e40af", color: "#fff", padding: "16px", borderRadius: "12px", fontSize: "15px", fontWeight: 700, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(2, 132, 199, 0.25)", cursor: "pointer" }} 
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Memproses..." : "Daftar Akun"}
+                </button>
+              </motion.form>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </section>
+      <style>{`
+        @media (min-width: 1024px) {
+          .desktop-flex {
+            display: flex !important;
+          }
+          .mobile-only {
+            display: none !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }
