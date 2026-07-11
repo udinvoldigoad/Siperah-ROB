@@ -89,37 +89,37 @@ export function CitizenModePage() {
           <motion.section 
             variants={itemVariants}
             style={{ 
-              background: isDanger ? "linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%)" : "linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)", 
+              background: isDanger ? "linear-gradient(135deg, #e11d48 0%, #9f1239 100%)" : "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)", 
               color: "#fff", 
               borderRadius: "24px", 
-              padding: "36px",
-              boxShadow: isDanger ? "0 20px 40px rgba(185, 28, 28, 0.2)" : "0 20px 40px rgba(29, 78, 216, 0.2)",
+              padding: "40px",
+              boxShadow: isDanger ? "0 24px 48px rgba(225, 29, 72, 0.25)" : "0 24px 48px rgba(37, 99, 235, 0.25)",
               position: "relative",
               overflow: "hidden"
             }}
           >
             <Icon 
               name={isDanger ? "warning" : "info"} 
-              style={{ position: "absolute", right: "-20px", top: "-20px", fontSize: "240px", opacity: 0.08, transform: "rotate(-15deg)" }} 
+              style={{ position: "absolute", right: "-20px", top: "-20px", fontSize: "280px", opacity: 0.1, transform: "rotate(-15deg)" }} 
             />
             
             <div style={{ position: "relative", zIndex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,0.8)", fontSize: 14, marginBottom: 16, fontWeight: 600 }}>
-                <Icon name="location_on" style={{ fontSize: 18 }} />
+              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,0.9)", fontSize: "0.95rem", marginBottom: 20, fontWeight: 600 }}>
+                <Icon name="location_on" style={{ fontSize: 20 }} />
                 Telukbetung Selatan, Bandar Lampung
               </div>
               
-              <h1 style={{ fontSize: "3.5rem", fontWeight: 900, lineHeight: 1.1, margin: "0 0 16px 0", letterSpacing: "-0.03em" }}>
-                Status <span style={{ color: isDanger ? "#fca5a5" : "#93c5fd" }}>{risk}</span>
+              <h1 style={{ fontSize: "4rem", fontWeight: 900, lineHeight: 1.1, margin: "0 0 16px 0", letterSpacing: "-0.03em" }}>
+                Status <span style={{ color: "#fff" }}>{risk}</span>
               </h1>
               
-              <p style={{ fontSize: "1.1rem", lineHeight: 1.6, color: "rgba(255,255,255,0.9)", maxWidth: "600px", margin: "0 0 32px 0" }}>
+              <p style={{ fontSize: "1.15rem", lineHeight: 1.6, color: "rgba(255,255,255,0.95)", maxWidth: "600px", margin: "0 0 40px 0" }}>
                 {data
                   ? `Air laut diprediksi naik secara signifikan malam ini. Hindari jalan rendah dekat pesisir dan siapkan barang penting Anda sebelum puncak pasang pukul ${data.peak_time} WIB.`
                   : "Menganalisis status ancaman rob terbaru di sekitar Anda..."}
               </p>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 32, marginTop: 40, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 32 }}>
                 {[
                   ["Kemungkinan Rob", data ? `${data.risk_probability}%` : "-", risk],
                   ["Puncak Pasang", data ? `${meters.format(data.max_tidal_height)} meter` : "-", data ? `Pukul ${data.peak_time} WIB` : "Menunggu Data"],
@@ -130,11 +130,10 @@ export function CitizenModePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 + (i * 0.1) }}
-                    style={{ background: "rgba(0,0,0,0.2)", borderRadius: 16, padding: 16, border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(10px)" }}
                   >
-                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginBottom: 8, fontWeight: 600 }}>{label}</div>
-                    <div style={{ fontSize: 24, fontWeight: 800, lineHeight: 1, marginBottom: 6 }}>{value}</div>
-                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>{note}</div>
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</div>
+                    <div style={{ fontSize: 32, fontWeight: 800, lineHeight: 1, marginBottom: 8 }}>{value}</div>
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)" }}>{note}</div>
                   </motion.div>
                 ))}
               </div>
@@ -148,15 +147,15 @@ export function CitizenModePage() {
               <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Sumber: BMKG & Prediksi AI. Waspada saat indikator merah mendominasi.</p>
             </div>
             
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 12, padding: "24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 12, padding: "32px 24px" }}>
               {forecastDays.map(([day, label, percent, color], i) => (
                 <motion.div 
                   key={day} 
                   whileHover={{ y: -5 }}
-                  style={{ textAlign: "center", padding: "16px 8px", background: "var(--surface-soft)", borderRadius: 16, border: "1px solid var(--line)", display: "flex", flexDirection: "column", alignItems: "center" }}
+                  style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}
                 >
-                  <div style={{ fontSize: 12, color: "var(--ink)", fontWeight: 600, marginBottom: 8 }}>{day}</div>
-                  <div style={{ height: 100, width: 8, borderRadius: 999, background: "var(--line)", position: "relative", margin: "8px 0" }}>
+                  <div style={{ fontSize: 13, color: "var(--ink-soft)", fontWeight: 600, marginBottom: 12 }}>{day}</div>
+                  <div style={{ height: 120, width: 12, borderRadius: 999, background: "var(--line)", position: "relative", margin: "8px 0" }}>
                     <motion.div 
                       initial={{ height: 0 }}
                       animate={{ height: percent }}
@@ -164,8 +163,8 @@ export function CitizenModePage() {
                       style={{ position: "absolute", bottom: 0, left: 0, width: "100%", background: color, borderRadius: 999 }} 
                     />
                   </div>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: color as string, marginTop: 8 }}>{label}</div>
-                  <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{percent}</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: color as string, marginTop: 12 }}>{label}</div>
+                  <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>{percent}</div>
                 </motion.div>
               ))}
             </div>
@@ -218,52 +217,49 @@ export function CitizenModePage() {
         {/* Sidebar */}
         <aside className="stack">
           {/* Tindakan Card */}
-          <motion.section variants={itemVariants} className="panel flush">
-            <div style={{ padding: "20px", background: isDanger ? "#fef2f2" : "#eff6ff", borderBottom: `1px solid ${isDanger ? "#fecaca" : "#bfdbfe"}` }}>
-              <div style={{ fontWeight: 800, fontSize: 15, color: isDanger ? "#991b1b" : "#1e40af", display: "flex", alignItems: "center", gap: 8 }}>
-                <Icon name="verified_user" style={{ fontSize: 20 }} />
+          <motion.section variants={itemVariants} className="panel flush" style={{ border: "none", boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}>
+            <div style={{ padding: "32px 24px" }}>
+              <div style={{ fontWeight: 800, fontSize: 18, color: "var(--ink-primary)", display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+                <Icon name="verified_user" style={{ fontSize: 24, color: "var(--accent-blue)" }} />
                 Rekomendasi Tindakan
               </div>
-            </div>
-            <div style={{ padding: "20px", display: "grid", gap: 12 }}>
-              {actionCards.map(([title, copy, icon], i) => {
-                const isReportBtn = title === "Laporkan kejadian";
-                return (
-                  <motion.div 
-                    key={title} 
-                    whileHover={{ x: 4, backgroundColor: "var(--surface-soft)" }}
-                    style={{ 
-                      border: "1px solid var(--line)", 
-                      borderRadius: 16, 
-                      padding: "16px", 
-                      display: "flex", 
-                      gap: 16, 
-                      alignItems: "flex-start",
-                      background: isReportBtn ? "var(--surface-soft)" : "var(--surface)",
-                      cursor: isReportBtn ? "pointer" : "default"
-                    }}
-                    onClick={() => isReportBtn && (window.location.hash = "#/reports")}
-                  >
-                    <div style={{ 
-                      width: 42, 
-                      height: 42, 
-                      borderRadius: 12, 
-                      display: "flex", 
-                      alignItems: "center", 
-                      justifyContent: "center", 
-                      background: title === "Jauhi area rendah" ? "#fee2e2" : title === "Siapkan barang penting" ? "#fef3c7" : title === "Ikuti arahan BPBD" ? "#dbeafe" : "#d1fae5", 
-                      color: title === "Jauhi area rendah" ? "#b91c1c" : title === "Siapkan barang penting" ? "#b45309" : title === "Ikuti arahan BPBD" ? "#1d4ed8" : "#047857",
-                      flexShrink: 0
-                    }}>
-                      <Icon name={icon} style={{ fontSize: 22 }} />
-                    </div>
-                    <div>
-                      <strong style={{ display: "block", marginBottom: 6, fontSize: "14px", color: "var(--ink)" }}>{title}</strong>
-                      <p style={{ margin: 0, fontSize: "13px", color: "var(--ink-soft)", lineHeight: 1.5 }}>{copy}</p>
-                    </div>
-                  </motion.div>
-                );
-              })}
+              <div style={{ display: "grid", gap: 24 }}>
+                {actionCards.map(([title, copy, icon], i) => {
+                  const isReportBtn = title === "Laporkan kejadian";
+                  return (
+                    <motion.div 
+                      key={title} 
+                      whileHover={{ x: 4 }}
+                      style={{ 
+                        borderRadius: 16, 
+                        display: "flex", 
+                        gap: 16, 
+                        alignItems: "flex-start",
+                        cursor: isReportBtn ? "pointer" : "default"
+                      }}
+                      onClick={() => isReportBtn && (window.location.hash = "#/reports")}
+                    >
+                      <div style={{ 
+                        width: 48, 
+                        height: 48, 
+                        borderRadius: 14, 
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "center", 
+                        background: "var(--surface-soft)", 
+                        color: isReportBtn ? "var(--accent-blue)" : "var(--ink-soft)",
+                        flexShrink: 0
+                      }}>
+                        <Icon name={icon} style={{ fontSize: 24 }} />
+                      </div>
+                      <div style={{ paddingTop: 2 }}>
+                        <strong style={{ display: "block", marginBottom: 6, fontSize: "15px", color: isReportBtn ? "var(--accent-blue)" : "var(--ink-primary)" }}>{title}</strong>
+                        <p style={{ margin: 0, fontSize: "14px", color: "var(--ink-soft)", lineHeight: 1.6 }}>{copy}</p>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
           </motion.section>
 

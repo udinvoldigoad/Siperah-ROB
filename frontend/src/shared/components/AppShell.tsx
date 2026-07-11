@@ -34,12 +34,11 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
     }
   }, [isUserMenuOpen, closeMenu]);
 
-  // Static user state for demonstration purposes
-  const isUserLoggedIn = active !== "map" && active !== "onboarding" && active !== "reports" && active !== "awam";
+  const isUserLoggedIn = !!localStorage.getItem("siperah-token");
 
   return (
     <div className={`app-shell ${isSidebarOpen ? "" : "sidebar-collapsed"}`}>
-      <aside className="sidebar">
+      <aside className="sidebar" style={{ display: "flex", flexDirection: "column" }}>
         <div className="sidebar-top">
           <a className="brand-block" href="#/">
             <span className="brand-mark"><Icon name="water_drop" /></span>
@@ -57,7 +56,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
             <Icon name={isSidebarOpen ? "menu_open" : "menu"} />
           </button>
         </div>
-        <nav>
+        <nav style={{ flexGrow: 1 }}>
           {navItems.map((item) => (
             <a
               key={item.href}
@@ -71,6 +70,22 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
             </a>
           ))}
         </nav>
+        {isUserLoggedIn && (
+          <div style={{ marginTop: "auto", background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: "16px", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              <strong style={{ fontSize: "14px", color: "var(--ink-primary)", lineHeight: 1.2 }}>Operator BPBD</strong>
+              <span style={{ fontSize: "12px", color: "var(--ink-soft)" }}>Prov. Lampung</span>
+            </div>
+            <a 
+              href="#/" 
+              onClick={() => localStorage.removeItem("siperah-token")}
+              style={{ color: "var(--critical)", display: "flex", alignItems: "center", gap: "8px", fontWeight: 600, fontSize: "14px", textDecoration: "none", marginTop: "4px" }}
+            >
+              <Icon name="logout" style={{ fontSize: "18px" }} />
+              <span>Logout</span>
+            </a>
+          </div>
+        )}
       </aside>
       <div className="app-main">
         <div className="app-topbar">
@@ -81,43 +96,8 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
           </div>
           
           <div className="topbar-actions">
-            {isUserLoggedIn ? (
-              <div className="user-profile-menu" ref={userMenuRef}>
-                <button 
-                  type="button" 
-                  className="user-trigger"
-                  onClick={() => setUserMenuOpen((v) => !v)}
-                  style={{ border: "none", background: "transparent", display: "flex", alignItems: "center", gap: "10px", textAlign: "left", cursor: "pointer" }}
-                >
-                  <div className="user-avatar" style={{ background: "var(--accent)", color: "#fff", width: "36px", height: "36px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "14px" }}>BP</div>
-                  <div className="user-info" style={{ display: "flex", flexDirection: "column" }}>
-                    <strong style={{ fontSize: "13px", color: "var(--ink)", lineHeight: 1.2 }}>Operator BPBD</strong>
-                    <span style={{ fontSize: "11px", color: "var(--ink-soft)" }}>Prov. Lampung</span>
-                  </div>
-                  <Icon name={isUserMenuOpen ? "expand_less" : "expand_more"} style={{ color: "var(--ink-soft)" }} />
-                </button>
-                
-                {isUserMenuOpen && (
-                  <div style={{
-                    position: "absolute",
-                    top: "calc(100% + 8px)",
-                    right: 0,
-                    background: "var(--surface)",
-                    border: "1px solid var(--bd)",
-                    borderRadius: "var(--radius)",
-                    boxShadow: "var(--sh-md)",
-                    minWidth: "180px",
-                    display: "grid",
-                    padding: "8px",
-                    zIndex: 10
-                  }}>
-                    <a href="#/profile" className="btn secondary" style={{ justifyContent: "flex-start", border: "none", background: "transparent" }}>Profil Saya</a>
-                    <a href="#/login" className="btn secondary" style={{ justifyContent: "flex-start", border: "none", color: "var(--critical)", background: "transparent" }}>Keluar</a>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <a className="btn-primary" href="#/login">Masuk</a>
+            {isUserLoggedIn ? null : (
+              <a className="btn-primary" href="#/login">Login</a>
             )}
           </div>
         </div>

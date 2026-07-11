@@ -4,6 +4,7 @@ import { api } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { motion } from "framer-motion";
+import { getLampungMarineData, TideDataPoint, getMLPrediction } from "../../shared/api/weatherClient";
 
 interface SummaryData {
   monitored_regencies: number;
@@ -53,6 +54,8 @@ export function ProvinceDashboardPage() {
     validated_reports_this_month: 1204,
   });
   const [predictions, setPredictions] = useState<PredictionData[]>([]);
+  const [tideData, setTideData] = useState<TideDataPoint[]>([]);
+  const [mlData, setMlData] = useState<number[]>([8, 12, 15, 20, 26, 34, 49, 45, 41, 34, 26, 20, 14, 8, 4, 3, 2, 3, 4, 7, 10, 12, 15, 11, 9, 6]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchDashboardData = async () => {
@@ -63,6 +66,14 @@ export function ProvinceDashboardPage() {
 
       const predRes = await api<PredictionListResponse>("/public/predictions");
       setPredictions(predRes.data);
+
+      const marineData = await getLampungMarineData();
+      setTideData(marineData);
+
+      const predictionData = await getMLPrediction();
+      if (predictionData && predictionData.length > 0) {
+        setMlData(predictionData);
+      }
     } catch (err: any) {
       toast.error(err.message || "Gagal memuat data ringkasan provinsi.");
     } finally {
@@ -131,31 +142,31 @@ export function ProvinceDashboardPage() {
         </motion.div>
 
         {/* KPI Grid */}
-        <motion.div variants={containerVariants} className="metric-grid" style={{ marginBottom: "32px" }}>
-          <motion.div variants={itemVariants} className="metric-card" whileHover={{ y: -4 }}>
-            <span>Wilayah Pantau Aktif</span>
-            <strong style={{ color: "var(--accent)" }}>{summary.monitored_regencies}</strong>
-            <small>Kabupaten & Kota di Lampung</small>
+        <motion.div variants={containerVariants} className="metric-grid" style={{ marginBottom: "32px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+          <motion.div variants={itemVariants} style={{ background: "#ffffff", padding: "28px", borderRadius: "20px", boxShadow: "0 4px 20px rgba(0,0,0,0.03)", border: "1px solid var(--border-color)" }} whileHover={{ y: -4 }}>
+            <span style={{ fontSize: "14px", color: "var(--ink-muted)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Wilayah Pantau Aktif</span>
+            <strong style={{ color: "var(--accent-blue)", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.monitored_regencies}</strong>
+            <small style={{ fontSize: "13px", color: "var(--ink-soft)", display: "block", marginTop: "12px" }}>Kabupaten & Kota di Lampung</small>
           </motion.div>
-          <motion.div variants={itemVariants} className="metric-card critical" whileHover={{ y: -4 }}>
-            <span>Zona Sangat Bahaya</span>
-            <strong style={{ color: "var(--critical)" }}>{summary.high_risk_villages}</strong>
-            <small>Kelurahan butuh perhatian khusus</small>
+          <motion.div variants={itemVariants} style={{ background: "#fff1f2", padding: "28px", borderRadius: "20px", boxShadow: "0 4px 20px rgba(225, 29, 72, 0.05)", border: "1px solid #ffe4e6" }} whileHover={{ y: -4 }}>
+            <span style={{ fontSize: "14px", color: "#e11d48", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Zona Sangat Bahaya</span>
+            <strong style={{ color: "#be123c", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.high_risk_villages}</strong>
+            <small style={{ fontSize: "13px", color: "#e11d48", opacity: 0.8, display: "block", marginTop: "12px" }}>Kelurahan butuh perhatian khusus</small>
           </motion.div>
-          <motion.div variants={itemVariants} className="metric-card" whileHover={{ y: -4 }}>
-            <span style={{ color: "var(--ink-soft)" }}>Warga Terdampak Potensial</span>
-            <strong style={{ color: "var(--medium)" }}>{summary.risk_population.toLocaleString("id-ID")}</strong>
-            <small style={{ color: "var(--ink-soft)" }}>Jiwa di area rawan rob</small>
+          <motion.div variants={itemVariants} style={{ background: "#ffffff", padding: "28px", borderRadius: "20px", boxShadow: "0 4px 20px rgba(0,0,0,0.03)", border: "1px solid var(--border-color)" }} whileHover={{ y: -4 }}>
+            <span style={{ fontSize: "14px", color: "var(--ink-muted)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Warga Terdampak Potensial</span>
+            <strong style={{ color: "#ea580c", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.risk_population.toLocaleString("id-ID")}</strong>
+            <small style={{ fontSize: "13px", color: "var(--ink-soft)", display: "block", marginTop: "12px" }}>Jiwa di area rawan rob</small>
           </motion.div>
-          <motion.div variants={itemVariants} className="metric-card success" whileHover={{ y: -4 }}>
-            <span>Laporan Masuk (Bulan Ini)</span>
-            <strong style={{ color: "var(--low)" }}>{summary.validated_reports_this_month}</strong>
-            <small>Telah divalidasi oleh operator</small>
+          <motion.div variants={itemVariants} style={{ background: "#f0fdf4", padding: "28px", borderRadius: "20px", boxShadow: "0 4px 20px rgba(22, 163, 74, 0.05)", border: "1px solid #dcfce7" }} whileHover={{ y: -4 }}>
+            <span style={{ fontSize: "14px", color: "#16a34a", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Laporan Masuk (Bulan Ini)</span>
+            <strong style={{ color: "#15803d", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.validated_reports_this_month}</strong>
+            <small style={{ fontSize: "13px", color: "#16a34a", opacity: 0.8, display: "block", marginTop: "12px" }}>Telah divalidasi oleh operator</small>
           </motion.div>
         </motion.div>
 
-        {/* 2-Column Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "32px" }}>
+        {/* Full Width Layout */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "32px", marginBottom: "32px" }}>
           {/* Table per Kabupaten */}
           <motion.div variants={itemVariants} className="panel flush">
             <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -202,7 +213,7 @@ export function ProvinceDashboardPage() {
           </motion.div>
 
           {/* ML Prediction Timeline Chart */}
-          <motion.div variants={itemVariants} className="panel" style={{ display: "flex", flexDirection: "column", gridColumn: "1 / -1" }}>
+          <motion.div variants={itemVariants} className="panel" style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)" }}>Prediksi 30 Hari — Jumlah Kelurahan Sangat Tinggi</h2>
@@ -235,7 +246,7 @@ export function ProvinceDashboardPage() {
               {/* Data Bars Container */}
               <div style={{ position: "absolute", left: "42px", right: 0, bottom: 0, height: "100%", display: "flex", alignItems: "flex-end", gap: "6px", paddingBottom: "2px" }}>
                 {(() => {
-                  const data = [8, 12, 15, 20, 26, 34, 49, 45, 41, 34, 26, 20, 14, 8, 4, 3, 2, 3, 4, 7, 10, 12, 15, 11, 9, 6];
+                  const data = mlData;
                   const todayIndex = 6; // Peak at 49
                   
                   return data.map((val, idx) => {

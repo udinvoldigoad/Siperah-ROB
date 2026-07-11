@@ -132,7 +132,7 @@ export function LoginPage() {
         display: "none", 
         position: "relative", 
         overflow: "hidden", 
-        background: "linear-gradient(135deg, var(--ocean-dark) 0%, #0369a1 100%)", 
+        background: "linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 64, 175, 0.75) 100%), url('/bg-laut.jpg') center/cover no-repeat", 
         color: "#fff", 
         padding: "60px",
         flexDirection: "column",
@@ -140,8 +140,8 @@ export function LoginPage() {
       }} className="desktop-flex">
         
         {/* Abstract Oceanic Background */}
-        <div style={{ position: "absolute", top: "-10%", left: "-10%", width: "50%", height: "50%", background: "#0284c7", borderRadius: "50%", filter: "blur(120px)", opacity: 0.6 }}></div>
-        <div style={{ position: "absolute", bottom: "-10%", right: "-10%", width: "60%", height: "60%", background: "#0ea5e9", borderRadius: "50%", filter: "blur(140px)", opacity: 0.4 }}></div>
+        <div style={{ position: "absolute", top: "-10%", left: "-10%", width: "50%", height: "50%", background: "#3b82f6", borderRadius: "50%", filter: "blur(120px)", opacity: 0.5 }}></div>
+        <div style={{ position: "absolute", bottom: "-10%", right: "-10%", width: "60%", height: "60%", background: "#60a5fa", borderRadius: "50%", filter: "blur(140px)", opacity: 0.3 }}></div>
 
         <div style={{ position: "relative", zIndex: 10 }}>
           <a href="#/" style={{ display: "inline-flex", alignItems: "center", gap: "8px", color: "#fff", textDecoration: "none", fontWeight: 800, fontSize: "1.2rem", letterSpacing: "0.5px" }}>
@@ -171,24 +171,7 @@ export function LoginPage() {
             dilengkapi dengan prediksi AI tingkat lanjut dan validasi data berbasis komunitas.
           </motion.p>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}
-          >
-            {[
-              ["7", "Kabupaten dipantau", "map"],
-              ["283", "Kelurahan pesisir", "holiday_village"],
-              ["87%", "Akurasi model AI", "auto_graph"],
-            ].map(([value, label, icon], idx) => (
-              <div key={idx} style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)", borderRadius: "20px", padding: "20px", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <Icon name={icon as string} style={{ color: "var(--ocean-light)", fontSize: "24px", marginBottom: "12px" }} />
-                <div style={{ fontSize: "1.8rem", fontWeight: 800, color: "#fff", marginBottom: "4px" }}>{value}</div>
-                <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.7)", fontWeight: 500 }}>{label}</div>
-              </div>
-            ))}
-          </motion.div>
+
         </div>
       </section>
 
@@ -274,16 +257,16 @@ export function LoginPage() {
                 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "32px" }}>
                   <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", cursor: "pointer", color: "var(--ink-soft)", fontWeight: 500 }}>
-                    <input type="checkbox" style={{ accentColor: "var(--ocean-dark)", width: "16px", height: "16px", borderRadius: "4px" }} />
+                    <input type="checkbox" style={{ accentColor: "#1e40af", width: "16px", height: "16px", borderRadius: "4px" }} />
                     Ingat saya
                   </label>
-                  <a href="#" style={{ fontSize: "13px", color: "var(--ocean-dark)", fontWeight: 700, textDecoration: "none" }}>Lupa kata sandi?</a>
+                  <a href="#" style={{ fontSize: "13px", color: "#1e40af", fontWeight: 700, textDecoration: "none" }}>Lupa kata sandi?</a>
                 </div>
 
                 <button 
                   className="btn solid" 
                   type="submit" 
-                  style={{ width: "100%", background: "var(--ocean-dark)", color: "#fff", padding: "16px", borderRadius: "12px", fontSize: "15px", fontWeight: 700, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(2, 132, 199, 0.25)" }} 
+                  style={{ width: "100%", background: "#1e40af", color: "#fff", padding: "16px", borderRadius: "12px", fontSize: "15px", fontWeight: 700, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(2, 132, 199, 0.25)", cursor: "pointer" }} 
                   disabled={isLoading}
                 >
                   {isLoading ? "Memproses..." : "Masuk ke Dashboard"}
@@ -368,7 +351,7 @@ export function LoginPage() {
                 <button 
                   className="btn solid" 
                   type="submit" 
-                  style={{ width: "100%", background: "var(--ocean-dark)", color: "#fff", padding: "16px", borderRadius: "12px", fontSize: "15px", fontWeight: 700, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(2, 132, 199, 0.25)" }} 
+                  style={{ width: "100%", background: "#1e40af", color: "#fff", padding: "16px", borderRadius: "12px", fontSize: "15px", fontWeight: 700, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(2, 132, 199, 0.25)", cursor: "pointer" }} 
                   disabled={isLoading}
                 >
                   {isLoading ? "Memproses..." : "Daftar Akun"}
