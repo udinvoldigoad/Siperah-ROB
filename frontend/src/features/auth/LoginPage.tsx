@@ -155,7 +155,7 @@ export function LoginPage() {
         <div style={{ position: "relative", zIndex: 10, maxWidth: "500px" }}>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
             style={{ color: "#fff", fontSize: "clamp(2.5rem, 4vw, 3.5rem)", lineHeight: 1.1, fontWeight: 900, margin: "0 0 24px", letterSpacing: "-0.02em" }}
           >
@@ -163,7 +163,7 @@ export function LoginPage() {
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
             style={{ color: "rgba(255,255,255,0.8)", fontSize: "1.1rem", lineHeight: 1.6, marginBottom: "48px" }}
           >
@@ -179,7 +179,7 @@ export function LoginPage() {
       <section style={{ flex: "1 1 50%", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
+          animate={{ opacity: 1 }}
           style={{ width: "100%", maxWidth: "440px" }}
         >
           {/* Logo for mobile */}
@@ -221,8 +221,8 @@ export function LoginPage() {
             {mode === "login" ? (
               <motion.form 
                 key="login"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0, y: -10 }}
                 onSubmit={handleLogin}
               >
@@ -271,12 +271,24 @@ export function LoginPage() {
                 >
                   {isLoading ? "Memproses..." : "Masuk ke Dashboard"}
                 </button>
+
+                {/* DEV ONLY: Quick Login Shortcuts */}
+                <div style={{ marginTop: "32px", padding: "16px", background: "var(--surface-soft)", borderRadius: "12px", border: "1px dashed var(--line)" }}>
+                  <p style={{ margin: "0 0 12px", fontSize: "12px", color: "var(--ink-soft)", fontWeight: 600, textAlign: "center" }}>⚡ DEV SHORTCUTS (Hapus saat Production)</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                    <button type="button" onClick={() => { setEmail("warga@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600 }}>👤 Warga</button>
+                    <button type="button" onClick={() => { setEmail("operator@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600 }}>🛡️ Operator BPBD</button>
+                    <button type="button" onClick={() => { setEmail("provinsi@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600 }}>🏢 Provinsi</button>
+                    <button type="button" onClick={() => { setEmail("admin@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600 }}>⚙️ Admin</button>
+                    <button type="button" onClick={() => { setEmail("peneliti@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600, gridColumn: "span 2" }}>🔬 Peneliti</button>
+                  </div>
+                </div>
               </motion.form>
             ) : (
               <motion.form 
                 key="register"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0, y: -10 }}
                 onSubmit={handleRegister}
               >

@@ -168,7 +168,7 @@ export function ResearchPortalPage() {
           
           {/* Tab 0: Arsip Data */}
           {activeTab === 0 && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               {/* Filters */}
               <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
                 <select style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)", color: "var(--ink)" }}>
@@ -189,7 +189,8 @@ export function ResearchPortalPage() {
 
               {/* Table */}
               <div className="panel flush" style={{ overflow: "hidden", border: "1px solid var(--line)", marginBottom: "24px" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+              <div className="table-responsive">
+                <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
                   <thead>
                     <tr style={{ borderBottom: "1px solid var(--line)", background: "var(--surface-soft)" }}>
                       <th style={{ padding: "16px 20px", fontSize: "13px", fontWeight: 600, color: "var(--ink-soft)" }}>Dataset</th>
@@ -237,6 +238,7 @@ export function ResearchPortalPage() {
                   </tbody>
                 </table>
               </div>
+              </div>
 
               {/* Pagination (Mock) */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "var(--ink-soft)" }}>
@@ -252,7 +254,7 @@ export function ResearchPortalPage() {
 
           {/* Tab 1: API Reference */}
           {activeTab === 1 && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ maxWidth: "800px" }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ maxWidth: "800px" }}>
               <div style={{ marginBottom: "32px" }}>
                 <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: "var(--ink)" }}>Base URL</div>
                 <div style={{ background: "#0f172a", borderRadius: "8px", padding: "16px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "13px" }}>
@@ -283,12 +285,12 @@ export function ResearchPortalPage() {
 
           {/* Tab 2 & 3 */}
           {activeTab === 2 && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="alert info">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="alert info">
               <Icon name="info" /> Grafik penggunaan API akan ditampilkan di sini. Menampilkan metrik per endpoint untuk 30 hari terakhir.
             </motion.div>
           )}
           {activeTab === 3 && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="alert info">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="alert info">
               <Icon name="info" /> Formulir permohonan akses data premium dan manajemen perizinan.
             </motion.div>
           )}

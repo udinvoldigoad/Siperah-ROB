@@ -26,12 +26,12 @@ const outcomes: Record<string, string> = {
   partial: "Sebagian",
 };
 
-const containerVariants = {
+const containerVariants: any = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } }
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
@@ -171,6 +171,7 @@ export function AuditLogPage() {
                 <div style={{ fontSize: 13, marginTop: 4 }}>Tidak ada log aktivitas yang cocok dengan filter pencarian.</div>
               </div>
             ) : (
+            <div className="table-responsive">
               <table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--line)" }}>
@@ -187,10 +188,10 @@ export function AuditLogPage() {
                     {logs.map((log, idx) => (
                       <motion.tr 
                         key={log.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
                         transition={{ delay: 0.1 + (idx * 0.05) }}
-                        whileHover={{ backgroundColor: "var(--surface-soft)" }}
+                        
                         style={{ borderBottom: "1px solid var(--line)" }}
                       >
                         <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: 13 }}>{formatDate(log.created_at)}</td>
@@ -217,6 +218,7 @@ export function AuditLogPage() {
                   </AnimatePresence>
                 </tbody>
               </table>
+            </div>
             )}
           </div>
         </motion.div>

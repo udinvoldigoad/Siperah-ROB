@@ -5,7 +5,7 @@ import { fetchOperatorReports, updateOperatorReportStatus, type OperatorReport }
 import { Icon } from "../../shared/components/Icon";
 import { motion, AnimatePresence } from "framer-motion";
 
-const containerVariants = {
+const containerVariants: any = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -13,7 +13,7 @@ const containerVariants = {
   }
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
@@ -134,7 +134,7 @@ export function OperatorDashboardPage() {
             <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Antrian Laporan Masuk</h2>
               <motion.span 
-                initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 className="badge severity-sangat_parah"
               >
                 {pendingCount} baru
@@ -199,7 +199,8 @@ export function OperatorDashboardPage() {
               <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Status Kelurahan Bandar Lampung</h2>
               <motion.a whileHover={{ x: 5 }} href="#/map" style={{ fontSize: "0.9rem", color: "var(--accent)", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}><Icon name="map" /> Buka peta</motion.a>
             </div>
-            <table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+              <div className="table-responsive">
+                <table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--line)", background: "var(--surface-soft)" }}>
                   <th style={{ padding: "14px 24px", fontWeight: 600, color: "var(--ink-soft)", fontSize: "0.85rem" }}>Kecamatan / Kelurahan</th>
@@ -213,15 +214,15 @@ export function OperatorDashboardPage() {
                   { name: "Panjang", sev: "parah", label: "Tinggi", pop: "9,800" },
                   { name: "Kangkung", sev: "parah", label: "Tinggi", pop: "7,200" },
                   { name: "Way Halim Permai", sev: "sangat_parah", label: "Sangat Tinggi", pop: "11,200" },
-                  { name: "Sukaraja", sev: "sangat_parah", label: "Sangat Tinggi", pop: "8,760" },
+                  { name: "Sukuraja", sev: "sangat_parah", label: "Sangat Tinggi", pop: "8,760" },
                   { name: "Labuhan Ratu", sev: "sedang", label: "Sedang", pop: "5,400" },
                 ].map((row, idx) => (
                   <motion.tr 
                     key={idx}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 + (idx * 0.05) }}
-                    whileHover={{ backgroundColor: "var(--surface-soft)" }}
+                    
                     style={{ borderBottom: "1px solid var(--line)" }}
                   >
                     <td style={{ padding: "16px 24px", fontWeight: 500 }}>{row.name}</td>
@@ -229,8 +230,9 @@ export function OperatorDashboardPage() {
                     <td style={{ padding: "16px 24px", textAlign: "right" }}>{row.pop}</td>
                   </motion.tr>
                 ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+              </div>
           </div>
         </motion.div>
       </motion.div>

@@ -32,7 +32,7 @@ export function OnboardingPage() {
         {/* Modern Cinematic Hero */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1 }}
           style={{ 
             textAlign: "center", 
             padding: "80px 24px 60px",

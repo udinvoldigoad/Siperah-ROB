@@ -16,6 +16,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
 }) {
   const toast = useToast();
   const [isSidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem(SIDEBAR_STORAGE_KEY) !== "closed");
+  const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isUserMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -68,10 +69,16 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
 
   return (
     <div className={`app-shell ${isSidebarOpen ? "" : "sidebar-collapsed"}`}>
-      <aside className="sidebar" style={{ display: "flex", flexDirection: "column" }}>
+      {isMobileSidebarOpen && (
+        <div 
+          className="mobile-sidebar-overlay" 
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+      <aside className={`sidebar ${isMobileSidebarOpen ? "mobile-open" : ""}`} style={{ display: "flex", flexDirection: "column" }}>
         <div className="sidebar-top">
           <a className="brand-block" href="#/">
-            <span className="brand-mark"><Icon name="water_drop" /></span>
+            <img src="/logo.png" alt="Logo SIPERAH" style={{ width: "32px", height: "32px", objectFit: "contain", borderRadius: "8px" }} />
             <span className="brand-copy">
               <strong>SIPERAH-RoB</strong>
             </span>
@@ -119,7 +126,14 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
       </aside>
       <div className="app-main">
         <div className="app-topbar">
-          <div className="breadcrumb">
+          <div className="breadcrumb" style={{ display: "flex", alignItems: "center" }}>
+            <button 
+              className="mobile-menu-toggle"
+              onClick={() => setMobileSidebarOpen(true)}
+              aria-label="Buka Menu"
+            >
+              <Icon name="menu" />
+            </button>
             <Icon name="dashboard" style={{ fontSize: "16px", color: "var(--tx2)" }} />
             <span className="breadcrumb-sep"><Icon name="chevron_right" style={{ fontSize: "10px" }} /></span>
             <span className="breadcrumb-current">{title}</span>
@@ -134,7 +148,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
         <motion.div 
           className="app-content"
           initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         >
           {children}

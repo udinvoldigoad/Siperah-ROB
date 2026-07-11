@@ -17,17 +17,25 @@ const layers = [
   ["Pasang surut BMKG", true],
 ] as const;
 
-const containerVariants = {
+const containerVariants: any = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } }
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
 
 export function PublicMapPage() {
+  let userRole = "";
+  try {
+    const userStr = localStorage.getItem("siperah-user");
+    if (userStr) {
+      userRole = JSON.parse(userStr).role;
+    }
+  } catch(e) {}
+
   return (
     <AppShell active="map" title="Peta Bahaya Rob" subtitle="Peringatan aktif, layer bahaya, laporan warga, dan ekspor data untuk operator maupun publik.">
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="stack" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
@@ -166,11 +174,13 @@ export function PublicMapPage() {
                 ))}
               </div>
 
-              <div style={{ padding: 16, background: "var(--surface-soft)" }}>
-                <a className="btn primary" href="#/reports" style={{ width: "100%", justifyContent: "center" }}>
-                  <Icon name="add" /> Tambah Laporan Baru
-                </a>
-              </div>
+              {userRole === "warga" && (
+                <div style={{ padding: 16, background: "var(--surface-soft)" }}>
+                  <a className="btn primary" href="#/reports" style={{ width: "100%", justifyContent: "center" }}>
+                    <Icon name="add" /> Tambah Laporan Baru
+                  </a>
+                </div>
+              )}
             </motion.div>
 
             <motion.div variants={itemVariants} className="panel">

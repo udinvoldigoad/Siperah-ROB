@@ -35,12 +35,12 @@ interface PredictionListResponse {
   data: PredictionData[];
 }
 
-const containerVariants = {
+const containerVariants: any = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { duration: 0.2 } }
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { duration: 0.2 } }
 };
@@ -176,7 +176,8 @@ export function ProvinceDashboardPage() {
               </div>
               <button className="btn secondary" style={{ fontSize: "12px" }}><Icon name="sort" style={{ fontSize: "14px" }} /> Urutkan</button>
             </div>
-            <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+            <div className="table-responsive">
+              <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--line)" }}>
                   <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)" }}>Kabupaten/Kota</th>
@@ -188,10 +189,10 @@ export function ProvinceDashboardPage() {
                 {regenciesData.map((item, idx) => (
                   <motion.tr 
                     key={item.name}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 + (idx * 0.05) }}
-                    whileHover={{ backgroundColor: "var(--surface-soft)" }}
+                    
                     style={{ borderBottom: "1px solid var(--line)" }}
                   >
                     <td style={{ padding: "16px 24px", fontWeight: 600 }}>
@@ -208,8 +209,9 @@ export function ProvinceDashboardPage() {
                     </td>
                   </motion.tr>
                 ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </motion.div>
 
           {/* ML Prediction Timeline Chart */}
@@ -304,7 +306,8 @@ export function ProvinceDashboardPage() {
             </div>
             <button className="btn secondary" style={{ fontSize: "12px" }}><Icon name="download" style={{ fontSize: "14px" }} /> Ekspor CSV Data Utama</button>
           </div>
-          <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+          <div className="table-responsive">
+            <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
               <tr style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--line)" }}>
                 <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)", width: "40px" }}>#</th>
@@ -319,7 +322,7 @@ export function ProvinceDashboardPage() {
               {predictions.slice(0, 5).map((p, index) => (
                 <motion.tr 
                   key={p.id}
-                  whileHover={{ backgroundColor: "var(--surface-soft)" }}
+                  
                   style={{ borderBottom: "1px solid var(--line)" }}
                 >
                   <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontWeight: 700 }}>{index + 1}</td>
@@ -342,6 +345,7 @@ export function ProvinceDashboardPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </motion.div>
       </motion.div>
     </AppShell>

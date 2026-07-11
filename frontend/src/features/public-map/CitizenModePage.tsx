@@ -25,12 +25,12 @@ const riskLabels: Record<RiskClass, string> = {
   sangat_tinggi: "Sangat Tinggi",
 };
 
-const containerVariants = {
+const containerVariants: any = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } }
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
@@ -78,7 +78,7 @@ export function CitizenModePage() {
   return (
     <AppShell active="awam" title="Status Bahaya Saya" subtitle="Panduan mitigasi dan peringatan dini disajikan dalam bahasa yang mudah dipahami.">
       {error && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="alert" style={{ marginBottom: 24, borderLeftColor: "var(--critical)" }}>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="alert" style={{ marginBottom: 24, borderLeftColor: "var(--critical)" }}>
           <Icon name="error" style={{ color: "var(--critical)" }} /> {error}
         </motion.div>
       )}
@@ -127,8 +127,8 @@ export function CitizenModePage() {
                 ].map(([label, value, note], i) => (
                   <motion.div 
                     key={label}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 + (i * 0.1) }}
                   >
                     <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</div>
@@ -172,14 +172,15 @@ export function CitizenModePage() {
 
           {/* Laporan Warga Sekitar */}
           <motion.section variants={itemVariants} className="panel flush">
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <h2 style={{ fontSize: "1.25rem", margin: 0, marginBottom: 4 }}>Laporan Warga di Sekitar Anda</h2>
-                <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Informasi lapangan dari masyarakat untuk meningkatkan kewaspadaan.</p>
+              <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "flex-start", justifyContent: "space-between" }}>
+                <div style={{ flex: "1 1 300px" }}>
+                  <h2 style={{ fontSize: "1.25rem", margin: 0, marginBottom: 4 }}>Laporan Warga di Sekitar Anda</h2>
+                  <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Informasi lapangan dari masyarakat untuk meningkatkan kewaspadaan.</p>
+                </div>
+                <a className="btn secondary" href="#/reports" style={{ whiteSpace: "nowrap" }}>Laporkan Genangan</a>
               </div>
-              <a className="btn secondary" href="#/reports">Laporkan Genangan</a>
-            </div>
-            <table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+            <div className="table-responsive">
+              <table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--line)" }}>
                   <th style={{ padding: "14px 24px", color: "var(--ink-soft)", fontSize: "13px", fontWeight: 600 }}>Kelurahan</th>
@@ -211,6 +212,7 @@ export function CitizenModePage() {
                 ))}
               </tbody>
             </table>
+          </div>
           </motion.section>
         </div>
 

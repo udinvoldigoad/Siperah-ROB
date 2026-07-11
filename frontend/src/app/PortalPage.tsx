@@ -25,6 +25,22 @@ const faqData = [
 export function PortalPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
+  const userStr = localStorage.getItem("siperah-user");
+  let dashboardRoute = "#/login";
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      const roleMap: Record<string, string> = {
+        admin: "#/admin/users",
+        bpbd_operator: "#/operator",
+        bpbd_provinsi: "#/province",
+        warga: "#/map",
+        peneliti: "#/research"
+      };
+      dashboardRoute = roleMap[user.role] || "#/login";
+    } catch (e) {}
+  }
+
   return (
     <div className="siperah-landing-root">
       {/* Google Fonts Load */}
@@ -530,19 +546,32 @@ export function PortalPage() {
           .marquee-container { margin-bottom: 80px; }
           .landing-footer { flex-direction: column; gap: 24px; text-align: center; }
         }
+        @media (max-width: 768px) {
+          .nav-links-wrap { display: none !important; }
+          .header-actions .btn-link-login { display: none; }
+          .hero-section { padding: 100px 16px 40px !important; }
+          .hero-section h1 { font-size: 2.2rem !important; line-height: 1.15; margin-bottom: 20px; }
+          .hero-section p { font-size: 1rem !important; margin-bottom: 24px; padding: 0 10px; }
+          .hero-actions { flex-direction: column; gap: 12px !important; margin-bottom: 60px !important; }
+          .hero-actions > a { width: 100%; box-sizing: border-box; text-align: center; }
+          .inline-pill-img { display: none; }
+          .marquee-container { height: 160px; }
+          .bento-card-el { padding: 24px; }
+          .landing-header-full { padding: 0 20px; background: rgba(255, 255, 255, 0.7) !important; backdrop-filter: blur(12px); }
+          .bento-header-wrap { flex-direction: column; align-items: flex-start !important; gap: 16px; margin-bottom: 32px !important; }
+          .bento-header-wrap h2 { font-size: 1.8rem !important; }
+        }
       `}</style>
 
       {/* Grid Ambient Background Pattern */}
       <div className="ambient-grid"></div>
 
       {/* Full-Width Header */}
-      <header className="landing-header-full">
-        <a className="brand-link" href="#/">
-          <div className="brand-logo-icon">
-            <Icon name="water_drop" />
-          </div>
-          SIPERAH-RoB
-        </a>
+        <header className="landing-header-full">
+          <a className="brand-link" href="#/" style={{ gap: "12px" }}>
+            <img src="/logo.png" alt="Logo SIPERAH" style={{ width: "48px", height: "48px", objectFit: "contain", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }} />
+            SIPERAH-RoB
+          </a>
         <nav className="nav-links-wrap">
           <a href="#/map">Peta Publik</a>
           <a href="#/awam">Mode Awam</a>
@@ -550,7 +579,7 @@ export function PortalPage() {
         </nav>
         <div className="header-actions">
           {localStorage.getItem("siperah-token") ? (
-            <a className="btn-link-login" href="#/province">Dashboard</a>
+            <a className="btn-link-login" href={dashboardRoute}>Dashboard</a>
           ) : (
             <a className="btn-link-login" href="#/login">Login</a>
           )}
@@ -562,7 +591,7 @@ export function PortalPage() {
       <section className="hero-section">
         <motion.span
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="hero-kicker"
           style={{ display: "inline-block", padding: "6px 16px", background: "rgba(37, 99, 235, 0.1)", color: "var(--accent-blue)", borderRadius: "100px", fontSize: "0.85rem", fontWeight: 700, marginBottom: "24px" }}
@@ -571,7 +600,7 @@ export function PortalPage() {
         </motion.span>
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
         >
           Sistem Prediksi Cerdas<br />
@@ -579,7 +608,7 @@ export function PortalPage() {
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
         >
           Peta digital interaktif untuk memantau prediksi risiko dan melaporkan kejadian banjir rob di kawasan pesisir Provinsi Lampung secara langsung.
@@ -587,7 +616,7 @@ export function PortalPage() {
         <motion.div
           className="hero-actions"
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
         >
           <a className="btn-hero-primary" href="#/map">
