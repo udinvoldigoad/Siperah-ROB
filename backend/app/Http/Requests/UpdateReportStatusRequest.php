@@ -14,7 +14,7 @@ class UpdateReportStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', 'string', 'in:menunggu,perlu_review,divalidasi,ditolak'],
+            'status' => ['required', 'string', 'in:menunggu,perlu_review,divalidasi,ditolak,duplikat'],
             'rejection_reason' => ['nullable', 'string', 'required_if:status,ditolak'],
         ];
     }
