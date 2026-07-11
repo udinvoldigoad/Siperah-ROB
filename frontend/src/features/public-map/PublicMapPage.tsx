@@ -140,17 +140,13 @@ export function PublicMapPage() {
 
               <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink)", textTransform: "uppercase", letterSpacing: 0.5 }}>Laporan Terkini</span>
-                <a href="#/reports" style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600 }}>Lihat Semua</a>
+                <a href="#/awam" style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600 }}>Lihat Semua</a>
               </div>
 
               <div style={{ maxHeight: "300px", overflowY: "auto" }}>
                 {reportItems.map((item, idx) => (
-                  <motion.article 
+                  <article 
                     key={item.village} 
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 + (idx * 0.1) }}
-                    whileHover={{ backgroundColor: "var(--surface-soft)" }}
                     style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "start", gap: 14, cursor: "pointer" }}
                   >
                     <div style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#fff", background: item.severity, flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>

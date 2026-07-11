@@ -37,12 +37,12 @@ interface PredictionListResponse {
 
 const containerVariants = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } }
+  show: { opacity: 1, transition: { duration: 0.2 } }
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.2 } }
 };
 
 export function ProvinceDashboardPage() {
@@ -143,22 +143,22 @@ export function ProvinceDashboardPage() {
 
         {/* KPI Grid */}
         <motion.div variants={containerVariants} className="metric-grid" style={{ marginBottom: "32px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
-          <motion.div variants={itemVariants} style={{ background: "#ffffff", padding: "28px", borderRadius: "20px", boxShadow: "0 4px 20px rgba(0,0,0,0.03)", border: "1px solid var(--border-color)" }} whileHover={{ y: -4 }}>
+          <motion.div variants={itemVariants} style={{ background: "#ffffff", padding: "28px", borderRadius: "20px", boxShadow: "0 4px 20px rgba(0,0,0,0.03)", border: "1px solid var(--border-color)" }}>
             <span style={{ fontSize: "14px", color: "var(--ink-muted)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Wilayah Pantau Aktif</span>
             <strong style={{ color: "var(--accent-blue)", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.monitored_regencies}</strong>
             <small style={{ fontSize: "13px", color: "var(--ink-soft)", display: "block", marginTop: "12px" }}>Kabupaten & Kota di Lampung</small>
           </motion.div>
-          <motion.div variants={itemVariants} style={{ background: "#fff1f2", padding: "28px", borderRadius: "20px", boxShadow: "0 4px 20px rgba(225, 29, 72, 0.05)", border: "1px solid #ffe4e6" }} whileHover={{ y: -4 }}>
+          <motion.div variants={itemVariants} style={{ background: "#fff1f2", padding: "28px", borderRadius: "20px", boxShadow: "0 4px 20px rgba(225, 29, 72, 0.05)", border: "1px solid #ffe4e6" }}>
             <span style={{ fontSize: "14px", color: "#e11d48", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Zona Sangat Bahaya</span>
             <strong style={{ color: "#be123c", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.high_risk_villages}</strong>
             <small style={{ fontSize: "13px", color: "#e11d48", opacity: 0.8, display: "block", marginTop: "12px" }}>Kelurahan butuh perhatian khusus</small>
           </motion.div>
-          <motion.div variants={itemVariants} style={{ background: "#ffffff", padding: "28px", borderRadius: "20px", boxShadow: "0 4px 20px rgba(0,0,0,0.03)", border: "1px solid var(--border-color)" }} whileHover={{ y: -4 }}>
+          <motion.div variants={itemVariants} style={{ background: "#ffffff", padding: "28px", borderRadius: "20px", boxShadow: "0 4px 20px rgba(0,0,0,0.03)", border: "1px solid var(--border-color)" }}>
             <span style={{ fontSize: "14px", color: "var(--ink-muted)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Warga Terdampak Potensial</span>
             <strong style={{ color: "#ea580c", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.risk_population.toLocaleString("id-ID")}</strong>
             <small style={{ fontSize: "13px", color: "var(--ink-soft)", display: "block", marginTop: "12px" }}>Jiwa di area rawan rob</small>
           </motion.div>
-          <motion.div variants={itemVariants} style={{ background: "#f0fdf4", padding: "28px", borderRadius: "20px", boxShadow: "0 4px 20px rgba(22, 163, 74, 0.05)", border: "1px solid #dcfce7" }} whileHover={{ y: -4 }}>
+          <motion.div variants={itemVariants} style={{ background: "#f0fdf4", padding: "28px", borderRadius: "20px", boxShadow: "0 4px 20px rgba(22, 163, 74, 0.05)", border: "1px solid #dcfce7" }}>
             <span style={{ fontSize: "14px", color: "#16a34a", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Laporan Masuk (Bulan Ini)</span>
             <strong style={{ color: "#15803d", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.validated_reports_this_month}</strong>
             <small style={{ fontSize: "13px", color: "#16a34a", opacity: 0.8, display: "block", marginTop: "12px" }}>Telah divalidasi oleh operator</small>
