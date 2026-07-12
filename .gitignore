@@ -13,6 +13,12 @@ backend/storage/framework/cache/
 backend/storage/framework/sessions/
 backend/storage/framework/views/
 backend/bootstrap/cache/
+backend/.phpunit.cache/
+backend/storage/app/public/reports/*
+backend/storage/app/private/reports/*
+backend/public/storage/reports/*
+!backend/storage/app/public/reports/.gitignore
+!backend/storage/app/private/reports/.gitignore
 
 # === IDE & OS ===
 .vscode/
@@ -34,6 +40,8 @@ npm-debug.log*
 database/*.sqlite
 database/local-data/
 pg_server.log
+scratch.json
+backend/test-db.php
 
 # === Misc ===
 .env
