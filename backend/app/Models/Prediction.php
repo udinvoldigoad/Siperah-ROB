@@ -24,6 +24,9 @@ class Prediction extends Model
         'peak_time',
         'model_version',
         'generated_at',
+        'data_source',
+        'source_reference',
+        'provenance_status',
     ];
 
     protected $casts = [

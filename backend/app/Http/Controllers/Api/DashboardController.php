@@ -75,9 +75,12 @@ final class DashboardController
             ->distinct('region_id')
             ->count('region_id');
 
-        $population = DB::table('regions')
-            ->where('coastal_flag', true)
-            ->sum('population');
+        $population = DB::table('predictions')
+            ->join('regions', 'predictions.region_id', '=', 'regions.id')
+            ->whereDate('predictions.prediction_date', Carbon::today())
+            ->whereIn('predictions.risk_class', ['tinggi', 'sangat_tinggi'])
+            ->where('regions.coastal_flag', true)
+            ->sum('regions.population');
 
         $startOfMonth = Carbon::now()->startOfMonth();
         $validatedThisMonth = DB::table('ground_truth_reports')

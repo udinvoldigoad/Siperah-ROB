@@ -12,6 +12,16 @@ final class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->environment('production')) {
+            $this->command?->warn('Demo seeder dilewati pada environment production.');
+            return;
+        }
+
+        $this->call(DemoSeeder::class);
+    }
+
+    public function runDemoData(): void
+    {
         $this->seedRegions();
         $this->seedUsers();
         $this->seedPredictions();
@@ -21,7 +31,7 @@ final class DatabaseSeeder extends Seeder
 
     // ── Regions ────────────────────────────────────────────────────
 
-    private function seedRegions(): void
+    public function seedRegions(): void
     {
         $regions = $this->regionData();
         $postgisInstalled = (bool) DB::selectOne(
@@ -33,14 +43,17 @@ final class DatabaseSeeder extends Seeder
 
         foreach ($regions as $r) {
             DB::statement(
-                "INSERT INTO regions (id, province, regency, district, village, geometry, population, coastal_flag, created_at, updated_at)
-                VALUES (?, 'Lampung', ?, ?, ?, {$geometryValue}, ?, true, now(), now())
+                "INSERT INTO regions (id, province, regency, district, village, geometry, population, coastal_flag, data_source, source_reference, provenance_status, created_at, updated_at)
+                VALUES (?, 'Lampung', ?, ?, ?, {$geometryValue}, ?, true, 'DemoSeeder', 'Bounding-box representatif; bukan batas resmi', 'demo', now(), now())
                 ON CONFLICT (id) DO UPDATE SET
                     regency = EXCLUDED.regency,
                     district = EXCLUDED.district,
                     village = EXCLUDED.village,
                     geometry = EXCLUDED.geometry,
                     population = EXCLUDED.population,
+                    data_source = EXCLUDED.data_source,
+                    source_reference = EXCLUDED.source_reference,
+                    provenance_status = EXCLUDED.provenance_status,
                     updated_at = now()",
                 [$r['id'], $r['regency'], $r['district'], $r['village'], $r['geometry'], $r['population']],
             );
@@ -232,7 +245,7 @@ final class DatabaseSeeder extends Seeder
 
     // ── Users ──────────────────────────────────────────────────────
 
-    private function seedUsers(): void
+    public function seedUsers(): void
     {
         $users = [
             [
@@ -300,7 +313,7 @@ final class DatabaseSeeder extends Seeder
 
     // ── Predictions ────────────────────────────────────────────────
 
-    private function seedPredictions(): void
+    public function seedPredictions(): void
     {
         $regions = $this->regionData();
         $riskLevels = [
@@ -318,21 +331,28 @@ final class DatabaseSeeder extends Seeder
 
             for ($day = 0; $day < 7; $day++) {
                 $date = $today->copy()->addDays($day);
-                $prob = round(mt_rand($level['prob_min'] * 100, $level['prob_max'] * 100) / 100, 2);
-                $height = round(mt_rand((int)($level['height_min'] * 100), (int)($level['height_max'] * 100)) / 100, 2);
-                $confidence = round(mt_rand(7500, 9500) / 100, 2);
-                $peakHour = mt_rand(0, 23);
-                $peakMinute = mt_rand(0, 59);
+                $probSpan = $level['prob_max'] - $level['prob_min'];
+                $heightSpan = $level['height_max'] - $level['height_min'];
+                $factor = (($i * 17 + $day * 11) % 101) / 100;
+                $prob = round($level['prob_min'] + ($probSpan * $factor), 2);
+                $height = round($level['height_min'] + ($heightSpan * $factor), 2);
+                $confidence = round(75 + ((($i * 13 + $day * 7) % 201) / 10), 2);
+                $peakHour = ($i * 3 + $day * 2) % 24;
+                $peakMinute = ($i * 11 + $day * 10) % 60;
 
                 DB::statement(
-                    "INSERT INTO predictions (id, region_id, prediction_date, risk_probability, risk_class, confidence_score, max_tidal_height, peak_time, model_version, generated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'RF-v1.2.0', now())
+                    "INSERT INTO predictions (id, region_id, prediction_date, risk_probability, risk_class, confidence_score, max_tidal_height, peak_time, model_version, generated_at, data_source, source_reference, provenance_status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DEMO-deterministic-v1', now(), 'DemoSeeder', 'Nilai deterministik untuk development; bukan output model operasional', 'demo')
                     ON CONFLICT (region_id, prediction_date) DO UPDATE SET
                         risk_probability = EXCLUDED.risk_probability,
                         risk_class = EXCLUDED.risk_class,
                         confidence_score = EXCLUDED.confidence_score,
                         max_tidal_height = EXCLUDED.max_tidal_height,
                         peak_time = EXCLUDED.peak_time,
+                        model_version = EXCLUDED.model_version,
+                        data_source = EXCLUDED.data_source,
+                        source_reference = EXCLUDED.source_reference,
+                        provenance_status = EXCLUDED.provenance_status,
                         generated_at = now()",
                     [
                         (string) Str::uuid(),
@@ -351,7 +371,7 @@ final class DatabaseSeeder extends Seeder
 
     // ── Reports ────────────────────────────────────────────────────
 
-    private function seedReports(): void
+    public function seedReports(): void
     {
         $reports = [
             [
@@ -481,7 +501,7 @@ final class DatabaseSeeder extends Seeder
 
     // ── Datasets ───────────────────────────────────────────────────
 
-    private function seedDatasets(): void
+    public function seedDatasets(): void
     {
         $datasets = [
             [
