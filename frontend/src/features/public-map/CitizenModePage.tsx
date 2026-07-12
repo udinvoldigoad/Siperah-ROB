@@ -110,17 +110,40 @@ export function CitizenModePage() {
 
   return (
     <AppShell active="awam" title="Status Bahaya Saya" subtitle="Panduan mitigasi dan peringatan dini disajikan dalam bahasa yang mudah dipahami.">
+      <style>{`
+        .citizen-mode-layout { grid-template-columns: minmax(0, 1fr) 340px; max-width: 1280px; padding-top: 24px; }
+        .citizen-status-card { border-radius: 16px !important; padding: 34px !important; }
+        .citizen-location-controls { align-items: center; display: flex; gap: 16px; justify-content: space-between; margin-bottom: 28px; }
+        .citizen-location-name { align-items: center; display: flex; font-size: .9rem; font-weight: 650; gap: 8px; min-width: 0; }
+        .citizen-location-name span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .citizen-location-controls select { background: rgba(255,255,255,.96); flex: 0 0 auto; max-width: 300px; }
+        .citizen-status-title { font-size: clamp(2.4rem, 5vw, 3.5rem) !important; }
+        .citizen-status-metrics { border-top: 1px solid rgba(255,255,255,.22); display: grid; gap: 12px; grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 30px; padding-top: 22px; }
+        .citizen-status-metric { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.16); border-radius: 12px; min-width: 0; padding: 16px; }
+        .citizen-forecast-grid { display: grid; gap: 10px; grid-template-columns: repeat(7,minmax(84px,1fr)); overflow-x: auto; padding: 24px; }
+        .citizen-forecast-day { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 14px 8px; }
+        .citizen-recommendations { display: grid; gap: 10px !important; }
+        .citizen-action-card { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px !important; padding: 14px; }
+        .citizen-action-card:hover { border-color: rgba(99,102,241,.35); background: var(--surface); }
+        .citizen-share-actions { display: grid; gap: 10px; }
+        .citizen-model-row { align-items: flex-start; border-bottom: 1px solid var(--line); display: grid !important; gap: 10px; grid-template-columns: 105px 1fr; padding: 9px 0; }
+        .citizen-model-row:last-child { border-bottom: 0; }
+        .citizen-model-row strong { text-align: right; }
+        @media(max-width:1024px){ .citizen-mode-layout{grid-template-columns:1fr}.citizen-sidebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.citizen-sidebar>section:first-child{grid-column:1/-1} }
+        @media(max-width:700px){ .citizen-mode-layout{padding:16px}.citizen-status-card{padding:22px!important}.citizen-location-controls{align-items:stretch;flex-direction:column}.citizen-location-controls select{max-width:none;width:100%}.citizen-status-metrics{grid-template-columns:1fr}.citizen-sidebar{grid-template-columns:1fr}.citizen-forecast-grid{grid-template-columns:repeat(7,92px)} }
+      `}</style>
       {error && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="alert" style={{ marginBottom: 24, borderLeftColor: "var(--critical)" }}>
           <Icon name="error" style={{ color: "var(--critical)" }} /> {error}
         </motion.div>
       )}
 
-      <motion.div className="detail-layout" variants={containerVariants} initial="hidden" animate="show">
+      <motion.div className="detail-layout citizen-mode-layout" variants={containerVariants} initial="hidden" animate="show">
         <div className="stack">
           {/* Main Status Hero Card */}
           <motion.section 
             variants={itemVariants}
+            className="citizen-status-card"
             style={{ 
               background: isDanger ? "linear-gradient(135deg, #e11d48 0%, #9f1239 100%)" : "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)", 
               color: "#fff", 
@@ -137,13 +160,14 @@ export function CitizenModePage() {
             />
             
             <div style={{ position: "relative", zIndex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,0.9)", fontSize: "0.95rem", marginBottom: 20, fontWeight: 600 }}>
-                <Icon name="location_on" style={{ fontSize: 20 }} />
-                {currentLocation}
+              <div className="citizen-location-controls">
+                <div className="citizen-location-name">
+                  <Icon name="location_on" style={{ fontSize: 20 }} /><span>{currentLocation}</span>
+                </div>
+                <select aria-label="Pilih lokasi" onChange={(event) => { const value = event.target.value; if (value === "gps") { requestGpsLocation(); return; } const [lat, lon] = value.split(",").map(Number); setCoordinates({ lat, lon }); setLocationNote(event.target.options[event.target.selectedIndex].text); }}>{locationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
               </div>
-              <div style={{ marginBottom: 20 }}><select aria-label="Pilih lokasi" onChange={(event) => { const value = event.target.value; if (value === "gps") { requestGpsLocation(); return; } const [lat, lon] = value.split(",").map(Number); setCoordinates({ lat, lon }); setLocationNote(event.target.options[event.target.selectedIndex].text); }} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,.4)", color: "var(--ink)", background: "#fff" }}>{locationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
               
-              <h1 style={{ fontSize: "4rem", fontWeight: 900, lineHeight: 1.1, margin: "0 0 16px 0", letterSpacing: "-0.03em" }}>
+              <h1 className="citizen-status-title" style={{ fontWeight: 900, lineHeight: 1.1, margin: "0 0 16px 0", letterSpacing: "-0.03em" }}>
                 Status <span style={{ color: "#fff" }}>{risk}</span>
               </h1>
               
@@ -153,7 +177,7 @@ export function CitizenModePage() {
                   : "Menganalisis status ancaman rob terbaru di sekitar Anda..."}
               </p>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 32, marginTop: 40, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 32 }}>
+              <div className="citizen-status-metrics">
                 {[
                   ["Kemungkinan Rob", data ? `${data.risk_probability}%` : "-", risk],
                   ["Puncak Pasang", data ? `${meters.format(data.max_tidal_height)} meter` : "-", data ? `Pukul ${data.peak_time} WIB` : "Menunggu Data"],
@@ -161,6 +185,7 @@ export function CitizenModePage() {
                 ].map(([label, value, note], i) => (
                   <motion.div 
                     key={label}
+                    className="citizen-status-metric"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 + (i * 0.1) }}
@@ -181,10 +206,11 @@ export function CitizenModePage() {
               <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Sumber: BMKG & Prediksi AI. Waspada saat indikator merah mendominasi.</p>
             </div>
             
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 12, padding: "32px 24px" }}>
+            <div className="citizen-forecast-grid">
               {forecastDays.map(({ day, label, percent, color }, i) => (
                 <motion.div 
                   key={day} 
+                  className="citizen-forecast-day"
                   whileHover={{ y: -5 }}
                   style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}
                 >
@@ -213,7 +239,7 @@ export function CitizenModePage() {
                 </div>
                 <a className="btn secondary" href="#/reports" style={{ whiteSpace: "nowrap" }}>Laporkan Genangan</a>
               </div>
-            <table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+            <div className="table-responsive"><table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--line)" }}>
                   <th style={{ padding: "14px 24px", color: "var(--ink-soft)", fontSize: "13px", fontWeight: 600 }}>Kelurahan</th>
@@ -243,12 +269,12 @@ export function CitizenModePage() {
                   </tr>;
                 })}
               </tbody>
-            </table>
+            </table></div>
           </motion.section>
         </div>
 
         {/* Sidebar */}
-        <aside className="stack">
+        <aside className="stack citizen-sidebar">
           {/* Tindakan Card */}
           <motion.section variants={itemVariants} className="panel flush" style={{ border: "none", boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}>
             <div style={{ padding: "32px 24px" }}>
@@ -256,12 +282,13 @@ export function CitizenModePage() {
                 <Icon name="verified_user" style={{ fontSize: 24, color: "var(--accent-blue)" }} />
                 Rekomendasi Tindakan
               </div>
-              <div style={{ display: "grid", gap: 24 }}>
+              <div className="citizen-recommendations">
                 {actionCards.map(([title, copy, icon], i) => {
                   const isReportBtn = title === "Laporkan kejadian";
                   return (
                     <motion.div 
                       key={title} 
+                      className="citizen-action-card"
                       whileHover={{ x: 4 }}
                       style={{ 
                         borderRadius: 8, 
@@ -299,22 +326,21 @@ export function CitizenModePage() {
           {/* Bagikan Panel */}
           <motion.section variants={itemVariants} className="panel">
             <h2 style={{ fontSize: "1.15rem", margin: "0 0 16px 0" }}>Sebarkan Peringatan</h2>
-            <button className="btn primary" type="button" style={{ width: "100%", justifyContent: "center", background: "#16a34a", borderColor: "#16a34a", marginBottom: 12, fontSize: "14px" }}>
+            <div className="citizen-share-actions"><button className="btn primary" type="button" style={{ width: "100%", justifyContent: "center", background: "#16a34a", borderColor: "#16a34a", fontSize: "14px" }}>
               <Icon name="share" /> Bagikan via WhatsApp
-            </button>
-            <button className="btn secondary" type="button" style={{ width: "100%", justifyContent: "center", fontSize: "14px" }}>
+            </button><button className="btn secondary" type="button" style={{ width: "100%", justifyContent: "center", fontSize: "14px" }}>
               <Icon name="content_copy" /> Salin Teks Peringatan
-            </button>
+            </button></div>
           </motion.section>
 
           {/* Model Info Panel */}
           <motion.section variants={itemVariants} className="panel" style={{ background: "var(--surface-soft)", border: "none" }}>
             <h2 style={{ fontSize: "1.05rem", margin: "0 0 16px 0" }}>Informasi Teknis Model</h2>
             <div style={{ display: "grid", gap: 10, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Model AI</span> <strong>Random Forest v1.2.0</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Kepercayaan</span> <strong style={{ color: "var(--low)" }}>Tinggi (0.89)</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Sumber Data</span> <strong>BMKG + BIG + Laporan Warga</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Pembaruan Terakhir</span> <strong>21 Mei 2026 05:00 WIB</strong></div>
+              <div className="citizen-model-row"><span>Model AI</span> <strong>Random Forest v1.2.0</strong></div>
+              <div className="citizen-model-row"><span>Kepercayaan</span> <strong style={{ color: "var(--low)" }}>Tinggi (0.89)</strong></div>
+              <div className="citizen-model-row"><span>Sumber Data</span> <strong>BMKG + BIG + Laporan Warga</strong></div>
+              <div className="citizen-model-row"><span>Pembaruan</span> <strong>21 Mei 2026 05:00 WIB</strong></div>
             </div>
           </motion.section>
         </aside>
