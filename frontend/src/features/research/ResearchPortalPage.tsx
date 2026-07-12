@@ -47,6 +47,8 @@ const endpoints = [
 
 export function ResearchPortalPage() {
   const toast = useToast();
+  const currentUser = (() => { try { return JSON.parse(localStorage.getItem("siperah-user") || "null") as { role?: string } | null; } catch { return null; } })();
+  const isResearcher = currentUser?.role === "peneliti";
   const [datasets, setDatasets] = useState<DatasetData[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKeyData[]>([]);
   const [rawGeneratedKey, setRawGeneratedKey] = useState<string | null>(null);
@@ -59,8 +61,10 @@ export function ResearchPortalPage() {
       const dsRes = await api<DatasetResponse>("/research/datasets");
       setDatasets(dsRes.data);
 
-      const keysRes = await api<ApiKeyResponse>("/research/api-keys");
-      setApiKeys(keysRes.data);
+      if (isResearcher) {
+        const keysRes = await api<ApiKeyResponse>("/research/api-keys");
+        setApiKeys(keysRes.data);
+      }
     } catch (err: any) {
       toast.error(err.message || "Gagal memuat portal penelitian.");
     } finally {
@@ -90,11 +94,11 @@ export function ResearchPortalPage() {
   const activeKey = apiKeys.find((k) => k.status === "aktif");
 
   return (
-    <AppShell active="research" title="Arsip & API Peneliti">
+    <AppShell active="research" title={isResearcher ? "Arsip & API Peneliti" : "Arsip Data Provinsi"}>
       <div className="content" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 80px" }}>
         
         {/* API Key Management Header row */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", background: "var(--surface)", padding: "16px 24px", borderRadius: "var(--radius)", border: "1px solid var(--line)" }}>
+        {isResearcher && <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", background: "var(--surface)", padding: "16px 24px", borderRadius: "var(--radius)", border: "1px solid var(--line)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "var(--ocean-light, #e0f2fe)", color: "var(--ocean-dark, #0284c7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Icon name="vpn_key" style={{ fontSize: "20px" }} />
@@ -121,7 +125,7 @@ export function ResearchPortalPage() {
               <Icon name="refresh" style={{ fontSize: "16px" }} /> Regenerasi
             </button>
           </div>
-        </div>
+        </div>}
 
         {/* KPI Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginBottom: "32px" }}>
@@ -141,7 +145,7 @@ export function ResearchPortalPage() {
 
         {/* Tabs Navigation */}
         <div style={{ display: "flex", gap: "24px", borderBottom: "2px solid var(--line)", marginBottom: "32px" }}>
-          {["Arsip Data", "Referensi API", "Penggunaan API", "Perizinan Data"].map((tab, idx) => (
+          {(isResearcher ? ["Arsip Data", "Referensi API", "Penggunaan API"] : ["Arsip Data"]).map((tab, idx) => (
             <button 
               key={idx}
               onClick={() => setActiveTab(idx)}
@@ -245,7 +249,7 @@ export function ResearchPortalPage() {
                 <div>Menampilkan 1–{datasets.length} dari {datasets.length} dataset</div>
                 <div style={{ display: "flex", gap: "4px" }}>
                   <button className="btn secondary" style={{ padding: "6px 10px" }} disabled>‹</button>
-                  <button className="btn primary" style={{ padding: "6px 12px", background: "var(--ocean-dark)", color: "#fff" }}>1</button>
+                  <button className="btn primary" aria-current="page" style={{ padding: "6px 12px", minWidth: 36, background: "#0284c7", borderColor: "#0369a1", color: "#fff", fontWeight: 700 }}>1</button>
                   <button className="btn secondary" style={{ padding: "6px 10px" }}>›</button>
                 </div>
               </div>
@@ -253,7 +257,7 @@ export function ResearchPortalPage() {
           )}
 
           {/* Tab 1: API Reference */}
-          {activeTab === 1 && (
+          {isResearcher && activeTab === 1 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ maxWidth: "800px" }}>
               <div style={{ marginBottom: "32px" }}>
                 <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: "var(--ink)" }}>Base URL</div>
@@ -284,17 +288,11 @@ export function ResearchPortalPage() {
           )}
 
           {/* Tab 2 & 3 */}
-          {activeTab === 2 && (
+          {isResearcher && activeTab === 2 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="alert info">
               <Icon name="info" /> Grafik penggunaan API akan ditampilkan di sini. Menampilkan metrik per endpoint untuk 30 hari terakhir.
             </motion.div>
           )}
-          {activeTab === 3 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="alert info">
-              <Icon name="info" /> Formulir permohonan akses data premium dan manajemen perizinan.
-            </motion.div>
-          )}
-
         </div>
       </div>
     </AppShell>
