@@ -22,11 +22,15 @@ class ApiKey extends Model
         'status',
         'last_used_at',
         'revoked_at',
+        'scopes',
+        'use_count',
     ];
 
     protected $casts = [
         'last_used_at' => 'datetime',
         'revoked_at' => 'datetime',
+        'scopes' => 'array',
+        'use_count' => 'integer',
     ];
 
     protected $hidden = [

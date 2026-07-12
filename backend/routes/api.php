@@ -9,12 +9,32 @@ use App\Http\Controllers\Api\PublicMapController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ResearchController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
-Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/register', [AuthController::class, 'register']);
+RateLimiter::for('login', function (Request $request) {
+    $email = Str::lower(trim((string) $request->input('email')));
+
+    return Limit::perMinute(10)
+        ->by($email.'|'.$request->ip())
+        ->response(fn (Request $request, array $headers) => response()->json([
+            'message' => 'Terlalu banyak percobaan login untuk akun ini. Coba lagi sebentar.',
+            'retry_after' => (int) ($headers['Retry-After'] ?? 60),
+        ], 429, $headers));
+});
+
+RateLimiter::for('registration', fn (Request $request) => Limit::perHour(5)->by($request->ip()));
+RateLimiter::for('api-key', fn (Request $request) => Limit::perMinute(60)->by(
+    (string) ($request->attributes->get('api_key_id') ?? $request->ip()),
+));
+
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:registration');
 
 // ── Public (tanpa login) ─────────────────────────────────────────
-Route::prefix('public')->group(function () {
+Route::prefix('public')->middleware('throttle:120,1')->group(function () {
     Route::get('/map', [PublicMapController::class, 'map']);
     Route::get('/predictions', [PublicMapController::class, 'predictions']);
     Route::get('/regions/{region}', [PublicMapController::class, 'region']);
@@ -23,23 +43,26 @@ Route::prefix('public')->group(function () {
 });
 
 // ── Authenticated ────────────────────────────────────────────────
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     // Reports — semua user login bisa lihat & buat
     Route::get('/reports', [ReportController::class, 'index']);
     Route::get('/reports/{report}', [ReportController::class, 'show']);
-    Route::post('/reports', [ReportController::class, 'store']);
+    Route::post('/reports', [ReportController::class, 'store'])->middleware('throttle:10,1');
 
     // BPBD & Admin — validasi laporan + dashboard
     Route::middleware('role:bpbd_operator,bpbd_provinsi,admin')->group(function () {
         Route::post('/reports/{report}/validate', [ReportController::class, 'validateReport']);
         Route::post('/reports/{report}/reject', [ReportController::class, 'rejectReport']);
         Route::patch('/reports/{report}/status', [ReportController::class, 'updateStatus']);
-        Route::get('/dashboard/operator/summary', [DashboardController::class, 'operatorSummary']);
-        Route::get('/dashboard/province/summary', [DashboardController::class, 'provinceSummary']);
     });
+
+    Route::get('/dashboard/operator/summary', [DashboardController::class, 'operatorSummary'])
+        ->middleware('role:bpbd_operator,admin');
+    Route::get('/dashboard/province/summary', [DashboardController::class, 'provinceSummary'])
+        ->middleware('role:bpbd_provinsi,admin');
 
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/users', [AdminController::class, 'users']);
@@ -53,13 +76,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/research/datasets', [ResearchController::class, 'datasets']);
         Route::get('/research/api-keys', [ResearchController::class, 'apiKeys']);
         Route::post('/research/api-keys', [ResearchController::class, 'regenerateKey']);
-        Route::get('/v1/predictions/daily', [ResearchController::class, 'dailyPredictions']);
-        Route::get('/v1/reports', [ResearchController::class, 'validatedReports']);
-        Route::get('/v1/tidal', [ResearchController::class, 'tidal']);
     });
 
     Route::get('/notifications/settings', [NotificationController::class, 'show']);
     Route::put('/notifications/settings', [NotificationController::class, 'update']);
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
+});
+
+Route::prefix('v1')->group(function () {
+    Route::get('/predictions/daily', [ResearchController::class, 'dailyPredictions'])
+        ->middleware(['api.key:predictions:read', 'throttle:api-key']);
+    Route::get('/reports', [ResearchController::class, 'validatedReports'])
+        ->middleware(['api.key:reports:read', 'throttle:api-key']);
+    Route::get('/tidal', [ResearchController::class, 'tidal'])
+        ->middleware(['api.key:tidal:read', 'throttle:api-key']);
 });
