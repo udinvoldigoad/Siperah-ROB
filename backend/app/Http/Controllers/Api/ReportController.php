@@ -233,9 +233,41 @@ final class ReportController
                 ->first();
         }
 
-        return \App\Models\Region::where('coastal_flag', true)
-            ->get()
-            ->first(fn ($region) => $this->pointIsInsideWktBounds($region->geometry, $latitude, $longitude));
+        $regions = \App\Models\Region::where('coastal_flag', true)->get();
+
+        // 1. Coba cari yang benar-benar masuk dalam bounding box WKT
+        $exactMatch = $regions->first(fn ($region) => $this->pointIsInsideWktBounds($region->geometry, $latitude, $longitude));
+        
+        if ($exactMatch) {
+            return $exactMatch;
+        }
+
+        // 2. Fallback: Cari region terdekat berdasarkan Euclidean distance ke tengah bounding box
+        // (Ini memastikan pelaporan bisa jalan di semua pesisir Lampung pada demo app)
+        $nearestRegion = null;
+        $minDist = PHP_FLOAT_MAX;
+
+        foreach ($regions as $region) {
+            preg_match_all('/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/', $region->geometry, $matches, PREG_SET_ORDER);
+            if ($matches === []) {
+                continue;
+            }
+
+            $longitudes = array_map(fn (array $match) => (float) $match[1], $matches);
+            $latitudes = array_map(fn (array $match) => (float) $match[2], $matches);
+            
+            $centerLng = array_sum($longitudes) / count($longitudes);
+            $centerLat = array_sum($latitudes) / count($latitudes);
+            
+            $dist = pow($latitude - $centerLat, 2) + pow($longitude - $centerLng, 2);
+            if ($dist < $minDist) {
+                $minDist = $dist;
+                $nearestRegion = $region;
+            }
+        }
+
+        // Toleransi maksimal sekitar ~3 derajat (ratusan kilometer)
+        return $minDist < 10 ? $nearestRegion : null;
     }
 
     private function postgisAvailable(): bool

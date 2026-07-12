@@ -37,11 +37,13 @@ export function App() {
       if (userStr) user = JSON.parse(userStr);
     } catch {}
 
+    const isUserLoggedIn = !!localStorage.getItem("siperah-token") && !!user;
+
     const baseRoute = route.split("/")[0];
     const navItem = navItems.find(item => item.href === `#/${baseRoute}`);
     
     if (navItem && navItem.roles) {
-      if (!user) {
+      if (!isUserLoggedIn || !user) {
         if (!navItem.roles.includes("guest")) {
           window.location.hash = "#/login";
           return null;

@@ -13,6 +13,24 @@ type MapResponse = { data: { regions: FeatureCollection; reports: FeatureCollect
 type PredictionResponse = { data: Prediction[] };
 
 const riskColor: Record<string, string> = { sangat_tinggi: "#e52421", tinggi: "#f4510b", sedang: "#d97706", rendah: "#16a34a" };
+
+const regencyCoordinates: Record<string, { center: [number, number]; zoom: number }> = {
+  "Kota Bandar Lampung": { center: [105.2660, -5.4496], zoom: 12 },
+  "Kabupaten Lampung Selatan": { center: [105.5898, -5.7335], zoom: 11 },
+  "Kabupaten Pesawaran": { center: [105.1500, -5.5000], zoom: 11 },
+  "Kabupaten Tanggamus": { center: [104.7000, -5.4500], zoom: 11 },
+  "Kabupaten Pesisir Barat": { center: [103.9500, -5.1800], zoom: 10 },
+  "Kabupaten Lampung Timur": { center: [105.6800, -5.0500], zoom: 10 },
+  "Kabupaten Tulang Bawang": { center: [105.8000, -4.4000], zoom: 10 },
+  "Kabupaten Tulang Bawang Barat": { center: [105.0500, -4.4500], zoom: 10 },
+  "Kabupaten Mesuji": { center: [105.4000, -4.0500], zoom: 10 },
+  "Kabupaten Lampung Tengah": { center: [105.2500, -4.8500], zoom: 10 },
+  "Kabupaten Lampung Utara": { center: [104.8500, -4.8000], zoom: 10 },
+  "Kabupaten Way Kanan": { center: [104.5500, -4.5000], zoom: 10 },
+  "Kabupaten Lampung Barat": { center: [104.2000, -5.0500], zoom: 10 },
+  "Kabupaten Pringsewu": { center: [104.9800, -5.3500], zoom: 11 },
+  "Kota Metro": { center: [105.3000, -5.1100], zoom: 12 },
+};
 const riskLabel: Record<string, string> = { sangat_tinggi: "Sangat Tinggi", tinggi: "Tinggi", sedang: "Sedang", rendah: "Rendah" };
 const containerVariants: Variants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } } };
 const itemVariants: Variants = { hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } } };
@@ -39,7 +57,8 @@ function featureCenter(feature: GeoJsonFeature): [number, number] | null {
 }
 
 function zoneRadiusKm(risk: unknown) {
-  return ({ sangat_tinggi: 3.5, tinggi: 3, sedang: 2.5, rendah: 2 } as Record<string, number>)[String(risk)] ?? 2;
+  // Disesuaikan dengan contoh: sangat tinggi 800m, tinggi 600m, sedang 400m
+  return ({ sangat_tinggi: 0.8, tinggi: 0.6, sedang: 0.4, rendah: 0.2 } as Record<string, number>)[String(risk)] ?? 0.2;
 }
 
 function geographicCircle(center: [number, number], radiusKm: number): { type: "Polygon"; coordinates: number[][][] } {
@@ -57,7 +76,7 @@ function geographicCircle(center: [number, number], radiusKm: number): { type: "
   return { type: "Polygon", coordinates: [ring] };
 }
 
-function RiskMap({ regions, reports, showReports }: { regions: FeatureCollection; reports: FeatureCollection; showReports: boolean }) {
+function RiskMap({ regions, reports, showReports, selectedRegency }: { regions: FeatureCollection; reports: FeatureCollection; showReports: boolean; selectedRegency: string }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const reportMarkers = useRef<maplibregl.Marker[]>([]);
@@ -85,7 +104,12 @@ function RiskMap({ regions, reports, showReports }: { regions: FeatureCollection
     const update = () => {
       predictionMarkers.current.forEach(m => m.remove());
       predictionMarkers.current = [];
+      reportMarkers.current.forEach(m => m.remove());
+      reportMarkers.current = [];
 
+      const circleFeatures: any[] = [];
+
+      // 1. TAMBAH TITIK BANJIR (PREDIKSI)
       regions.features.forEach((feature) => {
         const center = featureCenter(feature);
         if (!center) return;
@@ -93,87 +117,129 @@ function RiskMap({ regions, reports, showReports }: { regions: FeatureCollection
         const regency = String(feature.properties.regency ?? "");
         const risk = String(feature.properties.risk_class);
         const color = riskColor[risk] ?? riskColor.rendah;
-        const pinColor = risk === "sangat_tinggi" || risk === "tinggi" ? "#e52421" : "#1E88E5";
+        const radius = zoneRadiusKm(risk);
 
-        const el = document.createElement("div");
-        el.style.cssText = "width: 0px; height: 0px; cursor: pointer;";
+        // A. Area Lingkaran
+        circleFeatures.push({
+          type: "Feature",
+          geometry: geographicCircle(center, radius),
+          properties: { color, risk_class: risk }
+        });
         
-        const pulse = document.createElement("div");
-        pulse.style.cssText = `position: absolute; top: 0; left: 0; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; background: ${color};`;
-        pulse.animate([
-          { transform: 'translate(-50%, -50%) scale(0.6)', opacity: 0.6 },
-          { transform: 'translate(-50%, -50%) scale(2.2)', opacity: 0 }
-        ], { duration: 2000, iterations: Infinity, easing: 'ease-out' });
+        // B. Marker & Popup
+        const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`<strong>${feature.properties.village ?? "Wilayah pesisir"}</strong><br>${feature.properties.district ?? ""}, ${regency}<br>Status: <span style="color:${color}; font-weight:bold;">${riskText(feature.properties.risk_class)}</span><br>Radius Terdampak: ${Math.round(radius * 1000)} meter<br>Peluang rob: ${Math.round(Number(feature.properties.risk_probability ?? 0))}%`);
         
-        const ring = document.createElement("div");
-        ring.style.cssText = `position: absolute; top: 0; left: 0; transform: translate(-50%, -50%); width: 50px; height: 50px; border-radius: 50%; border: 1.5px solid ${color};`;
-        
-        const dot = document.createElement("div");
-        dot.style.cssText = `position: absolute; top: 0; left: 0; transform: translate(-50%, -50%); width: 14px; height: 14px; background: ${color}; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3); z-index: 1;`;
-        
-        const pin = document.createElement("div");
-        pin.style.cssText = `position: absolute; bottom: 0; right: 0; width: 32px; height: 32px; background-color: ${pinColor}; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); transform-origin: bottom right; border: 2px solid white; box-shadow: 2px 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 2; margin-bottom: 2px; margin-right: 2px;`;
-        const pinDot = document.createElement("div");
-        pinDot.style.cssText = "width: 12px; height: 12px; background-color: white; border-radius: 50%;";
-        pin.appendChild(pinDot);
-        
-        el.appendChild(pulse);
-        el.appendChild(ring);
-        el.appendChild(dot);
-        el.appendChild(pin);
-        
-        const popup = new maplibregl.Popup({ offset: [0, -32] }).setHTML(`<strong>${feature.properties.village ?? "Wilayah pesisir"}</strong><br>${feature.properties.district ?? ""}, ${regency}<br>Risiko: <strong>${riskText(feature.properties.risk_class)}</strong><br>Peluang rob: ${Math.round(Number(feature.properties.risk_probability ?? 0))}%`);
-        
-        predictionMarkers.current.push(new maplibregl.Marker({ element: el }).setLngLat(center).setPopup(popup).addTo(instance));
+        predictionMarkers.current.push(
+          new maplibregl.Marker({ color })
+            .setLngLat(center)
+            .setPopup(popup)
+            .addTo(instance)
+        );
       });
 
-      reportMarkers.current.forEach((marker) => marker.remove());
-      reportMarkers.current = [];
+      // 2. TAMBAH TITIK LAPORAN (GROUND TRUTH)
       if (showReports) {
         reports.features.forEach((report) => {
           const coordinates = report.geometry.coordinates;
           if (!Array.isArray(coordinates) || typeof coordinates[0] !== "number") return;
           const severity = String(report.properties.severity);
           const color = severity === "sangat_parah" ? riskColor.sangat_tinggi : severity === "parah" ? riskColor.tinggi : severity === "sedang" ? riskColor.sedang : riskColor.rendah;
-          const popup = new maplibregl.Popup({ offset: [0, -28] }).setHTML(`<strong>${report.properties.report_code ?? "Laporan warga"}</strong><br>${report.properties.location ?? "Wilayah pesisir"}<br>Ketinggian air: ${report.properties.water_height_cm ?? "-"} cm`);
           
-          const el = document.createElement("div");
-          el.style.cssText = "width: 0px; height: 0px; cursor: pointer;";
+          // Radius area untuk laporan sedikit lebih kecil
+          const radiusKm = severity === "sangat_parah" ? 0.6 : severity === "parah" ? 0.4 : severity === "sedang" ? 0.2 : 0.1;
+          circleFeatures.push({
+            type: "Feature",
+            geometry: geographicCircle([coordinates[0], coordinates[1]], radiusKm),
+            properties: { color, risk_class: severity }
+          });
+
+          const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`<strong>Laporan: ${report.properties.report_code ?? "Warga"}</strong><br>${report.properties.location ?? "Wilayah pesisir"}<br>Tingkat Genangan: <span style="color:${color}; font-weight:bold;">${riskText(severity)}</span><br>Radius Area: ${Math.round(radiusKm * 1000)} meter<br>Ketinggian air: ${report.properties.water_height_cm ?? "-"} cm`);
           
-          const pin = document.createElement("div");
-          pin.style.cssText = `position: absolute; bottom: 0; right: 0; width: 28px; height: 28px; background-color: ${color}; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); transform-origin: bottom right; border: 2px solid white; box-shadow: 2px 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 2;`;
-          
-          const dot = document.createElement("div");
-          dot.style.cssText = "width: 10px; height: 10px; background-color: white; border-radius: 50%;";
-          pin.appendChild(dot);
-          el.appendChild(pin);
-          
-          reportMarkers.current.push(new maplibregl.Marker({ element: el }).setLngLat([coordinates[0], coordinates[1]]).setPopup(popup).addTo(instance));
+          reportMarkers.current.push(
+            new maplibregl.Marker({ color })
+              .setLngLat([coordinates[0], coordinates[1]])
+              .setPopup(popup)
+              .addTo(instance)
+          );
         });
       }
       
-      let bounds: maplibregl.LngLatBounds | null = null;
-      let pointsCount = 0;
-      regions.features.forEach(f => {
-        const center = featureCenter(f);
-        if (center) {
-          pointsCount++;
-          if (!bounds) bounds = new maplibregl.LngLatBounds(center, center);
-          else bounds.extend(center);
+      // Update Sumber GeoJSON untuk Area Lingkaran
+      const circleSourceId = "risk-circles";
+      const existingSource = instance.getSource(circleSourceId);
+      if (existingSource) {
+        (existingSource as maplibregl.GeoJSONSource).setData({
+          type: "FeatureCollection",
+          features: circleFeatures,
+        });
+      } else {
+        instance.addSource(circleSourceId, {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: circleFeatures,
+          },
+        });
+        instance.addLayer({
+          id: "risk-circles-fill",
+          type: "fill",
+          source: circleSourceId,
+          paint: {
+            "fill-color": ["get", "color"],
+            "fill-opacity": 0.4,
+          },
+        });
+        instance.addLayer({
+          id: "risk-circles-line",
+          type: "line",
+          source: circleSourceId,
+          paint: {
+            "line-color": ["get", "color"],
+            "line-width": 2,
+          },
+        });
+      }
+
+      // 3. LOGIC FILTER DROPDOWN
+      if (selectedRegency && selectedRegency !== "all") {
+        const config = regencyCoordinates[selectedRegency] || regencyCoordinates[`Kabupaten ${selectedRegency}`] || regencyCoordinates[`Kota ${selectedRegency}`];
+        if (config) {
+          instance.flyTo({
+            center: config.center,
+            zoom: config.zoom,
+            duration: 1200,
+          });
         }
-      });
-      if (bounds) {
-        if (pointsCount === 1) {
-          // If only 1 point, MapLibre's fitBounds can be quirky, so expand the box slightly
-          const sw = bounds.getSouthWest();
-          bounds.extend([sw.lng - 0.05, sw.lat - 0.05]);
-          bounds.extend([sw.lng + 0.05, sw.lat + 0.05]);
+      } else {
+        let bounds: maplibregl.LngLatBounds | null = null;
+        let pointsCount = 0;
+        regions.features.forEach((f) => {
+          const center = featureCenter(f);
+          if (center) {
+            pointsCount++;
+            if (!bounds) bounds = new maplibregl.LngLatBounds(center, center);
+            else bounds.extend(center);
+          }
+        });
+        const activeBounds = bounds as maplibregl.LngLatBounds | null;
+        if (activeBounds) {
+          if (pointsCount === 1) {
+            const sw = activeBounds.getSouthWest();
+            activeBounds.extend([sw.lng - 0.05, sw.lat - 0.05]);
+            activeBounds.extend([sw.lng + 0.05, sw.lat + 0.05]);
+          }
+          instance.fitBounds(activeBounds, { padding: 50, maxZoom: 12, duration: 1000 });
+        } else {
+          instance.flyTo({
+            center: [105.26, -5.48],
+            zoom: 9,
+            duration: 1000,
+          });
         }
-        instance.fitBounds(bounds, { padding: 50, maxZoom: 12, duration: 1000 });
       }
     };
     if (instance.isStyleLoaded()) update(); else instance.once("load", update);
-  }, [regions, reports, showReports]);
+  }, [regions, reports, showReports, selectedRegency]);
 
   return <div ref={mapContainer} style={{ minHeight: 560, width: "100%" }} aria-label="Peta interaktif risiko banjir rob" />;
 }
@@ -210,7 +276,11 @@ export function PublicMapPage() {
     return () => { active = false; };
   }, [selectedDate, selectedRegency]);
 
-  const regencies = useMemo(() => [...new Set(catalog.map((item) => item.region?.regency).filter(Boolean))] as string[], [catalog]);
+  const regencies = useMemo(() => {
+    const fromData = catalog.map((item) => item.region?.regency).filter(Boolean);
+    const allKnown = Object.keys(regencyCoordinates);
+    return [...new Set([...allKnown, ...fromData])] as string[];
+  }, [catalog]);
   const dates = useMemo(() => [...new Set(catalog.map((item) => item.prediction_date))], [catalog]);
   const highestRisk = useMemo(() => regions.features.reduce<GeoJsonFeature | null>((highest, feature) => {
     const rank: Record<string, number> = { rendah: 1, sedang: 2, tinggi: 3, sangat_tinggi: 4 };
@@ -222,7 +292,7 @@ export function PublicMapPage() {
       <motion.div variants={itemVariants} className="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, borderLeftColor: riskColor[String(highestRisk?.properties.risk_class)] ?? "var(--accent)" }}><div style={{ display: "flex", alignItems: "center", gap: 14 }}><Icon name="warning" style={{ fontSize: 24, color: riskColor[String(highestRisk?.properties.risk_class)] ?? "var(--accent)" }} /><div><strong style={{ display: "block", marginBottom: 3, color: "var(--ink)" }}>{highestRisk ? `Risiko ${riskText(highestRisk.properties.risk_class)} terdeteksi` : "Memuat peringatan risiko"}</strong><span style={{ color: "var(--ink-soft)", fontSize: 13 }}>{highestRisk ? `${highestRisk.properties.village ?? "Wilayah pesisir"}, ${highestRisk.properties.regency ?? "Lampung"} · peluang rob ${Math.round(Number(highestRisk.properties.risk_probability ?? 0))}%` : "Mengambil data peta dari server."}</span></div></div><a className="btn secondary" href="#/awam">Lihat mode awam</a></motion.div>
       {error && <div className="alert" style={{ borderLeftColor: "var(--critical)" }}>{error}</div>}
       <motion.div variants={itemVariants} style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24, alignItems: "start" }}>
-        <div className="panel flush" style={{ overflow: "hidden", position: "relative" }}><div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", background: "var(--surface-soft)" }}><div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)}><option value="all">Prediksi terbaru</option>{dates.map((date) => <option key={date} value={date}>{date}</option>)}</select><select value={selectedRegency} onChange={(event) => setSelectedRegency(event.target.value)}><option value="all">Semua kabupaten</option>{regencies.map((regency) => <option key={regency} value={regency}>{regency}</option>)}</select></div><label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ink-soft)" }}><input type="checkbox" checked={showReports} onChange={(event) => setShowReports(event.target.checked)} /> Tampilkan laporan</label></div><RiskMap regions={regions} reports={reports} showReports={showReports} />{loading && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(255,255,255,.6)", fontWeight: 700 }}>Memuat peta…</div>}</div>
+        <div className="panel flush" style={{ overflow: "hidden", position: "relative" }}><div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", background: "var(--surface-soft)" }}><div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)}><option value="all">Prediksi terbaru</option>{dates.map((date) => <option key={date} value={date}>{date}</option>)}</select><select value={selectedRegency} onChange={(event) => setSelectedRegency(event.target.value)}><option value="all">Semua kabupaten</option>{regencies.map((regency) => <option key={regency} value={regency}>{regency}</option>)}</select></div><label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ink-soft)" }}><input type="checkbox" checked={showReports} onChange={(event) => setShowReports(event.target.checked)} /> Tampilkan laporan</label></div><RiskMap regions={regions} reports={reports} showReports={showReports} selectedRegency={selectedRegency} />{loading && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(255,255,255,.6)", fontWeight: 700 }}>Memuat peta…</div>}</div>
         <aside className="stack" style={{ gap: 24 }}><motion.div variants={itemVariants} className="panel flush"><div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", borderBottom: "1px solid var(--line)", background: "var(--surface-soft)" }}>{[[regions.features.length, "Zona dipantau", "var(--ink)"], [reports.features.length, "Laporan valid", "var(--low)"], [regions.features.filter((item) => ["tinggi", "sangat_tinggi"].includes(String(item.properties.risk_class))).length, "Risiko tinggi+", "var(--critical)"]].map(([value, label, color]) => <div key={String(label)} style={{ padding: "16px 8px", textAlign: "center" }}><strong style={{ display: "block", fontSize: 21, color: String(color) }}>{value}</strong><span style={{ fontSize: 11, color: "var(--ink-soft)" }}>{label}</span></div>)}</div><div style={{ padding: "16px 20px" }}><strong style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: .5 }}>Legenda Risiko</strong><div style={{ display: "grid", gap: 10, marginTop: 14 }}>{Object.entries(riskLabel).map(([risk, label]) => <div key={risk} style={{ display: "flex", gap: 9, alignItems: "center", fontSize: 13 }}><span style={{ width: 14, height: 14, borderRadius: 3, background: riskColor[risk] }} />{label}</div>)}</div></div></motion.div>{userRole === "warga" && <a className="btn primary" href="#/reports" style={{ justifyContent: "center" }}><Icon name="add" /> Tambah Laporan Baru</a>}</aside>
       </motion.div>
     </motion.div>
