@@ -4,13 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\StoreReportRequest;
 use App\Http\Requests\UpdateReportStatusRequest;
+use App\Http\Requests\RejectReportRequest;
 use App\Http\Resources\ReportResource;
 use App\Models\AuditLog;
 use App\Models\GroundTruthReport;
 use App\Models\ReportPhoto;
-use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
+use App\Services\NotificationService;
+use App\Services\ReportAccessService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,9 +20,14 @@ use Illuminate\Support\Str;
 
 final class ReportController
 {
+    public function __construct(
+        private readonly NotificationService $notifications,
+        private readonly ReportAccessService $access,
+    ) {}
+
     public function index(Request $request)
     {
-        $query = $this->accessibleReports($request->user())
+        $query = $this->access->accessible($request->user())
             ->with(['region', 'reporter', 'validator', 'photos'])
             ->orderBy('created_at', 'desc');
 
@@ -45,7 +52,7 @@ final class ReportController
     public function show(Request $request, string $report)
     {
         $reportData = GroundTruthReport::with(['region', 'reporter', 'validator', 'photos'])->findOrFail($report);
-        $this->ensureCanAccessReport($request->user(), $reportData);
+        $this->access->authorizeView($request->user(), $reportData);
         return new ReportResource($reportData);
     }
 
@@ -68,35 +75,47 @@ final class ReportController
             ]);
         }
 
-        $regionId = $region->id;
+        $storedPaths = [];
 
-        $report = GroundTruthReport::create([
-            'id' => (string) Str::uuid(),
-            'report_code' => 'GT-LPG-' . mt_rand(1000, 9999),
-            'user_id' => $user->id,
-            'region_id' => $regionId,
-            'latitude' => $data['latitude'],
-            'longitude' => $data['longitude'],
-            'severity' => $data['severity'],
-            'water_height_cm' => $data['water_height_cm'],
-            'incident_time' => $data['incident_time'],
-            'description' => $data['description'],
-            'status' => 'menunggu',
-        ]);
-
-        if ($request->hasFile('photos')) {
-            foreach ($request->file('photos') as $photo) {
-                $path = $photo->store('reports', 'public');
-                ReportPhoto::create([
+        try {
+            $report = DB::transaction(function () use ($data, $region, $request, $user, &$storedPaths) {
+                $report = GroundTruthReport::create([
                     'id' => (string) Str::uuid(),
-                    'report_id' => $report->id,
-                    'file_url' => $path,
-                    'file_name' => $photo->getClientOriginalName(),
-                    'file_size' => $photo->getSize(),
-                    'mime_type' => $photo->getMimeType(),
-                    'uploaded_at' => now(),
+                    'report_code' => $this->generateReportCode(),
+                    'user_id' => $user->id,
+                    'region_id' => $region->id,
+                    'latitude' => $data['latitude'],
+                    'longitude' => $data['longitude'],
+                    'severity' => $data['severity'],
+                    'water_height_cm' => $data['water_height_cm'],
+                    'incident_time' => $data['incident_time'],
+                    'description' => $data['description'],
+                    'status' => 'menunggu',
                 ]);
+
+                foreach ($request->file('photos', []) as $photo) {
+                    $path = $photo->store('reports', 'public');
+                    $storedPaths[] = $path;
+
+                    ReportPhoto::create([
+                        'id' => (string) Str::uuid(),
+                        'report_id' => $report->id,
+                        'file_url' => $path,
+                        'file_name' => basename($photo->getClientOriginalName()),
+                        'file_size' => $photo->getSize(),
+                        'mime_type' => $photo->getMimeType(),
+                        'uploaded_at' => now(),
+                    ]);
+                }
+
+                return $report;
+            });
+        } catch (\Throwable $exception) {
+            if ($storedPaths !== []) {
+                Storage::disk('public')->delete($storedPaths);
             }
+
+            throw $exception;
         }
 
         $report->load('photos');
@@ -107,18 +126,26 @@ final class ReportController
         ], 201);
     }
 
+    private function generateReportCode(): string
+    {
+        do {
+            $code = 'GT-LPG-' . Str::upper(Str::random(16));
+        } while (GroundTruthReport::where('report_code', $code)->exists());
+
+        return $code;
+    }
+
     public function validateReport(Request $request, string $report): JsonResponse
     {
         $reportData = GroundTruthReport::findOrFail($report);
-        $this->ensureCanAccessReport($request->user(), $reportData);
-        $this->ensureReportCanBeReviewed($reportData);
+        $this->access->authorizeReview($request->user(), $reportData);
         
         $reportData->update([
             'status' => 'divalidasi',
             'validated_by' => $request->user()->id,
             'validated_at' => now(),
         ]);
-        $this->notifyReporterAboutStatus($reportData);
+        $this->notifications->notifyReportStatus($reportData);
         $this->writeAudit($request, 'validate_report', $reportData);
 
         return response()->json([
@@ -127,13 +154,10 @@ final class ReportController
         ]);
     }
 
-    public function rejectReport(Request $request, string $report): JsonResponse
+    public function rejectReport(RejectReportRequest $request, string $report): JsonResponse
     {
-        $request->validate(['reason' => ['required', 'string']]);
-
         $reportData = GroundTruthReport::findOrFail($report);
-        $this->ensureCanAccessReport($request->user(), $reportData);
-        $this->ensureReportCanBeReviewed($reportData);
+        $this->access->authorizeReview($request->user(), $reportData);
 
         $reportData->update([
             'status' => 'ditolak',
@@ -141,7 +165,7 @@ final class ReportController
             'validated_at' => now(),
             'rejection_reason' => $request->input('reason'),
         ]);
-        $this->notifyReporterAboutStatus($reportData);
+        $this->notifications->notifyReportStatus($reportData);
         $this->writeAudit($request, 'reject_report', $reportData);
 
         return response()->json([
@@ -153,8 +177,7 @@ final class ReportController
     public function updateStatus(UpdateReportStatusRequest $request, string $report): JsonResponse
     {
         $reportData = GroundTruthReport::findOrFail($report);
-        $this->ensureCanAccessReport($request->user(), $reportData);
-        $this->ensureReportCanBeReviewed($reportData);
+        $this->access->authorizeReview($request->user(), $reportData);
 
         $status = $request->input('status');
 
@@ -164,72 +187,13 @@ final class ReportController
             'validated_by' => in_array($status, ['divalidasi', 'ditolak']) ? $request->user()->id : null,
             'validated_at' => in_array($status, ['divalidasi', 'ditolak']) ? now() : null,
         ]);
-        $this->notifyReporterAboutStatus($reportData);
+        $this->notifications->notifyReportStatus($reportData);
         $this->writeAudit($request, 'update_report_status', $reportData);
 
         return response()->json([
             'message' => 'Status laporan diperbarui',
             'data' => new ReportResource($reportData)
         ]);
-    }
-
-    private function accessibleReports(User $user): Builder
-    {
-        $query = GroundTruthReport::query();
-
-        return match ($user->role) {
-            'warga' => $query->where('user_id', $user->id),
-            'bpbd_operator' => $this->scopeToOperatorRegency($query, $user),
-            'bpbd_provinsi', 'admin' => $query,
-            default => abort(403, 'Role ini tidak memiliki akses ke laporan ground truth.'),
-        };
-    }
-
-    private function ensureCanAccessReport(User $user, GroundTruthReport $report): void
-    {
-        if (in_array($user->role, ['bpbd_provinsi', 'admin'], true)) {
-            return;
-        }
-
-        if ($user->role === 'warga') {
-            abort_unless($report->user_id === $user->id, 403, 'Anda hanya dapat mengakses laporan sendiri.');
-            return;
-        }
-
-        if ($user->role === 'bpbd_operator') {
-            $regency = $this->operatorRegency($user);
-            $report->loadMissing('region');
-            abort_unless($report->region?->regency === $regency, 403, 'Laporan berada di luar wilayah kerja Anda.');
-            return;
-        }
-
-        abort(403, 'Role ini tidak memiliki akses ke laporan ground truth.');
-    }
-
-    private function scopeToOperatorRegency(Builder $query, User $user): Builder
-    {
-        $regency = $this->operatorRegency($user);
-
-        return $query->whereHas('region', fn (Builder $regionQuery) => $regionQuery->where('regency', $regency));
-    }
-
-    private function operatorRegency(User $user): string
-    {
-        abort_unless($user->region_id, 403, 'Akun operator belum memiliki wilayah kerja.');
-
-        $regency = \App\Models\Region::whereKey($user->region_id)->value('regency');
-        abort_unless($regency, 403, 'Wilayah kerja operator tidak valid.');
-
-        return $regency;
-    }
-
-    private function ensureReportCanBeReviewed(GroundTruthReport $report): void
-    {
-        abort_unless(
-            in_array($report->status, ['menunggu', 'perlu_review'], true),
-            409,
-            'Hanya laporan menunggu atau perlu_review yang dapat diproses.'
-        );
     }
 
     private function writeAudit(Request $request, string $action, GroundTruthReport $report): void
@@ -251,37 +215,6 @@ final class ReportController
                 'status' => $report->status,
                 'region_id' => $report->region_id,
             ],
-        ]);
-    }
-
-    private function notifyReporterAboutStatus(GroundTruthReport $report): void
-    {
-        $settings = DB::table('notification_settings')->where('user_id', $report->user_id)->value('event_types');
-        $eventTypes = is_string($settings) ? json_decode($settings, true) : $settings;
-        if (is_array($eventTypes) && !in_array('laporan_ground_truth', $eventTypes, true) && !in_array('event_laporan', $eventTypes, true)) {
-            return;
-        }
-
-        $labels = [
-            'divalidasi' => 'Laporan divalidasi',
-            'ditolak' => 'Laporan ditolak',
-            'perlu_review' => 'Laporan perlu ditinjau',
-            'duplikat' => 'Laporan ditandai duplikat',
-        ];
-        $title = $labels[$report->status] ?? 'Status laporan diperbarui';
-        $body = "Laporan {$report->report_code} sekarang berstatus {$title}.";
-        if ($report->status === 'ditolak' && $report->rejection_reason) {
-            $body .= " Alasan: {$report->rejection_reason}";
-        }
-
-        DB::table('notification_inbox')->insert([
-            'id' => (string) Str::uuid(),
-            'user_id' => $report->user_id,
-            'type' => 'report_status',
-            'title' => $title,
-            'body' => $body,
-            'data' => json_encode(['report_id' => $report->id, 'report_code' => $report->report_code, 'status' => $report->status]),
-            'created_at' => now(),
         ]);
     }
 

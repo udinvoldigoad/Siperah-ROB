@@ -2,101 +2,49 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\NotificationSettingsRequest;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 final class NotificationController
 {
-    private const DEFAULT_USER_ID = '22222222-2222-4222-8222-222222222222';
+    public function __construct(private readonly NotificationService $notifications) {}
 
     public function show(Request $request): JsonResponse
     {
-        $userId = $request->user()?->id ?? self::DEFAULT_USER_ID;
-
-        $settings = DB::table('notification_settings')->where('user_id', $userId)->first();
-
-        if (!$settings) {
-            // Create default settings row
-            $defaultSettings = [
-                'id' => (string) Str::uuid(),
-                'user_id' => $userId,
-                'channels' => json_encode(['browser', 'email', 'whatsapp']),
-                'event_types' => json_encode(['bahaya_sangat_tinggi', 'laporan_ground_truth', 'peringatan_bmkg']),
-                'quiet_start' => '22:00:00',
-                'quiet_end' => '05:00:00',
-                'monitored_regions' => json_encode(['Panjang Utara', 'Kalianda', 'Teluk Betung']),
-            ];
-            DB::table('notification_settings')->insert($defaultSettings);
-            $settings = (object) $defaultSettings;
-        }
-
-        return response()->json([
-            'data' => [
-                'channels' => is_string($settings->channels) ? json_decode($settings->channels) : $settings->channels,
-                'event_types' => is_string($settings->event_types) ? json_decode($settings->event_types) : $settings->event_types,
-                'quiet_start' => $settings->quiet_start,
-                'quiet_end' => $settings->quiet_end,
-                'monitored_regions' => is_string($settings->monitored_regions) ? json_decode($settings->monitored_regions) : $settings->monitored_regions,
-            ]
-        ]);
+        return response()->json(['data' => $this->notifications->settings($request->user()->id)]);
     }
 
     public function index(Request $request): JsonResponse
     {
         $items = DB::table('notification_inbox')
             ->where('user_id', $request->user()->id)
-            ->orderByDesc('created_at')
-            ->limit(30)
-            ->get()
-            ->map(fn ($item) => [
-                'id' => $item->id,
-                'type' => $item->type,
-                'title' => $item->title,
-                'body' => $item->body,
-                'data' => is_string($item->data) ? json_decode($item->data, true) : $item->data,
-                'read_at' => $item->read_at,
-                'created_at' => $item->created_at,
-            ]);
+            ->latest('created_at')
+            ->paginate(30);
 
-        return response()->json(['data' => $items]);
+        return response()->json(['data' => $items->items(), 'meta' => [
+            'current_page' => $items->currentPage(),
+            'last_page' => $items->lastPage(),
+            'total' => $items->total(),
+        ]]);
     }
 
     public function markRead(Request $request, string $notification): JsonResponse
     {
-        DB::table('notification_inbox')
+        $updated = DB::table('notification_inbox')
             ->where('id', $notification)
             ->where('user_id', $request->user()->id)
             ->update(['read_at' => now()]);
 
-        return response()->json(['message' => 'Notifikasi ditandai sudah dibaca.']);
+        abort_if($updated === 0, 404, 'Notifikasi tidak ditemukan.');
+        return response()->json(['data' => null, 'message' => 'Notifikasi ditandai sudah dibaca.']);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(NotificationSettingsRequest $request): JsonResponse
     {
-        $userId = $request->user()?->id ?? self::DEFAULT_USER_ID;
-
-        $data = $request->validate([
-            'channels' => ['required', 'array'],
-            'event_types' => ['required', 'array'],
-            'quiet_start' => ['nullable', 'string'],
-            'quiet_end' => ['nullable', 'string'],
-            'monitored_regions' => ['required', 'array'],
-        ]);
-
-        DB::table('notification_settings')->updateOrInsert(
-            ['user_id' => $userId],
-            [
-                'id' => DB::raw('COALESCE(id, \'' . (string) Str::uuid() . '\')'),
-                'channels' => json_encode($data['channels']),
-                'event_types' => json_encode($data['event_types']),
-                'quiet_start' => $data['quiet_start'],
-                'quiet_end' => $data['quiet_end'],
-                'monitored_regions' => json_encode($data['monitored_regions']),
-            ]
-        );
-
-        return response()->json(['message' => 'Notification settings updated', 'data' => $data]);
+        $settings = $this->notifications->updateSettings($request->user()->id, $request->validated());
+        return response()->json(['data' => $settings, 'message' => 'Pengaturan notifikasi diperbarui.']);
     }
 }

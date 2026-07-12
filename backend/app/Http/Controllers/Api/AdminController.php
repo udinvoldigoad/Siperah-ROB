@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\UserResource;
+use App\Http\Requests\UpdateAdminUserRequest;
 use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -52,6 +53,7 @@ final class AdminController
     {
         $userData = User::findOrFail($user);
         $userData->update(['status' => 'ditolak']);
+        $userData->tokens()->delete();
 
         $actor = $request->user();
 
@@ -70,15 +72,35 @@ final class AdminController
         return response()->json(['message' => 'User rejected', 'id' => $user]);
     }
 
-    public function updateUser(Request $request, string $user): JsonResponse
+    public function updateUser(UpdateAdminUserRequest $request, string $user): JsonResponse
     {
-        $data = $request->validate([
-            'role' => ['required', 'string', 'in:warga,bpbd_operator,bpbd_provinsi,peneliti,admin'],
-            'institution' => ['nullable', 'string', 'max:150'],
-        ]);
-
+        $data = $request->validated();
         $userData = User::findOrFail($user);
+        abort_if(
+            $userData->id === $request->user()->id
+                && (($data['role'] ?? 'admin') !== 'admin' || in_array($data['status'] ?? 'aktif', ['nonaktif', 'ditolak'], true)),
+            422,
+            'Admin tidak dapat menurunkan role atau menonaktifkan akunnya sendiri.',
+        );
         $userData->update($data);
+
+        if (in_array($userData->status, ['nonaktif', 'ditolak'], true)) {
+            $userData->tokens()->delete();
+        }
+
+        $actor = $request->user();
+        AuditLog::create([
+            'id' => (string) Str::uuid(),
+            'actor_user_id' => $actor->id,
+            'actor_name' => $actor->name,
+            'actor_role' => $actor->role,
+            'action' => 'update_user',
+            'target_resource' => "users:{$userData->id}",
+            'outcome' => 'success',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'payload' => $data,
+        ]);
 
         return response()->json(['message' => 'User updated', 'data' => new UserResource($userData)]);
     }
