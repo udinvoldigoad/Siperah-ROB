@@ -61,6 +61,7 @@ function RiskMap({ regions, reports, showReports }: { regions: FeatureCollection
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const reportMarkers = useRef<maplibregl.Marker[]>([]);
+  const predictionMarkers = useRef<maplibregl.Marker[]>([]);
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -100,40 +101,79 @@ function RiskMap({ regions, reports, showReports }: { regions: FeatureCollection
           current.properties = feature.properties;
         }
       });
-      const riskZones: FeatureCollection = {
-        type: "FeatureCollection",
-        features: Array.from(zoneGroups.entries()).map(([regency, zone]) => {
-          const center: [number, number] = [zone.longitude / zone.count, zone.latitude / zone.count];
-          return { type: "Feature" as const, id: `zone-${regency}`, geometry: geographicCircle(center, zoneRadiusKm(zone.properties.risk_class)), properties: { ...zone.properties, regency } };
-        }),
-      };
-      const zoneSource = instance.getSource("risk-zones") as maplibregl.GeoJSONSource | undefined;
-      if (zoneSource) {
-        zoneSource.setData(riskZones as GeoJSON.FeatureCollection);
-      } else {
-        instance.addSource("risk-zones", { type: "geojson", data: riskZones as GeoJSON.FeatureCollection });
-        instance.addLayer({ id: "risk-zone-fill", type: "fill", source: "risk-zones", paint: { "fill-color": ["match", ["get", "risk_class"], "sangat_tinggi", riskColor.sangat_tinggi, "tinggi", riskColor.tinggi, "sedang", riskColor.sedang, "rendah", riskColor.rendah, "#64748b"], "fill-opacity": 0.16 } });
-        instance.addLayer({ id: "risk-zone-outline", type: "line", source: "risk-zones", paint: { "line-color": ["match", ["get", "risk_class"], "sangat_tinggi", riskColor.sangat_tinggi, "tinggi", riskColor.tinggi, "sedang", riskColor.sedang, "rendah", riskColor.rendah, "#64748b"], "line-width": 1.5, "line-opacity": 0.9 } });
-      }
+
+      predictionMarkers.current.forEach(m => m.remove());
+      predictionMarkers.current = [];
+
+      Array.from(zoneGroups.entries()).forEach(([regency, zone]) => {
+        const center: [number, number] = [zone.longitude / zone.count, zone.latitude / zone.count];
+        const risk = String(zone.properties.risk_class);
+        const color = riskColor[risk] ?? riskColor.rendah;
+        const pinColor = risk === "sangat_tinggi" || risk === "tinggi" ? "#e52421" : "#1E88E5";
+
+        const el = document.createElement("div");
+        el.style.cssText = "position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 80px; height: 80px; cursor: pointer;";
+        
+        const pulse = document.createElement("div");
+        pulse.style.cssText = `position: absolute; bottom: 0; left: 50%; width: 60px; height: 60px; border-radius: 50%; background: ${color}; transform-origin: center;`;
+        pulse.animate([
+          { transform: 'translate(-50%, 50%) scale(0.6)', opacity: 0.6 },
+          { transform: 'translate(-50%, 50%) scale(2.2)', opacity: 0 }
+        ], { duration: 2000, iterations: Infinity, easing: 'ease-out' });
+        
+        const ring = document.createElement("div");
+        ring.style.cssText = `position: absolute; bottom: 0; left: 50%; transform: translate(-50%, 50%); width: 50px; height: 50px; border-radius: 50%; border: 1.5px solid ${color};`;
+        
+        const dot = document.createElement("div");
+        dot.style.cssText = `position: absolute; bottom: 0; left: 50%; transform: translate(-50%, 50%); width: 14px; height: 14px; background: ${color}; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);`;
+        
+        const pin = document.createElement("div");
+        pin.style.cssText = `width: 32px; height: 32px; background-color: ${pinColor}; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 2px 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; margin-bottom: 2px;`;
+        const pinDot = document.createElement("div");
+        pinDot.style.cssText = "width: 12px; height: 12px; background-color: white; border-radius: 50%;";
+        pin.appendChild(pinDot);
+        
+        el.appendChild(pulse);
+        el.appendChild(ring);
+        el.appendChild(dot);
+        el.appendChild(pin);
+        
+        const popup = new maplibregl.Popup({ offset: 40 }).setHTML(`<strong>${zone.properties.village ?? "Wilayah pesisir"}</strong><br>${zone.properties.district ?? ""}, ${regency}<br>Risiko: <strong>${riskText(zone.properties.risk_class)}</strong><br>Peluang rob: ${Math.round(Number(zone.properties.risk_probability ?? 0))}%`);
+        
+        predictionMarkers.current.push(new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat(center).setPopup(popup).addTo(instance));
+      });
 
       reportMarkers.current.forEach((marker) => marker.remove());
       reportMarkers.current = [];
       if (showReports) {
         reports.features.forEach((report) => {
           const coordinates = report.geometry.coordinates;
-          if (!Array.isArray(coordinates) || typeof coordinates[0] !== "number" || typeof coordinates[1] !== "number") return;
+          if (!Array.isArray(coordinates) || typeof coordinates[0] !== "number") return;
           const severity = String(report.properties.severity);
           const color = severity === "sangat_parah" ? riskColor.sangat_tinggi : severity === "parah" ? riskColor.tinggi : severity === "sedang" ? riskColor.sedang : riskColor.rendah;
           const popup = new maplibregl.Popup({ offset: 26 }).setHTML(`<strong>${report.properties.report_code ?? "Laporan warga"}</strong><br>${report.properties.location ?? "Wilayah pesisir"}<br>Ketinggian air: ${report.properties.water_height_cm ?? "-"} cm`);
-          reportMarkers.current.push(new maplibregl.Marker({ color, scale: 1.08 }).setLngLat([coordinates[0], coordinates[1]]).setPopup(popup).addTo(instance));
+          
+          const el = document.createElement("div");
+          el.style.cssText = `width: 28px; height: 28px; background-color: ${color}; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 2px 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;`;
+          const dot = document.createElement("div");
+          dot.style.cssText = "width: 10px; height: 10px; background-color: white; border-radius: 50%;";
+          el.appendChild(dot);
+          
+          reportMarkers.current.push(new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([coordinates[0], coordinates[1]]).setPopup(popup).addTo(instance));
         });
       }
-      instance.on("click", "risk-zone-fill", (event) => {
-        const properties = event.features?.[0]?.properties ?? {};
-        new maplibregl.Popup().setLngLat(event.lngLat).setHTML(`<strong>${properties.village ?? "Wilayah pesisir"}</strong><br>${properties.district ?? ""}, ${properties.regency ?? ""}<br>Risiko: <strong>${riskText(properties.risk_class)}</strong><br>Peluang rob: ${Math.round(Number(properties.risk_probability ?? 0))}%<br>Pasang maks: ${properties.max_tidal_height ?? "-"} m`).addTo(instance);
+      
+      let bounds: maplibregl.LngLatBounds | null = null;
+      regions.features.forEach(f => {
+        const center = featureCenter(f);
+        if (center) {
+          if (!bounds) bounds = new maplibregl.LngLatBounds(center, center);
+          else bounds.extend(center);
+        }
       });
-      instance.on("mouseenter", "risk-zone-fill", () => { instance.getCanvas().style.cursor = "pointer"; });
-      instance.on("mouseleave", "risk-zone-fill", () => { instance.getCanvas().style.cursor = ""; });
+      if (bounds) {
+        instance.fitBounds(bounds, { padding: 50, maxZoom: 11, duration: 800 });
+      }
     };
     if (instance.isStyleLoaded()) update(); else instance.once("load", update);
   }, [regions, reports, showReports]);
