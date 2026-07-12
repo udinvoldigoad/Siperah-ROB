@@ -11,6 +11,7 @@ use App\Models\GroundTruthReport;
 use App\Models\ReportPhoto;
 use App\Services\NotificationService;
 use App\Services\ReportAccessService;
+use App\Services\RegionLocator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -23,6 +24,7 @@ final class ReportController
     public function __construct(
         private readonly NotificationService $notifications,
         private readonly ReportAccessService $access,
+        private readonly RegionLocator $regionLocator,
     ) {}
 
     public function index(Request $request)
@@ -61,11 +63,11 @@ final class ReportController
         $data = $request->validated();
         $user = $request->user();
 
-        $region = $this->resolveCoastalRegion((float) $data['latitude'], (float) $data['longitude']);
+        $region = $this->regionLocator->locateAdministrative((float) $data['latitude'], (float) $data['longitude']);
 
         if (!$region) {
             throw ValidationException::withMessages([
-                'latitude' => 'Lokasi laporan berada di luar wilayah pesisir yang dipantau.',
+                'latitude' => 'Lokasi laporan berada di luar batas administrasi Provinsi Lampung yang tersedia.',
             ]);
         }
 
@@ -218,79 +220,4 @@ final class ReportController
         ]);
     }
 
-    /**
-     * Produksi memakai PostGIS. Fallback WKT hanya untuk database development
-     * lama agar pelaporan tetap dapat diuji sebelum ekstensi dipasang.
-     */
-    private function resolveCoastalRegion(float $latitude, float $longitude): ?\App\Models\Region
-    {
-        if ($this->postgisAvailable()) {
-            return \App\Models\Region::where('coastal_flag', true)
-                ->whereRaw(
-                    'ST_Covers(geometry, ST_SetSRID(ST_MakePoint(?, ?), 4326))',
-                    [$longitude, $latitude],
-                )
-                ->first();
-        }
-
-        $regions = \App\Models\Region::where('coastal_flag', true)->get();
-
-        // 1. Coba cari yang benar-benar masuk dalam bounding box WKT
-        $exactMatch = $regions->first(fn ($region) => $this->pointIsInsideWktBounds($region->geometry, $latitude, $longitude));
-        
-        if ($exactMatch) {
-            return $exactMatch;
-        }
-
-        // 2. Fallback: Cari region terdekat berdasarkan Euclidean distance ke tengah bounding box
-        // (Ini memastikan pelaporan bisa jalan di semua pesisir Lampung pada demo app)
-        $nearestRegion = null;
-        $minDist = PHP_FLOAT_MAX;
-
-        foreach ($regions as $region) {
-            preg_match_all('/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/', $region->geometry, $matches, PREG_SET_ORDER);
-            if ($matches === []) {
-                continue;
-            }
-
-            $longitudes = array_map(fn (array $match) => (float) $match[1], $matches);
-            $latitudes = array_map(fn (array $match) => (float) $match[2], $matches);
-            
-            $centerLng = array_sum($longitudes) / count($longitudes);
-            $centerLat = array_sum($latitudes) / count($latitudes);
-            
-            $dist = pow($latitude - $centerLat, 2) + pow($longitude - $centerLng, 2);
-            if ($dist < $minDist) {
-                $minDist = $dist;
-                $nearestRegion = $region;
-            }
-        }
-
-        // Toleransi maksimal sekitar ~3 derajat (ratusan kilometer)
-        return $minDist < 10 ? $nearestRegion : null;
-    }
-
-    private function postgisAvailable(): bool
-    {
-        return (bool) DB::selectOne(
-            "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') AS installed"
-        )->installed;
-    }
-
-    private function pointIsInsideWktBounds(string $wkt, float $latitude, float $longitude): bool
-    {
-        preg_match_all('/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/', $wkt, $matches, PREG_SET_ORDER);
-
-        if ($matches === []) {
-            return false;
-        }
-
-        $longitudes = array_map(fn (array $match) => (float) $match[1], $matches);
-        $latitudes = array_map(fn (array $match) => (float) $match[2], $matches);
-
-        return $longitude >= min($longitudes)
-            && $longitude <= max($longitudes)
-            && $latitude >= min($latitudes)
-            && $latitude <= max($latitudes);
-    }
 }

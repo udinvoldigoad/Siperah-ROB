@@ -38,6 +38,7 @@ Route::prefix('public')->middleware('throttle:120,1')->group(function () {
     Route::get('/map', [PublicMapController::class, 'map']);
     Route::get('/predictions', [PublicMapController::class, 'predictions']);
     Route::get('/regions/{region}', [PublicMapController::class, 'region']);
+    Route::get('/resolve-region', [PublicMapController::class, 'resolveRegion']);
     Route::get('/mode-awam', [PublicMapController::class, 'modeAwam']);
     Route::get('/onboarding', [PublicMapController::class, 'onboarding']);
 });

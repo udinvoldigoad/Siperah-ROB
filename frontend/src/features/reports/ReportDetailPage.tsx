@@ -59,7 +59,7 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
           {error && <div className="alert">{error}</div>}
           <section className="alert" style={{ display: "grid", gap: 6 }}>
             <strong>{report.code}</strong>
-            <span>{report.village}, {report.district} · {report.submittedAt}</span>
+            <span>{report.village}, {report.district}, {report.regency} · kejadian {report.incidentTime}</span>
           </section>
 
           <div className="section-head">
@@ -68,6 +68,7 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
               <p>{report.description}</p>
             </div>
             <div className="report-chips align-end">
+              <span className={`badge ${report.isWithinMonitoringArea ? "b-done" : "b-pending"}`}>{report.isWithinMonitoringArea ? "Wilayah pantauan" : "Di luar cakupan prediksi"}</span>
               <span className={`badge severity-${report.severity}`}>{severityLabels[report.severity]}</span>
               <span className={`badge status-${report.status}`}>{statusLabels[report.status]}</span>
             </div>
@@ -75,7 +76,7 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
 
           <dl className="detail-grid">
             <div><dt>Pelapor</dt><dd>{report.reporter}</dd></div>
-            <div><dt>Wilayah</dt><dd>{report.village}, {report.district}</dd></div>
+            <div><dt>Wilayah</dt><dd>{report.village}, {report.district}, {report.regency}</dd></div>
             <div><dt>Waktu kejadian</dt><dd>{report.incidentTime}</dd></div>
             <div><dt>Tinggi air</dt><dd>{report.waterHeightCm === null ? "-" : `${report.waterHeightCm} cm`}</dd></div>
             <div><dt>Koordinat</dt><dd>{report.coordinates}</dd></div>
