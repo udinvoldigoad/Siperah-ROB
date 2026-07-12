@@ -26,6 +26,12 @@ class User extends Authenticatable
         'status'
     ];
 
+    protected $hidden = ['password_hash'];
+
+    protected $casts = [
+        'last_login_at' => 'datetime',
+    ];
+
     public function getAuthPassword()
     {
         return $this->password_hash;
