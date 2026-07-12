@@ -157,9 +157,9 @@ export function LoginPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            style={{ color: "#fff", fontSize: "clamp(2.5rem, 4vw, 3.5rem)", lineHeight: 1.1, fontWeight: 900, margin: "0 0 24px", letterSpacing: "-0.02em" }}
+            style={{ color: "#fff", fontSize: "clamp(1.7rem, 2.7vw, 2.35rem)", lineHeight: 1.2, fontWeight: 900, margin: "0 0 24px", letterSpacing: "-0.02em" }}
           >
-            Sistem Cerdas <br/><span style={{ color: "var(--ocean-light)" }}>Mitigasi Pesisir</span>
+            Sistem Informasi Prediksi Risiko <br/><span style={{ color: "var(--ocean-light)" }}>Banjir Rob Terpadu Provinsi Lampung.</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}

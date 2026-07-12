@@ -25,6 +25,8 @@
 * { box-sizing: border-box; }
 html { background: var(--bg); }
 body { margin: 0; min-width: 320px; background: var(--bg); color: var(--ink); }
+html, body, * { scrollbar-width: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display: none; width: 0; height: 0; }
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
@@ -508,6 +510,39 @@ textarea { min-height: 100px; resize: vertical; }
   top: 0;
   z-index: 3;
 }
+.topbar-actions { display: flex; align-items: center; }
+.notification-menu { position: relative; }
+.notification-trigger { align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); cursor: pointer; display: inline-flex; height: 40px; justify-content: center; position: relative; width: 40px; }
+.notification-trigger:hover { background: var(--surface-soft); }
+.notification-dot { background: var(--critical); border: 2px solid var(--surface); border-radius: 999px; height: 10px; position: absolute; right: 5px; top: 5px; width: 10px; }
+.notification-dropdown { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 18px 48px rgba(15, 23, 42, .16); overflow: hidden; position: absolute; right: 0; top: calc(100% + 10px); width: min(380px, calc(100vw - 32px)); z-index: 20; }
+.notification-dropdown-head { align-items: center; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; padding: 14px 16px; }
+.notification-dropdown-head strong, .notification-dropdown-head span { display: block; }
+.notification-dropdown-head span { color: var(--ink-soft); font-size: 11px; margin-top: 2px; }
+.notification-dropdown-head a { color: var(--accent-dark); font-size: 12px; font-weight: 700; }
+.notification-list { max-height: 360px; overflow-y: auto; }
+.notification-list button { background: var(--surface); border: 0; border-bottom: 1px solid var(--line); cursor: pointer; display: block; padding: 13px 16px; text-align: left; width: 100%; }
+.notification-list button.unread { background: var(--accent-soft); }
+.notification-list button:hover { background: var(--surface-soft); }
+.notification-list strong, .notification-list span { display: block; }
+.notification-list strong { color: var(--ink); font-size: 13px; }
+.notification-list span { color: var(--ink-soft); font-size: 12px; line-height: 1.45; margin-top: 4px; }
+.notification-empty { font-size: 13px; margin: 0; padding: 22px 16px; text-align: center; }
+.history-detail { background: var(--surface-soft); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+.history-detail dl { display: grid; gap: 14px 20px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; }
+.history-detail dt { color: var(--ink-soft); font-size: 11px; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; }
+.history-detail dd { color: var(--ink); font-size: 13px; font-weight: 600; margin: 0; }
+.history-description { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 16px; }
+.history-description strong { font-size: 13px; }
+.history-description p { font-size: 13px; margin: 5px 0 0; }
+.history-photos { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.history-photos a, .history-photos > span { align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); display: flex; font-size: 12px; gap: 8px; overflow: hidden; padding: 7px 10px; }
+.history-photos img { height: 40px; object-fit: cover; width: 48px; }
+.permission-review-bar { align-items: center; background: var(--accent-soft); border: 1px solid rgba(99, 102, 241, .24); border-radius: var(--radius); display: flex; gap: 18px; justify-content: space-between; margin-bottom: 20px; padding: 14px 16px; }
+.permission-review-bar strong, .permission-review-bar span { display: block; }
+.permission-review-bar strong { color: var(--ink); font-size: 14px; }
+.permission-review-bar span { color: var(--ink-soft); font-size: 12px; margin-top: 3px; }
+@media (max-width: 640px) { .permission-review-bar { align-items: stretch; flex-direction: column; } }
 .topbar h1 {
   font-size: 1.58rem;
   line-height: 1.15;

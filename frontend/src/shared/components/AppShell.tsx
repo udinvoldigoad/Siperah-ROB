@@ -4,8 +4,12 @@ import { navItems } from "../../app/navigation";
 import { Icon } from "./Icon";
 import { Breadcrumbs, type BreadcrumbItem } from "./Breadcrumbs";
 import { useToast } from "./Toast";
+import { api } from "../api/client";
 
 const SIDEBAR_STORAGE_KEY = "siperah-sidebar";
+
+type InboxItem = { id: string; title: string; body: string; read_at: string | null; created_at: string };
+type InboxResponse = { data: InboxItem[] };
 
 export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
   active: string;
@@ -17,25 +21,26 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
   const toast = useToast();
   const [isSidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem(SIDEBAR_STORAGE_KEY) !== "closed");
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [isUserMenuOpen, setUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
+  const [isNotificationOpen, setNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState<InboxItem[]>([]);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_STORAGE_KEY, isSidebarOpen ? "open" : "closed");
   }, [isSidebarOpen]);
 
   const closeMenu = useCallback((e: MouseEvent) => {
-    if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-      setUserMenuOpen(false);
+    if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+      setNotificationOpen(false);
     }
   }, []);
 
   useEffect(() => {
-    if (isUserMenuOpen) {
+    if (isNotificationOpen) {
       document.addEventListener("mousedown", closeMenu);
       return () => document.removeEventListener("mousedown", closeMenu);
     }
-  }, [isUserMenuOpen, closeMenu]);
+  }, [isNotificationOpen, closeMenu]);
 
   useEffect(() => {
     const handleAuthExpired = () => {
@@ -52,6 +57,20 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
   } catch {}
 
   const isUserLoggedIn = !!localStorage.getItem("siperah-token") && !!user;
+
+  useEffect(() => {
+    if (!isUserLoggedIn) return;
+    api<InboxResponse>("/notifications")
+      .then((response) => setNotifications(response.data))
+      .catch(() => setNotifications([]));
+  }, [isUserLoggedIn]);
+
+  const markNotificationRead = async (item: InboxItem) => {
+    if (!item.read_at) {
+      await api(`/notifications/${item.id}/read`, { method: "PATCH" });
+      setNotifications((current) => current.map((entry) => entry.id === item.id ? { ...entry, read_at: new Date().toISOString() } : entry));
+    }
+  };
 
   const roleLabels: Record<string, string> = {
     warga: "Warga",
@@ -143,7 +162,35 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
           </div>
           
           <div className="topbar-actions">
-            {isUserLoggedIn ? null : (
+            {isUserLoggedIn ? (
+              <div className="notification-menu" ref={notificationRef}>
+                <button
+                  type="button"
+                  className="notification-trigger"
+                  aria-label="Buka notifikasi"
+                  aria-expanded={isNotificationOpen}
+                  onClick={() => setNotificationOpen((value) => !value)}
+                >
+                  <Icon name="notifications" />
+                  {notifications.some((item) => !item.read_at) && <span className="notification-dot" />}
+                </button>
+                {isNotificationOpen && (
+                  <div className="notification-dropdown">
+                    <div className="notification-dropdown-head">
+                      <div><strong>Notifikasi</strong><span>{notifications.filter((item) => !item.read_at).length} belum dibaca</span></div>
+                      <a href="#/notifications" onClick={() => setNotificationOpen(false)}>Pengaturan</a>
+                    </div>
+                    <div className="notification-list">
+                      {notifications.length === 0 ? <p className="notification-empty">Belum ada notifikasi.</p> : notifications.slice(0, 6).map((item) => (
+                        <button type="button" key={item.id} className={item.read_at ? "" : "unread"} onClick={() => void markNotificationRead(item)}>
+                          <strong>{item.title}</strong><span>{item.body}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
               <a className="btn-primary" href="#/login">Login</a>
             )}
           </div>
