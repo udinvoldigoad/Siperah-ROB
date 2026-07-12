@@ -1,29 +1,30 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement(<<<'SQL'
-            CREATE TABLE IF NOT EXISTS notification_inbox (
-                id uuid PRIMARY KEY,
-                user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                type varchar(50) NOT NULL,
-                title varchar(180) NOT NULL,
-                body text NOT NULL,
-                data jsonb NULL,
-                read_at timestamp NULL,
-                created_at timestamp NOT NULL DEFAULT now()
-            )
-        SQL);
-        DB::statement('CREATE INDEX IF NOT EXISTS notification_inbox_user_created_idx ON notification_inbox (user_id, created_at DESC)');
+        Schema::create('notification_inbox', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->char('user_id', 36);
+            $table->string('type', 50);
+            $table->string('title', 180);
+            $table->text('body');
+            $table->json('data')->nullable();
+            $table->timestamp('read_at')->nullable();
+            $table->timestamp('created_at')->useCurrent();
+
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->index(['user_id', 'created_at']);
+        });
     }
 
     public function down(): void
     {
-        DB::statement('DROP TABLE IF EXISTS notification_inbox');
+        Schema::dropIfExists('notification_inbox');
     }
 };
