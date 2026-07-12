@@ -20,6 +20,10 @@ interface NotificationSettingsResponse {
 interface InboxItem { id: string; title: string; body: string; read_at: string | null; created_at: string; }
 interface InboxResponse { data: InboxItem[]; }
 
+const lampungRegionOptions = [
+  "Bandar Lampung", "Lampung Selatan", "Pesawaran", "Tanggamus", "Pesisir Barat", "Lampung Timur", "Tulang Bawang"
+];
+
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } }
@@ -371,15 +375,17 @@ export function NotificationSettingsPage() {
 
                 {showAddForm ? (
                   <form onSubmit={handleAddRegion} style={{ display: "inline-flex", gap: "8px", alignItems: "center" }}>
-                    <input 
-                      type="text" 
-                      placeholder="Contoh: Kel. Sukaraja" 
+                    <select
+                      aria-label="Pilih wilayah pantau"
                       value={newRegion}
                       onChange={(e) => setNewRegion(e.target.value)}
                       autoFocus
                       style={{ padding: "8px 12px", border: "1px solid var(--accent)", borderRadius: "var(--radius)", fontSize: "12px", outline: "none" }}
-                    />
-                    <button type="submit" className="btn primary" style={{ padding: "6px 12px", fontSize: "12px", minHeight: "32px" }}>Tambah</button>
+                    >
+                      <option value="">Pilih kabupaten/kota</option>
+                      {lampungRegionOptions.filter((region) => !monitoredRegions.includes(region)).map((region) => <option key={region} value={region}>{region}</option>)}
+                    </select>
+                    <button type="submit" className="btn primary" disabled={!newRegion} style={{ padding: "6px 12px", fontSize: "12px", minHeight: "32px" }}>Tambah</button>
                     <button type="button" onClick={() => setShowAddForm(false)} className="btn secondary" style={{ padding: "6px 12px", fontSize: "12px", minHeight: "32px" }}>Batal</button>
                   </form>
                 ) : (

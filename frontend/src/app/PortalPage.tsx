@@ -26,10 +26,13 @@ export function PortalPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const userStr = localStorage.getItem("siperah-user");
+  const isLoggedIn = Boolean(localStorage.getItem("siperah-token") && userStr);
+  let currentRole = "";
   let dashboardRoute = "#/login";
   if (userStr) {
     try {
       const user = JSON.parse(userStr);
+      currentRole = user.role || "";
       const roleMap: Record<string, string> = {
         admin: "#/admin/users",
         bpbd_operator: "#/operator",
@@ -182,9 +185,9 @@ export function PortalPage() {
           z-index: 10;
         }
         .hero-section h1 {
-          font-size: clamp(2.8rem, 5.5vw, 5.2rem);
+          font-size: clamp(2.15rem, 4vw, 3.75rem);
           font-weight: 900;
-          line-height: 1.05;
+          line-height: 1.1;
           letter-spacing: -0.04em;
           color: var(--ink-primary);
           max-width: 1050px;
@@ -315,6 +318,21 @@ export function PortalPage() {
           border-radius: 4px;
           color: var(--ink-primary);
         }
+        .live-kicker-dot {
+          animation: live-kicker-pulse 1.4s ease-in-out infinite;
+          background: #2563eb;
+          border-radius: 999px;
+          box-shadow: 0 0 0 0 rgba(37, 99, 235, .38);
+          display: inline-block;
+          height: 8px;
+          margin-right: 7px;
+          width: 8px;
+        }
+        @keyframes live-kicker-pulse {
+          0%, 100% { opacity: .55; box-shadow: 0 0 0 0 rgba(37, 99, 235, .35); }
+          50% { opacity: 1; box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
+        }
+        @media (prefers-reduced-motion: reduce) { .live-kicker-dot { animation: none; opacity: 1; } }
         @keyframes marquee-scroll {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
@@ -542,7 +560,7 @@ export function PortalPage() {
         @media (max-width: 1024px) {
           .bento-container-grid { display: flex; flex-direction: column; }
           .hero-section { padding: 100px 24px 60px; }
-          .hero-section h1 { font-size: 3.5rem; }
+          .hero-section h1 { font-size: 2.7rem; }
           .marquee-container { margin-bottom: 80px; }
           .landing-footer { flex-direction: column; gap: 24px; text-align: center; }
         }
@@ -550,7 +568,7 @@ export function PortalPage() {
           .nav-links-wrap { display: none !important; }
           .header-actions .btn-link-login { display: none; }
           .hero-section { padding: 100px 16px 40px !important; }
-          .hero-section h1 { font-size: 2.2rem !important; line-height: 1.15; margin-bottom: 20px; }
+          .hero-section h1 { font-size: 1.75rem !important; line-height: 1.2; margin-bottom: 20px; }
           .hero-section p { font-size: 1rem !important; margin-bottom: 24px; padding: 0 10px; }
           .hero-actions { flex-direction: column; gap: 12px !important; margin-bottom: 60px !important; }
           .hero-actions > a { width: 100%; box-sizing: border-box; text-align: center; }
@@ -574,16 +592,11 @@ export function PortalPage() {
           </a>
         <nav className="nav-links-wrap">
           <a href="#/map">Peta Publik</a>
-          <a href="#/awam">Mode Awam</a>
+          {currentRole !== "bpbd_provinsi" && <a href="#/awam">Mode Awam</a>}
           <a href="#panduan">Panduan</a>
         </nav>
         <div className="header-actions">
-          {localStorage.getItem("siperah-token") ? (
-            <a className="btn-link-login" href={dashboardRoute}>Dashboard</a>
-          ) : (
-            <a className="btn-link-login" href="#/login">Login</a>
-          )}
-          <a className="btn-nav-primary" href="#/map">Buka Peta</a>
+          <a className="btn-nav-primary" href={isLoggedIn ? dashboardRoute : "#/login"}>{isLoggedIn ? "Dashboard" : "Login"}</a>
         </div>
       </header>
 
@@ -596,15 +609,15 @@ export function PortalPage() {
           className="hero-kicker"
           style={{ display: "inline-block", padding: "6px 16px", background: "rgba(37, 99, 235, 0.1)", color: "var(--accent-blue)", borderRadius: "100px", fontSize: "0.85rem", fontWeight: 700, marginBottom: "24px" }}
         >
-          WebGIS Kebencanaan Provinsi Lampung
+          <span className="live-kicker-dot" aria-hidden="true" /> WebGIS Kebencanaan Provinsi Lampung
         </motion.span>
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
         >
-          Sistem Prediksi Cerdas<br />
-          Banjir Rob Lampung.
+          Sistem Informasi Prediksi Risiko<br />
+          Banjir Rob Terpadu Provinsi Lampung.
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -622,9 +635,9 @@ export function PortalPage() {
           <a className="btn-hero-primary" href="#/map">
             Buka Peta Risiko
           </a>
-          <a className="btn-hero-secondary" href="#/awam">
+          {currentRole !== "bpbd_provinsi" && <a className="btn-hero-secondary" href="#/awam">
             Akses Mode Awam
-          </a>
+          </a>}
         </motion.div>
       </section>
 
@@ -828,7 +841,7 @@ export function PortalPage() {
             </div>
           </div>
           <div style={{ marginTop: "40px" }}>
-            <a href="#/reports" className="btn solid" style={{ background: "var(--ocean-dark, #0f172a)", color: "#fff", padding: "14px 32px", borderRadius: "100px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            <a href={!isLoggedIn ? "#/login" : currentRole === "warga" ? "#/reports" : dashboardRoute} className="btn solid" style={{ background: "var(--ocean-dark, #0f172a)", color: "#fff", padding: "14px 32px", borderRadius: "100px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
               Mulai Melapor Sekarang <Icon name="add_circle" />
             </a>
           </div>

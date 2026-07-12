@@ -6,6 +6,7 @@ import { Icon } from "../../shared/components/Icon";
 export function ReportHistoryPage() {
   const [reports, setReports] = useState<OperatorReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUserHistoryReports()
@@ -58,6 +59,24 @@ export function ReportHistoryPage() {
                     </span>
                   )}
                 </div>
+                <button type="button" className="btn secondary" aria-expanded={expandedReportId === report.id} onClick={() => setExpandedReportId((current) => current === report.id ? null : report.id)} style={{ alignSelf: "flex-start", boxShadow: "none", marginTop: 4 }}>
+                  <Icon name={expandedReportId === report.id ? "expand_less" : "visibility"} />
+                  {expandedReportId === report.id ? "Tutup detail" : "Lihat detail"}
+                </button>
+                {expandedReportId === report.id && (
+                  <section className="history-detail" aria-label={`Detail laporan ${report.code}`}>
+                    <dl>
+                      <div><dt>Waktu kejadian</dt><dd>{report.incidentTime}</dd></div>
+                      <div><dt>Lokasi</dt><dd>{report.village}, {report.district}, {report.regency}</dd></div>
+                      <div><dt>Koordinat</dt><dd>{report.coordinates}</dd></div>
+                      <div><dt>Ketinggian air</dt><dd>{report.waterHeightCm !== null ? `${report.waterHeightCm} cm` : "Tidak dicatat"}</dd></div>
+                      <div><dt>Status verifikasi</dt><dd>{statusLabels[report.status]}</dd></div>
+                      <div><dt>Pelapor</dt><dd>{report.reporter}</dd></div>
+                    </dl>
+                    <div className="history-description"><strong>Keterangan kejadian</strong><p>{report.description || "Tidak ada keterangan tambahan."}</p></div>
+                    {report.photos.length > 0 && <div className="history-photos">{report.photos.map((photo, index) => photo.url ? <a key={`${photo.name}-${index}`} href={photo.url} target="_blank" rel="noreferrer"><img src={photo.url} alt={photo.name} /><span>{photo.name}</span></a> : <span key={`${photo.name}-${index}`}><Icon name="image" /> {photo.name}</span>)}</div>}
+                  </section>
+                )}
               </div>
             ))}
           </div>
