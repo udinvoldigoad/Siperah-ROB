@@ -39,6 +39,20 @@ type BackendReport = {
 
 type ReportListResponse = { data: BackendReport[] };
 type ReportResponse = { data: BackendReport };
+type ReportHistoryResponse = {
+  data: BackendReport[];
+  meta: { current_page: number; last_page: number; per_page: number; total: number; from: number | null; to: number | null };
+};
+
+export type ReportHistoryPageData = {
+  reports: OperatorReport[];
+  currentPage: number;
+  lastPage: number;
+  perPage: number;
+  total: number;
+  from: number;
+  to: number;
+};
 
 export const severityLabels: Record<ReportSeverity, string> = {
   ringan: "Ringan",
@@ -160,7 +174,15 @@ export async function updateOperatorReportStatus(id: string, status: ReportStatu
   return mapReport(response.data);
 }
 
-export async function fetchUserHistoryReports() {
-  const response = await api<ReportListResponse>('/reports');
-  return response.data.map(mapReport);
+export async function fetchUserHistoryReports(page = 1): Promise<ReportHistoryPageData> {
+  const response = await api<ReportHistoryResponse>(`/reports?page=${page}`);
+  return {
+    reports: response.data.map(mapReport),
+    currentPage: response.meta.current_page,
+    lastPage: response.meta.last_page,
+    perPage: response.meta.per_page,
+    total: response.meta.total,
+    from: response.meta.from ?? 0,
+    to: response.meta.to ?? 0,
+  };
 }
