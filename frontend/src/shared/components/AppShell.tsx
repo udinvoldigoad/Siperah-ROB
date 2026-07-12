@@ -63,7 +63,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
 
   const allowedNavItems = navItems.filter((item) => {
     if (!item.roles) return true;
-    if (!user) return item.roles.includes("guest");
+    if (!isUserLoggedIn || !user) return item.roles.includes("guest");
     return item.roles.includes(user.role) || (item.roles.includes("guest") && user.role === "warga");
   });
 
@@ -113,14 +113,17 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
               <strong style={{ fontSize: "14px", color: "var(--ink-primary)", lineHeight: 1.2 }}>{user.name}</strong>
               <span style={{ fontSize: "12px", color: "var(--ink-soft)" }}>{roleLabels[user.role] || user.role}</span>
             </div>
-            <a 
-              href="#/" 
-              onClick={() => localStorage.removeItem("siperah-token")}
-              style={{ color: "var(--critical)", display: "flex", alignItems: "center", gap: "8px", fontWeight: 600, fontSize: "14px", textDecoration: "none", marginTop: "4px" }}
-            >
-              <Icon name="logout" style={{ fontSize: "18px" }} />
-              <span>Logout</span>
-            </a>
+              <a 
+                href="#/" 
+                onClick={() => {
+                  localStorage.removeItem("siperah-token");
+                  localStorage.removeItem("siperah-user");
+                }}
+                style={{ color: "var(--critical)", display: "flex", alignItems: "center", gap: "8px", fontWeight: 600, fontSize: "14px", textDecoration: "none", marginTop: "4px" }}
+              >
+                <Icon name="logout" style={{ fontSize: "18px" }} />
+                <span>Logout</span>
+              </a>
           </div>
         )}
       </aside>
