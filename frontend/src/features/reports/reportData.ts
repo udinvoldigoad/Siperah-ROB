@@ -18,6 +18,7 @@ export type OperatorReport = {
   coordinates: string;
   description: string;
   photos: { name: string; url?: string }[];
+  isWithinMonitoringArea: boolean;
 };
 
 type BackendReport = {
@@ -31,7 +32,7 @@ type BackendReport = {
   created_at: string;
   water_height_cm: number | null;
   description: string;
-  region?: { village?: string; district?: string; regency?: string };
+  region?: { village?: string; district?: string; regency?: string; coastal_flag?: boolean };
   reporter?: { name?: string };
   photos?: { name?: string; url?: string }[];
 };
@@ -70,6 +71,7 @@ export const operatorReports: OperatorReport[] = [
     coordinates: "-5.450000, 105.266667",
     description: "Genangan masuk ke akses pasar dan menutup sebagian jalan warga. Arus lambat, kendaraan roda dua mulai dialihkan.",
     photos: [{ name: "Akses pasar" }, { name: "Jalan lingkungan" }],
+    isWithinMonitoringArea: true,
   },
   {
     id: "gt-lpg-881",
@@ -86,6 +88,7 @@ export const operatorReports: OperatorReport[] = [
     coordinates: "-5.382120, 105.274010",
     description: "Air menutup bahu jalan dekat drainase utama. Perlu cek ulang karena lokasi cukup jauh dari pesisir.",
     photos: [{ name: "Drainase" }, { name: "Bahu jalan" }],
+    isWithinMonitoringArea: false,
   },
   {
     id: "gt-lpg-879",
@@ -102,6 +105,7 @@ export const operatorReports: OperatorReport[] = [
     coordinates: "-5.447830, 105.262440",
     description: "Air masuk ke rumah warga di gang rendah. Beberapa kepala keluarga memindahkan barang ke lantai atas.",
     photos: [{ name: "Gang rendah" }, { name: "Rumah warga" }],
+    isWithinMonitoringArea: true,
   },
 ];
 
@@ -110,6 +114,11 @@ export function findOperatorReport(id: string) {
 }
 
 function mapReport(report: BackendReport): OperatorReport {
+  const dateTimeFormatter = new Intl.DateTimeFormat("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Jakarta",
+  });
   return {
     id: report.id,
     code: report.report_code,
@@ -118,8 +127,8 @@ function mapReport(report: BackendReport): OperatorReport {
     regency: report.region?.regency ?? "-",
     severity: report.severity,
     status: report.status,
-    incidentTime: new Date(report.incident_time).toLocaleString("id-ID"),
-    submittedAt: new Date(report.created_at).toLocaleString("id-ID"),
+    incidentTime: dateTimeFormatter.format(new Date(report.incident_time)),
+    submittedAt: dateTimeFormatter.format(new Date(report.created_at)),
     waterHeightCm: report.water_height_cm,
     reporter: report.reporter?.name ?? "Warga",
     coordinates: `${report.latitude}, ${report.longitude}`,
@@ -128,6 +137,7 @@ function mapReport(report: BackendReport): OperatorReport {
       name: photo.name ?? "Foto laporan",
       url: photo.url,
     })),
+    isWithinMonitoringArea: Boolean(report.region?.coastal_flag),
   };
 }
 
