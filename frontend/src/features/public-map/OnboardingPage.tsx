@@ -3,6 +3,7 @@ import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../../shared/api/client";
+import { LandingRiskMapPreview } from "../../app/PortalPage";
 
 type Prediction = { risk_class: string; risk_probability: number; region?: { village?: string | null; regency?: string | null } | null };
 type PredictionResponse = { data: Prediction[] };
@@ -43,9 +44,27 @@ export function OnboardingPage() {
   return (
     <AppShell active="onboarding" title="Panduan Pengguna">
       <div className="content" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 100px" }}>
+        <style>{`
+          .citizen-guide-grid { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:stretch; margin-bottom:110px; }
+          .citizen-warning-box { background:#dbeafe; border:1px solid #7dd3fc; border-radius:16px; box-shadow:0 16px 40px rgba(2,132,199,.14); display:flex; flex-direction:column; justify-content:center; padding:28px; }
+          .citizen-warning-label { align-items:center; background:#fef3c7; border:1px solid #f4cf68; border-radius:8px; color:#92400e; display:inline-flex; font-size:12px; font-weight:800; gap:8px; letter-spacing:.08em; margin-bottom:18px; padding:8px 11px; text-transform:uppercase; }
+          .citizen-warning-list { display:grid; list-style:none; margin:0; padding:0; }
+          .citizen-warning-list li { align-items:center; border-bottom:1px solid rgba(2,132,199,.25); display:flex; font-size:1rem; font-weight:650; gap:11px; padding:13px 2px; }
+          .citizen-warning-list li:last-child { border:0; }
+          .citizen-warning-list .material-symbols-outlined, .citizen-warning-label .material-symbols-outlined { color:#d97706; font-size:20px; }
+          .citizen-map-frame { background:#dbeafe; border:1px solid #bae6fd; border-radius:16px; min-height:400px; overflow:hidden; padding:8px; }
+          .citizen-map-frame .landing-risk-map { min-height:382px; }
+          .citizen-report-flow { display:grid; gap:28px; grid-template-columns:repeat(3,minmax(0,1fr)); margin:0 auto; max-width:940px; }
+          .citizen-report-step { background:linear-gradient(180deg,#fff,#f6f9fc); border:1px solid #dbe5ef; border-radius:16px; min-height:260px; padding:30px 26px 28px; text-align:center; }
+          .citizen-step-number { align-items:center; background:#0284c7; border:5px solid #e0f2fe; border-radius:999px; box-shadow:0 0 0 1px #7dd3fc; color:#fff; display:flex; font-size:15px; font-weight:850; height:54px; justify-content:center; margin:0 auto 28px; width:54px; }
+          .citizen-step-icon { align-items:center; background:#e0f2fe; border-radius:9px; color:#0284c7; display:flex; height:38px; justify-content:center; margin:0 auto 14px; width:38px; }
+          .citizen-report-step h3 { font-size:1.05rem; margin:0 0 9px; }
+          .citizen-report-step p { font-size:.9rem; line-height:1.55; margin:0 auto; max-width:28ch; }
+          @media(max-width:768px){ .citizen-guide-grid,.citizen-report-flow,.citizen-faq-grid{grid-template-columns:1fr!important;gap:24px!important}.citizen-map-frame{min-height:300px}.citizen-map-frame .landing-risk-map{min-height:284px}.citizen-hero-metrics{grid-template-columns:1fr!important} }
+        `}</style>
         
         {/* Modern Cinematic Hero */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1 }}
           style={{ 
@@ -57,59 +76,53 @@ export function OnboardingPage() {
           }}
         >
           <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(14, 165, 233, 0.1)", color: "var(--ocean-dark, #0284c7)", padding: "6px 16px", borderRadius: "100px", fontSize: "0.85rem", fontWeight: 700, marginBottom: "24px" }}>
-            <Icon name="school" style={{ fontSize: "16px" }} /> Edukasi Mitigasi Pesisir
+            <span style={{ width: 8, height: 8, borderRadius: 999, background: "#2563eb" }} /> WebGIS Kebencanaan Provinsi Lampung
           </div>
           <h1 style={{ fontSize: "clamp(2.5rem, 4vw, 3.5rem)", fontWeight: 900, margin: "0 auto 20px", color: "var(--ink)", maxWidth: 800, letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-            Memahami Risiko, Mengambil Tindakan.
+            Sistem Informasi Prediksi Risiko<br />Banjir Rob Terpadu Provinsi Lampung.
           </h1>
           <p style={{ fontSize: "1.1rem", color: "var(--ink-soft)", maxWidth: 640, margin: "0 auto", lineHeight: 1.6 }}>
-            Pelajari anatomi banjir rob di pesisir Lampung, cara membaca peta probabilitas harian kami, serta peran Anda dalam melaporkan kejadian aktual di lapangan.
+            Peta digital interaktif untuk memantau prediksi risiko dan melaporkan kejadian banjir rob di kawasan pesisir Provinsi Lampung secara langsung.
           </p>
-          <div style={{ margin: "24px auto 0", maxWidth: 620, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="citizen-hero-metrics" style={{ margin: "24px auto 0", maxWidth: 620, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="panel" style={{ padding: 14, textAlign: "left" }}><span style={{ display: "block", fontSize: 12, color: "var(--ink-soft)" }}>Zona risiko tinggi dipantau</span><strong style={{ fontSize: 22 }}>{highRiskCount}</strong></div>
             <div className="panel" style={{ padding: 14, textAlign: "left" }}><span style={{ display: "block", fontSize: 12, color: "var(--ink-soft)" }}>Risiko tertinggi saat ini</span><strong style={{ fontSize: 14 }}>{highestRisk ? `${highestRisk.region?.village ?? "Wilayah pesisir"} · ${Math.round(highestRisk.risk_probability)}%` : "Memuat data…"}</strong></div>
           </div>
         </motion.div>
 
         {/* Feature 1: Alternating Layout Left */}
-        <motion.div 
+        <motion.div className="citizen-guide-grid"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "48px", alignItems: "center", marginBottom: "80px" }}
+          style={{}}
         >
-          <div style={{ background: "linear-gradient(135deg, #f1f5f9, #e2e8f0)", borderRadius: 8, padding: "40px", height: "400px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
-            {/* Abstract Graphic */}
-            <div style={{ width: "200px", height: "200px", background: "var(--ocean-primary)", borderRadius: "50%", filter: "blur(60px)", opacity: 0.3, position: "absolute", top: 0, right: 0 }}></div>
-            <div style={{ width: "250px", height: "250px", background: "#3b82f6", borderRadius: "50%", filter: "blur(80px)", opacity: 0.2, position: "absolute", bottom: "-50px", left: "-50px" }}></div>
-            
-            <div style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(10px)", padding: "24px", borderRadius: 8, boxShadow: "0 20px 40px rgba(0,0,0,0.05)", position: "relative", zIndex: 10 }}>
-              <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--ocean-dark)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "1px" }}>Faktor Penyebab</div>
-              <ul style={{ margin: 0, padding: "0 0 0 20px", color: "var(--ink)", lineHeight: 1.8, fontWeight: 500 }}>
-                <li>Pasang tinggi (Perigee)</li>
-                <li>Angin darat kencang</li>
-                <li>Fase bulan purnama</li>
-                <li>Penurunan muka tanah</li>
-              </ul>
-            </div>
+          <div className="citizen-warning-box">
+            <div className="citizen-warning-label"><Icon name="warning" /> Faktor Utama</div>
+            <ul className="citizen-warning-list">
+              <li><Icon name="warning_amber" /> Pasang tinggi (Perigee)</li>
+              <li><Icon name="air" /> Angin darat kencang</li>
+              <li><Icon name="brightness_3" /> Fase bulan purnama</li>
+              <li><Icon name="vertical_align_bottom" /> Penurunan muka tanah</li>
+            </ul>
           </div>
           <div>
-            <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink)", marginBottom: "20px", letterSpacing: "-0.02em" }}>Apa itu Banjir Rob?</h2>
+            <h2 style={{ fontSize: "3rem", fontWeight: 800, color: "var(--ink)", marginBottom: "20px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>Apa itu <span style={{ color: "#0284c7" }}>Banjir Rob?</span></h2>
             <p style={{ fontSize: "1.05rem", color: "var(--ink-soft)", lineHeight: 1.7, marginBottom: "32px" }}>
               Banjir rob adalah genangan air laut yang meluap ke daratan, sering kali terjadi secara berulang. Di pesisir Lampung, fenomena ini tidak hanya dipicu oleh pasang surut astronomis, tetapi juga diperparah oleh cuaca ekstrem dan aktivitas manusia yang menyebabkan penurunan permukaan tanah.
             </p>
-            <a href="#/map" className="btn solid" style={{ background: "var(--ocean-primary)", color: "#fff", padding: "12px 24px", borderRadius: "100px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(14,165,233,0.3)" }}>
+            <a href="#/map" className="btn solid" style={{ background: "#0f172a", color: "#fff", padding: "16px 28px", borderRadius: "10px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px", boxShadow: "0 10px 25px rgba(15,23,42,.2)" }}>
               Lihat Peta Risiko <Icon name="arrow_forward" />
             </a>
           </div>
         </motion.div>
 
         {/* Feature 2: Alternating Layout Right */}
-        <motion.div 
+        <motion.div className="citizen-guide-grid"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "48px", alignItems: "center", marginBottom: "100px" }}
+          style={{}}
         >
           <div style={{ order: 1 }}>
             <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink)", marginBottom: "20px", letterSpacing: "-0.02em" }}>Cara Membaca Peta Prediksi</h2>
@@ -123,10 +136,8 @@ export function OnboardingPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#10b981" }}></div><strong style={{ minWidth: "120px" }}>Rendah</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&lt;25% Probabilitas)</span></div>
             </div>
           </div>
-          <div style={{ order: 2, background: "var(--ocean-primary)", borderRadius: 8, padding: "40px", height: "400px", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
-            <div style={{ width: "80%", height: "80%", background: "url('https://maps.wikimedia.org/osm-intl/12/3246/2117.png')", backgroundSize: "cover", borderRadius: 8, border: "4px solid rgba(255,255,255,0.2)", position: "absolute", filter: "grayscale(30%) sepia(20%) hue-rotate(180deg)" }}></div>
-            <div style={{ position: "absolute", width: "40px", height: "40px", background: "#ef4444", borderRadius: "50%", top: "40%", left: "45%", boxShadow: "0 0 0 10px rgba(239,68,68,0.3)" }}></div>
-            <div style={{ position: "absolute", width: "30px", height: "30px", background: "#f97316", borderRadius: "50%", top: "55%", left: "60%", boxShadow: "0 0 0 8px rgba(249,115,22,0.3)" }}></div>
+          <div className="citizen-map-frame" style={{ order: 2 }}>
+            <LandingRiskMapPreview />
           </div>
         </motion.div>
 
@@ -135,38 +146,35 @@ export function OnboardingPage() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "40px", padding: "60px", marginBottom: "80px", textAlign: "center" }}
+          style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", padding: "60px", marginBottom: "80px", textAlign: "center" }}
         >
           <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink)", marginBottom: "16px", letterSpacing: "-0.02em" }}>Cara Melaporkan Kejadian</h2>
           <p style={{ fontSize: "1.05rem", color: "var(--ink-soft)", lineHeight: 1.7, maxWidth: 700, margin: "0 auto 48px" }}>
             Bantu kami memvalidasi model AI dengan membagikan kondisi riil di wilayah Anda. Prosesnya sangat mudah dan terintegrasi langsung dengan dashboard BPBD.
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", maxWidth: 900, margin: "0 auto" }}>
-            <div style={{ background: "var(--bg)", padding: "32px", borderRadius: 8, border: "1px solid var(--line)" }}>
-              <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--ocean-light)", color: "var(--ocean-dark)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 800, fontSize: "1.2rem" }}>1</div>
-              <h3 style={{ fontSize: "1.1rem", marginBottom: "12px" }}>Tentukan Lokasi</h3>
-              <p style={{ fontSize: "0.9rem", color: "var(--ink-soft)" }}>Pin lokasi Anda pada peta interaktif yang disediakan.</p>
+          <div className="citizen-report-flow">
+            <div className="citizen-report-step">
+              <div className="citizen-step-number">01</div><span className="citizen-step-icon"><Icon name="location_on" /></span>
+              <h3>Tentukan Lokasi</h3><p>Letakkan pin pada titik kejadian agar wilayah administratif dapat dikenali secara tepat.</p>
             </div>
-            <div style={{ background: "var(--bg)", padding: "32px", borderRadius: 8, border: "1px solid var(--line)" }}>
-              <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--ocean-light)", color: "var(--ocean-dark)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 800, fontSize: "1.2rem" }}>2</div>
-              <h3 style={{ fontSize: "1.1rem", marginBottom: "12px" }}>Isi Detail Keparahan</h3>
-              <p style={{ fontSize: "0.9rem", color: "var(--ink-soft)" }}>Tulis tinggi genangan dan kondisi cuaca saat kejadian berlangsung.</p>
+            <div className="citizen-report-step">
+              <div className="citizen-step-number">02</div><span className="citizen-step-icon"><Icon name="waves" /></span>
+              <h3>Isi Detail Keparahan</h3><p>Catat tinggi genangan, waktu kejadian, serta kondisi yang Anda lihat di lapangan.</p>
             </div>
-            <div style={{ background: "var(--bg)", padding: "32px", borderRadius: 8, border: "1px solid var(--line)" }}>
-              <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--ocean-light)", color: "var(--ocean-dark)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 800, fontSize: "1.2rem" }}>3</div>
-              <h3 style={{ fontSize: "1.1rem", marginBottom: "12px" }}>Unggah & Kirim</h3>
-              <p style={{ fontSize: "0.9rem", color: "var(--ink-soft)" }}>Sertakan foto bukti agar validasi oleh BPBD dapat berjalan cepat.</p>
+            <div className="citizen-report-step">
+              <div className="citizen-step-number">03</div><span className="citizen-step-icon"><Icon name="add_a_photo" /></span>
+              <h3>Unggah & Kirim</h3><p>Lampirkan foto pendukung lalu kirim laporan untuk ditinjau oleh operator BPBD.</p>
             </div>
           </div>
           <div style={{ marginTop: "40px" }}>
-            <a href="#/reports" className="btn solid" style={{ background: "var(--ocean-dark)", color: "#fff", padding: "14px 32px", borderRadius: "100px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            <a href="#/reports" className="btn solid" style={{ background: "#0f172a", color: "#fff", padding: "14px 32px", borderRadius: "10px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
               Mulai Melapor Sekarang <Icon name="add_circle" />
             </a>
           </div>
         </motion.div>
 
         {/* Modern FAQ Section */}
-        <motion.div 
+        <motion.div className="citizen-faq-grid"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
