@@ -11,6 +11,11 @@ return new class extends Migration
         DB::unprepared('DROP TYPE IF EXISTS user_role, user_status, risk_class, report_severity, report_status, audit_outcome CASCADE;');
 
         $sql = file_get_contents(base_path('../database/schema.sql'));
+        $postgisAvailable = (bool) DB::table('pg_available_extensions')->where('name', 'postgis')->exists();
+        if (!$postgisAvailable) {
+            $sql = str_replace('create extension if not exists postgis;', '', $sql);
+            $sql = str_replace('geometry geometry(MultiPolygon, 4326) not null', 'geometry text not null', $sql);
+        }
         DB::unprepared($sql);
     }
 

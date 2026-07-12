@@ -16,7 +16,7 @@ Sistem Informasi Prediksi Risiko Banjir Rob Terpadu Provinsi Lampung.
 ```txt
 backend/        Laravel API boundary
 frontend/       React application boundary
-database/       SQL schema source of truth
+database/       Bootstrap SQL awal dan data reference
 docs/           architecture notes
 .desain-awal/   UI reference prototype
 ```

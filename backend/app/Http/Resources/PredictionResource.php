@@ -19,6 +19,8 @@ class PredictionResource extends JsonResource
             'peak_time' => $this->peak_time ? substr($this->peak_time, 0, 5) : null,
             'model_version' => $this->model_version,
             'generated_at' => $this->generated_at,
+            'provenance_status' => $this->provenance_status,
+            'data_source' => $this->data_source,
             
             'region' => new RegionResource($this->whenLoaded('region')),
         ];

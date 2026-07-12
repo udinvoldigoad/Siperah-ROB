@@ -2,122 +2,157 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\ResearchDataRequest;
+use App\Http\Resources\ApiKeyResource;
+use App\Models\ApiKey;
+use App\Models\Dataset;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ResearchController
 {
-    private const DEFAULT_USER_ID = '22222222-2222-4222-8222-222222222222';
-
     public function datasets(): JsonResponse
     {
-        $datasets = DB::table('datasets')->get();
-
-        return response()->json(['data' => $datasets]);
+        return response()->json(['data' => Dataset::orderBy('name')->get()]);
     }
 
-    public function apiKeys(Request $request): JsonResponse
+    public function apiKeys(Request $request)
     {
-        $userId = $request->user()?->id ?? self::DEFAULT_USER_ID;
-        $keys = DB::table('api_keys')->where('user_id', $userId)->orderBy('created_at', 'desc')->get();
-
-        return response()->json(['data' => $keys]);
+        return ApiKeyResource::collection(
+            ApiKey::where('user_id', $request->user()->id)->latest()->paginate(20),
+        );
     }
 
     public function regenerateKey(Request $request): JsonResponse
     {
-        $userId = $request->user()?->id ?? self::DEFAULT_USER_ID;
-        
-        // Revoke existing keys
-        DB::table('api_keys')->where('user_id', $userId)->update([
-            'status' => 'nonaktif',
-            'revoked_at' => now(),
-        ]);
+        $user = $request->user();
+        $rawKey = 'spr_'.Str::random(40);
 
-        $prefix = 'spr_';
-        $key = $prefix . Str::random(32);
-        $hash = hash('sha256', $key);
+        DB::transaction(function () use ($user, $rawKey): void {
+            ApiKey::where('user_id', $user->id)
+                ->where('status', 'aktif')
+                ->update(['status' => 'nonaktif', 'revoked_at' => now()]);
 
-        DB::table('api_keys')->insert([
-            'id' => (string) Str::uuid(),
-            'user_id' => $userId,
-            'key_hash' => $hash,
-            'key_prefix' => substr($key, 0, 8) . '...',
-            'status' => 'aktif',
-            'created_at' => now(),
-        ]);
+            ApiKey::create([
+                'id' => (string) Str::uuid(),
+                'user_id' => $user->id,
+                'key_hash' => hash('sha256', $rawKey),
+                'key_prefix' => substr($rawKey, 0, 12).'...',
+                'status' => 'aktif',
+                'scopes' => ['predictions:read', 'reports:read', 'tidal:read'],
+                'use_count' => 0,
+            ]);
+        });
 
         return response()->json([
-            'message' => 'API key regenerated',
-            'raw_key' => $key, // Return raw key once
+            'data' => ['raw_key' => $rawKey],
+            'raw_key' => $rawKey,
+            'message' => 'API key dibuat. Salin sekarang karena nilai lengkap tidak akan ditampilkan lagi.',
         ], 201);
     }
 
-    public function dailyPredictions(): JsonResponse
+    public function dailyPredictions(ResearchDataRequest $request): JsonResponse|StreamedResponse
     {
-        $predictions = DB::table('predictions')
+        $data = $request->validated();
+        $query = DB::table('predictions')
             ->join('regions', 'predictions.region_id', '=', 'regions.id')
-            ->select('predictions.*', 'regions.village', 'regions.district', 'regions.regency')
-            ->orderBy('prediction_date', 'desc')
-            ->limit(100)
-            ->get();
+            ->select([
+                'predictions.id', 'predictions.prediction_date', 'predictions.risk_probability',
+                'predictions.risk_class', 'predictions.confidence_score', 'predictions.max_tidal_height',
+                'predictions.peak_time', 'predictions.model_version', 'predictions.generated_at',
+                'predictions.provenance_status', 'regions.region_code', 'regions.village',
+                'regions.district', 'regions.regency',
+            ])
+            ->when($data['from'] ?? null, fn (Builder $q, string $from) => $q->whereDate('prediction_date', '>=', $from))
+            ->when($data['to'] ?? null, fn (Builder $q, string $to) => $q->whereDate('prediction_date', '<=', $to))
+            ->when($data['region'] ?? null, fn (Builder $q, string $region) => $q->where('predictions.region_id', $region))
+            ->orderByDesc('prediction_date');
 
-        return response()->json(['data' => $predictions]);
+        return $this->exportOrPaginate($query, $data, 'daily_predictions.csv');
     }
 
-    public function validatedReports(): JsonResponse
+    public function validatedReports(ResearchDataRequest $request): JsonResponse|StreamedResponse
     {
-        $reports = DB::table('ground_truth_reports')
-            ->where('status', 'divalidasi')
-            ->orderBy('created_at', 'desc')
-            ->limit(100)
-            ->get();
+        $data = $request->validated();
+        $query = DB::table('ground_truth_reports as reports')
+            ->join('regions', 'reports.region_id', '=', 'regions.id')
+            ->where('reports.status', 'divalidasi')
+            ->selectRaw(
+                'reports.id, reports.report_code, regions.region_code, regions.village, regions.district, regions.regency,
+                 ROUND(reports.latitude::numeric, 3) AS latitude_approx,
+                 ROUND(reports.longitude::numeric, 3) AS longitude_approx,
+                 reports.severity, reports.water_height_cm, reports.incident_time, reports.validated_at'
+            )
+            ->when($data['from'] ?? null, fn (Builder $q, string $from) => $q->whereDate('reports.incident_time', '>=', $from))
+            ->when($data['to'] ?? null, fn (Builder $q, string $to) => $q->whereDate('reports.incident_time', '<=', $to))
+            ->when($data['region'] ?? null, fn (Builder $q, string $region) => $q->where('reports.region_id', $region))
+            ->orderByDesc('reports.incident_time');
 
-        return response()->json(['data' => $reports]);
+        return $this->exportOrPaginate($query, $data, 'validated_reports.csv');
     }
 
-    public function tidal(Request $request)
+    public function tidal(ResearchDataRequest $request): JsonResponse|StreamedResponse
     {
-        $query = DB::table('tidal_data')->orderBy('recorded_at', 'desc')->limit(500);
+        $data = $request->validated();
+        $query = DB::table('tidal_data')
+            ->leftJoin('tidal_stations', 'tidal_data.station_id', '=', 'tidal_stations.id')
+            ->select([
+                'tidal_data.id', 'tidal_stations.code as station_code', 'tidal_stations.name as station_name',
+                'tidal_data.recorded_at', 'tidal_data.tidal_height', 'tidal_data.unit', 'tidal_data.datum',
+                'tidal_data.data_type', 'tidal_data.event_type', 'tidal_data.source',
+                'tidal_data.provenance_status', 'tidal_data.quality_status',
+            ])
+            ->when($data['station'] ?? null, fn (Builder $q, string $station) => $q->where('tidal_stations.code', $station))
+            ->when($data['from'] ?? null, fn (Builder $q, string $from) => $q->whereDate('recorded_at', '>=', $from))
+            ->when($data['to'] ?? null, fn (Builder $q, string $to) => $q->whereDate('recorded_at', '<=', $to))
+            ->orderByDesc('recorded_at');
 
-        if ($request->query('format') === 'csv') {
-            return response()->streamDownload(function () use ($query) {
-                $file = fopen('php://output', 'w');
-                fputcsv($file, ['ID', 'Station', 'Code', 'Recorded At', 'Height (m)', 'Source']);
+        return $this->exportOrPaginate($query, $data, 'tidal_data.csv');
+    }
+
+    private function exportOrPaginate(Builder $query, array $data, string $filename): JsonResponse|StreamedResponse
+    {
+        if (($data['format'] ?? 'json') === 'csv') {
+            return response()->streamDownload(function () use ($query): void {
+                $output = fopen('php://output', 'wb');
+                $first = true;
                 foreach ($query->cursor() as $row) {
-                    fputcsv($file, [
-                        $row->id, $row->station_name, $row->station_code, 
-                        $row->recorded_at, $row->tidal_height, $row->source
-                    ]);
+                    $values = (array) $row;
+                    if ($first) {
+                        fputcsv($output, array_keys($values), ',', '"', '');
+                        $first = false;
+                    }
+                    fputcsv($output, array_map($this->safeCsvValue(...), array_values($values)), ',', '"', '');
                 }
-                fclose($file);
-            }, 'tidal_data.csv', ['Content-Type' => 'text/csv']);
+                fclose($output);
+            }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
         }
 
-        return response()->json(['data' => $query->get()]);
+        /** @var LengthAwarePaginator $paginator */
+        $paginator = $query->paginate($data['per_page'] ?? 100);
+
+        return response()->json([
+            'data' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+        ]);
     }
 
-    public function reportsExport(Request $request)
+    private function safeCsvValue(mixed $value): mixed
     {
-        $query = DB::table('ground_truth_reports')->where('status', 'divalidasi')->orderBy('created_at', 'desc');
-
-        if ($request->query('format') === 'csv') {
-            return response()->streamDownload(function () use ($query) {
-                $file = fopen('php://output', 'w');
-                fputcsv($file, ['ID', 'Code', 'Region ID', 'Latitude', 'Longitude', 'Severity', 'Water Height (cm)', 'Incident Time']);
-                foreach ($query->cursor() as $row) {
-                    fputcsv($file, [
-                        $row->id, $row->report_code, $row->region_id,
-                        $row->latitude, $row->longitude, $row->severity,
-                        $row->water_height_cm, $row->incident_time
-                    ]);
-                }
-                fclose($file);
-            }, 'ground_truth_reports.csv', ['Content-Type' => 'text/csv']);
+        if (is_string($value) && preg_match('/^[=+\-@]/', $value)) {
+            return "'{$value}";
         }
 
-        return response()->json(['data' => $query->get()]);
+        return $value;
     }
 }

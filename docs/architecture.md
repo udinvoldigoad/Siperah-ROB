@@ -14,7 +14,8 @@ frontend/src/features/*  -> layar dan state per modul
 frontend/src/shared/*    -> API client, komponen umum, tipe domain
 backend/routes/api.php   -> kontrak endpoint
 backend/app/Http/*       -> controller dan middleware
-database/schema.sql      -> kontrak tabel dan tipe data
+backend/database/migrations/* -> sumber kebenaran schema dan evolusi database
+database/schema.sql            -> bootstrap schema awal/legacy reference
 ```
 
 ## Role

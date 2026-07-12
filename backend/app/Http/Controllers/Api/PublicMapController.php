@@ -4,15 +4,24 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\PredictionResource;
 use App\Http\Resources\ReportResource;
+use App\Http\Resources\RegionResource;
 use App\Models\Prediction;
 use App\Models\Region;
 use App\Models\GroundTruthReport;
+use App\Services\PredictionService;
+use App\Services\RegionLocator;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class PublicMapController
 {
+    public function __construct(
+        private readonly RegionLocator $regionLocator,
+        private readonly PredictionService $predictionService,
+    ) {}
+
     public function map(Request $request): JsonResponse
     {
         $filters = $request->validate([
@@ -29,7 +38,10 @@ final class PublicMapController
         if (!empty($filters['date'])) {
             $query->whereDate('prediction_date', $filters['date']);
         } else {
-            $latestDate = (clone $query)->max('prediction_date');
+            $latestDate = (clone $query)
+                ->whereDate('prediction_date', '>=', CarbonImmutable::today())
+                ->min('prediction_date');
+            $latestDate ??= (clone $query)->max('prediction_date');
             if ($latestDate) {
                 $query->whereDate('prediction_date', $latestDate);
             }
@@ -57,6 +69,8 @@ final class PublicMapController
                         'max_tidal_height' => (float) $prediction->max_tidal_height,
                         'peak_time' => $prediction->peak_time ? substr($prediction->peak_time, 0, 5) : null,
                         'prediction_date' => $prediction->prediction_date,
+                        'provenance_status' => $prediction->provenance_status,
+                        'data_source' => $prediction->data_source,
                     ],
                 ];
             })->values();
@@ -109,18 +123,25 @@ final class PublicMapController
         } catch (\Throwable) {
             return Region::whereIn('id', $regionIds)
                 ->get(['id', 'geometry'])
-                ->mapWithKeys(fn (Region $region) => [$region->id => $this->wktToGeoJson($region->geometry)])
+                ->mapWithKeys(fn (Region $region) => [$region->id => $this->decodeGeometry($region->geometry)])
                 ->filter()
                 ->all();
         }
     }
 
     /** @return array<string, mixed>|null */
-    private function wktToGeoJson(?string $wkt): ?array
+    private function decodeGeometry(?string $geometry): ?array
     {
-        if (!$wkt || !preg_match('/^(MULTIPOLYGON|POLYGON)\s*\(\s*(.*)\s*\)$/i', $wkt, $matches)) {
+        if (!$geometry) {
             return null;
         }
+
+        if (str_starts_with(ltrim($geometry), '{')) {
+            $decoded = json_decode($geometry, true);
+            return is_array($decoded) ? $decoded : null;
+        }
+
+        if (!preg_match('/^(MULTIPOLYGON|POLYGON)\s*\(\s*(.*)\s*\)$/i', $geometry, $matches)) return null;
 
         preg_match_all('/\(([^()]+)\)/', $matches[2], $rings);
         $coordinates = array_map(function (string $ring): array {
@@ -139,25 +160,29 @@ final class PublicMapController
 
     public function predictions(Request $request)
     {
+        $filters = $request->validate([
+            'regency' => ['nullable', 'string', 'max:100'],
+            'date' => ['nullable', 'date_format:Y-m-d'],
+            'per_page' => ['nullable', 'integer', 'between:1,200'],
+        ]);
+
         $query = Prediction::with('region')->orderBy('prediction_date', 'desc');
 
-        if ($request->filled('regency')) {
-            $query->whereHas('region', function ($q) use ($request) {
-                $q->where('regency', $request->query('regency'));
-            });
+        if (!empty($filters['regency'])) {
+            $query->whereHas('region', fn ($regions) => $regions->where('regency', $filters['regency']));
         }
 
-        if ($request->filled('date')) {
-            $query->where('prediction_date', $request->query('date'));
+        if (!empty($filters['date'])) {
+            $query->whereDate('prediction_date', $filters['date']);
         }
 
-        return PredictionResource::collection($query->paginate(200));
+        return PredictionResource::collection($query->paginate($filters['per_page'] ?? 200));
     }
 
     public function region(string $region): JsonResponse
     {
         $data = Region::findOrFail($region);
-        return response()->json(['data' => $data]);
+        return response()->json(['data' => new RegionResource($data)]);
     }
 
     public function modeAwam(Request $request): JsonResponse
@@ -169,52 +194,27 @@ final class PublicMapController
         $lat = $coordinates['lat'] ?? null;
         $lon = $coordinates['lon'] ?? null;
 
-        $postgisAvailable = $this->postgisAvailable();
-
-        if ($lat !== null && $lon !== null && $postgisAvailable) {
-            $point = [(float) $lon, (float) $lat];
-
-            $region = Region::where('coastal_flag', true)
-                ->whereRaw(
-                    'ST_Covers(geometry, ST_SetSRID(ST_MakePoint(?, ?), 4326))',
-                    $point,
-                )
-                ->first();
-
-            if (!$region) {
-                $region = Region::where('coastal_flag', true)
-                    ->selectRaw(
-                        '*, ST_Distance(geometry, ST_SetSRID(ST_MakePoint(?, ?), 4326)) AS dist',
-                        $point,
-                    )
-                    ->orderBy('dist')
-                    ->first();
-            }
-        } elseif ($lat !== null && $lon !== null) {
-            $region = Region::where('coastal_flag', true)
-                ->get()
-                ->first(fn (Region $item) => $this->pointIsInsideWktBounds($item->geometry, (float) $lat, (float) $lon));
-            $region ??= Region::where('coastal_flag', true)->first();
-        } else {
-            $region = Region::where('coastal_flag', true)->first();
-        }
+        $region = $this->regionLocator->locate(
+            $lat === null ? null : (float) $lat,
+            $lon === null ? null : (float) $lon,
+        );
 
         if (!$region) {
-            return response()->json(['data' => null, 'message' => 'Tidak ada data region']);
+            return response()->json([
+                'data' => null,
+                'message' => $lat !== null
+                    ? 'Lokasi berada di luar cakupan wilayah pesisir yang dipantau.'
+                    : 'Tidak ada data region.',
+            ]);
         }
 
-        $prediction = Prediction::where('region_id', $region->id)
-            ->orderBy('prediction_date', 'desc')
-            ->first();
-
-        $forecast = Prediction::where('region_id', $region->id)
-            ->orderBy('prediction_date', 'asc')
-            ->limit(7)
-            ->get();
+        $predictionData = $this->predictionService->sevenDayForecast($region->id);
+        $prediction = $predictionData['current'];
+        $forecast = $predictionData['forecast'];
 
         $nearby = GroundTruthReport::with(['region', 'photos'])
             ->where('status', 'divalidasi')
-            ->when($lat !== null && $lon !== null && $postgisAvailable, fn ($query) => $query->whereRaw(
+            ->when($lat !== null && $lon !== null && $this->regionLocator->supportsDistanceQueries(), fn ($query) => $query->whereRaw(
                 'ST_DWithin(location::geography, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, 5000)',
                 [(float) $lon, (float) $lat],
             ))
@@ -229,6 +229,8 @@ final class PublicMapController
                     'village' => $region->village,
                     'district' => $region->district,
                     'regency' => $region->regency,
+                    'provenance_status' => $region->provenance_status,
+                    'data_source' => $region->data_source,
                 ],
                 'risk_class' => $prediction->risk_class ?? 'rendah',
                 'risk_probability' => $prediction->risk_probability ?? 0,
@@ -238,23 +240,6 @@ final class PublicMapController
                 'nearby_reports' => ReportResource::collection($nearby),
             ],
         ]);
-    }
-
-    private function postgisAvailable(): bool
-    {
-        return (bool) DB::table('pg_extension')->where('extname', 'postgis')->exists();
-    }
-
-    private function pointIsInsideWktBounds(string $wkt, float $latitude, float $longitude): bool
-    {
-        preg_match_all('/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/', $wkt, $matches, PREG_SET_ORDER);
-        if ($matches === []) return false;
-
-        $longitudes = array_map(fn (array $match) => (float) $match[1], $matches);
-        $latitudes = array_map(fn (array $match) => (float) $match[2], $matches);
-
-        return $longitude >= min($longitudes) && $longitude <= max($longitudes)
-            && $latitude >= min($latitudes) && $latitude <= max($latitudes);
     }
 
     public function onboarding(): JsonResponse

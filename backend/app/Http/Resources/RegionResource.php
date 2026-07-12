@@ -17,6 +17,8 @@ class RegionResource extends JsonResource
             'village' => $this->village,
             'population' => $this->population,
             'coastal_flag' => (bool) $this->coastal_flag,
+            'provenance_status' => $this->provenance_status,
+            'data_source' => $this->data_source,
             // Skip large geometry string for list views unless requested or specific to map
         ];
     }
