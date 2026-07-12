@@ -98,19 +98,45 @@ export function ProvinceDashboardPage() {
   const regenciesData = getRegencySummary();
 
   const trendData = useMemo(() => {
-    const counts = [0, 0, 2, 5, 8, 12, 16, 25, 30, 36, 42, 49, 52, 54, 55, 52, 45, 38, 29, 21, 15, 10, 6, 3, 1, 0, 0, 0, 0, 0];
-    const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - 6); // Today is at index 6
-    
-    return counts.map((count, i) => {
-      const d = new Date(startDate);
-      d.setDate(startDate.getDate() + i);
-      return { count, date: d, isToday: i === 6 };
-    });
-  }, []);
+    if (predictions.length === 0) {
+      return [];
+    }
 
-  const maxTrend = 55; // using fixed max to ensure consistent scale
+    const countsMap: Record<string, number> = {};
+    predictions.forEach((p) => {
+      const isHighRisk = p.risk_class === "tinggi" || p.risk_class === "sangat_tinggi";
+      if (isHighRisk) {
+        countsMap[p.prediction_date] = (countsMap[p.prediction_date] ?? 0) + 1;
+      } else {
+        if (!(p.prediction_date in countsMap)) {
+          countsMap[p.prediction_date] = 0;
+        }
+      }
+    });
+
+    const sortedDates = Object.keys(countsMap).sort();
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    return sortedDates.map((dateStr) => {
+      const dateObj = new Date(`${dateStr}T00:00:00`);
+      return {
+        count: countsMap[dateStr],
+        date: dateObj,
+        isToday: dateStr === todayStr,
+      };
+    });
+  }, [predictions]);
+
+  const maxTrend = useMemo(() => {
+    const maxVal = Math.max(...trendData.map((d) => d.count), 0);
+    return maxVal > 0 ? maxVal : 10;
+  }, [trendData]);
+
+  const criticalPredictions = useMemo(() => {
+    return [...predictions]
+      .sort((a, b) => b.risk_probability - a.risk_probability)
+      .slice(0, 10);
+  }, [predictions]);
 
   return (
     <AppShell active="province" title="Dashboard BPBD Provinsi Lampung">
@@ -313,7 +339,7 @@ export function ProvinceDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {predictions.slice(0, 5).map((p, index) => (
+              {criticalPredictions.map((p, index) => (
                 <motion.tr 
                   key={p.id}
                   

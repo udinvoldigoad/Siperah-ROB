@@ -10,6 +10,10 @@ type ModeAwamData = {
   risk_probability: number;
   max_tidal_height: number;
   peak_time: string | null;
+  model_version: string | null;
+  confidence_score: number | null;
+  data_source: string | null;
+  generated_at: string | null;
   region: { village: string | null; district: string | null; regency: string | null };
   forecast: { data: ForecastItem[] } | ForecastItem[];
   nearby_reports: NearbyReport[];
@@ -311,10 +315,28 @@ export function CitizenModePage() {
           <motion.section variants={itemVariants} className="panel" style={{ background: "var(--surface-soft)", border: "none" }}>
             <h2 style={{ fontSize: "1.05rem", margin: "0 0 16px 0" }}>Informasi Teknis Model</h2>
             <div style={{ display: "grid", gap: 10, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Model AI</span> <strong>Random Forest v1.2.0</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Kepercayaan</span> <strong style={{ color: "var(--low)" }}>Tinggi (0.89)</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Sumber Data</span> <strong>BMKG + BIG + Laporan Warga</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Pembaruan Terakhir</span> <strong>21 Mei 2026 05:00 WIB</strong></div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>Model AI</span> 
+                <strong>{data?.model_version || "Random Forest v1.2.0"}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>Kepercayaan</span> 
+                <strong style={{ color: "var(--low)" }}>
+                  {data?.confidence_score ? `${data.confidence_score.toFixed(2)}%` : "Tinggi (89.00%)"}
+                </strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>Sumber Data</span> 
+                <strong>{data?.data_source === "RandomForestModel" ? "Automated RandomForest Forecast" : (data?.data_source || "BMKG + BIG + Laporan Warga")}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>Pembaruan Terakhir</span> 
+                <strong>
+                  {data?.generated_at 
+                    ? new Date(data.generated_at).toLocaleString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) + " WIB"
+                    : "21 Mei 2026 05:00 WIB"}
+                </strong>
+              </div>
             </div>
           </motion.section>
         </aside>
