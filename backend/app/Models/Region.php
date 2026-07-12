@@ -21,11 +21,19 @@ class Region extends Model
         'geometry',
         'population',
         'coastal_flag',
+        'data_source',
+        'source_reference',
+        'provenance_status',
+        'region_code',
+        'boundary_status',
+        'source_edition',
+        'source_synced_at',
     ];
 
     protected $casts = [
         'population' => 'integer',
         'coastal_flag' => 'boolean',
+        'source_synced_at' => 'datetime',
     ];
 
     public function predictions(): HasMany
