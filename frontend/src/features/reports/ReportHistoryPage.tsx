@@ -51,6 +51,7 @@ export function ReportHistoryPage() {
                   <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <Icon name="location_on" style={{ fontSize: 16 }} /> {report.coordinates}
                   </span>
+                  <span className={`badge ${report.isWithinMonitoringArea ? "b-done" : "b-pending"}`}>{report.isWithinMonitoringArea ? "Wilayah pantauan rob" : "Di luar cakupan prediksi"}</span>
                   {report.photos.length > 0 && (
                     <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <Icon name="image" style={{ fontSize: 16 }} /> {report.photos.length} Foto

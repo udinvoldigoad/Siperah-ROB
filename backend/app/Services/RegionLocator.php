@@ -50,6 +50,30 @@ final class RegionLocator
             ->first();
     }
 
+    public function locateAdministrative(float $latitude, float $longitude, string $province = 'Lampung'): ?Region
+    {
+        $base = Region::whereRaw('LOWER(province) = LOWER(?)', [$province]);
+
+        if (!$this->postgisAvailable()) {
+            return $base->get()
+                ->filter(fn (Region $region) => $this->pointIsInsideWktBounds(
+                    $region->geometry,
+                    $latitude,
+                    $longitude,
+                ))
+                ->sortBy(fn (Region $region) => $this->geometryBoundingArea($region->geometry))
+                ->first();
+        }
+
+        return $base
+            ->whereRaw(
+                'ST_Covers(geometry, ST_SetSRID(ST_MakePoint(?, ?), 4326))',
+                [$longitude, $latitude],
+            )
+            ->orderByRaw('ST_Area(geometry::geography) ASC')
+            ->first();
+    }
+
     public function supportsDistanceQueries(): bool
     {
         return $this->postgisAvailable();
@@ -121,5 +145,33 @@ final class RegionLocator
         }
 
         return $inside;
+    }
+
+    private function geometryBoundingArea(?string $geometry): float
+    {
+        if (!$geometry) return PHP_FLOAT_MAX;
+        if (str_starts_with(ltrim($geometry), '{')) {
+            $decoded = json_decode($geometry, true);
+            $points = [];
+            $collect = function (mixed $value) use (&$collect, &$points): void {
+                if (!is_array($value)) return;
+                if (isset($value[0], $value[1]) && is_numeric($value[0]) && is_numeric($value[1])) {
+                    $points[] = [(float) $value[0], (float) $value[1]];
+                    return;
+                }
+                foreach ($value as $item) $collect($item);
+            };
+            $collect($decoded['coordinates'] ?? []);
+            if ($points === []) return PHP_FLOAT_MAX;
+            $lng = array_column($points, 0);
+            $lat = array_column($points, 1);
+            return (max($lng) - min($lng)) * (max($lat) - min($lat));
+        }
+
+        preg_match_all('/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/', $geometry, $matches, PREG_SET_ORDER);
+        if ($matches === []) return PHP_FLOAT_MAX;
+        $lng = array_map(fn (array $match) => (float) $match[1], $matches);
+        $lat = array_map(fn (array $match) => (float) $match[2], $matches);
+        return (max($lng) - min($lng)) * (max($lat) - min($lat));
     }
 }

@@ -185,6 +185,23 @@ final class PublicMapController
         return response()->json(['data' => new RegionResource($data)]);
     }
 
+    public function resolveRegion(Request $request): JsonResponse
+    {
+        $coordinates = $request->validate([
+            'lat' => ['required', 'numeric', 'between:-90,90'],
+            'lon' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+        $region = $this->regionLocator->locateAdministrative(
+            (float) $coordinates['lat'],
+            (float) $coordinates['lon'],
+        );
+
+        return response()->json([
+            'data' => $region ? new RegionResource($region) : null,
+            'message' => $region ? null : 'Koordinat berada di luar batas administrasi Lampung yang tersedia.',
+        ]);
+    }
+
     public function modeAwam(Request $request): JsonResponse
     {
         $coordinates = $request->validate([
