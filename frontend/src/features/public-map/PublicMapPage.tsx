@@ -83,52 +83,36 @@ function RiskMap({ regions, reports, showReports }: { regions: FeatureCollection
     const instance = map.current;
     if (!instance) return;
     const update = () => {
-      const riskRank: Record<string, number> = { rendah: 1, sedang: 2, tinggi: 3, sangat_tinggi: 4 };
-      const zoneGroups = new Map<string, { longitude: number; latitude: number; count: number; properties: Record<string, unknown> }>();
-      regions.features.forEach((feature) => {
-        const center = featureCenter(feature);
-        if (!center) return;
-        const key = String(feature.properties.regency ?? feature.id);
-        const current = zoneGroups.get(key);
-        if (!current) {
-          zoneGroups.set(key, { longitude: center[0], latitude: center[1], count: 1, properties: feature.properties });
-          return;
-        }
-        current.longitude += center[0];
-        current.latitude += center[1];
-        current.count += 1;
-        if ((riskRank[String(feature.properties.risk_class)] ?? 0) > (riskRank[String(current.properties.risk_class)] ?? 0)) {
-          current.properties = feature.properties;
-        }
-      });
-
       predictionMarkers.current.forEach(m => m.remove());
       predictionMarkers.current = [];
 
-      Array.from(zoneGroups.entries()).forEach(([regency, zone]) => {
-        const center: [number, number] = [zone.longitude / zone.count, zone.latitude / zone.count];
-        const risk = String(zone.properties.risk_class);
+      regions.features.forEach((feature) => {
+        const center = featureCenter(feature);
+        if (!center) return;
+        
+        const regency = String(feature.properties.regency ?? "");
+        const risk = String(feature.properties.risk_class);
         const color = riskColor[risk] ?? riskColor.rendah;
         const pinColor = risk === "sangat_tinggi" || risk === "tinggi" ? "#e52421" : "#1E88E5";
 
         const el = document.createElement("div");
-        el.style.cssText = "position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 80px; height: 80px; cursor: pointer;";
+        el.style.cssText = "width: 0px; height: 0px; cursor: pointer;";
         
         const pulse = document.createElement("div");
-        pulse.style.cssText = `position: absolute; bottom: 0; left: 50%; width: 60px; height: 60px; border-radius: 50%; background: ${color}; transform-origin: center;`;
+        pulse.style.cssText = `position: absolute; top: 0; left: 0; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; background: ${color};`;
         pulse.animate([
-          { transform: 'translate(-50%, 50%) scale(0.6)', opacity: 0.6 },
-          { transform: 'translate(-50%, 50%) scale(2.2)', opacity: 0 }
+          { transform: 'translate(-50%, -50%) scale(0.6)', opacity: 0.6 },
+          { transform: 'translate(-50%, -50%) scale(2.2)', opacity: 0 }
         ], { duration: 2000, iterations: Infinity, easing: 'ease-out' });
         
         const ring = document.createElement("div");
-        ring.style.cssText = `position: absolute; bottom: 0; left: 50%; transform: translate(-50%, 50%); width: 50px; height: 50px; border-radius: 50%; border: 1.5px solid ${color};`;
+        ring.style.cssText = `position: absolute; top: 0; left: 0; transform: translate(-50%, -50%); width: 50px; height: 50px; border-radius: 50%; border: 1.5px solid ${color};`;
         
         const dot = document.createElement("div");
-        dot.style.cssText = `position: absolute; bottom: 0; left: 50%; transform: translate(-50%, 50%); width: 14px; height: 14px; background: ${color}; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);`;
+        dot.style.cssText = `position: absolute; top: 0; left: 0; transform: translate(-50%, -50%); width: 14px; height: 14px; background: ${color}; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3); z-index: 1;`;
         
         const pin = document.createElement("div");
-        pin.style.cssText = `width: 32px; height: 32px; background-color: ${pinColor}; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 2px 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; margin-bottom: 2px;`;
+        pin.style.cssText = `position: absolute; bottom: 0; right: 0; width: 32px; height: 32px; background-color: ${pinColor}; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); transform-origin: bottom right; border: 2px solid white; box-shadow: 2px 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 2; margin-bottom: 2px; margin-right: 2px;`;
         const pinDot = document.createElement("div");
         pinDot.style.cssText = "width: 12px; height: 12px; background-color: white; border-radius: 50%;";
         pin.appendChild(pinDot);
@@ -138,9 +122,9 @@ function RiskMap({ regions, reports, showReports }: { regions: FeatureCollection
         el.appendChild(dot);
         el.appendChild(pin);
         
-        const popup = new maplibregl.Popup({ offset: 40 }).setHTML(`<strong>${zone.properties.village ?? "Wilayah pesisir"}</strong><br>${zone.properties.district ?? ""}, ${regency}<br>Risiko: <strong>${riskText(zone.properties.risk_class)}</strong><br>Peluang rob: ${Math.round(Number(zone.properties.risk_probability ?? 0))}%`);
+        const popup = new maplibregl.Popup({ offset: [0, -32] }).setHTML(`<strong>${feature.properties.village ?? "Wilayah pesisir"}</strong><br>${feature.properties.district ?? ""}, ${regency}<br>Risiko: <strong>${riskText(feature.properties.risk_class)}</strong><br>Peluang rob: ${Math.round(Number(feature.properties.risk_probability ?? 0))}%`);
         
-        predictionMarkers.current.push(new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat(center).setPopup(popup).addTo(instance));
+        predictionMarkers.current.push(new maplibregl.Marker({ element: el }).setLngLat(center).setPopup(popup).addTo(instance));
       });
 
       reportMarkers.current.forEach((marker) => marker.remove());
@@ -151,28 +135,41 @@ function RiskMap({ regions, reports, showReports }: { regions: FeatureCollection
           if (!Array.isArray(coordinates) || typeof coordinates[0] !== "number") return;
           const severity = String(report.properties.severity);
           const color = severity === "sangat_parah" ? riskColor.sangat_tinggi : severity === "parah" ? riskColor.tinggi : severity === "sedang" ? riskColor.sedang : riskColor.rendah;
-          const popup = new maplibregl.Popup({ offset: 26 }).setHTML(`<strong>${report.properties.report_code ?? "Laporan warga"}</strong><br>${report.properties.location ?? "Wilayah pesisir"}<br>Ketinggian air: ${report.properties.water_height_cm ?? "-"} cm`);
+          const popup = new maplibregl.Popup({ offset: [0, -28] }).setHTML(`<strong>${report.properties.report_code ?? "Laporan warga"}</strong><br>${report.properties.location ?? "Wilayah pesisir"}<br>Ketinggian air: ${report.properties.water_height_cm ?? "-"} cm`);
           
           const el = document.createElement("div");
-          el.style.cssText = `width: 28px; height: 28px; background-color: ${color}; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 2px 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;`;
+          el.style.cssText = "width: 0px; height: 0px; cursor: pointer;";
+          
+          const pin = document.createElement("div");
+          pin.style.cssText = `position: absolute; bottom: 0; right: 0; width: 28px; height: 28px; background-color: ${color}; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); transform-origin: bottom right; border: 2px solid white; box-shadow: 2px 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 2;`;
+          
           const dot = document.createElement("div");
           dot.style.cssText = "width: 10px; height: 10px; background-color: white; border-radius: 50%;";
-          el.appendChild(dot);
+          pin.appendChild(dot);
+          el.appendChild(pin);
           
-          reportMarkers.current.push(new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([coordinates[0], coordinates[1]]).setPopup(popup).addTo(instance));
+          reportMarkers.current.push(new maplibregl.Marker({ element: el }).setLngLat([coordinates[0], coordinates[1]]).setPopup(popup).addTo(instance));
         });
       }
       
       let bounds: maplibregl.LngLatBounds | null = null;
+      let pointsCount = 0;
       regions.features.forEach(f => {
         const center = featureCenter(f);
         if (center) {
+          pointsCount++;
           if (!bounds) bounds = new maplibregl.LngLatBounds(center, center);
           else bounds.extend(center);
         }
       });
       if (bounds) {
-        instance.fitBounds(bounds, { padding: 50, maxZoom: 11, duration: 800 });
+        if (pointsCount === 1) {
+          // If only 1 point, MapLibre's fitBounds can be quirky, so expand the box slightly
+          const sw = bounds.getSouthWest();
+          bounds.extend([sw.lng - 0.05, sw.lat - 0.05]);
+          bounds.extend([sw.lng + 0.05, sw.lat + 0.05]);
+        }
+        instance.fitBounds(bounds, { padding: 50, maxZoom: 12, duration: 1000 });
       }
     };
     if (instance.isStyleLoaded()) update(); else instance.once("load", update);
