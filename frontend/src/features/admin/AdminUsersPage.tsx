@@ -38,6 +38,7 @@ export function AdminUsersPage() {
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
+  const [isPermissionReview, setPermissionReview] = useState(false);
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -83,9 +84,10 @@ export function AdminUsersPage() {
   const activeCount = users.filter((u) => u.status === "aktif").length;
   const pendingCount = users.filter((u) => u.status === "menunggu").length;
   const inactiveCount = users.filter((u) => u.status === "nonaktif").length;
+  const researchAccessCount = users.filter((u) => u.role === "peneliti" && u.status === "menunggu").length;
 
   return (
-    <AppShell active="admin" title="Manajemen Pengguna">
+    <AppShell active="admin" title="Manajemen Pengguna & Perizinan">
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="content" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
         
         {/* Pending Alerts Banner */}
@@ -110,6 +112,31 @@ export function AdminUsersPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {!isPermissionReview && <motion.section variants={itemVariants} className="panel" style={{ marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 8, background: "var(--accent-soft)", color: "var(--accent-dark)", display: "grid", placeItems: "center" }}><Icon name="key" /></div>
+            <div>
+              <h2 style={{ margin: 0, fontSize: "1rem" }}>Perizinan akses data</h2>
+              <p style={{ margin: "4px 0 0", fontSize: 13 }}>{researchAccessCount} permohonan akun peneliti menunggu keputusan admin.</p>
+            </div>
+          </div>
+          <button type="button" className="btn secondary" onClick={() => { setPermissionReview(true); setRole("peneliti"); setStatus("menunggu"); setSearch(""); }}>
+            <Icon name="policy" /> Tinjau perizinan
+          </button>
+        </motion.section>}
+
+        {isPermissionReview && (
+          <motion.div variants={itemVariants} className="permission-review-bar">
+            <div>
+              <strong>Perizinan Peneliti</strong>
+              <span>Menampilkan akun peneliti yang menunggu persetujuan akses data.</span>
+            </div>
+            <button type="button" className="btn secondary" onClick={() => { setPermissionReview(false); setRole(""); setStatus(""); setSearch(""); }}>
+              <Icon name="arrow_back" /> Kembali ke Manajemen Pengguna
+            </button>
+          </motion.div>
+        )}
 
         {/* KPI Grid */}
         <motion.div variants={itemVariants} className="metric-grid" style={{ marginBottom: 32 }}>
