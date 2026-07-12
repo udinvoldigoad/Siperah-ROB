@@ -1,97 +1,88 @@
-create extension if not exists postgis;
-
-create type user_role as enum ('warga', 'bpbd_operator', 'bpbd_provinsi', 'peneliti', 'admin');
-create type user_status as enum ('menunggu', 'aktif', 'nonaktif', 'ditolak');
-create type risk_class as enum ('rendah', 'sedang', 'tinggi', 'sangat_tinggi');
-create type report_severity as enum ('ringan', 'sedang', 'parah', 'sangat_parah');
-create type report_status as enum ('menunggu', 'divalidasi', 'ditolak', 'duplikat', 'perlu_review');
-create type audit_outcome as enum ('success', 'fail', 'denied', 'partial');
-
 create table users (
-  id uuid primary key,
+  id char(36) primary key,
   name varchar(150) not null,
   email varchar(150) unique not null,
   password_hash varchar(255),
   phone_number varchar(30),
-  role user_role not null,
+  role enum('warga', 'bpbd_operator', 'bpbd_provinsi', 'peneliti', 'admin') not null,
   institution varchar(150),
-  region_id uuid,
-  status user_status not null default 'menunggu',
-  last_login_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  region_id char(36),
+  status enum('menunggu', 'aktif', 'nonaktif', 'ditolak') not null default 'menunggu',
+  last_login_at timestamp null default null,
+  created_at timestamp not null default current_timestamp,
+  updated_at timestamp not null default current_timestamp on update current_timestamp
 );
 
 create table regions (
-  id uuid primary key,
+  id char(36) primary key,
   province varchar(100) not null default 'Lampung',
   regency varchar(100) not null,
   district varchar(100),
   village varchar(100),
-  geometry geometry(MultiPolygon, 4326) not null,
+  geometry MULTIPOLYGON not null,
   population integer,
-  coastal_flag boolean not null default false,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  coastal_flag tinyint(1) not null default 0,
+  created_at timestamp not null default current_timestamp,
+  updated_at timestamp not null default current_timestamp on update current_timestamp
 );
 
 alter table users add constraint users_region_id_foreign foreign key (region_id) references regions(id);
 
 create table predictions (
-  id uuid primary key,
-  region_id uuid not null references regions(id),
+  id char(36) primary key,
+  region_id char(36) not null references regions(id),
   prediction_date date not null,
-  risk_probability numeric(5, 2) not null,
-  risk_class risk_class not null,
-  confidence_score numeric(5, 2),
-  max_tidal_height numeric(6, 2),
+  risk_probability decimal(5, 2) not null,
+  risk_class enum('rendah', 'sedang', 'tinggi', 'sangat_tinggi') not null,
+  confidence_score decimal(5, 2),
+  max_tidal_height decimal(6, 2),
   peak_time time,
   model_version varchar(50) not null,
-  generated_at timestamptz not null,
+  generated_at timestamp not null,
   unique (region_id, prediction_date)
 );
 
 create table ground_truth_reports (
-  id uuid primary key,
+  id char(36) primary key,
   report_code varchar(30) unique not null,
-  user_id uuid not null references users(id),
-  region_id uuid not null references regions(id),
-  latitude numeric(9, 6) not null,
-  longitude numeric(9, 6) not null,
-  severity report_severity not null,
+  user_id char(36) not null references users(id),
+  region_id char(36) not null references regions(id),
+  latitude decimal(9, 6) not null,
+  longitude decimal(9, 6) not null,
+  severity enum('ringan', 'sedang', 'parah', 'sangat_parah') not null,
   water_height_cm integer,
-  incident_time timestamptz not null,
+  incident_time timestamp not null,
   description text not null,
-  status report_status not null default 'menunggu',
-  validated_by uuid references users(id),
-  validated_at timestamptz,
+  status enum('menunggu', 'divalidasi', 'ditolak', 'duplikat', 'perlu_review') not null default 'menunggu',
+  validated_by char(36) references users(id),
+  validated_at timestamp null default null,
   rejection_reason text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  created_at timestamp not null default current_timestamp,
+  updated_at timestamp not null default current_timestamp on update current_timestamp
 );
 
 create table report_photos (
-  id uuid primary key,
-  report_id uuid not null references ground_truth_reports(id) on delete cascade,
+  id char(36) primary key,
+  report_id char(36) not null references ground_truth_reports(id) on delete cascade,
   file_url text not null,
   file_name varchar(255) not null,
   file_size integer not null,
   mime_type varchar(100) not null,
-  uploaded_at timestamptz not null default now()
+  uploaded_at timestamp not null default current_timestamp
 );
 
 create table tidal_data (
-  id uuid primary key,
+  id char(36) primary key,
   station_name varchar(150) not null,
   station_code varchar(50) not null,
-  recorded_at timestamptz not null,
-  tidal_height numeric(6, 2) not null,
+  recorded_at timestamp not null,
+  tidal_height decimal(6, 2) not null,
   unit varchar(20) not null default 'm',
   source varchar(80) not null default 'BMKG'
 );
 
 create table datasets (
-  id uuid primary key,
+  id char(36) primary key,
   name varchar(180) not null,
   description text not null,
   dataset_type varchar(80) not null,
@@ -106,38 +97,38 @@ create table datasets (
 );
 
 create table api_keys (
-  id uuid primary key,
-  user_id uuid not null references users(id),
+  id char(36) primary key,
+  user_id char(36) not null references users(id),
   key_hash varchar(255) not null,
   key_prefix varchar(24) not null,
   status varchar(30) not null default 'aktif',
-  last_used_at timestamptz,
-  created_at timestamptz not null default now(),
-  revoked_at timestamptz
+  last_used_at timestamp null default null,
+  created_at timestamp not null default current_timestamp,
+  revoked_at timestamp null default null
 );
 
 create table notification_settings (
-  id uuid primary key,
-  user_id uuid not null unique references users(id),
-  channels jsonb not null default '[]',
-  event_types jsonb not null default '[]',
+  id char(36) primary key,
+  user_id char(36) not null unique references users(id),
+  channels json not null,
+  event_types json not null,
   quiet_start time,
   quiet_end time,
-  monitored_regions jsonb not null default '[]'
+  monitored_regions json not null
 );
 
 create table audit_logs (
-  id uuid primary key,
-  actor_user_id uuid references users(id),
+  id char(36) primary key,
+  actor_user_id char(36) references users(id),
   actor_name varchar(150) not null,
   actor_role varchar(50) not null,
   action varchar(100) not null,
   target_resource varchar(150),
-  outcome audit_outcome not null,
+  outcome enum('success', 'fail', 'denied', 'partial') not null,
   ip_address varchar(80),
   user_agent text,
-  payload jsonb,
-  created_at timestamptz not null default now()
+  payload json,
+  created_at timestamp not null default current_timestamp
 );
 
 create index reports_coordinates_idx on ground_truth_reports (latitude, longitude);

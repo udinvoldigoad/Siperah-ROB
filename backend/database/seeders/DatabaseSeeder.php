@@ -34,26 +34,21 @@ final class DatabaseSeeder extends Seeder
     public function seedRegions(): void
     {
         $regions = $this->regionData();
-        $postgisInstalled = (bool) DB::selectOne(
-            "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') AS installed"
-        )->installed;
-        $geometryValue = $postgisInstalled
-            ? 'ST_SetSRID(ST_GeomFromText(?), 4326)'
-            : '?';
+        $geometryValue = 'ST_GeomFromText(?, 4326)';
 
         foreach ($regions as $r) {
             DB::statement(
                 "INSERT INTO regions (id, province, regency, district, village, geometry, population, coastal_flag, data_source, source_reference, provenance_status, created_at, updated_at)
                 VALUES (?, 'Lampung', ?, ?, ?, {$geometryValue}, ?, true, 'DemoSeeder', 'Bounding-box representatif; bukan batas resmi', 'demo', now(), now())
-                ON CONFLICT (id) DO UPDATE SET
-                    regency = EXCLUDED.regency,
-                    district = EXCLUDED.district,
-                    village = EXCLUDED.village,
-                    geometry = EXCLUDED.geometry,
-                    population = EXCLUDED.population,
-                    data_source = EXCLUDED.data_source,
-                    source_reference = EXCLUDED.source_reference,
-                    provenance_status = EXCLUDED.provenance_status,
+                ON DUPLICATE KEY UPDATE
+                    regency = VALUES(regency),
+                    district = VALUES(district),
+                    village = VALUES(village),
+                    geometry = VALUES(geometry),
+                    population = VALUES(population),
+                    data_source = VALUES(data_source),
+                    source_reference = VALUES(source_reference),
+                    provenance_status = VALUES(provenance_status),
                     updated_at = now()",
                 [$r['id'], $r['regency'], $r['district'], $r['village'], $r['geometry'], $r['population']],
             );
@@ -343,16 +338,16 @@ final class DatabaseSeeder extends Seeder
                 DB::statement(
                     "INSERT INTO predictions (id, region_id, prediction_date, risk_probability, risk_class, confidence_score, max_tidal_height, peak_time, model_version, generated_at, data_source, source_reference, provenance_status)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DEMO-deterministic-v1', now(), 'DemoSeeder', 'Nilai deterministik untuk development; bukan output model operasional', 'demo')
-                    ON CONFLICT (region_id, prediction_date) DO UPDATE SET
-                        risk_probability = EXCLUDED.risk_probability,
-                        risk_class = EXCLUDED.risk_class,
-                        confidence_score = EXCLUDED.confidence_score,
-                        max_tidal_height = EXCLUDED.max_tidal_height,
-                        peak_time = EXCLUDED.peak_time,
-                        model_version = EXCLUDED.model_version,
-                        data_source = EXCLUDED.data_source,
-                        source_reference = EXCLUDED.source_reference,
-                        provenance_status = EXCLUDED.provenance_status,
+                    ON DUPLICATE KEY UPDATE
+                        risk_probability = VALUES(risk_probability),
+                        risk_class = VALUES(risk_class),
+                        confidence_score = VALUES(confidence_score),
+                        max_tidal_height = VALUES(max_tidal_height),
+                        peak_time = VALUES(peak_time),
+                        model_version = VALUES(model_version),
+                        data_source = VALUES(data_source),
+                        source_reference = VALUES(source_reference),
+                        provenance_status = VALUES(provenance_status),
                         generated_at = now()",
                     [
                         (string) Str::uuid(),
@@ -467,10 +462,10 @@ final class DatabaseSeeder extends Seeder
                     water_height_cm, incident_time, description, status,
                     validated_by, validated_at, created_at, updated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())
-                ON CONFLICT (id) DO UPDATE SET
-                    status = EXCLUDED.status,
-                    validated_by = EXCLUDED.validated_by,
-                    validated_at = EXCLUDED.validated_at,
+                ON DUPLICATE KEY UPDATE
+                    status = VALUES(status),
+                    validated_by = VALUES(validated_by),
+                    validated_at = VALUES(validated_at),
                     updated_at = now()",
                 [
                     $r['id'], $r['code'], $userId, $r['region_id'],

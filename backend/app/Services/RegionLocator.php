@@ -57,7 +57,7 @@ final class RegionLocator
 
     private function postgisAvailable(): bool
     {
-        return (bool) DB::table('pg_extension')->where('extname', 'postgis')->exists();
+        return false;
     }
 
     private function pointIsInsideWktBounds(?string $wkt, float $latitude, float $longitude): bool

@@ -272,9 +272,7 @@ final class ReportController
 
     private function postgisAvailable(): bool
     {
-        return (bool) DB::selectOne(
-            "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') AS installed"
-        )->installed;
+        return false;
     }
 
     private function pointIsInsideWktBounds(string $wkt, float $latitude, float $longitude): bool

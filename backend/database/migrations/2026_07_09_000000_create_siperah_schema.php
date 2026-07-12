@@ -7,20 +7,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // migrate:fresh drops tables but not PostgreSQL enum types
-        DB::unprepared('DROP TYPE IF EXISTS user_role, user_status, risk_class, report_severity, report_status, audit_outcome CASCADE;');
-
         $sql = file_get_contents(base_path('../database/schema.sql'));
-        $postgisAvailable = (bool) DB::table('pg_available_extensions')->where('name', 'postgis')->exists();
-        if (!$postgisAvailable) {
-            $sql = str_replace('create extension if not exists postgis;', '', $sql);
-            $sql = str_replace('geometry geometry(MultiPolygon, 4326) not null', 'geometry text not null', $sql);
-        }
         DB::unprepared($sql);
     }
 
     public function down(): void
     {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         foreach ([
             'audit_logs',
             'notification_settings',
@@ -33,18 +26,8 @@ return new class extends Migration
             'users',
             'regions',
         ] as $table) {
-            DB::statement("drop table if exists {$table} cascade");
+            DB::statement("DROP TABLE IF EXISTS {$table}");
         }
-
-        foreach ([
-            'audit_outcome',
-            'report_status',
-            'report_severity',
-            'risk_class',
-            'user_status',
-            'user_role',
-        ] as $type) {
-            DB::statement("drop type if exists {$type} cascade");
-        }
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
 };
