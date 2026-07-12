@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $postgis = (bool) DB::table('pg_extension')->where('extname', 'postgis')->exists();
+        $postgis = false;
         Schema::create('coastlines', function (Blueprint $table) use ($postgis): void {
             $table->uuid('id')->primary();
             $table->unsignedBigInteger('source_object_id')->unique();
