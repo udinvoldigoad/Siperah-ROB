@@ -12,6 +12,9 @@ type ReportResponse = {
   };
 };
 
+type ResolvedRegion = { id: string; village: string | null; district: string | null; regency: string | null; coastal_flag: boolean };
+type ResolveRegionResponse = { data: ResolvedRegion | null; message?: string | null };
+
 const severityOptions = [
   { key: "ringan", label: "Ringan", note: "Genangan <10cm", tone: "#16a34a" },
   { key: "sedang", label: "Sedang", note: "10-30 cm", tone: "#d97706" },
@@ -20,13 +23,15 @@ const severityOptions = [
 ] as const;
 
 function toIncidentDateTime(value: string) {
-  if (value.includes("T")) return value;
+  if (value.includes("T")) return new Date(value).toISOString();
   const [hours = "00", minutes = "00"] = value.split(":");
   const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00`;
+  now.setHours(Number(hours), Number(minutes), 0, 0);
+  return now.toISOString();
+}
+
+function currentTimeValue() {
+  return new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 export function ReportWizardPage() {
@@ -39,7 +44,9 @@ export function ReportWizardPage() {
   // Form state for summary
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: -5.45, lng: 105.266 });
   const [waterHeight, setWaterHeight] = useState("45");
-  const [incidentTime, setIncidentTime] = useState("09:30");
+  const [incidentTime, setIncidentTime] = useState(currentTimeValue);
+  const [resolvedRegion, setResolvedRegion] = useState<ResolvedRegion | null>(null);
+  const [isResolvingRegion, setResolvingRegion] = useState(false);
   
   // Map logic
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -75,8 +82,26 @@ export function ReportWizardPage() {
       setCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
     });
 
+    navigator.geolocation?.getCurrentPosition(({ coords: position }) => {
+      const next = { lat: position.latitude, lng: position.longitude };
+      setCoords(next);
+      marker.current?.setLngLat([next.lng, next.lat]);
+      map.current?.flyTo({ center: [next.lng, next.lat], zoom: 14 });
+    }, () => undefined, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+
     return () => { map.current?.remove(); map.current = null; };
   }, []); // Only init once
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setResolvingRegion(true);
+      api<ResolveRegionResponse>(`/public/resolve-region?lat=${coords.lat}&lon=${coords.lng}`)
+        .then((response) => setResolvedRegion(response.data))
+        .catch(() => setResolvedRegion(null))
+        .finally(() => setResolvingRegion(false));
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [coords.lat, coords.lng]);
 
   // Update marker color when severity changes
   useEffect(() => {
@@ -123,7 +148,7 @@ export function ReportWizardPage() {
       setSelectedSeverity("parah");
       setSelectedPhotos([]);
       setWaterHeight("45");
-      setIncidentTime("09:30");
+      setIncidentTime(currentTimeValue());
       setDeclarationAccepted(false);
     } catch (error: any) {
       toast.error(error.message || "Laporan belum terkirim. Cek isian dan coba lagi.");
@@ -174,8 +199,14 @@ export function ReportWizardPage() {
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>Koordinat Terpilih</div>
                   <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{coords.lat.toFixed(5)}°, {coords.lng.toFixed(5)}°</div>
+                  <div style={{ fontSize: 12, color: resolvedRegion ? "var(--ink)" : "var(--critical)", marginTop: 4 }}>
+                    {isResolvingRegion ? "Mencari nama wilayah..." : resolvedRegion
+                      ? `${resolvedRegion.village ?? "-"}, ${resolvedRegion.district ?? "-"}, ${resolvedRegion.regency ?? "-"}`
+                      : "Wilayah administratif belum ditemukan untuk titik ini."}
+                  </div>
                 </div>
               </div>
+              {resolvedRegion && !resolvedRegion.coastal_flag && <p className="form-note" style={{ borderLeftColor: "var(--medium)" }}>Lokasi berada di luar wilayah pantauan prediksi rob. Laporan tetap dapat dikirim dan akan ditandai untuk peninjauan BPBD.</p>}
             </section>
 
             <section style={{ display: "grid", gap: 10 }}>

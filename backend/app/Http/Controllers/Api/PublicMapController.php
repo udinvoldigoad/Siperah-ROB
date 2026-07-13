@@ -185,6 +185,23 @@ final class PublicMapController
         return response()->json(['data' => new RegionResource($data)]);
     }
 
+    public function resolveRegion(Request $request): JsonResponse
+    {
+        $coordinates = $request->validate([
+            'lat' => ['required', 'numeric', 'between:-90,90'],
+            'lon' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+        $region = $this->regionLocator->locateAdministrative(
+            (float) $coordinates['lat'],
+            (float) $coordinates['lon'],
+        );
+
+        return response()->json([
+            'data' => $region ? new RegionResource($region) : null,
+            'message' => $region ? null : 'Koordinat berada di luar batas administrasi Lampung yang tersedia.',
+        ]);
+    }
+
     public function modeAwam(Request $request): JsonResponse
     {
         $coordinates = $request->validate([
@@ -243,6 +260,31 @@ final class PublicMapController
                 'forecast' => PredictionResource::collection($forecast),
                 'nearby_reports' => ReportResource::collection($nearby),
             ],
+        ]);
+    }
+
+    public function provinceForecast(Request $request): JsonResponse
+    {
+        $filters = $request->validate([
+            'regency' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $window = \App\Support\ForecastWindow::thirtyDaysFrom(CarbonImmutable::today());
+
+        $query = Prediction::with('region')
+            ->whereBetween('prediction_date', [
+                $window['start']->toDateString(),
+                $window['end']->toDateString(),
+            ]);
+
+        if (!empty($filters['regency'])) {
+            $query->whereHas('region', fn ($regions) => $regions->where('regency', $filters['regency']));
+        }
+
+        $predictions = $query->get();
+
+        return response()->json([
+            'data' => PredictionResource::collection($predictions),
         ]);
     }
 

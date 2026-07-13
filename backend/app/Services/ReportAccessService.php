@@ -15,7 +15,13 @@ final class ReportAccessService
 
         return match ($user->role) {
             'warga' => $query->where('user_id', $user->id),
-            'bpbd_operator' => $query->whereHas('region', fn (Builder $q) => $q->where('regency', $this->operatorRegency($user))),
+            'bpbd_operator' => $query->whereHas('region', function (Builder $q) use ($user) {
+                $regency = $this->operatorRegency($user);
+                $q->whereRaw(
+                    "REGEXP_REPLACE(LOWER(TRIM(regency)), '^(kabupaten|kota)\\s+', '') = ?",
+                    [$regency],
+                );
+            }),
             'bpbd_provinsi', 'admin' => $query,
             default => abort(403, 'Role ini tidak memiliki akses ke laporan ground truth.'),
         };
@@ -30,7 +36,11 @@ final class ReportAccessService
         }
         if ($user->role === 'bpbd_operator') {
             $report->loadMissing('region');
-            abort_unless($report->region?->regency === $this->operatorRegency($user), 403, 'Laporan berada di luar wilayah kerja Anda.');
+            abort_unless(
+                $this->normalizeRegency((string) $report->region?->regency) === $this->operatorRegency($user),
+                403,
+                'Laporan berada di luar wilayah kerja Anda.',
+            );
             return;
         }
         abort(403, 'Role ini tidak memiliki akses ke laporan ground truth.');
@@ -52,6 +62,11 @@ final class ReportAccessService
         abort_unless($user->region_id, 403, 'Akun operator belum memiliki wilayah kerja.');
         $regency = Region::whereKey($user->region_id)->value('regency');
         abort_unless($regency, 403, 'Wilayah kerja operator tidak valid.');
-        return $regency;
+        return $this->normalizeRegency($regency);
+    }
+
+    private function normalizeRegency(string $regency): string
+    {
+        return preg_replace('/^(kabupaten|kota)\s+/i', '', mb_strtolower(trim($regency))) ?? '';
     }
 }

@@ -1,7 +1,71 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "../shared/components/Icon";
 import { MapPreview } from "../shared/components/MapPreview";
 import { motion, AnimatePresence } from "framer-motion";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { api } from "../shared/api/client";
+
+type LandingMapFeature = { geometry: { coordinates: unknown }; properties: Record<string, unknown> };
+type LandingMapResponse = { data: { regions: { features: LandingMapFeature[] } } };
+
+function landingFeatureCenter(feature: LandingMapFeature): [number, number] | null {
+  const points: [number, number][] = [];
+  const collect = (value: unknown): void => {
+    if (!Array.isArray(value)) return;
+    if (typeof value[0] === "number" && typeof value[1] === "number") {
+      points.push([value[0], value[1]]);
+      return;
+    }
+    value.forEach(collect);
+  };
+  collect(feature.geometry.coordinates);
+  if (!points.length) return null;
+  return [
+    (Math.min(...points.map(([lng]) => lng)) + Math.max(...points.map(([lng]) => lng))) / 2,
+    (Math.min(...points.map(([, lat]) => lat)) + Math.max(...points.map(([, lat]) => lat))) / 2,
+  ];
+}
+
+export function LandingRiskMapPreview() {
+  const container = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!container.current) return;
+    let active = true;
+    const map = new maplibregl.Map({
+      container: container.current,
+      center: [105.15, -5.15],
+      zoom: 7.6,
+      interactive: false,
+      attributionControl: false,
+      style: {
+        version: 8,
+        sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256 } },
+        layers: [{ id: "osm", type: "raster", source: "osm" }],
+      },
+    });
+    const markers: maplibregl.Marker[] = [];
+    const colors: Record<string, string> = { sangat_tinggi: "#dc2626", tinggi: "#f97316", sedang: "#d97706", rendah: "#16a34a" };
+    api<LandingMapResponse>("/public/map").then((response) => {
+      if (!active) return;
+      const bounds = new maplibregl.LngLatBounds();
+      response.data.regions.features.forEach((feature) => {
+        const center = landingFeatureCenter(feature);
+        if (!center) return;
+        bounds.extend(center);
+        const marker = new maplibregl.Marker({ color: colors[String(feature.properties.risk_class)] ?? colors.rendah, scale: .72 })
+          .setLngLat(center)
+          .addTo(map);
+        markers.push(marker);
+      });
+      if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 36, maxZoom: 9, duration: 0 });
+    }).catch(() => undefined);
+    return () => { active = false; markers.forEach((marker) => marker.remove()); map.remove(); };
+  }, []);
+
+  return <div ref={container} className="landing-risk-map" aria-label="Ilustrasi peta risiko banjir rob Provinsi Lampung" />;
+}
 
 const faqData = [
   {
@@ -54,13 +118,13 @@ export function PortalPage() {
       <style>{`
         /* Elite Design System Styles */
         .siperah-landing-root {
-          --bg-primary: #f1f5f9;
+          --bg-primary: #f6f9fc;
           --bg-card: #FFFFFF;
           --bg-card-dark: #0f172a;
           --ink-primary: #0f172a;
           --ink-muted: #475569;
           --border-color: #e2e8f0;
-          --accent-blue: #1d4ed8;
+          --accent-blue: #1557b0;
           --accent-blue-soft: #eff6ff;
           
           background-color: var(--bg-primary);
@@ -70,7 +134,7 @@ export function PortalPage() {
           width: 100%;
           position: relative;
           overflow-x: hidden;
-          padding-bottom: 120px;
+          padding-bottom: 80px;
         }
 
         /* Full-Width Editorial Header */
@@ -83,9 +147,9 @@ export function PortalPage() {
           align-items: center;
           justify-content: space-between;
           width: 100%;
-          height: 72px;
-          padding: 0 60px;
-          background: rgba(241, 245, 249, 0.9);
+          height: 76px;
+          padding: 0 clamp(24px, 5vw, 72px);
+          background: rgba(246, 249, 252, 0.88);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-bottom: 1px solid var(--border-color);
@@ -116,7 +180,7 @@ export function PortalPage() {
         .nav-links-wrap {
           display: flex;
           align-items: center;
-          gap: 40px;
+          gap: 32px;
         }
         .nav-links-wrap a {
           font-size: 0.92rem;
@@ -164,8 +228,8 @@ export function PortalPage() {
           color: #fff;
           background: var(--ink-primary);
           border: 1px solid var(--ink-primary);
-          border-radius: 100px;
-          padding: 10px 24px;
+          border-radius: 10px;
+          padding: 10px 22px;
           text-decoration: none;
           transition: all 0.2s ease;
           box-shadow: 0 4px 12px rgba(18, 19, 20, 0.08);
@@ -179,7 +243,7 @@ export function PortalPage() {
         .hero-section {
           max-width: 1200px;
           margin: 0 auto;
-          padding: 180px 40px 100px;
+          padding: 164px 40px 76px;
           text-align: center;
           position: relative;
           z-index: 10;
@@ -190,8 +254,8 @@ export function PortalPage() {
           line-height: 1.1;
           letter-spacing: -0.04em;
           color: var(--ink-primary);
-          max-width: 1050px;
-          margin: 0 auto 28px;
+          max-width: 920px;
+          margin: 0 auto 24px;
         }
         .hero-section h1 span.highlight {
           color: var(--accent-blue);
@@ -215,15 +279,15 @@ export function PortalPage() {
           font-size: clamp(1rem, 1.8vw, 1.25rem);
           line-height: 1.55;
           color: var(--ink-muted);
-          max-width: 720px;
-          margin: 0 auto 40px;
+          max-width: 680px;
+          margin: 0 auto 34px;
         }
         .hero-actions {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 16px;
-          margin-bottom: 120px;
+          margin-bottom: 72px;
         }
         .btn-hero-primary {
           font-size: 0.95rem;
@@ -231,8 +295,8 @@ export function PortalPage() {
           color: #fff;
           background: var(--ink-primary);
           border: 1px solid var(--ink-primary);
-          border-radius: 100px;
-          padding: 14px 36px;
+          border-radius: 10px;
+          padding: 13px 28px;
           text-decoration: none;
           transition: all 0.2s ease;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
@@ -248,8 +312,8 @@ export function PortalPage() {
           color: var(--ink-primary);
           background: #fff;
           border: 1px solid var(--border-color);
-          border-radius: 100px;
-          padding: 14px 36px;
+          border-radius: 10px;
+          padding: 13px 28px;
           text-decoration: none;
           transition: all 0.2s ease;
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
@@ -266,12 +330,13 @@ export function PortalPage() {
           left: 0;
           width: 100%;
           height: 100vh;
-          background-image: 
-            linear-gradient(rgba(241, 245, 249, 0.6), rgba(241, 245, 249, 1)),
-            linear-gradient(rgba(148, 163, 184, 0.2) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(148, 163, 184, 0.2) 1px, transparent 1px),
+          background-image:
+            radial-gradient(circle at 50% 18%, rgba(37, 99, 235, .12), transparent 34%),
+            linear-gradient(rgba(246, 249, 252, .7), rgba(246, 249, 252, 1)),
+            linear-gradient(rgba(148, 163, 184, 0.14) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(148, 163, 184, 0.14) 1px, transparent 1px),
             url('/bg-laut.jpg');
-          background-size: 100% 100%, 80px 80px, 80px 80px, cover;
+          background-size: 100% 100%, 100% 100%, 80px 80px, 80px 80px, cover;
           background-position: center;
           z-index: 1;
           pointer-events: none;
@@ -283,9 +348,9 @@ export function PortalPage() {
           overflow: hidden;
           border-top: 1px solid var(--border-color);
           border-bottom: 1px solid var(--border-color);
-          background: rgba(241, 245, 249, 0.5);
-          padding: 24px 0;
-          margin-bottom: 140px;
+          background: rgba(255, 255, 255, .62);
+          padding: 20px 0;
+          margin-bottom: 104px;
         }
         .marquee-track {
           display: flex;
@@ -348,9 +413,11 @@ export function PortalPage() {
         }
         .bento-header-wrap {
           display: flex;
-          align-items: flex-end;
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 12px;
           justify-content: space-between;
-          margin-bottom: 48px;
+          margin-bottom: 34px;
         }
         .bento-header-wrap h2 {
           font-size: 2.2rem;
@@ -362,7 +429,7 @@ export function PortalPage() {
         .bento-header-wrap p {
           font-size: 0.98rem;
           color: var(--ink-muted);
-          max-width: 420px;
+          max-width: 620px;
           margin: 0;
           line-height: 1.5;
         }
@@ -370,13 +437,13 @@ export function PortalPage() {
           display: grid;
           grid-template-columns: repeat(12, 1fr);
           grid-auto-flow: dense;
-          gap: 20px;
+          gap: 16px;
         }
         .bento-card-el {
           background: var(--bg-card);
           border: 1px solid var(--border-color);
-          border-radius: 24px;
-          padding: 36px;
+          border-radius: 16px;
+          padding: 30px;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
@@ -385,9 +452,9 @@ export function PortalPage() {
           transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .bento-card-el:hover {
-          transform: translateY(-4px);
-          border-color: var(--ink-primary);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.03);
+          transform: translateY(-3px);
+          border-color: rgba(21, 87, 176, .34);
+          box-shadow: 0 18px 44px rgba(15, 23, 42, .08);
         }
 
         /* Bento Grid Math Span allocations (Zero-Gap Interlock) */
@@ -395,14 +462,14 @@ export function PortalPage() {
         .card-span-5 { grid-column: span 5; }
         
         .bento-card-el.dark-theme {
-          background: var(--bg-card-dark);
-          color: #fff;
-          border-color: var(--bg-card-dark);
+          background: #eaf3ff;
+          color: var(--ink-primary);
+          border-color: #cfe2fb;
         }
-        .bento-card-el.dark-theme h3 { color: #fff; }
-        .bento-card-el.dark-theme p { color: rgba(255, 255, 255, 0.7); }
+        .bento-card-el.dark-theme h3 { color: var(--ink-primary); }
+        .bento-card-el.dark-theme p { color: var(--ink-muted); }
         .bento-card-el.dark-theme:hover {
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+          box-shadow: 0 18px 44px rgba(21, 87, 176, .12);
         }
 
         /* Card Content Inner details */
@@ -416,7 +483,7 @@ export function PortalPage() {
           display: block;
         }
         .dark-theme .card-meta-title {
-          color: #60A5FA;
+          color: var(--accent-blue);
         }
         .bento-card-el h3 {
           font-size: 1.6rem;
@@ -442,7 +509,7 @@ export function PortalPage() {
           padding-top: 24px;
         }
         .dark-theme .card-links-row {
-          border-color: rgba(255, 255, 255, 0.1);
+          border-color: #cfe2fb;
         }
         .card-action-link {
           display: inline-flex;
@@ -472,6 +539,110 @@ export function PortalPage() {
         .dark-theme .card-preview-container {
           border-color: rgba(255, 255, 255, 0.1);
         }
+
+        .warning-factor-box {
+          align-self: stretch;
+          background: #dbeafe;
+          border: 1px solid #7dd3fc;
+          border-radius: 16px;
+          box-shadow: 0 16px 40px rgba(2, 132, 199, .14);
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          justify-content: center;
+          padding: 28px;
+        }
+        .warning-factor-label {
+          align-items: center;
+          background: #fef3c7;
+          border: 1px solid #f4cf68;
+          border-radius: 8px;
+          color: #92400e;
+          display: inline-flex;
+          font-size: 12px;
+          font-weight: 800;
+          gap: 8px;
+          letter-spacing: .08em;
+          margin-bottom: 18px;
+          padding: 8px 11px;
+          text-transform: uppercase;
+        }
+        .warning-factor-label .material-symbols-outlined { color: #d97706; font-size: 18px; }
+        .warning-factor-list { display: grid; list-style: none; margin: 0; padding: 0; }
+        .warning-factor-list li {
+          align-items: center;
+          border-bottom: 1px solid rgba(2, 132, 199, .25);
+          color: var(--ink-primary);
+          display: flex;
+          font-size: 1rem;
+          font-weight: 650;
+          gap: 11px;
+          padding: 13px 2px;
+        }
+        .warning-factor-list li:last-child { border-bottom: 0; padding-bottom: 2px; }
+        .warning-factor-list .material-symbols-outlined { color: #d97706; font-size: 20px; }
+        .guide-definition-grid { align-items: stretch !important; }
+        .landing-map-frame {
+          background: #dbeafe;
+          border: 1px solid #bae6fd;
+          border-radius: 16px;
+          box-shadow: 0 16px 40px rgba(2, 132, 199, .1);
+          min-height: 400px;
+          overflow: hidden;
+          padding: 8px;
+        }
+        .landing-risk-map { border-radius: 10px; height: 100%; min-height: 382px; overflow: hidden; width: 100%; }
+        .landing-risk-map .maplibregl-canvas { filter: saturate(.9) contrast(.98); }
+        .reporting-flow {
+          display: grid;
+          gap: 28px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          margin: 0 auto;
+          max-width: 940px;
+          position: relative;
+        }
+        .reporting-step {
+          background: linear-gradient(180deg, #fff 0%, #f6f9fc 100%);
+          border: 1px solid #dbe5ef;
+          border-radius: 16px;
+          min-height: 260px;
+          padding: 30px 26px 28px;
+          position: relative;
+          text-align: center;
+          transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+        }
+        .reporting-step:hover { border-color: #93c5fd; box-shadow: 0 18px 38px rgba(15, 23, 42, .08); transform: translateY(-4px); }
+        .reporting-step-number {
+          align-items: center;
+          background: #0284c7;
+          border: 5px solid #e0f2fe;
+          border-radius: 999px;
+          box-shadow: 0 0 0 1px #7dd3fc;
+          color: #fff;
+          display: inline-flex;
+          font-size: 15px;
+          font-weight: 850;
+          height: 54px;
+          justify-content: center;
+          margin: 0 auto 28px;
+          position: relative;
+          width: 54px;
+          z-index: 4;
+        }
+        .reporting-step-icon {
+          align-items: center;
+          background: #e0f2fe;
+          border-radius: 9px;
+          color: #0284c7;
+          display: flex;
+          height: 38px;
+          justify-content: center;
+          margin: 0 auto 14px;
+          width: 38px;
+        }
+        .reporting-step-icon .material-symbols-outlined { font-size: 20px; }
+        .reporting-step h3 { font-size: 1.05rem; margin: 0 0 9px; }
+        .reporting-step p { font-size: .9rem; line-height: 1.55; margin: 0 auto; max-width: 28ch; }
 
         /* Large Mock Table/Stats for Admin Bento Grid card */
         .mock-logs-table {
@@ -529,10 +700,10 @@ export function PortalPage() {
         /* Large Footer Section */
         .landing-footer {
           max-width: 1200px;
-          margin: 140px auto 0;
+          margin: 104px auto 0;
           padding: 0 40px;
           border-top: 1px solid var(--border-color);
-          padding-top: 60px;
+          padding-top: 42px;
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -562,6 +733,7 @@ export function PortalPage() {
           .hero-section { padding: 100px 24px 60px; }
           .hero-section h1 { font-size: 2.7rem; }
           .marquee-container { margin-bottom: 80px; }
+          .guide-definition-grid, .guide-map-grid, .landing-faq-grid { grid-template-columns: 1fr !important; gap: 36px !important; }
           .landing-footer { flex-direction: column; gap: 24px; text-align: center; }
         }
         @media (max-width: 768px) {
@@ -578,6 +750,18 @@ export function PortalPage() {
           .landing-header-full { padding: 0 20px; background: rgba(255, 255, 255, 0.7) !important; backdrop-filter: blur(12px); }
           .bento-header-wrap { flex-direction: column; align-items: flex-start !important; gap: 16px; margin-bottom: 32px !important; }
           .bento-header-wrap h2 { font-size: 1.8rem !important; }
+          .guide-section { margin: 72px auto !important; padding: 0 16px !important; }
+          .guide-definition-grid, .guide-map-grid { margin-bottom: 72px !important; }
+          .guide-definition-grid h2 { font-size: 2.15rem !important; }
+          .guide-map-grid > div:last-child { height: 300px !important; padding: 20px !important; }
+          .landing-map-frame { min-height: 300px !important; padding: 6px !important; }
+          .landing-risk-map { min-height: 286px; }
+          .reporting-flow { grid-template-columns: 1fr; gap: 16px; }
+          .reporting-step { min-height: 0; padding: 24px; }
+          .reporting-step-number { margin-bottom: 20px; }
+          .landing-faq-grid { margin-bottom: 64px !important; }
+          .landing-footer { margin-top: 72px; padding: 36px 20px 0; }
+          .footer-links { text-align: center !important; }
         }
       `}</style>
 
@@ -711,17 +895,17 @@ export function PortalPage() {
                 Pusat kendali dan monitoring prediksi risiko, analisis dampak, dan manajemen logistik untuk operator dan pengambil keputusan.
               </p>
               
-              <div style={{ marginTop: 40, width: "100%", height: 180, background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", padding: 16, gap: 12 }}>
+              <div style={{ marginTop: 40, width: "100%", height: 180, background: "rgba(255,255,255,.72)", borderRadius: 12, border: "1px solid #cfe2fb", display: "flex", flexDirection: "column", padding: 16, gap: 12 }}>
                 <div style={{ display: "flex", gap: 8 }}>
                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ef4444" }} />
                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#f59e0b" }} />
                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#10b981" }} />
                 </div>
                 <div style={{ display: "flex", gap: 12, flex: 1 }}>
-                   <div style={{ width: "35%", height: "100%", background: "rgba(255,255,255,0.06)", borderRadius: 8 }} />
+                   <div style={{ width: "35%", height: "100%", background: "#dceafb", borderRadius: 8 }} />
                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-                     <div style={{ width: "100%", height: "35%", background: "rgba(255,255,255,0.06)", borderRadius: 8 }} />
-                     <div style={{ width: "100%", flex: 1, background: "rgba(255,255,255,0.03)", borderRadius: 8 }} />
+                     <div style={{ width: "100%", height: "35%", background: "#dceafb", borderRadius: 8 }} />
+                     <div style={{ width: "100%", flex: 1, background: "#eef5fd", borderRadius: 8 }} />
                    </div>
                 </div>
               </div>
@@ -746,28 +930,29 @@ export function PortalPage() {
           <h2>Panduan</h2>
         </motion.div>
 
-        <motion.div
+        <motion.div 
+          className="guide-definition-grid"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "60px", alignItems: "center", marginBottom: "120px" }}
         >
-          <div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "var(--accent-blue-soft)", padding: "8px 16px", borderRadius: "100px", fontSize: "13px", fontWeight: 700, color: "var(--accent-blue)", marginBottom: "24px", textTransform: "uppercase", letterSpacing: "1px" }}>
+          <div className="warning-factor-box">
+            <div className="warning-factor-label">
               <Icon name="warning" /> Faktor Utama
             </div>
-            <ul style={{ margin: 0, padding: "0", listStyle: "none", display: "flex", flexDirection: "column", gap: "16px" }}>
-              <li style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "1.15rem", fontWeight: 600, color: "var(--ink-primary)" }}>
-                <Icon name="check_circle" style={{ color: "var(--accent-blue)" }} /> Pasang tinggi (Perigee)
+            <ul className="warning-factor-list">
+              <li>
+                <Icon name="warning_amber" /> Pasang tinggi (Perigee)
               </li>
-              <li style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "1.15rem", fontWeight: 600, color: "var(--ink-primary)" }}>
-                <Icon name="check_circle" style={{ color: "var(--accent-blue)" }} /> Angin darat kencang
+              <li>
+                <Icon name="air" /> Angin darat kencang
               </li>
-              <li style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "1.15rem", fontWeight: 600, color: "var(--ink-primary)" }}>
-                <Icon name="check_circle" style={{ color: "var(--accent-blue)" }} /> Fase bulan purnama
+              <li>
+                <Icon name="brightness_3" /> Fase bulan purnama
               </li>
-              <li style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "1.15rem", fontWeight: 600, color: "var(--ink-primary)" }}>
-                <Icon name="check_circle" style={{ color: "var(--accent-blue)" }} /> Penurunan muka tanah
+              <li>
+                <Icon name="vertical_align_bottom" /> Penurunan muka tanah
               </li>
             </ul>
           </div>
@@ -779,7 +964,7 @@ export function PortalPage() {
             <motion.a 
               href="#/map" 
               whileHover={{ y: -3, boxShadow: "0 15px 35px rgba(15,23,42,0.3)" }}
-              style={{ background: "#0f172a", color: "#fff", padding: "18px 36px", borderRadius: "100px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "12px", boxShadow: "0 10px 25px rgba(15,23,42,0.2)", fontSize: "1.05rem" }}
+              style={{ background: "#0f172a", color: "#fff", padding: "16px 28px", borderRadius: "10px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "12px", boxShadow: "0 10px 25px rgba(15,23,42,0.2)", fontSize: "1rem" }}
             >
               Lihat Peta Risiko <Icon name="arrow_forward" />
             </motion.a>
@@ -788,6 +973,7 @@ export function PortalPage() {
 
         {/* Feature 2: Alternating Layout Right */}
         <motion.div 
+          className="guide-map-grid"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -805,10 +991,8 @@ export function PortalPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#10b981" }}></div><strong style={{ minWidth: "120px" }}>Rendah</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&lt;25% Probabilitas)</span></div>
             </div>
           </div>
-          <div style={{ order: 2, background: "var(--ocean-primary)", borderRadius: 8, padding: "40px", height: "400px", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
-            <div style={{ width: "80%", height: "80%", background: "url('https://maps.wikimedia.org/osm-intl/12/3246/2117.png')", backgroundSize: "cover", borderRadius: 8, border: "4px solid rgba(255,255,255,0.2)", position: "absolute", filter: "grayscale(30%) sepia(20%) hue-rotate(180deg)" }}></div>
-            <div style={{ position: "absolute", width: "40px", height: "40px", background: "#ef4444", borderRadius: "50%", top: "40%", left: "45%", boxShadow: "0 0 0 10px rgba(239,68,68,0.3)" }}></div>
-            <div style={{ position: "absolute", width: "30px", height: "30px", background: "#f97316", borderRadius: "50%", top: "55%", left: "60%", boxShadow: "0 0 0 8px rgba(249,115,22,0.3)" }}></div>
+          <div className="landing-map-frame" style={{ order: 2 }}>
+            <LandingRiskMapPreview />
           </div>
         </motion.div>
 
@@ -817,31 +1001,31 @@ export function PortalPage() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "40px", padding: "60px", marginBottom: "80px", textAlign: "center" }}
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "16px", padding: "60px", marginBottom: "80px", textAlign: "center" }}
         >
           <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink-primary)", marginBottom: "16px", letterSpacing: "-0.02em" }}>Cara Melaporkan Kejadian</h2>
           <p style={{ fontSize: "1.05rem", color: "var(--ink-muted)", lineHeight: 1.7, maxWidth: 700, margin: "0 auto 48px" }}>
             Bantu kami memvalidasi model AI dengan membagikan kondisi riil di wilayah Anda. Prosesnya sangat mudah dan terintegrasi langsung dengan dashboard BPBD.
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "24px", maxWidth: 900, margin: "0 auto" }}>
-            <div style={{ background: "var(--bg-primary)", padding: "32px", borderRadius: 8, border: "1px solid var(--border-color)" }}>
-              <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--accent-blue-soft)", color: "var(--accent-blue)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 800, fontSize: "1.2rem" }}>1</div>
-              <h3 style={{ fontSize: "1.1rem", marginBottom: "12px", color: "var(--ink-primary)" }}>Tentukan Lokasi</h3>
-              <p style={{ fontSize: "0.9rem", color: "var(--ink-muted)" }}>Pin lokasi Anda pada peta interaktif yang disediakan.</p>
+          <div className="reporting-flow">
+            <div className="reporting-step">
+              <div className="reporting-step-number">01</div>
+              <div><span className="reporting-step-icon"><Icon name="location_on" /></span><h3>Tentukan Lokasi</h3></div>
+              <p>Letakkan pin pada titik kejadian agar wilayah administratif dapat dikenali secara tepat.</p>
             </div>
-            <div style={{ background: "var(--bg-primary)", padding: "32px", borderRadius: 8, border: "1px solid var(--border-color)" }}>
-              <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--accent-blue-soft)", color: "var(--accent-blue)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 800, fontSize: "1.2rem" }}>2</div>
-              <h3 style={{ fontSize: "1.1rem", marginBottom: "12px", color: "var(--ink-primary)" }}>Isi Detail Keparahan</h3>
-              <p style={{ fontSize: "0.9rem", color: "var(--ink-muted)" }}>Tulis tinggi genangan dan kondisi cuaca saat kejadian berlangsung.</p>
+            <div className="reporting-step">
+              <div className="reporting-step-number">02</div>
+              <div><span className="reporting-step-icon"><Icon name="waves" /></span><h3>Isi Detail Keparahan</h3></div>
+              <p>Catat tinggi genangan, waktu kejadian, serta kondisi yang Anda lihat di lapangan.</p>
             </div>
-            <div style={{ background: "var(--bg-primary)", padding: "32px", borderRadius: 8, border: "1px solid var(--border-color)" }}>
-              <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--accent-blue-soft)", color: "var(--accent-blue)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontWeight: 800, fontSize: "1.2rem" }}>3</div>
-              <h3 style={{ fontSize: "1.1rem", marginBottom: "12px", color: "var(--ink-primary)" }}>Unggah & Kirim</h3>
-              <p style={{ fontSize: "0.9rem", color: "var(--ink-muted)" }}>Sertakan foto bukti agar validasi oleh BPBD dapat berjalan cepat.</p>
+            <div className="reporting-step">
+              <div className="reporting-step-number">03</div>
+              <div><span className="reporting-step-icon"><Icon name="add_a_photo" /></span><h3>Unggah & Kirim</h3></div>
+              <p>Lampirkan foto pendukung lalu kirim laporan untuk ditinjau oleh operator BPBD.</p>
             </div>
           </div>
           <div style={{ marginTop: "40px" }}>
-            <a href={!isLoggedIn ? "#/login" : currentRole === "warga" ? "#/reports" : dashboardRoute} className="btn solid" style={{ background: "var(--ocean-dark, #0f172a)", color: "#fff", padding: "14px 32px", borderRadius: "100px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            <a href={!isLoggedIn ? "#/login" : currentRole === "warga" ? "#/reports" : dashboardRoute} className="btn solid" style={{ background: "var(--ocean-dark, #0f172a)", color: "#fff", padding: "14px 32px", borderRadius: "10px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
               Mulai Melapor Sekarang <Icon name="add_circle" />
             </a>
           </div>
@@ -849,6 +1033,7 @@ export function PortalPage() {
 
         {/* Modern FAQ Section */}
         <motion.div 
+          className="landing-faq-grid"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}

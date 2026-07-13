@@ -58,7 +58,7 @@ export function ProvinceDashboardPage() {
       const summaryRes = await api<SummaryResponse>("/dashboard/province/summary");
       setSummary(summaryRes.data);
 
-      const predRes = await api<PredictionListResponse>("/public/predictions");
+      const predRes = await api<PredictionListResponse>("/public/province/forecast");
       setPredictions(predRes.data);
 
     } catch (err: any) {
@@ -105,11 +105,12 @@ export function ProvinceDashboardPage() {
     const countsMap: Record<string, number> = {};
     predictions.forEach((p) => {
       const isHighRisk = p.risk_class === "tinggi" || p.risk_class === "sangat_tinggi";
+      const dateKey = p.prediction_date.split("T")[0];
       if (isHighRisk) {
-        countsMap[p.prediction_date] = (countsMap[p.prediction_date] ?? 0) + 1;
+        countsMap[dateKey] = (countsMap[dateKey] ?? 0) + 1;
       } else {
-        if (!(p.prediction_date in countsMap)) {
-          countsMap[p.prediction_date] = 0;
+        if (!(dateKey in countsMap)) {
+          countsMap[dateKey] = 0;
         }
       }
     });
@@ -277,10 +278,9 @@ export function ProvinceDashboardPage() {
                   const data = trendData;
                   
                   return data.map(({ count: val, date, isToday }, idx) => {
-                    let color = "#4ade80"; // green
-                    if (val >= 40) color = "#ef4444"; // red
-                    else if (val >= 25) color = "#ea580c"; // orange
-                    else if (val >= 10) color = "#f59e0b"; // yellow-orange
+                    let color = "#4ade80"; // Aman (green)
+                    if (val >= 12) color = "#ef4444"; // Kritis (red)
+                    else if (val >= 5) color = "#ea580c"; // Waspada (orange)
 
                     return (
                       <div key={idx} style={{ flex: 1, display: "flex", justifyContent: "center", height: "100%", position: "relative" }}>
@@ -305,10 +305,9 @@ export function ProvinceDashboardPage() {
                             zIndex: 5
                           }}
                         />
-                        
-                        {idx === 0 && <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>{date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>}
-                        {isToday && <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "#ef4444", fontWeight: 700 }}>{date.toLocaleDateString("id-ID", { day: "numeric" })}</div>}
-                        {idx === data.length - 1 && <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>{date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>}
+                        {idx === 0 && <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: isToday ? "#ef4444" : "var(--ink-soft)", fontWeight: isToday ? 700 : 500, whiteSpace: "nowrap" }}>{date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>}
+                        {isToday && idx !== 0 && idx !== data.length - 1 && <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "#ef4444", fontWeight: 700 }}>{date.toLocaleDateString("id-ID", { day: "numeric" })}</div>}
+                        {idx === data.length - 1 && <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: isToday ? "#ef4444" : "var(--ink-soft)", fontWeight: isToday ? 700 : 500, whiteSpace: "nowrap" }}>{date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>}
                       </div>
                     );
                   });

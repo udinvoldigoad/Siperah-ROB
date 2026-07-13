@@ -27,4 +27,23 @@ final class PredictionService
             'forecast' => $forecast,
         ];
     }
+
+    /** @return array{current: Prediction|null, forecast: Collection<int, Prediction>} */
+    public function thirtyDayForecast(string $regionId): array
+    {
+        $window = ForecastWindow::thirtyDaysFrom(CarbonImmutable::today());
+        $query = Prediction::where('region_id', $regionId)
+            ->whereBetween('prediction_date', [
+                $window['start']->toDateString(),
+                $window['end']->toDateString(),
+            ])
+            ->orderBy('prediction_date');
+
+        $forecast = (clone $query)->limit(30)->get();
+
+        return [
+            'current' => $forecast->first(),
+            'forecast' => $forecast,
+        ];
+    }
 }

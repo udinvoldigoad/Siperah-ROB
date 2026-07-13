@@ -16,4 +16,15 @@ final class ForecastWindow
             'end' => $start->addDays(6)->endOfDay(),
         ];
     }
+
+    /** @return array{start: CarbonImmutable, end: CarbonImmutable} */
+    public static function thirtyDaysFrom(CarbonImmutable $date): array
+    {
+        $start = $date->startOfDay();
+
+        return [
+            'start' => $start,
+            'end' => $start->addDays(29)->endOfDay(),
+        ];
+    }
 }
