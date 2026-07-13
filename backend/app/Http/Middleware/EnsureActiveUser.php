@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\AuditService;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,10 @@ final class EnsureActiveUser
         $user = $request->user();
 
         if (!$user || $user->status !== 'aktif') {
+            app(AuditService::class)->write($request, 'access_denied', 'denied', $request->path(), [
+                'reason' => 'inactive_user',
+                'user_status' => $user?->status,
+            ]);
             return new JsonResponse([
                 'message' => 'Akun tidak aktif atau belum disetujui.',
             ], 403);

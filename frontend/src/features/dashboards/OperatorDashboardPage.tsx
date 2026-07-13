@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { useToast } from "../../shared/components/Toast";
 import { fetchOperatorReports, updateOperatorReportStatus, type OperatorReport } from "../reports/reportData";
+import { api } from "../../shared/api/client";
 import { Icon } from "../../shared/components/Icon";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -18,16 +19,45 @@ const itemVariants: any = {
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
 
+type OperatorSummary = {
+  monitored_villages: number;
+  critical_villages: number;
+  pending_reports: number;
+  monthly_validations: number;
+  region_statuses: {
+    id: string;
+    village: string | null;
+    district: string | null;
+    regency: string | null;
+    population: number | null;
+    risk_class: string;
+    risk_probability: number;
+  }[];
+};
+
+type OperatorSummaryResponse = { data: OperatorSummary };
+
 export function OperatorDashboardPage() {
   const [reports, setReports] = useState<OperatorReport[]>([]);
+  const [summary, setSummary] = useState<OperatorSummary>({
+    monitored_villages: 0,
+    critical_villages: 0,
+    pending_reports: 0,
+    monthly_validations: 0,
+    region_statuses: [],
+  });
   const [isLoading, setIsLoading] = useState(true);
   const toast = useToast();
 
   const loadReports = async () => {
     setIsLoading(true);
     try {
-      const data = await fetchOperatorReports();
+      const [data, summaryRes] = await Promise.all([
+        fetchOperatorReports(),
+        api<OperatorSummaryResponse>("/dashboard/operator/summary"),
+      ]);
       setReports(data);
+      setSummary(summaryRes.data);
     } catch (err: any) {
       toast.error(err.message || "Gagal memuat antrean laporan.");
     } finally {
@@ -59,7 +89,7 @@ export function OperatorDashboardPage() {
     }
   };
 
-  const pendingCount = reports.filter((r) => r.status === "menunggu").length;
+  const pendingCount = reports.filter((r) => r.status === "menunggu" || r.status === "perlu_review").length;
   const criticalCount = reports.filter((r) => r.severity === "parah" || r.severity === "sangat_parah").length;
 
   return (
@@ -102,10 +132,10 @@ export function OperatorDashboardPage() {
         {/* KPI Grid */}
         <motion.div variants={containerVariants} className="metric-grid" style={{ marginBottom: "32px" }}>
           {[
-            { title: "Kelurahan pantau aktif", val: "24", sub: "kecamatan pesisir", cls: "" },
-            { title: "Bahaya Sangat Tinggi", val: criticalCount, sub: "kelurahan hari ini", cls: "critical" },
-            { title: "Laporan menunggu", val: pendingCount, sub: "perlu validasi", cls: "medium", customColor: "var(--medium)" },
-            { title: "Validasi bulan ini", val: "47", sub: "laporan disetujui", cls: "success" }
+            { title: "Kelurahan pantau aktif", val: summary.monitored_villages, sub: "wilayah pesisir", cls: "" },
+            { title: "Bahaya Sangat Tinggi", val: summary.critical_villages || criticalCount, sub: "kelurahan hari ini", cls: "critical" },
+            { title: "Laporan menunggu", val: summary.pending_reports || pendingCount, sub: "perlu validasi", cls: "medium", customColor: "var(--medium)" },
+            { title: "Validasi bulan ini", val: summary.monthly_validations, sub: "laporan disetujui", cls: "success" }
           ].map((kpi, idx) => (
             <motion.div 
               key={idx}
@@ -209,27 +239,26 @@ export function OperatorDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { name: "Telukbetung Selatan", sev: "sangat_parah", label: "Sangat Tinggi", pop: "23,140" },
-                  { name: "Panjang", sev: "parah", label: "Tinggi", pop: "9,800" },
-                  { name: "Kangkung", sev: "parah", label: "Tinggi", pop: "7,200" },
-                  { name: "Way Halim Permai", sev: "sangat_parah", label: "Sangat Tinggi", pop: "11,200" },
-                  { name: "Sukuraja", sev: "sangat_parah", label: "Sangat Tinggi", pop: "8,760" },
-                  { name: "Labuhan Ratu", sev: "sedang", label: "Sedang", pop: "5,400" },
-                ].map((row, idx) => (
+                {summary.region_statuses.map((row, idx) => {
+                  const severityClass = row.risk_class === "sangat_tinggi" ? "sangat_parah" : row.risk_class === "tinggi" ? "parah" : row.risk_class === "rendah" ? "ringan" : row.risk_class;
+                  const label = row.risk_class === "sangat_tinggi" ? "Sangat Tinggi" : row.risk_class.charAt(0).toUpperCase() + row.risk_class.slice(1);
+                  return (
                   <motion.tr 
-                    key={idx}
+                    key={row.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 + (idx * 0.05) }}
                     
                     style={{ borderBottom: "1px solid var(--line)" }}
                   >
-                    <td style={{ padding: "16px 24px", fontWeight: 500 }}>{row.name}</td>
-                    <td style={{ padding: "16px 24px" }}><span className={`badge severity-${row.sev}`}>{row.label}</span></td>
-                    <td style={{ padding: "16px 24px", textAlign: "right" }}>{row.pop}</td>
+                    <td style={{ padding: "16px 24px", fontWeight: 500 }}>{row.village ?? row.district ?? "Wilayah pantau"}<div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>{row.district ?? "-"}, {row.regency ?? "-"}</div></td>
+                    <td style={{ padding: "16px 24px" }}><span className={`badge severity-${severityClass}`}>{label}</span></td>
+                    <td style={{ padding: "16px 24px", textAlign: "right" }}>{Number(row.population ?? 0).toLocaleString("id-ID")}</td>
                   </motion.tr>
-                ))}
+                );})}
+                {summary.region_statuses.length === 0 && (
+                  <tr><td colSpan={3} style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>Belum ada data prediksi wilayah operator.</td></tr>
+                )}
                 </tbody>
               </table>
               </div>

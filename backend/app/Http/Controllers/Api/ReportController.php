@@ -9,9 +9,11 @@ use App\Http\Resources\ReportResource;
 use App\Models\AuditLog;
 use App\Models\GroundTruthReport;
 use App\Models\ReportPhoto;
+use App\Services\AuditService;
 use App\Services\NotificationService;
 use App\Services\ReportAccessService;
 use App\Services\RegionLocator;
+use App\Services\RegionMonitoringService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -25,6 +27,8 @@ final class ReportController
         private readonly NotificationService $notifications,
         private readonly ReportAccessService $access,
         private readonly RegionLocator $regionLocator,
+        private readonly AuditService $audit,
+        private readonly RegionMonitoringService $monitoring,
     ) {}
 
     public function index(Request $request)
@@ -79,8 +83,14 @@ final class ReportController
 
         $storedPaths = [];
 
+        $isPointMonitored = $this->monitoring->isPointMonitored(
+            $region,
+            (float) $data['latitude'],
+            (float) $data['longitude'],
+        );
+
         try {
-            $report = DB::transaction(function () use ($data, $region, $request, $user, &$storedPaths) {
+            $report = DB::transaction(function () use ($data, $region, $request, $user, &$storedPaths, $isPointMonitored) {
                 $report = GroundTruthReport::create([
                     'id' => (string) Str::uuid(),
                     'report_code' => $this->generateReportCode(),
@@ -88,11 +98,11 @@ final class ReportController
                     'region_id' => $region->id,
                     'latitude' => $data['latitude'],
                     'longitude' => $data['longitude'],
-                    'severity' => $data['severity'],
+                    'severity' => $this->severityFromWaterHeight((int) $data['water_height_cm']),
                     'water_height_cm' => $data['water_height_cm'],
                     'incident_time' => $data['incident_time'],
                     'description' => $data['description'],
-                    'status' => 'menunggu',
+                    'status' => $isPointMonitored ? 'menunggu' : 'perlu_review',
                 ]);
 
                 foreach ($request->file('photos', []) as $photo) {
@@ -121,6 +131,13 @@ final class ReportController
         }
 
         $report->load('photos');
+        $this->notifications->notifyNewReportForReview($report);
+        $this->audit->write($request, 'create_report', 'success', "ground_truth_reports:{$report->id}", [
+            'report_code' => $report->report_code,
+            'region_id' => $report->region_id,
+            'severity' => $report->severity,
+            'water_height_cm' => $report->water_height_cm,
+        ]);
 
         return response()->json([
             'message' => 'Laporan berhasil dikirim dan menunggu validasi.',
@@ -135,6 +152,16 @@ final class ReportController
         } while (GroundTruthReport::where('report_code', $code)->exists());
 
         return $code;
+    }
+
+    private function severityFromWaterHeight(int $heightCm): string
+    {
+        return match (true) {
+            $heightCm < 10 => 'ringan',
+            $heightCm <= 30 => 'sedang',
+            $heightCm <= 80 => 'parah',
+            default => 'sangat_parah',
+        };
     }
 
     public function validateReport(Request $request, string $report): JsonResponse

@@ -6,6 +6,7 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,16 +14,28 @@ use Illuminate\Support\Str;
 
 final class AuthController
 {
+    public function __construct(private readonly AuditService $audit) {}
+
     public function login(LoginRequest $request): JsonResponse
     {
         $data = $request->validated();
         $user = User::where('email', $data['email'])->first();
 
         if (!$user || !Hash::check($data['password'], $user->password_hash)) {
+            $this->audit->write($request, 'login', 'fail', $data['email'], [
+                'actor_name' => $data['email'],
+                'actor_role' => 'guest',
+                'reason' => 'invalid_credentials',
+            ]);
             return response()->json(['message' => 'Email atau password salah'], 401);
         }
 
         if ($user->status !== 'aktif') {
+            $this->audit->write($request, 'login', 'denied', $user->email, [
+                'actor_name' => $user->name,
+                'actor_role' => $user->role,
+                'user_status' => $user->status,
+            ]);
             return response()->json(['message' => 'Akun belum diaktifkan atau telah dinonaktifkan'], 403);
         }
 
@@ -80,6 +93,7 @@ final class AuthController
 
     public function logout(Request $request): JsonResponse
     {
+        $this->audit->write($request, 'logout', 'success', $request->user()->email);
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logged out successfully']);
     }

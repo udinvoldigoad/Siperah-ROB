@@ -12,7 +12,7 @@ type ReportResponse = {
   };
 };
 
-type ResolvedRegion = { id: string; village: string | null; district: string | null; regency: string | null; coastal_flag: boolean };
+type ResolvedRegion = { id: string; village: string | null; district: string | null; regency: string | null; coastal_flag: boolean; is_monitored?: boolean };
 type ResolveRegionResponse = { data: ResolvedRegion | null; message?: string | null };
 
 const severityOptions = [
@@ -171,6 +171,7 @@ export function ReportWizardPage() {
   }
 
   const selectedSeverityLabel = severityOptions.find(o => o.key === selectedSeverity)?.label || "Parah";
+  const isMonitoredRegion = resolvedRegion ? (resolvedRegion.is_monitored ?? resolvedRegion.coastal_flag) : false;
 
   return (
     <AppShell 
@@ -206,7 +207,20 @@ export function ReportWizardPage() {
                   </div>
                 </div>
               </div>
-              {resolvedRegion && !resolvedRegion.coastal_flag && <p className="form-note" style={{ borderLeftColor: "var(--medium)" }}>Lokasi berada di luar wilayah pantauan prediksi rob. Laporan tetap dapat dikirim dan akan ditandai untuk peninjauan BPBD.</p>}
+              {resolvedRegion && (
+                <p
+                  className="form-note"
+                  style={{
+                    borderLeftColor: isMonitoredRegion ? "var(--low)" : "var(--medium)",
+                    background: isMonitoredRegion ? "rgba(22, 163, 74, 0.08)" : undefined,
+                    color: isMonitoredRegion ? "#14532d" : undefined,
+                  }}
+                >
+                  {isMonitoredRegion
+                    ? "Lokasi masuk wilayah pantauan prediksi rob. Laporan akan masuk antrean validasi BPBD sesuai wilayah kerja."
+                    : "Lokasi berada di luar wilayah pantauan prediksi rob. Laporan tetap dapat dikirim dan akan masuk antrean triase BPBD untuk peninjauan."}
+                </p>
+              )}
             </section>
 
             <section style={{ display: "grid", gap: 10 }}>

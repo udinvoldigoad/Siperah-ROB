@@ -36,6 +36,7 @@ Route::post('/auth/register', [AuthController::class, 'register'])->middleware('
 // ── Public (tanpa login) ─────────────────────────────────────────
 Route::prefix('public')->middleware('throttle:120,1')->group(function () {
     Route::get('/map', [PublicMapController::class, 'map']);
+    Route::get('/map/export', [PublicMapController::class, 'mapExport']);
     Route::get('/predictions', [PublicMapController::class, 'predictions']);
     Route::get('/regions/{region}', [PublicMapController::class, 'region']);
     Route::get('/resolve-region', [PublicMapController::class, 'resolveRegion']);
@@ -62,7 +63,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::get('/dashboard/operator/summary', [DashboardController::class, 'operatorSummary'])
         ->middleware('role:bpbd_operator,admin');
+    Route::get('/dashboard/operator/reports/export', [DashboardController::class, 'operatorReportsExport'])
+        ->middleware('role:bpbd_operator,admin');
     Route::get('/dashboard/province/summary', [DashboardController::class, 'provinceSummary'])
+        ->middleware('role:bpbd_provinsi,admin');
+    Route::get('/dashboard/province/export', [DashboardController::class, 'provinceExport'])
         ->middleware('role:bpbd_provinsi,admin');
 
     Route::middleware('role:admin')->group(function () {
@@ -75,6 +80,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::middleware('role:peneliti,admin')->group(function () {
         Route::get('/research/datasets', [ResearchController::class, 'datasets']);
+        Route::get('/research/stats', [ResearchController::class, 'stats']);
+        Route::get('/research/api-reference', [ResearchController::class, 'apiReference']);
         Route::get('/research/api-keys', [ResearchController::class, 'apiKeys']);
         Route::post('/research/api-keys', [ResearchController::class, 'regenerateKey']);
     });

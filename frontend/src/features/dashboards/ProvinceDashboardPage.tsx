@@ -10,6 +10,20 @@ interface SummaryData {
   high_risk_villages: number;
   risk_population: number;
   validated_reports_this_month: number;
+  latest_prediction_date?: string | null;
+  regencies?: RegencySummary[];
+  trend_30_days?: { prediction_date: string; high_risk_count: number }[];
+}
+
+interface RegencySummary {
+  regency: string;
+  low_count: number;
+  medium_count: number;
+  high_count: number;
+  critical_count: number;
+  risk_population: number;
+  max_probability: number;
+  trend: string;
 }
 
 interface PredictionData {
@@ -48,6 +62,8 @@ export function ProvinceDashboardPage() {
     high_risk_villages: 0,
     risk_population: 0,
     validated_reports_this_month: 0,
+    regencies: [],
+    trend_30_days: [],
   });
   const [predictions, setPredictions] = useState<PredictionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,6 +89,19 @@ export function ProvinceDashboardPage() {
   }, []);
 
   const getRegencySummary = () => {
+    if (summary.regencies?.length) {
+      return summary.regencies.map((item) => {
+        const riskClass = item.critical_count > 0 ? "sangat_tinggi" : item.high_count > 0 ? "tinggi" : item.medium_count > 0 ? "sedang" : "rendah";
+        return {
+          name: item.regency,
+          riskClass,
+          probability: `${Number(item.max_probability ?? 0).toFixed(0)}%`,
+          villagesCount: `${Number(item.low_count) + Number(item.medium_count) + Number(item.high_count) + Number(item.critical_count)} Kelurahan`,
+          priority: item.trend === "naik" ? "Prioritas koordinasi" : "Monitoring Harian",
+        };
+      });
+    }
+
     const map: Record<string, { count: number; maxProb: number; class: string }> = {};
     predictions.forEach((p) => {
       const regency = p.region?.regency ?? "Wilayah tidak diketahui";
@@ -98,19 +127,41 @@ export function ProvinceDashboardPage() {
   const regenciesData = getRegencySummary();
 
   const trendData = useMemo(() => {
-    const counts = [0, 0, 2, 5, 8, 12, 16, 25, 30, 36, 42, 49, 52, 54, 55, 52, 45, 38, 29, 21, 15, 10, 6, 3, 1, 0, 0, 0, 0, 0];
+    if (summary.trend_30_days?.length) {
+      return summary.trend_30_days.map((item) => ({
+        count: Number(item.high_risk_count),
+        date: new Date(item.prediction_date),
+        isToday: item.prediction_date === summary.latest_prediction_date,
+      }));
+    }
+
+    const counts = predictions.reduce<Record<string, number>>((acc, prediction) => {
+      if (prediction.risk_class === "tinggi" || prediction.risk_class === "sangat_tinggi") {
+        acc[prediction.prediction_date] = (acc[prediction.prediction_date] ?? 0) + 1;
+      }
+      return acc;
+    }, {});
+    if (Object.keys(counts).length) {
+      return Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)).map(([date, count], index, rows) => ({
+        count,
+        date: new Date(date),
+        isToday: index === rows.length - 1,
+      }));
+    }
+
+    const fallbackCounts = [0];
     const today = new Date();
     const startDate = new Date(today);
     startDate.setDate(today.getDate() - 6); // Today is at index 6
     
-    return counts.map((count, i) => {
+    return fallbackCounts.map((count, i) => {
       const d = new Date(startDate);
       d.setDate(startDate.getDate() + i);
       return { count, date: d, isToday: i === 6 };
     });
-  }, []);
+  }, [predictions, summary.latest_prediction_date, summary.trend_30_days]);
 
-  const maxTrend = 55; // using fixed max to ensure consistent scale
+  const maxTrend = Math.max(1, ...trendData.map((item) => item.count));
 
   return (
     <AppShell active="province" title="Dashboard BPBD Provinsi Lampung">

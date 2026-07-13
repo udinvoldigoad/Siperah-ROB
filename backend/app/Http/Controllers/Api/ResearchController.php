@@ -6,6 +6,7 @@ use App\Http\Requests\ResearchDataRequest;
 use App\Http\Resources\ApiKeyResource;
 use App\Models\ApiKey;
 use App\Models\Dataset;
+use App\Services\AuditService;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,9 +17,27 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ResearchController
 {
-    public function datasets(): JsonResponse
+    public function __construct(private readonly AuditService $audit) {}
+
+    public function datasets(Request $request): JsonResponse
     {
-        return response()->json(['data' => Dataset::orderBy('name')->get()]);
+        $filters = $request->validate([
+            'type' => ['nullable', 'string', 'max:80'],
+            'search' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $query = Dataset::orderBy('name');
+        if (!empty($filters['type'])) {
+            $query->where('dataset_type', $filters['type']);
+        }
+        if (!empty($filters['search'])) {
+            $query->where(function ($items) use ($filters): void {
+                $items->where('name', 'like', "%{$filters['search']}%")
+                    ->orWhere('description', 'like', "%{$filters['search']}%");
+            });
+        }
+
+        return response()->json(['data' => $query->get()]);
     }
 
     public function apiKeys(Request $request)
@@ -48,12 +67,69 @@ final class ResearchController
                 'use_count' => 0,
             ]);
         });
+        $this->audit->write($request, 'regenerate_api_key', 'success', "users:{$user->id}", [
+            'scopes' => ['predictions:read', 'reports:read', 'tidal:read'],
+        ]);
 
         return response()->json([
             'data' => ['raw_key' => $rawKey],
             'raw_key' => $rawKey,
             'message' => 'API key dibuat. Salin sekarang karena nilai lengkap tidak akan ditampilkan lagi.',
         ], 201);
+    }
+
+    public function stats(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        return response()->json(['data' => [
+            'dataset_count' => Dataset::count(),
+            'total_records' => (int) Dataset::sum('record_count'),
+            'downloads_this_month' => DB::table('audit_logs')
+                ->where('action', 'api_key_request')
+                ->where('outcome', 'success')
+                ->where('created_at', '>=', now()->startOfMonth())
+                ->count(),
+            'api_calls_today' => DB::table('api_keys')
+                ->where('user_id', $user->id)
+                ->sum('use_count'),
+            'active_api_keys' => ApiKey::where('user_id', $user->id)->where('status', 'aktif')->count(),
+        ]]);
+    }
+
+    public function apiReference(): JsonResponse
+    {
+        return response()->json(['data' => [
+            'base_path' => '/api/v1',
+            'authentication' => [
+                'header' => 'X-API-Key: spr_xxx',
+                'alternative' => 'Authorization: ApiKey spr_xxx',
+            ],
+            'endpoints' => [
+                [
+                    'method' => 'GET',
+                    'path' => '/predictions/daily',
+                    'scope' => 'predictions:read',
+                    'query' => ['from' => 'YYYY-MM-DD', 'to' => 'YYYY-MM-DD', 'region' => 'uuid', 'format' => 'json|csv'],
+                    'description' => 'Prediksi risiko harian per wilayah.',
+                ],
+                [
+                    'method' => 'GET',
+                    'path' => '/reports',
+                    'scope' => 'reports:read',
+                    'query' => ['from' => 'YYYY-MM-DD', 'to' => 'YYYY-MM-DD', 'region' => 'uuid', 'format' => 'json|csv'],
+                    'description' => 'Laporan ground truth yang telah divalidasi.',
+                ],
+                [
+                    'method' => 'GET',
+                    'path' => '/tidal',
+                    'scope' => 'tidal:read',
+                    'query' => ['station' => 'kode_stasiun', 'from' => 'YYYY-MM-DD', 'to' => 'YYYY-MM-DD', 'format' => 'json|csv'],
+                    'description' => 'Data pasang surut yang tersedia di sistem.',
+                ],
+            ],
+            'license_note' => 'Dataset turunan mengikuti lisensi yang tercatat pada metadata dataset; data mentah mengikuti ketentuan sumber resmi.',
+        ]]);
     }
 
     public function dailyPredictions(ResearchDataRequest $request): JsonResponse|StreamedResponse

@@ -8,18 +8,23 @@ use App\Http\Resources\RegionResource;
 use App\Models\Prediction;
 use App\Models\Region;
 use App\Models\GroundTruthReport;
+use App\Models\TidalStation;
 use App\Services\PredictionService;
 use App\Services\RegionLocator;
+use App\Services\RegionMonitoringService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class PublicMapController
 {
     public function __construct(
         private readonly RegionLocator $regionLocator,
         private readonly PredictionService $predictionService,
+        private readonly RegionMonitoringService $monitoring,
     ) {}
 
     public function map(Request $request): JsonResponse
@@ -102,8 +107,105 @@ final class PublicMapController
             'data' => [
                 'regions' => ['type' => 'FeatureCollection', 'features' => $regionFeatures],
                 'reports' => ['type' => 'FeatureCollection', 'features' => $reportFeatures],
+                'layers' => [
+                    'tidal_stations' => $this->tidalStationFeatures(),
+                    'coastlines' => $this->coastlineFeatures(),
+                    'critical_infrastructure' => ['type' => 'FeatureCollection', 'features' => []],
+                    'evacuation_routes' => ['type' => 'FeatureCollection', 'features' => []],
+                ],
+                'active_warning' => $this->activeWarning($predictions),
             ],
         ]);
+    }
+
+    private function tidalStationFeatures(): array
+    {
+        if (!Schema::hasTable('tidal_stations')) {
+            return ['type' => 'FeatureCollection', 'features' => []];
+        }
+
+        $features = TidalStation::query()
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->where('status', 'active')
+            ->limit(50)
+            ->get()
+            ->map(fn (TidalStation $station): array => [
+                'type' => 'Feature',
+                'id' => $station->id,
+                'geometry' => [
+                    'type' => 'Point',
+                    'coordinates' => [(float) $station->longitude, (float) $station->latitude],
+                ],
+                'properties' => [
+                    'code' => $station->code,
+                    'name' => $station->name,
+                    'source' => $station->source,
+                    'provenance_status' => $station->provenance_status,
+                    'coverage_radius_km' => $station->coverage_radius_km,
+                ],
+            ])->values()->all();
+
+        return ['type' => 'FeatureCollection', 'features' => $features];
+    }
+
+    private function coastlineFeatures(): array
+    {
+        if (!Schema::hasTable('coastlines')) {
+            return ['type' => 'FeatureCollection', 'features' => []];
+        }
+
+        try {
+            $geometrySelect = Schema::hasColumn('coastlines', 'geometry')
+                ? DB::raw('ST_AsGeoJSON(geometry) as geometry_json')
+                : 'geometry_geojson as geometry_json';
+
+            $features = DB::table('coastlines')
+                ->select(['id', 'shoreline_type', 'source_year', 'source', 'source_reference', $geometrySelect])
+                ->limit(100)
+                ->get()
+                ->map(function ($row): ?array {
+                    $geometry = is_string($row->geometry_json) ? json_decode($row->geometry_json, true) : $row->geometry_json;
+                    if (!$geometry) {
+                        return null;
+                    }
+
+                    return [
+                        'type' => 'Feature',
+                        'id' => $row->id,
+                        'geometry' => $geometry,
+                        'properties' => [
+                            'shoreline_type' => $row->shoreline_type,
+                            'source_year' => $row->source_year,
+                            'source' => $row->source,
+                            'source_reference' => $row->source_reference,
+                        ],
+                    ];
+                })
+                ->filter()
+                ->values()
+                ->all();
+        } catch (\Throwable) {
+            $features = [];
+        }
+
+        return ['type' => 'FeatureCollection', 'features' => $features];
+    }
+
+    private function activeWarning($predictions): ?array
+    {
+        $critical = $predictions->filter(fn (Prediction $prediction) => $prediction->risk_class === 'sangat_tinggi');
+        if ($critical->isEmpty()) {
+            return null;
+        }
+
+        return [
+            'type' => 'risk_threshold',
+            'title' => 'Risiko sangat tinggi terdeteksi',
+            'message' => $critical->count().' zona pantau berada pada kelas sangat tinggi. Pantau pembaruan BMKG dan laporan lapangan.',
+            'affected_regencies' => $critical->pluck('region.regency')->filter()->unique()->values(),
+            'source' => 'SIPERAH-RoB prediction',
+        ];
     }
 
     /** @return array<string, array<string, mixed>> */
@@ -179,6 +281,43 @@ final class PublicMapController
         return PredictionResource::collection($query->paginate($filters['per_page'] ?? 200));
     }
 
+    public function mapExport(Request $request): StreamedResponse
+    {
+        $filters = $request->validate([
+            'regency' => ['nullable', 'string', 'max:100'],
+            'date' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
+        $query = Prediction::with('region')->orderByDesc('prediction_date');
+
+        if (!empty($filters['regency'])) {
+            $query->whereHas('region', fn ($regions) => $regions->where('regency', $filters['regency']));
+        }
+        if (!empty($filters['date'])) {
+            $query->whereDate('prediction_date', $filters['date']);
+        }
+
+        return response()->streamDownload(function () use ($query): void {
+            $output = fopen('php://output', 'wb');
+            fputcsv($output, ['Tanggal', 'Kabupaten/Kota', 'Kecamatan', 'Desa/Kelurahan', 'Kelas Risiko', 'Probabilitas', 'Tinggi Pasang Maks', 'Waktu Puncak', 'Model', 'Sumber'], ',', '"', '');
+            foreach ($query->cursor() as $prediction) {
+                fputcsv($output, [
+                    optional($prediction->prediction_date)->toDateString(),
+                    $prediction->region?->regency,
+                    $prediction->region?->district,
+                    $prediction->region?->village,
+                    $prediction->risk_class,
+                    $prediction->risk_probability,
+                    $prediction->max_tidal_height,
+                    $prediction->peak_time,
+                    $prediction->model_version,
+                    $prediction->data_source,
+                ], ',', '"', '');
+            }
+            fclose($output);
+        }, 'peta-risiko-banjir-rob.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     public function region(string $region): JsonResponse
     {
         $data = Region::findOrFail($region);
@@ -196,8 +335,18 @@ final class PublicMapController
             (float) $coordinates['lon'],
         );
 
+        $data = null;
+        if ($region) {
+            $data = (new RegionResource($region))->resolve($request);
+            $data['is_monitored'] = $this->monitoring->isPointMonitored(
+                $region,
+                (float) $coordinates['lat'],
+                (float) $coordinates['lon'],
+            );
+        }
+
         return response()->json([
-            'data' => $region ? new RegionResource($region) : null,
+            'data' => $data,
             'message' => $region ? null : 'Koordinat berada di luar batas administrasi Lampung yang tersedia.',
         ]);
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\NotificationSettingsRequest;
+use App\Services\AuditService;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -10,7 +11,10 @@ use Illuminate\Support\Facades\DB;
 
 final class NotificationController
 {
-    public function __construct(private readonly NotificationService $notifications) {}
+    public function __construct(
+        private readonly NotificationService $notifications,
+        private readonly AuditService $audit,
+    ) {}
 
     public function show(Request $request): JsonResponse
     {
@@ -45,6 +49,11 @@ final class NotificationController
     public function update(NotificationSettingsRequest $request): JsonResponse
     {
         $settings = $this->notifications->updateSettings($request->user()->id, $request->validated());
+        $this->audit->write($request, 'update_notification_settings', 'success', "notification_settings:{$settings->id}", [
+            'channels' => $settings->channels,
+            'event_types' => $settings->event_types,
+            'monitored_regions' => $settings->monitored_regions,
+        ]);
         return response()->json(['data' => $settings, 'message' => 'Pengaturan notifikasi diperbarui.']);
     }
 }

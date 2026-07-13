@@ -6,6 +6,7 @@ use App\Http\Middleware\AuthenticateApiKey;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -21,6 +22,12 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withCommands()
+    ->withSchedule(function (Schedule $schedule): void {
+        $schedule->command('data:refresh-operational --province=Lampung')
+            ->dailyAt('05:00')
+            ->timezone('Asia/Jakarta')
+            ->withoutOverlapping();
+    })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'active' => EnsureActiveUser::class,

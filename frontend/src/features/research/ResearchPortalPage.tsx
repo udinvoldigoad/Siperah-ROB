@@ -39,11 +39,24 @@ interface RegenerateKeyResponse {
   raw_key: string;
 }
 
-const endpoints = [
-  { method: "GET", path: "/predictions/daily?date=YYYY-MM-DD&kabupaten_id={id}", note: "Ambil prediksi harian per kelurahan untuk tanggal tertentu." },
-  { method: "GET", path: "/reports?status=validated&from=YYYY-MM-DD&to=YYYY-MM-DD", note: "Daftar laporan ground truth yang telah divalidasi dalam rentang waktu." },
-  { method: "GET", path: "/tidal?station=panjang&from=YYYY-MM-DD&to=YYYY-MM-DD", note: "Data pasang surut mentah dari stasiun BMKG Panjang per jam." },
-];
+interface ResearchStats {
+  dataset_count: number;
+  total_records: number;
+  downloads_this_month: number;
+  api_calls_today: number;
+  active_api_keys: number;
+}
+
+interface ResearchStatsResponse { data: ResearchStats; }
+
+interface ApiReferenceResponse {
+  data: {
+    base_path: string;
+    authentication: { header: string; alternative: string };
+    endpoints: { method: string; path: string; description: string; scope: string; query: Record<string, string> }[];
+    license_note: string;
+  };
+}
 
 export function ResearchPortalPage() {
   const toast = useToast();
@@ -54,6 +67,8 @@ export function ResearchPortalPage() {
   const [rawGeneratedKey, setRawGeneratedKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<number>(0);
+  const [stats, setStats] = useState<ResearchStats>({ dataset_count: 0, total_records: 0, downloads_this_month: 0, api_calls_today: 0, active_api_keys: 0 });
+  const [apiReference, setApiReference] = useState<ApiReferenceResponse["data"] | null>(null);
 
   const loadResearchData = async () => {
     setIsLoading(true);
@@ -62,8 +77,16 @@ export function ResearchPortalPage() {
       setDatasets(dsRes.data);
 
       if (isResearcher) {
-        const keysRes = await api<ApiKeyResponse>("/research/api-keys");
+        const [keysRes, statsRes, refRes] = await Promise.all([
+          api<ApiKeyResponse>("/research/api-keys"),
+          api<ResearchStatsResponse>("/research/stats"),
+          api<ApiReferenceResponse>("/research/api-reference"),
+        ]);
         setApiKeys(keysRes.data);
+        setStats(statsRes.data);
+        setApiReference(refRes.data);
+      } else {
+        setStats((current) => ({ ...current, dataset_count: dsRes.data.length, total_records: dsRes.data.reduce((sum, item) => sum + Number(item.record_count ?? 0), 0) }));
       }
     } catch (err: any) {
       toast.error(err.message || "Gagal memuat portal penelitian.");
@@ -130,10 +153,10 @@ export function ResearchPortalPage() {
         {/* KPI Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginBottom: "32px" }}>
           {[
-            { title: "Dataset Tersedia", val: datasets.length, sub: "set data tervalidasi" },
-            { title: "Total Rekaman", val: "148,920", sub: "kejadian 2018–2026" },
-            { title: "Unduhan Bulan Ini", val: "312", sub: "oleh 18 peneliti" },
-            { title: "API Call Hari Ini", val: "8,240", sub: "dari 5 aplikasi terdaftar" }
+            { title: "Dataset Tersedia", val: stats.dataset_count || datasets.length, sub: "set data tervalidasi" },
+            { title: "Total Rekaman", val: stats.total_records.toLocaleString("id-ID"), sub: "baris data terdokumentasi" },
+            { title: "Unduhan Bulan Ini", val: stats.downloads_this_month.toLocaleString("id-ID"), sub: "request ekspor/API" },
+            { title: "API Call Tercatat", val: stats.api_calls_today.toLocaleString("id-ID"), sub: `${stats.active_api_keys} kunci aktif` }
           ].map((kpi, i) => (
             <div key={i} style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 8, padding: "20px" }}>
               <div style={{ fontSize: "12px", color: "var(--ink-soft)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.02em" }}>{kpi.title}</div>
@@ -262,18 +285,18 @@ export function ResearchPortalPage() {
               <div style={{ marginBottom: "32px" }}>
                 <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: "var(--ink)" }}>Base URL</div>
                 <div style={{ background: "#0f172a", borderRadius: "8px", padding: "16px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "13px" }}>
-                  https://api.siperah-rob.go.id/v1
+                  {apiReference?.base_path ?? "/api/v1"}
                 </div>
               </div>
 
               <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "16px", color: "var(--ink)" }}>Endpoint Tersedia</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "40px" }}>
-                {endpoints.map((ep, i) => (
+                {(apiReference?.endpoints ?? []).map((ep, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "16px", padding: "20px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface)" }}>
                     <div style={{ background: "#dcfce7", color: "#15803d", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 700, fontFamily: "monospace" }}>{ep.method}</div>
                     <div>
                       <div style={{ fontFamily: "monospace", fontSize: "13px", color: "var(--ocean-dark, #0284c7)", marginBottom: "6px", fontWeight: 600 }}>{ep.path}</div>
-                      <div style={{ fontSize: "13px", color: "var(--ink-soft)", lineHeight: 1.5 }}>{ep.note}</div>
+                      <div style={{ fontSize: "13px", color: "var(--ink-soft)", lineHeight: 1.5 }}>{ep.description} Scope: <code>{ep.scope}</code></div>
                     </div>
                   </div>
                 ))}
@@ -281,9 +304,10 @@ export function ResearchPortalPage() {
 
               <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "12px", color: "var(--ink)" }}>Contoh Request</div>
               <div style={{ background: "#0f172a", borderRadius: 8, padding: "20px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.6, overflowX: "auto" }}>
-                <span style={{ color: "#93c5fd" }}>curl</span> -H <span style={{ color: "#86efac" }}>"Authorization: Bearer sk-siperah-..."</span> \<br />
-                &nbsp;&nbsp;<span style={{ color: "#86efac" }}>"https://api.siperah-rob.go.id/v1/predictions/daily?date=2026-05-21"</span>
+                <span style={{ color: "#93c5fd" }}>curl</span> -H <span style={{ color: "#86efac" }}>"{apiReference?.authentication.header ?? "X-API-Key: spr_xxx"}"</span> \<br />
+                &nbsp;&nbsp;<span style={{ color: "#86efac" }}>"{apiReference?.base_path ?? "/api/v1"}/predictions/daily?from=2026-05-21&amp;to=2026-05-21"</span>
               </div>
+              {apiReference?.license_note && <p style={{ marginTop: 16, color: "var(--ink-soft)", fontSize: 13 }}>{apiReference.license_note}</p>}
             </motion.div>
           )}
 

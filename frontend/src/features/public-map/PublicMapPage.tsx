@@ -9,7 +9,13 @@ import { Icon } from "../../shared/components/Icon";
 type GeoJsonFeature = { type: "Feature"; id: string; geometry: { type: string; coordinates: unknown }; properties: Record<string, unknown> };
 type FeatureCollection = { type: "FeatureCollection"; features: GeoJsonFeature[] };
 type Prediction = { prediction_date: string; region?: { regency?: string | null } | null };
-type MapResponse = { data: { regions: FeatureCollection; reports: FeatureCollection } };
+type MapLayers = {
+  tidal_stations: FeatureCollection;
+  coastlines: FeatureCollection;
+  critical_infrastructure: FeatureCollection;
+  evacuation_routes: FeatureCollection;
+};
+type MapResponse = { data: { regions: FeatureCollection; reports: FeatureCollection; layers?: MapLayers; active_warning?: { title: string; message: string } | null } };
 type PredictionResponse = { data: Prediction[] };
 
 const riskColor: Record<string, string> = { sangat_tinggi: "#e52421", tinggi: "#f4510b", sedang: "#d97706", rendah: "#16a34a" };
@@ -76,11 +82,12 @@ function geographicCircle(center: [number, number], radiusKm: number): { type: "
   return { type: "Polygon", coordinates: [ring] };
 }
 
-function RiskMap({ regions, reports, showReports, selectedRegency }: { regions: FeatureCollection; reports: FeatureCollection; showReports: boolean; selectedRegency: string }) {
+function RiskMap({ regions, reports, layers, showReports, showTidal, showCoastline, selectedRegency }: { regions: FeatureCollection; reports: FeatureCollection; layers: MapLayers; showReports: boolean; showTidal: boolean; showCoastline: boolean; selectedRegency: string }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const reportMarkers = useRef<maplibregl.Marker[]>([]);
   const predictionMarkers = useRef<maplibregl.Marker[]>([]);
+  const tidalMarkers = useRef<maplibregl.Marker[]>([]);
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -106,6 +113,8 @@ function RiskMap({ regions, reports, showReports, selectedRegency }: { regions: 
       predictionMarkers.current = [];
       reportMarkers.current.forEach(m => m.remove());
       reportMarkers.current = [];
+      tidalMarkers.current.forEach(m => m.remove());
+      tidalMarkers.current = [];
 
       const circleFeatures: any[] = [];
 
@@ -161,6 +170,35 @@ function RiskMap({ regions, reports, showReports, selectedRegency }: { regions: 
               .setPopup(popup)
               .addTo(instance)
           );
+        });
+      }
+
+      if (showTidal) {
+        layers.tidal_stations.features.forEach((station) => {
+          const coordinates = station.geometry.coordinates;
+          if (!Array.isArray(coordinates) || typeof coordinates[0] !== "number" || typeof coordinates[1] !== "number") return;
+          const popup = new maplibregl.Popup({ offset: 20 }).setHTML(`<strong>Stasiun pasang surut</strong><br>${station.properties.name ?? station.properties.code ?? "-"}<br>Sumber: ${station.properties.source ?? "-"}`);
+          tidalMarkers.current.push(
+            new maplibregl.Marker({ color: "#0284c7" })
+              .setLngLat([coordinates[0], coordinates[1]])
+              .setPopup(popup)
+              .addTo(instance)
+          );
+        });
+      }
+
+      const coastlineSourceId = "coastline-layer";
+      const coastlineData = showCoastline ? layers.coastlines : { type: "FeatureCollection", features: [] };
+      const coastlineSource = instance.getSource(coastlineSourceId);
+      if (coastlineSource) {
+        (coastlineSource as maplibregl.GeoJSONSource).setData(coastlineData as any);
+      } else {
+        instance.addSource(coastlineSourceId, { type: "geojson", data: coastlineData as any });
+        instance.addLayer({
+          id: "coastline-layer-line",
+          type: "line",
+          source: coastlineSourceId,
+          paint: { "line-color": "#0369a1", "line-width": 2, "line-opacity": 0.75 },
         });
       }
       
@@ -239,7 +277,7 @@ function RiskMap({ regions, reports, showReports, selectedRegency }: { regions: 
       }
     };
     if (instance.isStyleLoaded()) update(); else instance.once("load", update);
-  }, [regions, reports, showReports, selectedRegency]);
+  }, [regions, reports, layers, showReports, showTidal, showCoastline, selectedRegency]);
 
   return <div ref={mapContainer} style={{ minHeight: 560, width: "100%" }} aria-label="Peta interaktif risiko banjir rob" />;
 }
@@ -255,10 +293,18 @@ export function PublicMapPage() {
 
   const [regions, setRegions] = useState<FeatureCollection>({ type: "FeatureCollection", features: [] });
   const [reports, setReports] = useState<FeatureCollection>({ type: "FeatureCollection", features: [] });
+  const [layers, setLayers] = useState<MapLayers>({
+    tidal_stations: { type: "FeatureCollection", features: [] },
+    coastlines: { type: "FeatureCollection", features: [] },
+    critical_infrastructure: { type: "FeatureCollection", features: [] },
+    evacuation_routes: { type: "FeatureCollection", features: [] },
+  });
   const [catalog, setCatalog] = useState<Prediction[]>([]);
   const [selectedRegency, setSelectedRegency] = useState("all");
   const [selectedDate, setSelectedDate] = useState("all");
   const [showReports, setShowReports] = useState(true);
+  const [showTidal, setShowTidal] = useState(false);
+  const [showCoastline, setShowCoastline] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -272,6 +318,7 @@ export function PublicMapPage() {
     void api<MapResponse>(`/public/map${query.size ? `?${query.toString()}` : ""}`).then((response) => {
       if (!active) return;
       setRegions(response.data.regions); setReports(response.data.reports);
+      if (response.data.layers) setLayers(response.data.layers);
     }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Data peta belum bisa dimuat."); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [selectedDate, selectedRegency]);
@@ -291,7 +338,7 @@ export function PublicMapPage() {
       <motion.div variants={itemVariants} className="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, borderLeftColor: riskColor[String(highestRisk?.properties.risk_class)] ?? "var(--accent)" }}><div style={{ display: "flex", alignItems: "center", gap: 14 }}><Icon name="warning" style={{ fontSize: 24, color: riskColor[String(highestRisk?.properties.risk_class)] ?? "var(--accent)" }} /><div><strong style={{ display: "block", marginBottom: 3, color: "var(--ink)" }}>{highestRisk ? `Risiko ${riskText(highestRisk.properties.risk_class)} terdeteksi` : "Memuat peringatan risiko"}</strong><span style={{ color: "var(--ink-soft)", fontSize: 13 }}>{highestRisk ? `${highestRisk.properties.village ?? "Wilayah pesisir"}, ${highestRisk.properties.regency ?? "Lampung"} · peluang rob ${Math.round(Number(highestRisk.properties.risk_probability ?? 0))}%` : "Mengambil data peta dari server."}</span></div></div>{(!userRole || userRole === "warga") && <a className="btn secondary" href="#/awam">Lihat mode awam</a>}</motion.div>
       {error && <div className="alert" style={{ borderLeftColor: "var(--critical)" }}>{error}</div>}
       <motion.div variants={itemVariants} style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24, alignItems: "start" }}>
-        <div className="panel flush" style={{ overflow: "hidden", position: "relative" }}><div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", background: "var(--surface-soft)" }}><div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)}><option value="all">Prediksi terbaru</option>{dates.map((date) => <option key={date} value={date}>{date}</option>)}</select><select value={selectedRegency} onChange={(event) => setSelectedRegency(event.target.value)}><option value="all">Semua kabupaten</option>{regencies.map((regency) => <option key={regency} value={regency}>{regency}</option>)}</select></div><label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ink-soft)" }}><input type="checkbox" checked={showReports} onChange={(event) => setShowReports(event.target.checked)} /> Tampilkan laporan</label></div><RiskMap regions={regions} reports={reports} showReports={showReports} selectedRegency={selectedRegency} />{loading && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(255,255,255,.6)", fontWeight: 700 }}>Memuat peta…</div>}</div>
+        <div className="panel flush" style={{ overflow: "hidden", position: "relative" }}><div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", background: "var(--surface-soft)" }}><div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)}><option value="all">Prediksi terbaru</option>{dates.map((date) => <option key={date} value={date}>{date}</option>)}</select><select value={selectedRegency} onChange={(event) => setSelectedRegency(event.target.value)}><option value="all">Semua kabupaten</option>{regencies.map((regency) => <option key={regency} value={regency}>{regency}</option>)}</select></div><div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}><label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ink-soft)" }}><input type="checkbox" checked={showReports} onChange={(event) => setShowReports(event.target.checked)} /> Laporan</label><label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ink-soft)" }}><input type="checkbox" checked={showTidal} onChange={(event) => setShowTidal(event.target.checked)} /> Pasang surut</label><label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ink-soft)" }}><input type="checkbox" checked={showCoastline} onChange={(event) => setShowCoastline(event.target.checked)} /> Garis pantai</label></div></div><RiskMap regions={regions} reports={reports} layers={layers} showReports={showReports} showTidal={showTidal} showCoastline={showCoastline} selectedRegency={selectedRegency} />{loading && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(255,255,255,.6)", fontWeight: 700 }}>Memuat peta…</div>}</div>
         <aside className="stack" style={{ gap: 24 }}><motion.div variants={itemVariants} className="panel flush"><div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", borderBottom: "1px solid var(--line)", background: "var(--surface-soft)" }}>{[[regions.features.length, "Zona dipantau", "var(--ink)"], [reports.features.length, "Laporan valid", "var(--low)"], [regions.features.filter((item) => ["tinggi", "sangat_tinggi"].includes(String(item.properties.risk_class))).length, "Risiko tinggi+", "var(--critical)"]].map(([value, label, color]) => <div key={String(label)} style={{ padding: "16px 8px", textAlign: "center" }}><strong style={{ display: "block", fontSize: 21, color: String(color) }}>{value}</strong><span style={{ fontSize: 11, color: "var(--ink-soft)" }}>{label}</span></div>)}</div><div style={{ padding: "16px 20px" }}><strong style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: .5 }}>Legenda Risiko</strong><div style={{ display: "grid", gap: 10, marginTop: 14 }}>{Object.entries(riskLabel).map(([risk, label]) => <div key={risk} style={{ display: "flex", gap: 9, alignItems: "center", fontSize: 13 }}><span style={{ width: 14, height: 14, borderRadius: 3, background: riskColor[risk] }} />{label}</div>)}</div></div></motion.div>{userRole === "warga" && <a className="btn primary" href="#/reports" style={{ justifyContent: "center" }}><Icon name="add" /> Tambah Laporan Baru</a>}</aside>
       </motion.div>
     </motion.div>
