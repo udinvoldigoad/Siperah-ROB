@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
-import { api } from "../../shared/api/client";
+import { api, apiUrl } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { motion, type Variants } from "framer-motion";
@@ -13,6 +13,16 @@ interface SummaryData {
   latest_prediction_date?: string | null;
   regencies?: RegencySummary[];
   trend_30_days?: { prediction_date: string; high_risk_count: number }[];
+  filters?: { month?: string | null; regency?: string | null };
+  available_regencies?: string[];
+  top_impacted?: TopImpactedPrediction[];
+  population_audit?: {
+    total_regions: number;
+    with_population: number;
+    official_bps_population: number;
+    missing_population: number;
+    status: "bps_verified" | "region_population_available" | "incomplete";
+  };
 }
 
 interface RegencySummary {
@@ -24,6 +34,23 @@ interface RegencySummary {
   risk_population: number;
   max_probability: number;
   trend: string;
+  previous_high_risk_count?: number;
+  high_risk_delta?: number;
+}
+
+interface TopImpactedPrediction {
+  id: string;
+  prediction_date: string;
+  risk_probability: number;
+  risk_class: "rendah" | "sedang" | "tinggi" | "sangat_tinggi";
+  confidence_score: number | null;
+  max_tidal_height: number | null;
+  village: string | null;
+  district: string | null;
+  regency: string | null;
+  population: number | null;
+  population_source?: string | null;
+  population_provenance_status?: string | null;
 }
 
 interface PredictionData {
@@ -55,6 +82,18 @@ const itemVariants: Variants = {
   show: { opacity: 1, transition: { duration: 0.2 } }
 };
 
+function toNumber(value: unknown, fallback = 0): number {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function toDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function ProvinceDashboardPage() {
   const toast = useToast();
   const [summary, setSummary] = useState<SummaryData>({
@@ -67,14 +106,22 @@ export function ProvinceDashboardPage() {
   });
   const [predictions, setPredictions] = useState<PredictionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedRegency, setSelectedRegency] = useState("all");
+  const [sortKey, setSortKey] = useState<"risk" | "probability" | "population" | "name" | "trend">("risk");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
-      const summaryRes = await api<SummaryResponse>("/dashboard/province/summary");
+      const params = new URLSearchParams();
+      if (selectedMonth) params.set("month", selectedMonth);
+      if (selectedRegency !== "all") params.set("regency", selectedRegency);
+      const query = params.toString() ? `?${params.toString()}` : "";
+      const summaryRes = await api<SummaryResponse>(`/dashboard/province/summary${query}`);
       setSummary(summaryRes.data);
 
-      const predRes = await api<PredictionListResponse>("/public/predictions");
+      const predRes = await api<PredictionListResponse>(`/public/predictions${selectedRegency !== "all" ? `?regency=${encodeURIComponent(selectedRegency)}` : ""}`);
       setPredictions(predRes.data);
 
     } catch (err: any) {
@@ -86,7 +133,42 @@ export function ProvinceDashboardPage() {
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [selectedMonth, selectedRegency]);
+
+  const handleProvinceExport = async () => {
+    try {
+      const token = localStorage.getItem("siperah-token");
+      const params = new URLSearchParams();
+      if (selectedMonth) params.set("month", selectedMonth);
+      if (selectedRegency !== "all") params.set("regency", selectedRegency);
+      const response = await fetch(apiUrl(`/api/dashboard/province/export${params.toString() ? `?${params.toString()}` : ""}`), {
+        headers: {
+          Accept: "text/csv",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!response.ok) throw new Error(`Export gagal (${response.status})`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "dashboard-provinsi-risiko.csv";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Export CSV provinsi mulai diunduh.");
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengekspor CSV provinsi.");
+    }
+  };
+
+  const riskBadgeClass = (riskClass: string) => {
+    if (riskClass === "sangat_tinggi") return "sangat_parah";
+    if (riskClass === "tinggi") return "parah";
+    if (riskClass === "rendah") return "ringan";
+    return riskClass;
+  };
 
   const getRegencySummary = () => {
     if (summary.regencies?.length) {
@@ -97,7 +179,12 @@ export function ProvinceDashboardPage() {
           riskClass,
           probability: `${Number(item.max_probability ?? 0).toFixed(0)}%`,
           villagesCount: `${Number(item.low_count) + Number(item.medium_count) + Number(item.high_count) + Number(item.critical_count)} Kelurahan`,
-          priority: item.trend === "naik" ? "Prioritas koordinasi" : "Monitoring Harian",
+          riskPopulation: toNumber(item.risk_population),
+          maxProbability: toNumber(item.max_probability),
+          highRiskCount: toNumber(item.high_count) + toNumber(item.critical_count),
+          delta: toNumber(item.high_risk_delta),
+          priority: item.trend === "naik" ? "Prioritas koordinasi" : item.trend === "turun" ? "Risiko menurun" : "Monitoring Harian",
+          trend: item.trend,
         };
       });
     }
@@ -120,44 +207,62 @@ export function ProvinceDashboardPage() {
       riskClass: val.class,
       probability: `${val.maxProb}%`,
       villagesCount: `${val.count} Kelurahan`,
+      riskPopulation: 0,
+      maxProbability: val.maxProb,
+      highRiskCount: val.class === "sangat_tinggi" || val.class === "tinggi" ? val.count : 0,
+      delta: 0,
+      trend: val.class === "sangat_tinggi" || val.class === "tinggi" ? "naik" : "stabil",
       priority: val.class === "sangat_tinggi" || val.class === "tinggi" ? "Prioritas Evakuasi / Pantau Pasang" : "Monitoring Harian",
     }));
   };
 
-  const regenciesData = getRegencySummary();
+  const regenciesData = useMemo(() => {
+    const riskRank: Record<string, number> = { rendah: 1, sedang: 2, tinggi: 3, sangat_tinggi: 4 };
+    const trendRank: Record<string, number> = { turun: 1, stabil: 2, naik: 3 };
+    const rows = getRegencySummary();
+    return rows.sort((a, b) => {
+      const direction = sortDirection === "desc" ? -1 : 1;
+      if (sortKey === "name") return a.name.localeCompare(b.name) * direction;
+      if (sortKey === "probability") return (a.maxProbability - b.maxProbability) * direction;
+      if (sortKey === "population") return (a.riskPopulation - b.riskPopulation) * direction;
+      if (sortKey === "trend") return ((trendRank[a.trend] ?? 0) - (trendRank[b.trend] ?? 0)) * direction;
+      return ((riskRank[a.riskClass] ?? 0) - (riskRank[b.riskClass] ?? 0) || a.maxProbability - b.maxProbability) * direction;
+    });
+  }, [summary.regencies, predictions, sortKey, sortDirection]);
 
   const trendData = useMemo(() => {
-    if (summary.trend_30_days?.length) {
-      return summary.trend_30_days.map((item) => ({
-        count: Number(item.high_risk_count),
-        date: new Date(item.prediction_date),
-        isToday: item.prediction_date === summary.latest_prediction_date,
-      }));
-    }
-
     const counts = predictions.reduce<Record<string, number>>((acc, prediction) => {
       if (prediction.risk_class === "tinggi" || prediction.risk_class === "sangat_tinggi") {
         acc[prediction.prediction_date] = (acc[prediction.prediction_date] ?? 0) + 1;
       }
       return acc;
     }, {});
-    if (Object.keys(counts).length) {
-      return Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)).map(([date, count], index, rows) => ({
-        count,
-        date: new Date(date),
-        isToday: index === rows.length - 1,
-      }));
+
+    (summary.trend_30_days ?? []).forEach((item) => {
+      counts[item.prediction_date] = toNumber(item.high_risk_count);
+    });
+
+    const endDateKey = summary.latest_prediction_date
+      ?? Object.keys(counts).sort((a, b) => a.localeCompare(b)).at(-1)
+      ?? toDateKey(new Date());
+    const endDate = new Date(`${endDateKey}T00:00:00`);
+    const startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - 29);
+
+    if (Number.isNaN(endDate.getTime())) {
+      const today = new Date();
+      return Array.from({ length: 30 }, (_, index) => {
+        const date = new Date(today);
+        date.setDate(today.getDate() - 29 + index);
+        return { count: 0, date, isToday: index === 29 };
+      });
     }
 
-    const fallbackCounts = [0];
-    const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - 6); // Today is at index 6
-    
-    return fallbackCounts.map((count, i) => {
+    return Array.from({ length: 30 }, (_, index) => {
       const d = new Date(startDate);
-      d.setDate(startDate.getDate() + i);
-      return { count, date: d, isToday: i === 6 };
+      d.setDate(startDate.getDate() + index);
+      const key = toDateKey(d);
+      return { count: toNumber(counts[key]), date: d, isToday: key === endDateKey };
     });
   }, [predictions, summary.latest_prediction_date, summary.trend_30_days]);
 
@@ -189,9 +294,16 @@ export function ProvinceDashboardPage() {
               </div>
             </div>
           </div>
-          <button className="btn secondary" style={{ background: "transparent", color: "var(--critical)", borderColor: "var(--critical)" }}>
-            Lihat Instruksi Detail
-          </button>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <input type="month" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} style={{ minWidth: 150 }} />
+            <select value={selectedRegency} onChange={(event) => setSelectedRegency(event.target.value)} style={{ minWidth: 220 }}>
+              <option value="all">Semua kabupaten/kota</option>
+              {(summary.available_regencies ?? []).map((regency) => <option key={regency} value={regency}>{regency}</option>)}
+            </select>
+            <button className="btn secondary" style={{ background: "transparent", color: "var(--critical)", borderColor: "var(--critical)" }} onClick={() => { setSelectedMonth(""); setSelectedRegency("all"); }}>
+              Reset Filter
+            </button>
+          </div>
         </motion.div>
 
         {/* KPI Grid */}
@@ -208,8 +320,10 @@ export function ProvinceDashboardPage() {
           </motion.div>
           <motion.div variants={itemVariants} style={{ background: "#ffffff", padding: "28px", borderRadius: 8, boxShadow: "0 4px 20px rgba(0,0,0,0.03)", border: "1px solid var(--border-color)" }}>
             <span style={{ fontSize: "14px", color: "var(--ink-muted)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Warga Terdampak Potensial</span>
-            <strong style={{ color: "#ea580c", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.risk_population.toLocaleString("id-ID")}</strong>
-            <small style={{ fontSize: "13px", color: "var(--ink-soft)", display: "block", marginTop: "12px" }}>Jiwa di area rawan rob</small>
+            <strong style={{ color: "#ea580c", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{toNumber(summary.risk_population).toLocaleString("id-ID")}</strong>
+            <small style={{ fontSize: "13px", color: "var(--ink-soft)", display: "block", marginTop: "12px" }}>
+              {summary.population_audit?.status === "bps_verified" ? "BPS terverifikasi" : summary.population_audit?.status === "region_population_available" ? "Berdasarkan data region" : "Data populasi belum lengkap"}
+            </small>
           </motion.div>
           <motion.div variants={itemVariants} style={{ background: "#f0fdf4", padding: "28px", borderRadius: 8, boxShadow: "0 4px 20px rgba(22, 163, 74, 0.05)", border: "1px solid #dcfce7" }}>
             <span style={{ fontSize: "14px", color: "#16a34a", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Laporan Masuk (Bulan Ini)</span>
@@ -225,9 +339,22 @@ export function ProvinceDashboardPage() {
             <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: "1.15rem" }}>Tingkat Risiko per Kabupaten/Kota</h2>
-                <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--ink-soft)" }}>Ringkasan agregat daerah terdampak (tertinggi)</p>
+                <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--ink-soft)" }}>
+                  Ringkasan prediksi terbaru {summary.latest_prediction_date ? `per ${new Date(summary.latest_prediction_date).toLocaleDateString("id-ID")}` : ""}; tren = perubahan jumlah zona tinggi+ dari tanggal prediksi sebelumnya.
+                </p>
               </div>
-              <button className="btn secondary" style={{ fontSize: "12px" }}><Icon name="sort" style={{ fontSize: "14px" }} /> Urutkan</button>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <select value={sortKey} onChange={(event) => setSortKey(event.target.value as typeof sortKey)} style={{ minWidth: 170 }}>
+                  <option value="risk">Bahaya tertinggi</option>
+                  <option value="probability">Peluang rob</option>
+                  <option value="population">Populasi risiko</option>
+                  <option value="trend">Tren</option>
+                  <option value="name">Nama wilayah</option>
+                </select>
+                <button className="btn secondary" style={{ fontSize: "12px" }} onClick={() => setSortDirection((value) => value === "desc" ? "asc" : "desc")}>
+                  <Icon name="sort" style={{ fontSize: "14px" }} /> {sortDirection === "desc" ? "Turun" : "Naik"}
+                </button>
+              </div>
             </div>
             <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
@@ -235,6 +362,8 @@ export function ProvinceDashboardPage() {
                   <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)" }}>Kabupaten/Kota</th>
                   <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)" }}>Status Bahaya</th>
                   <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)", textAlign: "right" }}>Peluang Rob</th>
+                  <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)", textAlign: "right" }}>Populasi Risiko</th>
+                  <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)", textAlign: "right" }}>Tren</th>
                 </tr>
               </thead>
               <tbody>
@@ -252,12 +381,20 @@ export function ProvinceDashboardPage() {
                       <div style={{ fontSize: "11px", color: "var(--ink-soft)", fontWeight: 400, marginTop: "4px" }}>Menjangkau {item.villagesCount}</div>
                     </td>
                     <td style={{ padding: "16px 24px" }}>
-                      <span className={`badge severity-${item.riskClass}`}>
+                      <span className={`badge severity-${riskBadgeClass(item.riskClass)}`}>
                         {item.riskClass.replace("_", " ")}
                       </span>
                     </td>
                     <td style={{ padding: "16px 24px", textAlign: "right", fontFamily: "monospace", fontSize: "14px", fontWeight: 700 }}>
                       {item.probability}
+                    </td>
+                    <td style={{ padding: "16px 24px", textAlign: "right", fontFamily: "monospace", fontSize: "14px", fontWeight: 700 }}>
+                      {item.riskPopulation.toLocaleString("id-ID")}
+                    </td>
+                    <td style={{ padding: "16px 24px", textAlign: "right" }}>
+                      <span className={`badge ${item.trend === "naik" ? "severity-parah" : item.trend === "turun" ? "severity-ringan" : "severity-sedang"}`}>
+                        {item.trend} {item.delta !== 0 ? `(${item.delta > 0 ? "+" : ""}${item.delta})` : ""}
+                      </span>
                     </td>
                   </motion.tr>
                 ))}
@@ -331,9 +468,16 @@ export function ProvinceDashboardPage() {
                           }}
                         />
                         
-                        {idx === 0 && <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>{date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>}
-                        {isToday && <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "#ef4444", fontWeight: 700 }}>{date.toLocaleDateString("id-ID", { day: "numeric" })}</div>}
-                        {idx === data.length - 1 && <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>{date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>}
+                        {[0, 14, data.length - 1].includes(idx) && !isToday && (
+                          <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>
+                            {date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
+                          </div>
+                        )}
+                        {isToday && (
+                          <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "#ef4444", fontWeight: 700, whiteSpace: "nowrap" }}>
+                            {date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
+                          </div>
+                        )}
                       </div>
                     );
                   });
@@ -348,9 +492,11 @@ export function ProvinceDashboardPage() {
           <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <h2 style={{ margin: 0, fontSize: "1.15rem" }}>10 Kelurahan Paling Terdampak & Kritis</h2>
-              <p style={{ margin: "4px 0 0", fontSize: "12.5px", color: "var(--ink-soft)" }}>Fokuskan distribusi bantuan dan regu evakuasi pada kelurahan ini terlebih dahulu.</p>
+              <p style={{ margin: "4px 0 0", fontSize: "12.5px", color: "var(--ink-soft)" }}>
+                Berdasarkan prediksi terbaru, kelas risiko, peluang rob, dan populasi region. Filter mengikuti pilihan bulan/kabupaten di atas.
+              </p>
             </div>
-            <button className="btn secondary" style={{ fontSize: "12px" }}><Icon name="download" style={{ fontSize: "14px" }} /> Ekspor CSV Data Utama</button>
+            <button className="btn secondary" style={{ fontSize: "12px" }} onClick={handleProvinceExport}><Icon name="download" style={{ fontSize: "14px" }} /> Ekspor CSV Data Utama</button>
           </div>
           <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
@@ -364,26 +510,45 @@ export function ProvinceDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {predictions.slice(0, 5).map((p, index) => (
+              {(summary.top_impacted?.length ? summary.top_impacted : predictions
+                .slice()
+                .sort((a, b) => b.risk_probability - a.risk_probability)
+                .slice(0, 10)
+                .map((p) => ({
+                  id: p.id,
+                  prediction_date: p.prediction_date,
+                  risk_probability: p.risk_probability,
+                  risk_class: p.risk_class,
+                  confidence_score: p.confidence_score,
+                  max_tidal_height: p.max_tidal_height,
+                  village: p.region?.village ?? null,
+                  district: p.region?.district ?? null,
+                  regency: p.region?.regency ?? null,
+                  population: null,
+                })))
+                .map((p, index) => (
                 <motion.tr 
                   key={p.id}
                   
                   style={{ borderBottom: "1px solid var(--line)" }}
                 >
                   <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontWeight: 700 }}>{index + 1}</td>
-                  <td style={{ padding: "16px 24px", fontWeight: 700 }}>{p.region?.village ?? "-"}</td>
-                  <td style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>{p.region?.district ?? "-"}, {p.region?.regency ?? "-"}</td>
+                  <td style={{ padding: "16px 24px", fontWeight: 700 }}>
+                    {p.village ?? "-"}
+                    <div style={{ fontSize: 11, color: "var(--ink-soft)", fontWeight: 500, marginTop: 4 }}>{toNumber(p.population).toLocaleString("id-ID")} jiwa</div>
+                  </td>
+                  <td style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>{p.district ?? "-"}, {p.regency ?? "-"}</td>
                   <td style={{ padding: "16px 24px" }}>
-                    <span className={`badge severity-${p.risk_class}`}>
+                    <span className={`badge severity-${riskBadgeClass(p.risk_class)}`}>
                       {p.risk_class.replace("_", " ")}
                     </span>
                   </td>
                   <td style={{ padding: "16px 24px", textAlign: "right", fontWeight: 700 }}>
-                    {p.max_tidal_height ? `${p.max_tidal_height} Meter` : "-"}
+                    {p.max_tidal_height ? `${toNumber(p.max_tidal_height).toLocaleString("id-ID", { maximumFractionDigits: 2 })} Meter` : "-"}
                   </td>
                   <td style={{ padding: "16px 24px", textAlign: "center" }}>
                     <span style={{ display: "inline-block", background: "rgba(16, 185, 129, 0.1)", color: "var(--low)", padding: "4px 8px", borderRadius: "6px", fontSize: "12px", fontWeight: 700 }}>
-                      {p.confidence_score ? `${p.confidence_score.toFixed(2)}%` : "-"}
+                      {p.confidence_score ? `${toNumber(p.confidence_score).toFixed(2)}%` : "-"}
                     </span>
                   </td>
                 </motion.tr>
