@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\AuditLogResource;
 use App\Models\AuditLog;
 use App\Http\Requests\AuditLogRequest;
+use App\Support\CsvWriter;
+use Carbon\CarbonImmutable;
 
 final class AuditController
 {
@@ -21,21 +23,38 @@ final class AuditController
             $query->where('outcome', $filters['outcome']);
         }
 
+        if (!empty($filters['actor_role'])) {
+            $query->where('actor_role', $filters['actor_role']);
+        }
+
+        if (!empty($filters['user_id'])) {
+            $query->where('actor_user_id', $filters['user_id']);
+        }
+
+        if (!empty($filters['from'])) {
+            $query->where('created_at', '>=', $filters['from']);
+        }
+
+        if (!empty($filters['to'])) {
+            $query->where('created_at', '<=', CarbonImmutable::parse($filters['to'])->endOfDay());
+        }
+
         if (!empty($filters['search'])) {
-            $search = '%' . $filters['search'] . '%';
+            $search = '%' . mb_strtolower($filters['search']) . '%';
             $query->where(function ($q) use ($search) {
-                $q->where('actor_name', 'like', $search)
-                  ->orWhere('action', 'like', $search)
-                  ->orWhere('target_resource', 'like', $search);
+                $q->whereRaw('LOWER(COALESCE(actor_name, \'\')) LIKE ?', [$search])
+                  ->orWhereRaw('LOWER(COALESCE(actor_role, \'\')) LIKE ?', [$search])
+                  ->orWhereRaw('LOWER(COALESCE(action, \'\')) LIKE ?', [$search])
+                  ->orWhereRaw('LOWER(COALESCE(target_resource, \'\')) LIKE ?', [$search]);
             });
         }
 
         if (($filters['format'] ?? 'json') === 'csv') {
             return response()->streamDownload(function () use ($query): void {
                 $output = fopen('php://output', 'wb');
-                fputcsv($output, ['ID', 'Actor', 'Role', 'Action', 'Target', 'Outcome', 'IP', 'Created At'], ',', '"', '');
+                CsvWriter::putRow($output, ['ID', 'Actor', 'Role', 'Action', 'Target', 'Outcome', 'IP', 'Created At']);
                 foreach ($query->cursor() as $log) {
-                    fputcsv($output, [$log->id, $log->actor_name, $log->actor_role, $log->action, $log->target_resource, $log->outcome, $log->ip_address, $log->created_at], ',', '"', '');
+                    CsvWriter::putRow($output, [$log->id, $log->actor_name, $log->actor_role, $log->action, $log->target_resource, $log->outcome, $log->ip_address, $log->created_at]);
                 }
                 fclose($output);
             }, 'audit_logs.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
