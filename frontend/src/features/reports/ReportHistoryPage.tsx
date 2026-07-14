@@ -1,25 +1,45 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { fetchUserHistoryReports, OperatorReport, severityLabels, statusLabels } from "./reportData";
 import { Icon } from "../../shared/components/Icon";
 
+function HistoryPhoto({ url, name }: { url?: string; name: string }) {
+  const [broken, setBroken] = useState(false);
+  if (!url || broken) {
+    return <span><Icon name="image_not_supported" /> {name}</span>;
+  }
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer">
+      <img src={url} alt={name} loading="lazy" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
+      <span>{name}</span>
+    </a>
+  );
+}
+
 export function ReportHistoryPage() {
   const [reports, setReports] = useState<OperatorReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ currentPage: 1, lastPage: 1, total: 0, from: 0, to: 0 });
 
-  useEffect(() => {
+  const loadReports = useCallback(() => {
     setIsLoading(true);
+    setError(null);
     fetchUserHistoryReports(page)
       .then((data) => {
         setReports(data.reports);
         setPagination({ currentPage: data.currentPage, lastPage: data.lastPage, total: data.total, from: data.from, to: data.to });
       })
-      .catch(() => setReports([]))
+      .catch((reason: unknown) => {
+        setReports([]);
+        setError(reason instanceof Error ? reason.message : "Riwayat laporan belum bisa dimuat.");
+      })
       .finally(() => setIsLoading(false));
   }, [page]);
+
+  useEffect(() => { loadReports(); }, [loadReports]);
 
   const changePage = (nextPage: number) => {
     if (nextPage < 1 || nextPage > pagination.lastPage || nextPage === page) return;
@@ -48,6 +68,8 @@ export function ReportHistoryPage() {
         .history-page-button:hover:not(:disabled) { background:var(--surface-soft); border-color:#7dd3fc; }
         .history-page-button.active { background:#0284c7; border-color:#0284c7; color:#fff; font-weight:800; }
         .history-page-button:disabled { cursor:not-allowed; opacity:.45; }
+        .history-badge-monitored { background:#ecfdf3; border-color:#bbf7d0; color:#166534; }
+        .history-badge-outside { background:#fffbeb; border-color:#fde68a; color:#92400e; }
         @media(max-width:640px){.history-toolbar,.history-pagination{align-items:stretch;flex-direction:column}.history-page-buttons{justify-content:center}.history-report-card{padding:16px}}
       `}</style>
       <div className="panel history-page" style={{ padding: 24 }}>
@@ -56,6 +78,15 @@ export function ReportHistoryPage() {
           <div className="loading-state" style={{ padding: "40px 0", textAlign: "center", color: "var(--tx3)" }}>
             <Icon name="sync" className="spin" />
             <p style={{ marginTop: 8 }}>Memuat riwayat laporan...</p>
+          </div>
+        ) : error ? (
+          <div className="empty-state" style={{ padding: "40px 0", textAlign: "center", color: "var(--ink-soft)", display: "grid", justifyItems: "center", gap: 4 }}>
+            <Icon name="error" style={{ fontSize: 48, color: "var(--critical)", opacity: 0.85, marginBottom: 8 }} />
+            <strong style={{ color: "var(--ink)" }}>Gagal memuat riwayat</strong>
+            <p style={{ margin: "0 0 12px" }}>{error}</p>
+            <button type="button" className="btn secondary" onClick={loadReports}>
+              <Icon name="refresh" /> Coba lagi
+            </button>
           </div>
         ) : reports.length === 0 ? (
           <div className="empty-state" style={{ padding: "40px 0", textAlign: "center", color: "var(--tx3)" }}>
@@ -69,7 +100,7 @@ export function ReportHistoryPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
                   <div>
                     <h3 style={{ margin: "0 0 4px 0", fontSize: "1.1rem" }}>{report.code} - {report.village}</h3>
-                    <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--tx2)" }}>{report.submittedAt}</p>
+                    <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--tx2)" }}>Dilaporkan {report.submittedAt}</p>
                   </div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <span className={`badge severity-${report.severity}`}>{severityLabels[report.severity]}</span>
@@ -81,12 +112,15 @@ export function ReportHistoryPage() {
                 
                 <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: "0.85rem", color: "var(--tx2)" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <Icon name="schedule" style={{ fontSize: 16 }} /> Kejadian: {report.incidentTime}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <Icon name="water_drop" style={{ fontSize: 16 }} /> {report.waterHeightCm ? `${report.waterHeightCm} cm` : "-"}
                   </span>
                   <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <Icon name="location_on" style={{ fontSize: 16 }} /> {report.coordinates}
                   </span>
-                  <span className={`badge ${report.isWithinMonitoringArea ? "b-done" : "b-pending"}`}>{report.isWithinMonitoringArea ? "Wilayah pantauan rob" : "Di luar cakupan prediksi"}</span>
+                  <span className={`badge ${report.isWithinMonitoringArea ? "history-badge-monitored" : "history-badge-outside"}`}>{report.isWithinMonitoringArea ? "Wilayah pantauan rob" : "Di luar cakupan prediksi"}</span>
                   {report.photos.length > 0 && (
                     <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <Icon name="image" style={{ fontSize: 16 }} /> {report.photos.length} Foto
@@ -104,18 +138,18 @@ export function ReportHistoryPage() {
                       <div><dt>Lokasi</dt><dd>{report.village}, {report.district}, {report.regency}</dd></div>
                       <div><dt>Koordinat</dt><dd>{report.coordinates}</dd></div>
                       <div><dt>Ketinggian air</dt><dd>{report.waterHeightCm !== null ? `${report.waterHeightCm} cm` : "Tidak dicatat"}</dd></div>
-                      <div><dt>Status verifikasi</dt><dd>{statusLabels[report.status]}</dd></div>
+                      <div><dt>Status verifikasi</dt><dd><span className={`badge status-${report.status}`}>{statusLabels[report.status]}</span></dd></div>
                       <div><dt>Pelapor</dt><dd>{report.reporter}</dd></div>
                     </dl>
                     <div className="history-description"><strong>Keterangan kejadian</strong><p>{report.description || "Tidak ada keterangan tambahan."}</p></div>
-                    {report.photos.length > 0 && <div className="history-photos">{report.photos.map((photo, index) => photo.url ? <a key={`${photo.name}-${index}`} href={photo.url} target="_blank" rel="noreferrer"><img src={photo.url} alt={photo.name} /><span>{photo.name}</span></a> : <span key={`${photo.name}-${index}`}><Icon name="image" /> {photo.name}</span>)}</div>}
+                    {report.photos.length > 0 && <div className="history-photos">{report.photos.map((photo, index) => <HistoryPhoto key={`${photo.name}-${index}`} url={photo.url} name={photo.name} />)}</div>}
                   </section>
                 )}
               </div>
             ))}
           </div>
         )}
-        {!isLoading && pagination.lastPage > 1 && <nav className="history-pagination" aria-label="Pagination riwayat laporan"><span style={{ color: "var(--ink-soft)", fontSize: 12 }}>Halaman {pagination.currentPage} dari {pagination.lastPage}</span><div className="history-page-buttons"><button type="button" className="history-page-button" disabled={page === 1} onClick={() => changePage(page - 1)} aria-label="Halaman sebelumnya"><Icon name="chevron_left" /></button>{pageNumbers.map((number, index) => <span key={number} style={{ display: "contents" }}>{index > 0 && number - pageNumbers[index - 1] > 1 && <span style={{ alignSelf: "center", padding: "0 3px" }}>…</span>}<button type="button" className={`history-page-button ${number === pagination.currentPage ? "active" : ""}`} onClick={() => changePage(number)} aria-current={number === pagination.currentPage ? "page" : undefined}>{number}</button></span>)}<button type="button" className="history-page-button" disabled={page === pagination.lastPage} onClick={() => changePage(page + 1)} aria-label="Halaman berikutnya"><Icon name="chevron_right" /></button></div></nav>}
+        {!isLoading && !error && pagination.lastPage > 1 && <nav className="history-pagination" aria-label="Pagination riwayat laporan"><span style={{ color: "var(--ink-soft)", fontSize: 12 }}>Halaman {pagination.currentPage} dari {pagination.lastPage}</span><div className="history-page-buttons"><button type="button" className="history-page-button" disabled={page === 1} onClick={() => changePage(page - 1)} aria-label="Halaman sebelumnya"><Icon name="chevron_left" /></button>{pageNumbers.map((number, index) => <span key={number} style={{ display: "contents" }}>{index > 0 && number - pageNumbers[index - 1] > 1 && <span style={{ alignSelf: "center", padding: "0 3px" }}>…</span>}<button type="button" className={`history-page-button ${number === pagination.currentPage ? "active" : ""}`} onClick={() => changePage(number)} aria-current={number === pagination.currentPage ? "page" : undefined}>{number}</button></span>)}<button type="button" className="history-page-button" disabled={page === pagination.lastPage} onClick={() => changePage(page + 1)} aria-label="Halaman berikutnya"><Icon name="chevron_right" /></button></div></nav>}
       </div>
     </AppShell>
   );
