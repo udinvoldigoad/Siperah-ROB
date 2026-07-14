@@ -10,6 +10,10 @@ type ModeAwamData = {
   risk_probability: number;
   max_tidal_height: number;
   peak_time: string | null;
+  is_monitored?: boolean;
+  monitoring_status?: "inside_monitoring_area" | "outside_monitoring_area";
+  status_label?: string;
+  guidance_message?: string;
   region: { village: string | null; district: string | null; regency: string | null };
   forecast: { data: ForecastItem[] } | ForecastItem[];
   nearby_reports: NearbyReport[];
@@ -173,7 +177,7 @@ export function CitizenModePage() {
               
               <p style={{ fontSize: "1.15rem", lineHeight: 1.6, color: "rgba(255,255,255,0.95)", maxWidth: "600px", margin: "0 0 40px 0" }}>
                 {data
-                  ? `Air laut diprediksi naik di sekitar wilayah Anda. Hindari jalan rendah dekat pesisir dan siapkan barang penting${data.peak_time ? ` sebelum puncak pasang pukul ${data.peak_time} WIB` : ""}.`
+                  ? data.guidance_message ?? `Air laut diprediksi naik di sekitar wilayah Anda. Hindari jalan rendah dekat pesisir dan siapkan barang penting${data.peak_time ? ` sebelum puncak pasang pukul ${data.peak_time} WIB` : ""}.`
                   : "Menganalisis status ancaman rob terbaru di sekitar Anda..."}
               </p>
 

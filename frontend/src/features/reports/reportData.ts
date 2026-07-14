@@ -157,7 +157,7 @@ function mapReport(report: BackendReport): OperatorReport {
 }
 
 export async function fetchOperatorReports() {
-  const response = await api<ReportListResponse>("/reports?status=menunggu,perlu_review");
+  const response = await api<ReportListResponse>("/reports?status=menunggu,perlu_review&per_page=100");
   return response.data.map(mapReport);
 }
 

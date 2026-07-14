@@ -34,10 +34,16 @@ function currentTimeValue() {
   return new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
+function severityFromWaterHeight(heightCm: number): (typeof severityOptions)[number]["key"] {
+  if (heightCm < 10) return "ringan";
+  if (heightCm <= 30) return "sedang";
+  if (heightCm <= 80) return "parah";
+  return "sangat_parah";
+}
+
 export function ReportWizardPage() {
   const toast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedSeverity, setSelectedSeverity] = useState<(typeof severityOptions)[number]["key"]>("parah");
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
   const [isDeclarationAccepted, setDeclarationAccepted] = useState(false);
   
@@ -47,6 +53,7 @@ export function ReportWizardPage() {
   const [incidentTime, setIncidentTime] = useState(currentTimeValue);
   const [resolvedRegion, setResolvedRegion] = useState<ResolvedRegion | null>(null);
   const [isResolvingRegion, setResolvingRegion] = useState(false);
+  const derivedSeverity = severityFromWaterHeight(Number(waterHeight || 0));
   
   // Map logic
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -103,10 +110,10 @@ export function ReportWizardPage() {
     return () => window.clearTimeout(timer);
   }, [coords.lat, coords.lng]);
 
-  // Update marker color when severity changes
+  // Update marker color when water-height-derived severity changes
   useEffect(() => {
     if (!marker.current || !map.current) return;
-    const tone = severityOptions.find(o => o.key === selectedSeverity)?.tone || "#ea580c";
+    const tone = severityOptions.find(o => o.key === derivedSeverity)?.tone || "#ea580c";
     
     // Create new marker to update color
     const lngLat = marker.current.getLngLat();
@@ -119,7 +126,7 @@ export function ReportWizardPage() {
       const pos = marker.current?.getLngLat();
       if (pos) setCoords({ lat: pos.lat, lng: pos.lng });
     });
-  }, [selectedSeverity]);
+  }, [derivedSeverity]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -130,7 +137,7 @@ export function ReportWizardPage() {
 
     payload.set("latitude", String(coords.lat));
     payload.set("longitude", String(coords.lng));
-    payload.set("severity", selectedSeverity);
+    payload.set("severity", derivedSeverity);
     payload.set("water_height_cm", waterHeight);
     payload.set("incident_time", toIncidentDateTime(incidentTime));
     
@@ -145,7 +152,6 @@ export function ReportWizardPage() {
       const response = await api<ReportResponse>("/reports", { method: "POST", body: payload });
       toast.success(`Laporan terkirim. Kode verifikasi: ${response.data.report_code}.`);
       form.reset();
-      setSelectedSeverity("parah");
       setSelectedPhotos([]);
       setWaterHeight("45");
       setIncidentTime(currentTimeValue());
@@ -163,6 +169,10 @@ export function ReportWizardPage() {
       toast.error("Maksimal 5 foto untuk satu laporan.");
       return;
     }
+    if (photos.some((photo) => !["image/jpeg", "image/png"].includes(photo.type))) {
+      toast.error("Foto hanya boleh berformat JPG atau PNG.");
+      return;
+    }
     if (photos.some((photo) => photo.size > 2 * 1024 * 1024)) {
       toast.error("Setiap foto maksimal berukuran 2 MB.");
       return;
@@ -170,7 +180,7 @@ export function ReportWizardPage() {
     setSelectedPhotos(photos);
   }
 
-  const selectedSeverityLabel = severityOptions.find(o => o.key === selectedSeverity)?.label || "Parah";
+  const selectedSeverityLabel = severityOptions.find(o => o.key === derivedSeverity)?.label || "Parah";
   const isMonitoredRegion = resolvedRegion ? (resolvedRegion.is_monitored ?? resolvedRegion.coastal_flag) : false;
 
   return (
@@ -224,22 +234,22 @@ export function ReportWizardPage() {
             </section>
 
             <section style={{ display: "grid", gap: 10 }}>
-              <label style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Tingkat keparahan</label>
+              <label style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Tingkat keparahan otomatis</label>
+              <p className="form-note" style={{ marginTop: 0 }}>Sistem menentukan keparahan dari estimasi tinggi air. Anda cukup isi tinggi genangan, lalu kategori akan berubah otomatis.</p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
                 {severityOptions.map((option) => {
-                  const isSelected = selectedSeverity === option.key;
+                  const isSelected = derivedSeverity === option.key;
                   return (
-                    <button
+                    <div
                       key={option.key}
-                      type="button"
-                      onClick={() => setSelectedSeverity(option.key)}
                       style={{
                         border: `2px solid ${isSelected ? option.tone : "var(--line)"}`,
                         background: isSelected ? `${option.tone}12` : "var(--surface)",
                         borderRadius: 8,
                         padding: 16,
                         textAlign: "center",
-                        cursor: "pointer",
+                        cursor: "default",
+                        opacity: isSelected ? 1 : 0.62,
                         boxShadow: isSelected ? `0 0 0 3px ${option.tone}26` : "none",
                         transition: "all 0.2s"
                       }}
@@ -251,7 +261,7 @@ export function ReportWizardPage() {
                         {option.label}{isSelected ? " ✓" : ""}
                       </div>
                       <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>{option.note}</div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
