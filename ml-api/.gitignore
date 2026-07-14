@@ -1,0 +1,11 @@
+# Environment & cache
+.venv/
+.cache/
+__pycache__/
+*.pyc
+
+# Data mentah/olahan (diunduh ulang via `python main.py --mode fetch`)
+data/
+
+# Artefak model & metrik (dilatih ulang via `python main.py --mode train`)
+models/
