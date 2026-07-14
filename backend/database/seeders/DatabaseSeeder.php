@@ -301,6 +301,16 @@ final class DatabaseSeeder extends Seeder
                 'status' => 'aktif',
                 'institution' => 'Universitas Lampung',
             ],
+            [
+                'id' => '22222222-2222-4222-8222-eeeeeeeeeeee',
+                'name' => 'Demo Super User',
+                'email' => 'demo@siperah.local',
+                'password_hash' => Hash::make('password'),
+                'phone_number' => '085555555555',
+                'role' => 'admin',
+                'region_id' => null,
+                'status' => 'aktif',
+            ],
         ];
 
         foreach ($users as $u) {

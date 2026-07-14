@@ -134,7 +134,8 @@ export function PortalPage() {
           width: 100%;
           position: relative;
           overflow-x: hidden;
-          padding-bottom: 80px;
+          display: flex;
+          flex-direction: column;
         }
 
         /* Full-Width Editorial Header */
@@ -748,7 +749,7 @@ export function PortalPage() {
           .marquee-container { height: 160px; }
           .bento-card-el { padding: 24px; }
           .landing-header-full { padding: 0 20px; background: rgba(255, 255, 255, 0.7) !important; backdrop-filter: blur(12px); }
-          .bento-header-wrap { flex-direction: column; align-items: flex-start !important; gap: 16px; margin-bottom: 32px !important; }
+          .bento-header-wrap { flex-direction: column; align-items: center !important; text-align: center; gap: 16px; margin-bottom: 32px !important; }
           .bento-header-wrap h2 { font-size: 1.8rem !important; }
           .guide-section { margin: 72px auto !important; padding: 0 16px !important; }
           .guide-definition-grid, .guide-map-grid { margin-bottom: 72px !important; }
@@ -791,7 +792,7 @@ export function PortalPage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="hero-kicker"
-          style={{ display: "inline-block", padding: "6px 16px", background: "rgba(37, 99, 235, 0.1)", color: "var(--accent-blue)", borderRadius: "100px", fontSize: "0.85rem", fontWeight: 700, marginBottom: "24px" }}
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "6px 16px", background: "rgba(37, 99, 235, 0.1)", color: "var(--accent-blue)", borderRadius: "100px", fontSize: "0.85rem", fontWeight: 700, marginBottom: "24px" }}
         >
           <span className="live-kicker-dot" aria-hidden="true" /> WebGIS Kebencanaan Provinsi Lampung
         </motion.span>
@@ -800,8 +801,7 @@ export function PortalPage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
         >
-          Sistem Informasi Prediksi Risiko<br />
-          Banjir Rob Terpadu Provinsi Lampung.
+          Sistem Informasi Prediksi Risiko Banjir Rob Terpadu Provinsi Lampung.
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -865,9 +865,9 @@ export function PortalPage() {
           >
             <div>
               <span className="card-meta-title">Public Access</span>
-              <h3>Portal Publik</h3>
+              <h3>Peta & Laporan Warga</h3>
               <p>
-                Akses peta interaktif peringatan dini bahaya rob, panduan mitigasi, dan laporan ground truth untuk masyarakat umum.
+                Pantau wilayah mana saja yang diprediksi terkena rob besok, baca panduan keselamatan, dan laporkan langsung jika air mulai naik di lingkungan Anda.
               </p>
 
               <div className="card-preview-container">
@@ -1079,17 +1079,21 @@ export function PortalPage() {
       </section>
 
       {/* Minimal Landing Footer */}
-      <footer className="landing-footer">
-        <div className="footer-brand" style={{ lineHeight: '1.6' }}>
-          <strong style={{ fontSize: '1.1rem', color: 'var(--ink-primary)' }}>SIPERAH-RoB</strong><br />
-          Sistem Informasi Prediksi Risiko Banjir Rob Terpadu<br />
-          SIPERAH-RoB &copy; 2026. Institut Teknologi Sumatera
+      <footer style={{ background: "#0f172a", color: "#cbd5e1", padding: "60px 40px 40px", marginTop: "auto" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", flexWrap: "wrap", gap: "40px", justifyContent: "space-between" }}>
+          <div style={{ lineHeight: '1.6', maxWidth: "400px" }}>
+            <strong style={{ fontSize: '1.1rem', color: '#fff' }}>SIPERAH-RoB</strong><br />
+            Sistem Informasi Prediksi Risiko Banjir Rob Terpadu Provinsi Lampung.
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'right', minWidth: "300px" }}>
+            <span style={{ color: "#fff" }}><strong>Pusdalops BPBD Provinsi Lampung</strong></span>
+            <span>Jl. Beringin Raya No. 1, Teluk Betung, Bandar Lampung</span>
+            <span>Email: tanggap@bpbd.lampungprov.go.id</span>
+            <span>Hotline: (0721) 123456</span>
+          </div>
         </div>
-        <div className="footer-links" style={{ flexDirection: 'column', gap: '8px', textAlign: 'right' }}>
-          <span><strong>Pusdalops BPBD Provinsi Lampung</strong></span>
-          <span>Jl. Beringin Raya No. 1, Teluk Betung, Bandar Lampung</span>
-          <span>Email: tanggap@bpbd.lampungprov.go.id</span>
-          <span>Hotline: (0721) 123456</span>
+        <div style={{ maxWidth: "1200px", margin: "40px auto 0", paddingTop: "24px", borderTop: "1px solid #1e293b", textAlign: "center", fontSize: "0.9rem", color: "#64748b" }}>
+          SIPERAH-RoB &copy; 2026. Institut Teknologi Sumatera
         </div>
       </footer>
     </div>

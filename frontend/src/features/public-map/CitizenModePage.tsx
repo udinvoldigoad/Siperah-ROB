@@ -669,7 +669,7 @@ export function CitizenModePage() {
     const rawDate = item.prediction_date.split("T")[0].split(" ")[0]; // Get only YYYY-MM-DD
     return {
       day: new Date(`${rawDate}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
-      label: riskLabels[item.risk_class], 
+      label: riskLabels[item.risk_class as RiskClass], 
       percent: item.risk_probability, 
       color: item.risk_class === "sangat_tinggi" ? "var(--critical)" : item.risk_class === "tinggi" ? "var(--high)" : item.risk_class === "sedang" ? "var(--medium)" : "var(--low)",
     };
