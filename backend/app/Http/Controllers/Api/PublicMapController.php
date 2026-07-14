@@ -219,7 +219,8 @@ final class PublicMapController
         if ($this->usesPostgisGeometry('regions', 'geometry')) {
             return DB::table('regions')
                 ->whereIn('id', $regionIds)
-                ->pluck(DB::raw('ST_AsGeoJSON(geometry)'), 'id')
+                ->select('id', DB::raw('ST_AsGeoJSON(geometry) as geojson'))
+                ->pluck('geojson', 'id')
                 ->map(fn (string $geometry) => json_decode($geometry, true))
                 ->filter()
                 ->all();
@@ -384,22 +385,26 @@ final class PublicMapController
             ? $this->regionLocator->locateAdministrative($latitude, $longitude)
             : $this->regionLocator->locate(null, null);
 
+        $isDummy = false;
         if (!$region) {
-            return response()->json([
-                'data' => null,
-                'message' => $hasCoordinates
-                    ? 'Lokasi yang dipilih belum ada di data administrasi Lampung. Coba geser pin ke daratan Lampung terdekat.'
-                    : 'Data wilayah pantauan belum tersedia.',
-            ]);
+            // Fallback ke data dummy agar fitur tetap bisa dites meski di luar Lampung
+            $region = \App\Models\Region::first();
+            $isDummy = true;
+            if (!$region) {
+                return response()->json([
+                    'data' => null,
+                    'message' => 'Data wilayah pantauan belum tersedia.',
+                ]);
+            }
         }
 
-        $isMonitored = $hasCoordinates
+        $isMonitored = ($hasCoordinates && !$isDummy)
             ? $this->monitoring->isPointMonitored($region, $latitude, $longitude)
             : $this->monitoring->isMonitored($region);
         $predictionData = $this->predictionService->sevenDayForecast($region->id);
         $prediction = $predictionData['current'];
         $forecast = $predictionData['forecast'];
-        $nearby = $hasCoordinates
+        $nearby = ($hasCoordinates && !$isDummy)
             ? $this->nearbyValidatedReports($latitude, $longitude)
             : GroundTruthReport::with(['region', 'photos'])
                 ->where('status', 'divalidasi')
@@ -420,16 +425,16 @@ final class PublicMapController
                 ],
                 'is_monitored' => $isMonitored,
                 'monitoring_status' => $isMonitored ? 'inside_monitoring_area' : 'outside_monitoring_area',
-                'status_label' => $isMonitored ? 'Masuk wilayah pantauan rob' : 'Di luar wilayah pantauan prediksi rob',
-                'guidance_message' => $this->modeAwamGuidanceMessage($isMonitored, $prediction?->risk_class),
-                'risk_class' => $prediction->risk_class ?? 'rendah',
-                'risk_probability' => $prediction->risk_probability ?? 0,
-                'max_tidal_height' => $prediction->max_tidal_height ?? 0,
-                'peak_time' => $prediction?->peak_time ? substr($prediction->peak_time, 0, 5) : null,
-                'model_version' => $prediction->model_version ?? 'RF-v1.2.0',
-                'confidence_score' => $prediction->confidence_score ?? 85.0,
-                'data_source' => $prediction->data_source ?? 'RandomForestModel',
-                'generated_at' => $prediction->generated_at ? (is_string($prediction->generated_at) ? $prediction->generated_at : $prediction->generated_at->toIso8601String()) : null,
+                'status_label' => $isDummy ? 'Menampilkan data dummy (Lokasi Anda di luar Lampung)' : ($isMonitored ? 'Masuk wilayah pantauan rob' : 'Di luar wilayah pantauan prediksi rob'),
+                'guidance_message' => $isDummy ? 'Lokasi Anda saat ini berada di luar wilayah administrasi Lampung. Menampilkan data dummy untuk keperluan pratinjau antarmuka.' : $this->modeAwamGuidanceMessage($isMonitored, $prediction?->risk_class),
+                'risk_class' => $prediction?->risk_class ?? 'rendah',
+                'risk_probability' => $prediction?->risk_probability ?? 0,
+                'max_tidal_height' => $prediction?->max_tidal_height ?? 0,
+                'peak_time' => $prediction?->peak_time ? CarbonImmutable::parse($prediction->peak_time)->format('H:i') : null,
+                'model_version' => $prediction?->model_version,
+                'confidence_score' => $prediction?->confidence_score,
+                'data_source' => $prediction?->data_source,
+                'generated_at' => $prediction?->created_at?->toIso8601String(),
                 'forecast' => PredictionResource::collection($forecast),
                 'nearby_reports' => ReportResource::collection($nearby),
             ],

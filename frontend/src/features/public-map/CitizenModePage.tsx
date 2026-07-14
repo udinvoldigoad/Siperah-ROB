@@ -14,10 +14,6 @@ type ModeAwamData = {
   confidence_score: number | null;
   data_source: string | null;
   generated_at: string | null;
-  is_monitored?: boolean;
-  monitoring_status?: "inside_monitoring_area" | "outside_monitoring_area";
-  status_label?: string;
-  guidance_message?: string;
   region: { village: string | null; district: string | null; regency: string | null };
   forecast: { data: ForecastItem[] } | ForecastItem[];
   nearby_reports: NearbyReport[];
@@ -92,7 +88,7 @@ function useIsMobile() {
 // DESKTOP VIEW
 // ==========================================
 function CitizenModeDesktop({
-  data, error, locationNote, coordinates, setCoordinates, setLocationNote,
+  data, error, dataLoaded, locationNote, coordinates, setCoordinates, setLocationNote,
   requestGpsLocation, locationOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
 }: any) {
   return (
@@ -158,15 +154,15 @@ function CitizenModeDesktop({
 
               <p style={{ fontSize: "1.15rem", lineHeight: 1.6, color: "rgba(255,255,255,0.95)", maxWidth: "600px", margin: "0 0 40px 0" }}>
                 {data
-                  ? data.guidance_message ?? `Air laut diprediksi naik di sekitar wilayah Anda. Hindari jalan rendah dekat pesisir dan siapkan barang penting${data.peak_time ? ` sebelum puncak pasang pukul ${data.peak_time} WIB` : ""}.`
-                  : "Menganalisis status ancaman rob terbaru di sekitar Anda..."}
+                  ? `Air laut diprediksi naik di sekitar wilayah Anda. Hindari jalan rendah dekat pesisir dan siapkan barang penting${data.peak_time ? ` sebelum puncak pasang pukul ${data.peak_time} WIB` : ""}.`
+                  : (dataLoaded ? "Lokasi Anda berada di luar wilayah pantauan Lampung. Pilih lokasi lain dari daftar di atas untuk melihat status bahaya rob." : "Menganalisis status ancaman rob terbaru di sekitar Anda...")}
               </p>
 
               <div className="citizen-status-metrics">
                 {[
-                  ["Kemungkinan Rob", data ? `${data.risk_probability}%` : "-", risk],
-                  ["Puncak Pasang", data ? `${meters.format(data.max_tidal_height)} meter` : "-", data ? `Pukul ${data.peak_time} WIB` : "Menunggu Data"],
-                  ["Laporan Sekitar", data ? `${data.nearby_reports.length} laporan` : "-", "Dari pantauan warga"],
+                  ["Kemungkinan Rob", data ? `${data.risk_probability}%` : "-", data ? risk : (dataLoaded ? "Tidak tersedia" : "Memuat...")],
+                  ["Puncak Pasang", data ? `${meters.format(data.max_tidal_height)} meter` : "-", data ? `Pukul ${data.peak_time} WIB` : (dataLoaded ? "Tidak tersedia" : "Menunggu Data")],
+                  ["Laporan Sekitar", data ? `${data.nearby_reports.length} laporan` : "-", data ? "Dari pantauan warga" : (dataLoaded ? "Tidak tersedia" : "Dari pantauan warga")],
                 ].map(([label, value, note], i) => (
                   <motion.div
                     key={label}
@@ -341,7 +337,7 @@ function CitizenModeDesktop({
 // MOBILE NATIVE VIEW
 // ==========================================
 function CitizenModeMobile({
-  data, error, locationNote, coordinates, setCoordinates, setLocationNote,
+  data, error, dataLoaded, locationNote, coordinates, setCoordinates, setLocationNote,
   requestGpsLocation, locationOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
 }: any) {
   
@@ -492,7 +488,7 @@ function CitizenModeMobile({
           <p style={{ fontSize: "1rem", lineHeight: 1.5, color: "rgba(255,255,255,0.9)", margin: "0 0 24px 0" }}>
             {data
               ? `Air laut diprediksi naik. Siapkan barang penting${data.peak_time ? ` sebelum pasang pukul ${data.peak_time}` : ""}.`
-              : "Menganalisis status rob..."}
+              : (dataLoaded ? "Lokasi di luar wilayah pantauan Lampung. Pilih lokasi dari daftar." : "Menganalisis status rob...")}
           </p>
 
           <div style={{ display: "flex", gap: 12 }}>
@@ -616,6 +612,7 @@ function CitizenModeMobile({
 export function CitizenModePage() {
   const [data, setData] = useState<ModeAwamData>();
   const [error, setError] = useState("");
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [locationNote, setLocationNote] = useState("Menggunakan wilayah pesisir terdekat");
   const [coordinates, setCoordinates] = useState<{ lat: number; lon: number } | null>(null);
   
@@ -635,9 +632,27 @@ export function CitizenModePage() {
     }
     setLocationNote("Mencari lokasi perangkat…");
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCoordinates({ lat: position.coords.latitude, lon: position.coords.longitude });
-        setLocationNote("Lokasi perangkat");
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        setCoordinates({ lat, lon });
+        
+        try {
+          // Reverse geocode to get actual user location name, enforce Indonesian language
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=id`);
+          const geo = await res.json();
+          if (geo && geo.address) {
+            const locName = [
+              geo.address.residential || geo.address.neighbourhood || geo.address.road || geo.address.village || geo.address.suburb, 
+              geo.address.city || geo.address.town || geo.address.county || geo.address.state
+            ].filter(Boolean).join(", ");
+            setLocationNote(locName || "Lokasi Anda");
+          } else {
+            setLocationNote("Lokasi perangkat");
+          }
+        } catch {
+          setLocationNote("Lokasi perangkat");
+        }
       },
       () => {
         setError("Izin lokasi tidak tersedia. Menampilkan wilayah pesisir terdekat; Anda tetap bisa memilih wilayah manual.");
@@ -649,47 +664,62 @@ export function CitizenModePage() {
 
   useEffect(() => {
     let alive = true;
+    setDataLoaded(false);
 
     const params = coordinates ? `?lat=${coordinates.lat}&lon=${coordinates.lon}` : "";
-    api<ModeAwamResponse>(`/public/mode-awam${params}`)
+    api<any>(`/public/mode-awam${params}`)
       .then((response) => {
-        if (alive) setData(response.data);
+        if (alive) {
+          setData(response.data ?? undefined);
+          setDataLoaded(true);
+          if (!response.data && response.message) {
+            setError(response.message);
+          } else {
+            setError("");
+          }
+        }
       })
       .catch(() => {
-        if (alive) setError("Data status bahaya belum bisa dimuat. Coba lagi sebentar.");
+        if (alive) {
+          setDataLoaded(true);
+          setError("Data status bahaya belum bisa dimuat. Coba lagi sebentar.");
+        }
       });
 
     return () => {
       alive = false;
     };
   }, [coordinates]);
-
   useEffect(() => { requestGpsLocation(); }, []);
 
-  const risk = data ? riskLabels[data.risk_class] : "Memuat...";
+  const risk = data ? riskLabels[data.risk_class] : (dataLoaded ? "Tidak Tersedia" : "Memuat...");
   const cardStyle = getCardStyle(data?.risk_class);
+  // If we are showing dummy data, or if data is not available, we should prioritize the actual locationNote (which now holds the real geocoded name)
+  // rather than the dummy region's name.
+  const isDummyData = (data?.region as any)?.provenance_status === "demo" || risk === "Tidak Tersedia";
+  const currentLocation = (data?.region && !isDummyData) 
+    ? [data.region.village, data.region.district, data.region.regency].filter(Boolean).join(", ") 
+    : locationNote;
 
   const forecastDays = data ? (Array.isArray(data.forecast) ? data.forecast : data.forecast.data).map((item: any) => {
     const rawDate = item.prediction_date.split("T")[0].split(" ")[0]; // Get only YYYY-MM-DD
     return {
       day: new Date(`${rawDate}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
-      label: riskLabels[item.risk_class as RiskClass], 
+      label: riskLabels[item.risk_class as RiskClass],
       percent: item.risk_probability, 
       color: item.risk_class === "sangat_tinggi" ? "var(--critical)" : item.risk_class === "tinggi" ? "var(--high)" : item.risk_class === "sedang" ? "var(--medium)" : "var(--low)",
     };
   }) : [];
 
-  const currentLocation = data?.region ? [data.region.village, data.region.district, data.region.regency].filter(Boolean).join(", ") : locationNote;
-
   const actionCards = [
-    ["Jauhi area rendah", "Hindari jalan pesisir dan area yang mudah tergenang.", "priority_high"],
+    ["Jauhi area rendah", "Hindari jalan pesisir and area yang mudah tergenang.", "priority_high"],
     ["Siapkan barang penting", "Amankan dokumen dan barang elektronik sebelum puncak pasang.", "inventory_2"],
     ["Ikuti arahan BPBD", "Jika kondisi memburuk, ikuti informasi resmi dari petugas.", "campaign"],
     ["Laporkan kejadian", "Tambahkan foto dan lokasi bila melihat genangan di sekitar Anda.", "add_location_alt"],
   ];
 
   const commonProps = {
-    data, error, locationNote, coordinates, setCoordinates, setLocationNote,
+    data, error, dataLoaded, locationNote, coordinates, setCoordinates, setLocationNote,
     requestGpsLocation, locationOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
   };
 

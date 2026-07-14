@@ -233,7 +233,8 @@ export function ProvinceDashboardPage() {
   const trendData = useMemo(() => {
     const counts = predictions.reduce<Record<string, number>>((acc, prediction) => {
       if (prediction.risk_class === "tinggi" || prediction.risk_class === "sangat_tinggi") {
-        acc[prediction.prediction_date] = (acc[prediction.prediction_date] ?? 0) + 1;
+        const dateKey = prediction.prediction_date.substring(0, 10);
+        acc[dateKey] = (acc[dateKey] ?? 0) + 1;
       }
       return acc;
     }, {});
@@ -249,12 +250,15 @@ export function ProvinceDashboardPage() {
     const startDate = new Date(endDate);
     startDate.setDate(endDate.getDate() - 29);
 
+    const actualToday = toDateKey(new Date());
+
     if (Number.isNaN(endDate.getTime())) {
       const today = new Date();
       return Array.from({ length: 30 }, (_, index) => {
         const date = new Date(today);
         date.setDate(today.getDate() - 29 + index);
-        return { count: 0, date, isToday: index === 29 };
+        const key = toDateKey(date);
+        return { count: 0, date, isToday: key === actualToday };
       });
     }
 
@@ -262,7 +266,7 @@ export function ProvinceDashboardPage() {
       const d = new Date(startDate);
       d.setDate(startDate.getDate() + index);
       const key = toDateKey(d);
-      return { count: toNumber(counts[key]), date: d, isToday: key === endDateKey };
+      return { count: toNumber(counts[key]), date: d, isToday: key === actualToday };
     });
   }, [predictions, summary.latest_prediction_date, summary.trend_30_days]);
 

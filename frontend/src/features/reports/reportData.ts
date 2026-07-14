@@ -1,4 +1,4 @@
-import { api } from "../../shared/api/client";
+import { api, apiUrl } from "../../shared/api/client";
 
 export type ReportSeverity = "ringan" | "sedang" | "parah" | "sangat_parah";
 export type ReportStatus = "menunggu" | "perlu_review" | "divalidasi" | "ditolak" | "duplikat";
@@ -150,7 +150,7 @@ function mapReport(report: BackendReport): OperatorReport {
     description: report.description,
     photos: (report.photos ?? []).map((photo) => ({
       name: photo.name ?? "Foto laporan",
-      url: photo.url,
+      url: photo.url ? apiUrl(photo.url) : undefined,
     })),
     isWithinMonitoringArea: Boolean(report.is_within_monitoring_area ?? report.region?.is_monitored ?? report.region?.coastal_flag),
   };

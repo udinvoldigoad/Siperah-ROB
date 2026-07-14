@@ -46,7 +46,7 @@ class ReportResource extends JsonResource
             'photos' => $this->whenLoaded('photos', function() {
                 return $this->photos->map(fn($photo) => [
                     'id' => $photo->id,
-                    'url' => asset('storage/' . $photo->file_url),
+                    'url' => '/storage/' . $photo->file_url,
                     'name' => $photo->file_name
                 ]);
             }),
