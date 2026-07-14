@@ -38,26 +38,26 @@ const getCardStyle = (riskClass?: RiskClass) => {
   switch (riskClass) {
     case "sangat_tinggi":
       return {
-        background: "linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)", // Beautiful modern crimson red
+        background: "linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)",
         boxShadow: "0 24px 48px rgba(220, 38, 38, 0.3)",
         icon: "warning"
       };
     case "tinggi":
       return {
-        background: "linear-gradient(135deg, #f97316 0%, #c2410c 100%)", // Beautiful modern orange
+        background: "linear-gradient(135deg, #f97316 0%, #c2410c 100%)",
         boxShadow: "0 24px 48px rgba(249, 115, 22, 0.3)",
         icon: "warning"
       };
     case "sedang":
       return {
-        background: "linear-gradient(135deg, #eab308 0%, #a16207 100%)", // Premium golden yellow
+        background: "linear-gradient(135deg, #eab308 0%, #a16207 100%)",
         boxShadow: "0 24px 48px rgba(234, 179, 8, 0.3)",
         icon: "warning"
       };
     case "rendah":
     default:
       return {
-        background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)", // Classic deep royal blue (Aman)
+        background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
         boxShadow: "0 24px 48px rgba(37, 99, 235, 0.25)",
         icon: "info"
       };
@@ -74,11 +74,548 @@ const itemVariants: Variants = {
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+  return isMobile;
+}
+
+// ==========================================
+// DESKTOP VIEW
+// ==========================================
+function CitizenModeDesktop({
+  data, error, locationNote, coordinates, setCoordinates, setLocationNote,
+  requestGpsLocation, locationOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
+}: any) {
+  return (
+    <AppShell active="awam" title="Status Bahaya Saya" subtitle="Panduan mitigasi dan peringatan dini disajikan dalam bahasa yang mudah dipahami.">
+      <style>{`
+        .citizen-mode-layout { grid-template-columns: minmax(0, 1fr) 340px; max-width: 1280px; padding-top: 24px; }
+        .citizen-status-card { border-radius: 16px !important; padding: 34px !important; }
+        .citizen-location-controls { align-items: center; display: flex; gap: 16px; justify-content: space-between; margin-bottom: 28px; }
+        .citizen-location-name { align-items: center; display: flex; font-size: .9rem; font-weight: 650; gap: 8px; min-width: 0; }
+        .citizen-location-name span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .citizen-location-controls select { background: rgba(255,255,255,.96); flex: 0 0 auto; max-width: 300px; }
+        .citizen-status-title { font-size: clamp(2.4rem, 5vw, 3.5rem) !important; }
+        .citizen-status-metrics { border-top: 1px solid rgba(255,255,255,.22); display: grid; gap: 12px; grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 30px; padding-top: 22px; }
+        .citizen-status-metric { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.16); border-radius: 12px; min-width: 0; padding: 16px; }
+        .citizen-forecast-grid { display: grid; gap: 10px; grid-template-columns: repeat(7,minmax(84px,1fr)); overflow-x: auto; padding: 24px; }
+        .citizen-forecast-day { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 14px 8px; }
+        .citizen-recommendations { display: grid; gap: 10px !important; }
+        .citizen-action-card { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px !important; padding: 14px; }
+        .citizen-action-card:hover { border-color: rgba(99,102,241,.35); background: var(--surface); }
+        .citizen-share-actions { display: grid; gap: 10px; }
+        .citizen-model-row { align-items: flex-start; border-bottom: 1px solid var(--line); display: grid !important; gap: 10px; grid-template-columns: 105px 1fr; padding: 9px 0; }
+        .citizen-model-row:last-child { border-bottom: 0; }
+        .citizen-model-row strong { text-align: right; }
+      `}</style>
+      {error && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="alert" style={{ marginBottom: 24, borderLeftColor: "var(--critical)" }}>
+          <Icon name="error" style={{ color: "var(--critical)" }} /> {error}
+        </motion.div>
+      )}
+
+      <motion.div className="detail-layout citizen-mode-layout" variants={containerVariants} initial="hidden" animate="show">
+        <div className="stack">
+          {/* Main Status Hero Card */}
+          <motion.section
+            variants={itemVariants}
+            className="citizen-status-card"
+            style={{
+              background: cardStyle.background,
+              color: "#fff",
+              borderRadius: 8,
+              padding: "40px",
+              boxShadow: cardStyle.boxShadow,
+              position: "relative",
+              overflow: "hidden"
+            }}
+          >
+            <Icon
+              name={cardStyle.icon}
+              style={{ position: "absolute", right: "-20px", top: "-20px", fontSize: "280px", opacity: 0.1, transform: "rotate(-15deg)" }}
+            />
+
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div className="citizen-location-controls">
+                <div className="citizen-location-name">
+                  <Icon name="location_on" style={{ fontSize: 20 }} /><span>{currentLocation}</span>
+                </div>
+                <select aria-label="Pilih lokasi" onChange={(event) => { const value = event.target.value; if (value === "gps") { requestGpsLocation(); return; } const [lat, lon] = value.split(",").map(Number); setCoordinates({ lat, lon }); setLocationNote(event.target.options[event.target.selectedIndex].text); }}>{locationOptions.map((option: any) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+              </div>
+
+              <h1 className="citizen-status-title" style={{ fontWeight: 900, lineHeight: 1.1, margin: "0 0 16px 0", letterSpacing: "-0.03em" }}>
+                Status <span style={{ color: "#fff" }}>{risk}</span>
+              </h1>
+
+              <p style={{ fontSize: "1.15rem", lineHeight: 1.6, color: "rgba(255,255,255,0.95)", maxWidth: "600px", margin: "0 0 40px 0" }}>
+                {data
+                  ? `Air laut diprediksi naik di sekitar wilayah Anda. Hindari jalan rendah dekat pesisir dan siapkan barang penting${data.peak_time ? ` sebelum puncak pasang pukul ${data.peak_time} WIB` : ""}.`
+                  : "Menganalisis status ancaman rob terbaru di sekitar Anda..."}
+              </p>
+
+              <div className="citizen-status-metrics">
+                {[
+                  ["Kemungkinan Rob", data ? `${data.risk_probability}%` : "-", risk],
+                  ["Puncak Pasang", data ? `${meters.format(data.max_tidal_height)} meter` : "-", data ? `Pukul ${data.peak_time} WIB` : "Menunggu Data"],
+                  ["Laporan Sekitar", data ? `${data.nearby_reports.length} laporan` : "-", "Dari pantauan warga"],
+                ].map(([label, value, note], i) => (
+                  <motion.div
+                    key={label}
+                    className="citizen-status-metric"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 + (i * 0.1) }}
+                  >
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</div>
+                    <div style={{ fontSize: 32, fontWeight: 800, lineHeight: 1, marginBottom: 8 }}>{value}</div>
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)" }}>{note}</div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.section>
+
+          {/* Forecast 7 Days */}
+          <motion.section variants={itemVariants} className="panel flush">
+            <div style={{ padding: "24px", borderBottom: "1px solid var(--line)" }}>
+              <h2 style={{ fontSize: "1.25rem", margin: 0, marginBottom: 4 }}>Prakiraan 7 Hari ke Depan</h2>
+              <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Sumber: BMKG & Prediksi AI. Waspada saat indikator merah mendominasi.</p>
+            </div>
+
+            <div className="citizen-forecast-grid">
+              {forecastDays.map(({ day, label, percent, color }: any, i: number) => (
+                <motion.div
+                  key={day}
+                  className="citizen-forecast-day"
+                  whileHover={{ y: -5 }}
+                  style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}
+                >
+                  <div style={{ fontSize: 13, color: "var(--ink-soft)", fontWeight: 600, marginBottom: 12 }}>{day}</div>
+                  <div style={{ height: 120, width: 12, borderRadius: 999, background: "var(--line)", position: "relative", margin: "8px 0" }}>
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: `${Math.min(percent, 100)}%` }}
+                      transition={{ delay: 0.5 + (i * 0.05), duration: 0.8, type: "spring" }}
+                      style={{ position: "absolute", bottom: 0, left: 0, width: "100%", background: color, borderRadius: 999 }}
+                    />
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: color as string, marginTop: 12 }}>{label}</div>
+                  <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>{percent}%</div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.section>
+
+          {/* Laporan Warga Sekitar */}
+          <motion.section variants={itemVariants} className="panel flush">
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "flex-start", justifyContent: "space-between" }}>
+              <div style={{ flex: "1 1 300px" }}>
+                <h2 style={{ fontSize: "1.25rem", margin: 0, marginBottom: 4 }}>Laporan Warga di Sekitar Anda</h2>
+                <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Informasi lapangan dari masyarakat untuk meningkatkan kewaspadaan.</p>
+              </div>
+              <a className="btn secondary" href="#/reports" style={{ whiteSpace: "nowrap" }}>Laporkan Genangan</a>
+            </div>
+            <div className="table-responsive"><table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--line)" }}>
+                  <th style={{ padding: "14px 24px", color: "var(--ink-soft)", fontSize: "13px", fontWeight: 600 }}>Kelurahan</th>
+                  <th style={{ padding: "14px 24px", color: "var(--ink-soft)", fontSize: "13px", fontWeight: 600 }}>Tingkat Air</th>
+                  <th style={{ padding: "14px 24px", color: "var(--ink-soft)", fontSize: "13px", fontWeight: 600 }}>Waktu</th>
+                  <th style={{ padding: "14px 24px", color: "var(--ink-soft)", fontSize: "13px", fontWeight: 600 }}>Status Validasi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data?.nearby_reports.length === 0 && <tr><td colSpan={4} style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>Belum ada laporan tervalidasi di sekitar lokasi ini.</td></tr>}
+                {data?.nearby_reports.map((report: any) => {
+                  const region = [report.region?.village, report.region?.district, report.region?.regency].filter(Boolean).join(", ") || "Wilayah pesisir";
+                  const time = new Date(report.incident_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+                  return <tr key={report.id} style={{ borderBottom: "1px solid var(--line)" }}>
+                    <td style={{ padding: "16px 24px", fontWeight: 600, color: "var(--ink)" }}>{region}</td>
+                    <td style={{ padding: "16px 24px" }}>
+                      <span className={`badge severity-${report.severity}`}>
+                        {report.water_height_cm ? `${report.water_height_cm} cm` : report.severity.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: "14px" }}>{time} WIB</td>
+                    <td style={{ padding: "16px 24px" }}>
+                      <span className="badge status-divalidasi">
+                        <Icon name="verified" style={{ fontSize: 14 }} /> Divalidasi BPBD
+                      </span>
+                    </td>
+                  </tr>;
+                })}
+              </tbody>
+            </table></div>
+          </motion.section>
+        </div>
+
+        {/* Sidebar */}
+        <aside className="stack citizen-sidebar">
+          {/* Tindakan Card */}
+          <motion.section variants={itemVariants} className="panel flush" style={{ border: "none", boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}>
+            <div style={{ padding: "32px 24px" }}>
+              <div style={{ fontWeight: 800, fontSize: 18, color: "var(--ink-primary)", display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+                <Icon name="verified_user" style={{ fontSize: 24, color: "var(--accent-blue)" }} />
+                Rekomendasi Tindakan
+              </div>
+              <div className="citizen-recommendations">
+                {actionCards.map(([title, copy, icon]: any) => {
+                  const isReportBtn = title === "Laporkan kejadian";
+                  return (
+                    <motion.div
+                      key={title}
+                      className="citizen-action-card"
+                      whileHover={{ x: 4 }}
+                      style={{
+                        borderRadius: 8,
+                        display: "flex",
+                        gap: 16,
+                        alignItems: "flex-start",
+                        cursor: isReportBtn ? "pointer" : "default"
+                      }}
+                      onClick={() => isReportBtn && (window.location.hash = "#/reports")}
+                    >
+                      <div style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 14,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "var(--surface-soft)",
+                        color: isReportBtn ? "var(--accent-blue)" : "var(--ink-soft)",
+                        flexShrink: 0
+                      }}>
+                        <Icon name={icon} style={{ fontSize: 24 }} />
+                      </div>
+                      <div style={{ paddingTop: 2 }}>
+                        <strong style={{ display: "block", marginBottom: 6, fontSize: "15px", color: isReportBtn ? "var(--accent-blue)" : "var(--ink-primary)" }}>{title}</strong>
+                        <p style={{ margin: 0, fontSize: "14px", color: "var(--ink-soft)", lineHeight: 1.6 }}>{copy}</p>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.section>
+
+          {/* Bagikan Panel */}
+          <motion.section variants={itemVariants} className="panel">
+            <h2 style={{ fontSize: "1.15rem", margin: "0 0 16px 0" }}>Sebarkan Peringatan</h2>
+            <div className="citizen-share-actions">
+              <button className="btn primary" type="button" style={{ width: "100%", justifyContent: "center", background: "#16a34a", borderColor: "#16a34a", fontSize: "14px" }}>
+                <Icon name="share" /> Bagikan via WhatsApp
+              </button>
+              <button className="btn secondary" type="button" style={{ width: "100%", justifyContent: "center", fontSize: "14px" }}>
+                <Icon name="content_copy" /> Salin Teks Peringatan
+              </button>
+            </div>
+          </motion.section>
+
+          {/* Model Info Panel */}
+          <motion.section variants={itemVariants} className="panel" style={{ background: "var(--surface-soft)", border: "none" }}>
+            <h2 style={{ fontSize: "1.05rem", margin: "0 0 16px 0" }}>Informasi Teknis Model</h2>
+            <div style={{ display: "grid", gap: 10, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Model AI</span> <strong>Random Forest v2.0</strong></div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Kepercayaan</span> <strong style={{ color: "var(--low)" }}>Tinggi (0.89)</strong></div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Sumber Data</span> <strong>BMKG + BIG + Warga</strong></div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Pembaruan</span> <strong>Real-time</strong></div>
+            </div>
+          </motion.section>
+        </aside>
+      </motion.div>
+    </AppShell>
+  );
+}
+
+// ==========================================
+// MOBILE NATIVE VIEW
+// ==========================================
+function CitizenModeMobile({
+  data, error, locationNote, coordinates, setCoordinates, setLocationNote,
+  requestGpsLocation, locationOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
+}: any) {
+  
+  return (
+    <AppShell active="awam" title="Status Bahaya Saya">
+      <style>{`
+        /* MOBILE NATIVE STYLES */
+        .mobile-native-hero {
+          background: ${cardStyle.background};
+          color: white;
+          padding: 32px 20px 40px 20px;
+          margin: -24px -24px 24px -24px; /* Assume app-content has 24px padding */
+          position: relative;
+          overflow: hidden;
+          box-shadow: ${cardStyle.boxShadow};
+          border-radius: 0 0 32px 32px;
+        }
+        
+        .mobile-location-pill {
+          background: rgba(255,255,255,0.15);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(255,255,255,0.2);
+          border-radius: 99px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          font-size: 13px;
+          font-weight: 600;
+          margin-bottom: 24px;
+        }
+        
+        .mobile-forecast-scroller {
+          display: flex;
+          overflow-x: auto;
+          gap: 12px;
+          padding: 8px 24px 24px 24px;
+          margin: 0 -24px;
+          scroll-snap-type: x mandatory;
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .mobile-forecast-scroller::-webkit-scrollbar { display: none; }
+        
+        .mobile-forecast-card {
+          scroll-snap-align: center;
+          flex: 0 0 110px;
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: 16px;
+          padding: 16px 12px;
+          text-align: center;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        
+        .mobile-bento-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        
+        .mobile-action-card {
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: 16px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        
+        .mobile-report-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        
+        .mobile-report-card {
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        
+        /* Overriding AppShell padding on mobile */
+        @media(max-width: 768px) {
+          .app-content { padding: 16px !important; }
+          .mobile-native-hero { margin: -16px -16px 24px -16px !important; }
+          .mobile-forecast-scroller { padding: 8px 16px 24px 16px !important; margin: 0 -16px !important; }
+        }
+      `}</style>
+      
+      {error && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="alert" style={{ marginBottom: 16, borderLeftColor: "var(--critical)" }}>
+          <Icon name="error" style={{ color: "var(--critical)" }} /> {error}
+        </motion.div>
+      )}
+
+      {/* 1. Mobile Edge-to-Edge Hero */}
+      <motion.section 
+        className="mobile-native-hero"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        <Icon
+          name={cardStyle.icon}
+          style={{ position: "absolute", right: "-30px", top: "-10px", fontSize: "240px", opacity: 0.1, transform: "rotate(-15deg)" }}
+        />
+        
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+            <div className="mobile-location-pill">
+              <Icon name="location_on" style={{ fontSize: 16 }} />
+              <span style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {currentLocation}
+              </span>
+            </div>
+            
+            {/* Minimal settings icon to open location selector */}
+            <select 
+              aria-label="Pilih lokasi" 
+              style={{ opacity: 0, position: "absolute", width: 40, height: 40, right: 0, top: 0, zIndex: 10 }}
+              onChange={(event) => { 
+                const value = event.target.value; 
+                if (value === "gps") { requestGpsLocation(); return; } 
+                const [lat, lon] = value.split(",").map(Number); 
+                setCoordinates({ lat, lon }); 
+                setLocationNote(event.target.options[event.target.selectedIndex].text); 
+              }}
+            >
+              {locationOptions.map((option: any) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+            <div style={{ background: "rgba(255,255,255,0.2)", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon name="tune" style={{ fontSize: 18 }} />
+            </div>
+          </div>
+
+          <h1 style={{ fontSize: "2.5rem", fontWeight: 900, lineHeight: 1.1, margin: "0 0 12px 0", letterSpacing: "-0.03em" }}>
+            Status<br />{risk}
+          </h1>
+
+          <p style={{ fontSize: "1rem", lineHeight: 1.5, color: "rgba(255,255,255,0.9)", margin: "0 0 24px 0" }}>
+            {data
+              ? `Air laut diprediksi naik. Siapkan barang penting${data.peak_time ? ` sebelum pasang pukul ${data.peak_time}` : ""}.`
+              : "Menganalisis status rob..."}
+          </p>
+
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ flex: 1, background: "rgba(0,0,0,0.15)", borderRadius: 16, padding: "12px 16px" }}>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>Peluang</div>
+              <div style={{ fontSize: 24, fontWeight: 800 }}>{data ? `${data.risk_probability}%` : "-"}</div>
+            </div>
+            <div style={{ flex: 1, background: "rgba(0,0,0,0.15)", borderRadius: 16, padding: "12px 16px" }}>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>Tinggi Air</div>
+              <div style={{ fontSize: 24, fontWeight: 800 }}>{data ? `${meters.format(data.max_tidal_height)}m` : "-"}</div>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
+      {/* 2. Horizontal Scroll Forecast */}
+      <motion.section variants={itemVariants} initial="hidden" animate="show" style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: "1.1rem", margin: "0 0 4px 0", fontWeight: 700 }}>Prakiraan 7 Hari</h2>
+        <p style={{ margin: "0 0 16px 0", color: "var(--ink-soft)", fontSize: "13px" }}>Geser untuk melihat hari berikutnya</p>
+        
+        <div className="mobile-forecast-scroller">
+          {forecastDays.map(({ day, label, percent, color }: any, i: number) => (
+            <div key={day} className="mobile-forecast-card">
+              <div style={{ fontSize: 12, color: "var(--ink-soft)", fontWeight: 700, marginBottom: 12 }}>{day}</div>
+              <div style={{ height: 100, width: 14, borderRadius: 999, background: "var(--line)", position: "relative", margin: "0 auto 12px auto" }}>
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={{ height: `${Math.min(percent, 100)}%` }}
+                  transition={{ delay: 0.3 + (i * 0.1), duration: 0.8, type: "spring" }}
+                  style={{ position: "absolute", bottom: 0, left: 0, width: "100%", background: color, borderRadius: 999 }}
+                />
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: color as string }}>{label}</div>
+              <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{percent}%</div>
+            </div>
+          ))}
+        </div>
+      </motion.section>
+
+      {/* 3. Bento Grid Actions */}
+      <motion.section variants={itemVariants} initial="hidden" animate="show" style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: "1.1rem", margin: "0 0 16px 0", fontWeight: 700 }}>Langkah Mitigasi</h2>
+        <div className="mobile-bento-grid">
+          {actionCards.map(([title, copy, icon]: any, i: number) => {
+            const isReportBtn = title === "Laporkan kejadian";
+            return (
+              <div 
+                key={title} 
+                className="mobile-action-card"
+                onClick={() => isReportBtn && (window.location.hash = "#/reports")}
+                style={{ cursor: isReportBtn ? "pointer" : "default", border: isReportBtn ? "1px solid var(--accent-blue)" : undefined }}
+              >
+                <div style={{ width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: isReportBtn ? "rgba(37,99,235,0.1)" : "var(--surface-soft)", color: isReportBtn ? "var(--accent-blue)" : "var(--ink-soft)" }}>
+                  <Icon name={icon} style={{ fontSize: 20 }} />
+                </div>
+                <div>
+                  <strong style={{ display: "block", fontSize: "13px", lineHeight: 1.3, marginBottom: 4, color: isReportBtn ? "var(--accent-blue)" : "var(--ink-primary)" }}>{title}</strong>
+                  <p style={{ margin: 0, fontSize: "12px", color: "var(--ink-soft)", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{copy}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </motion.section>
+
+      {/* 4. Card-Based Reports List */}
+      <motion.section variants={itemVariants} initial="hidden" animate="show" style={{ marginBottom: 32 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16 }}>
+          <div>
+            <h2 style={{ fontSize: "1.1rem", margin: "0 0 4px 0", fontWeight: 700 }}>Laporan Warga</h2>
+            <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "13px" }}>Kondisi lapangan saat ini</p>
+          </div>
+        </div>
+        
+        <div className="mobile-report-list">
+          {data?.nearby_reports.length === 0 && (
+            <div style={{ padding: 24, textAlign: "center", background: "var(--surface-soft)", borderRadius: 12, color: "var(--ink-soft)", fontSize: 13 }}>
+              Belum ada laporan di sekitar Anda.
+            </div>
+          )}
+          {data?.nearby_reports.map((report: any) => {
+            const region = [report.region?.village, report.region?.district].filter(Boolean).join(", ") || "Wilayah pesisir";
+            const time = new Date(report.incident_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+            return (
+              <div key={report.id} className="mobile-report-card">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <strong style={{ fontSize: 14, color: "var(--ink-primary)" }}>{region}</strong>
+                  <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>{time} WIB</span>
+                </div>
+                <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                  <span className={`badge severity-${report.severity}`} style={{ padding: "4px 8px", fontSize: 11 }}>
+                    {report.water_height_cm ? `${report.water_height_cm} cm` : report.severity.replace("_", " ")}
+                  </span>
+                  <span className="badge status-divalidasi" style={{ padding: "4px 8px", fontSize: 11 }}>
+                    <Icon name="verified" style={{ fontSize: 12 }} /> BPBD
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </motion.section>
+
+      {/* Bottom Share Buttons */}
+      <motion.section variants={itemVariants} initial="hidden" animate="show" style={{ display: "flex", gap: 10, paddingBottom: 24 }}>
+        <button className="btn primary" type="button" style={{ flex: 1, justifyContent: "center", background: "#16a34a", borderColor: "#16a34a", fontSize: "13px", padding: "12px" }}>
+          <Icon name="share" style={{ fontSize: 18 }} /> WA
+        </button>
+        <button className="btn secondary" type="button" style={{ flex: 1, justifyContent: "center", fontSize: "13px", padding: "12px" }}>
+          <Icon name="content_copy" style={{ fontSize: 18 }} /> Salin
+        </button>
+      </motion.section>
+      
+    </AppShell>
+  );
+}
+
+// ==========================================
+// MAIN EXPORT (RESPONSIVE SWITCHER)
+// ==========================================
 export function CitizenModePage() {
   const [data, setData] = useState<ModeAwamData>();
   const [error, setError] = useState("");
   const [locationNote, setLocationNote] = useState("Menggunakan wilayah pesisir terdekat");
   const [coordinates, setCoordinates] = useState<{ lat: number; lon: number } | null>(null);
+  
+  const isMobile = useIsMobile();
 
   const locationOptions = [
     { label: "Gunakan lokasi perangkat", value: "gps" },
@@ -128,10 +665,15 @@ export function CitizenModePage() {
   const risk = data ? riskLabels[data.risk_class] : "Memuat...";
   const cardStyle = getCardStyle(data?.risk_class);
 
-  const forecastDays = data ? (Array.isArray(data.forecast) ? data.forecast : data.forecast.data).map((item) => ({
-    day: new Date(`${item.prediction_date}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
-    label: riskLabels[item.risk_class], percent: item.risk_probability, color: item.risk_class === "sangat_tinggi" ? "var(--critical)" : item.risk_class === "tinggi" ? "var(--high)" : item.risk_class === "sedang" ? "var(--medium)" : "var(--low)",
-  })) : [];
+  const forecastDays = data ? (Array.isArray(data.forecast) ? data.forecast : data.forecast.data).map((item: any) => {
+    const rawDate = item.prediction_date.split("T")[0].split(" ")[0]; // Get only YYYY-MM-DD
+    return {
+      day: new Date(`${rawDate}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
+      label: riskLabels[item.risk_class], 
+      percent: item.risk_probability, 
+      color: item.risk_class === "sangat_tinggi" ? "var(--critical)" : item.risk_class === "tinggi" ? "var(--high)" : item.risk_class === "sedang" ? "var(--medium)" : "var(--low)",
+    };
+  }) : [];
 
   const currentLocation = data?.region ? [data.region.village, data.region.district, data.region.regency].filter(Boolean).join(", ") : locationNote;
 
@@ -142,243 +684,14 @@ export function CitizenModePage() {
     ["Laporkan kejadian", "Tambahkan foto dan lokasi bila melihat genangan di sekitar Anda.", "add_location_alt"],
   ];
 
-  return (
-    <AppShell active="awam" title="Status Bahaya Saya" subtitle="Panduan mitigasi dan peringatan dini disajikan dalam bahasa yang mudah dipahami.">
-      <style>{`
-        .citizen-mode-layout { grid-template-columns: minmax(0, 1fr) 340px; max-width: 1280px; padding-top: 24px; }
-        .citizen-status-card { border-radius: 16px !important; padding: 34px !important; }
-        .citizen-location-controls { align-items: center; display: flex; gap: 16px; justify-content: space-between; margin-bottom: 28px; }
-        .citizen-location-name { align-items: center; display: flex; font-size: .9rem; font-weight: 650; gap: 8px; min-width: 0; }
-        .citizen-location-name span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .citizen-location-controls select { background: rgba(255,255,255,.96); flex: 0 0 auto; max-width: 300px; }
-        .citizen-status-title { font-size: clamp(2.4rem, 5vw, 3.5rem) !important; }
-        .citizen-status-metrics { border-top: 1px solid rgba(255,255,255,.22); display: grid; gap: 12px; grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 30px; padding-top: 22px; }
-        .citizen-status-metric { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.16); border-radius: 12px; min-width: 0; padding: 16px; }
-        .citizen-forecast-grid { display: grid; gap: 10px; grid-template-columns: repeat(7,minmax(84px,1fr)); overflow-x: auto; padding: 24px; }
-        .citizen-forecast-day { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 14px 8px; }
-        .citizen-recommendations { display: grid; gap: 10px !important; }
-        .citizen-action-card { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px !important; padding: 14px; }
-        .citizen-action-card:hover { border-color: rgba(99,102,241,.35); background: var(--surface); }
-        .citizen-share-actions { display: grid; gap: 10px; }
-        .citizen-model-row { align-items: flex-start; border-bottom: 1px solid var(--line); display: grid !important; gap: 10px; grid-template-columns: 105px 1fr; padding: 9px 0; }
-        .citizen-model-row:last-child { border-bottom: 0; }
-        .citizen-model-row strong { text-align: right; }
-        @media(max-width:1024px){ .citizen-mode-layout{grid-template-columns:1fr}.citizen-sidebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.citizen-sidebar>section:first-child{grid-column:1/-1} }
-        @media(max-width:700px){ .citizen-mode-layout{padding:16px}.citizen-status-card{padding:22px!important}.citizen-location-controls{align-items:stretch;flex-direction:column}.citizen-location-controls select{max-width:none;width:100%}.citizen-status-metrics{grid-template-columns:1fr}.citizen-sidebar{grid-template-columns:1fr}.citizen-forecast-grid{grid-template-columns:repeat(7,92px)} }
-      `}</style>
-      {error && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="alert" style={{ marginBottom: 24, borderLeftColor: "var(--critical)" }}>
-          <Icon name="error" style={{ color: "var(--critical)" }} /> {error}
-        </motion.div>
-      )}
+  const commonProps = {
+    data, error, locationNote, coordinates, setCoordinates, setLocationNote,
+    requestGpsLocation, locationOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
+  };
 
-      <motion.div className="detail-layout citizen-mode-layout" variants={containerVariants} initial="hidden" animate="show">
-        <div className="stack">
-          {/* Main Status Hero Card */}
-          <motion.section
-            variants={itemVariants}
-            className="citizen-status-card"
-            style={{
-              background: cardStyle.background,
-              color: "#fff",
-              borderRadius: 8,
-              padding: "40px",
-              boxShadow: cardStyle.boxShadow,
-              position: "relative",
-              overflow: "hidden"
-            }}
-          >
-            <Icon
-              name={cardStyle.icon}
-              style={{ position: "absolute", right: "-20px", top: "-20px", fontSize: "280px", opacity: 0.1, transform: "rotate(-15deg)" }}
-            />
+  if (isMobile) {
+    return <CitizenModeMobile {...commonProps} />;
+  }
 
-            <div style={{ position: "relative", zIndex: 1 }}>
-              <div className="citizen-location-controls">
-                <div className="citizen-location-name">
-                  <Icon name="location_on" style={{ fontSize: 20 }} /><span>{currentLocation}</span>
-                </div>
-                <select aria-label="Pilih lokasi" onChange={(event) => { const value = event.target.value; if (value === "gps") { requestGpsLocation(); return; } const [lat, lon] = value.split(",").map(Number); setCoordinates({ lat, lon }); setLocationNote(event.target.options[event.target.selectedIndex].text); }}>{locationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
-              </div>
-
-              <h1 className="citizen-status-title" style={{ fontWeight: 900, lineHeight: 1.1, margin: "0 0 16px 0", letterSpacing: "-0.03em" }}>
-                Status <span style={{ color: "#fff" }}>{risk}</span>
-              </h1>
-
-              <p style={{ fontSize: "1.15rem", lineHeight: 1.6, color: "rgba(255,255,255,0.95)", maxWidth: "600px", margin: "0 0 40px 0" }}>
-                {data
-                  ? `Air laut diprediksi naik di sekitar wilayah Anda. Hindari jalan rendah dekat pesisir dan siapkan barang penting${data.peak_time ? ` sebelum puncak pasang pukul ${data.peak_time} WIB` : ""}.`
-                  : "Menganalisis status ancaman rob terbaru di sekitar Anda..."}
-              </p>
-
-              <div className="citizen-status-metrics">
-                {[
-                  ["Kemungkinan Rob", data ? `${data.risk_probability}%` : "-", risk],
-                  ["Puncak Pasang", data ? `${meters.format(data.max_tidal_height)} meter` : "-", data ? `Pukul ${data.peak_time} WIB` : "Menunggu Data"],
-                  ["Laporan Sekitar", data ? `${data.nearby_reports.length} laporan` : "-", "Dari pantauan warga"],
-                ].map(([label, value, note], i) => (
-                  <motion.div
-                    key={label}
-                    className="citizen-status-metric"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 + (i * 0.1) }}
-                  >
-                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</div>
-                    <div style={{ fontSize: 32, fontWeight: 800, lineHeight: 1, marginBottom: 8 }}>{value}</div>
-                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)" }}>{note}</div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.section>
-
-          {/* Forecast 7 Days */}
-          <motion.section variants={itemVariants} className="panel flush">
-            <div style={{ padding: "24px", borderBottom: "1px solid var(--line)" }}>
-              <h2 style={{ fontSize: "1.25rem", margin: 0, marginBottom: 4 }}>Prakiraan 7 Hari ke Depan</h2>
-              <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Sumber: BMKG & Prediksi AI. Waspada saat indikator merah mendominasi.</p>
-            </div>
-
-            <div className="citizen-forecast-grid">
-              {forecastDays.map(({ day, label, percent, color }, i) => (
-                <motion.div
-                  key={day}
-                  className="citizen-forecast-day"
-                  whileHover={{ y: -5 }}
-                  style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}
-                >
-                  <div style={{ fontSize: 13, color: "var(--ink-soft)", fontWeight: 600, marginBottom: 12 }}>{day}</div>
-                  <div style={{ height: 120, width: 12, borderRadius: 999, background: "var(--line)", position: "relative", margin: "8px 0" }}>
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: `${Math.min(percent, 100)}%` }}
-                      transition={{ delay: 0.5 + (i * 0.05), duration: 0.8, type: "spring" }}
-                      style={{ position: "absolute", bottom: 0, left: 0, width: "100%", background: color, borderRadius: 999 }}
-                    />
-                  </div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: color as string, marginTop: 12 }}>{label}</div>
-                  <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>{percent}%</div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.section>
-
-          {/* Laporan Warga Sekitar */}
-          <motion.section variants={itemVariants} className="panel flush">
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "flex-start", justifyContent: "space-between" }}>
-              <div style={{ flex: "1 1 300px" }}>
-                <h2 style={{ fontSize: "1.25rem", margin: 0, marginBottom: 4 }}>Laporan Warga di Sekitar Anda</h2>
-                <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Informasi lapangan dari masyarakat untuk meningkatkan kewaspadaan.</p>
-              </div>
-              <a className="btn secondary" href="#/reports" style={{ whiteSpace: "nowrap" }}>Laporkan Genangan</a>
-            </div>
-            <div className="table-responsive"><table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--line)" }}>
-                  <th style={{ padding: "14px 24px", color: "var(--ink-soft)", fontSize: "13px", fontWeight: 600 }}>Kelurahan</th>
-                  <th style={{ padding: "14px 24px", color: "var(--ink-soft)", fontSize: "13px", fontWeight: 600 }}>Tingkat Air</th>
-                  <th style={{ padding: "14px 24px", color: "var(--ink-soft)", fontSize: "13px", fontWeight: 600 }}>Waktu</th>
-                  <th style={{ padding: "14px 24px", color: "var(--ink-soft)", fontSize: "13px", fontWeight: 600 }}>Status Validasi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data?.nearby_reports.length === 0 && <tr><td colSpan={4} style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>Belum ada laporan tervalidasi di sekitar lokasi ini.</td></tr>}
-                {data?.nearby_reports.map((report) => {
-                  const region = [report.region?.village, report.region?.district, report.region?.regency].filter(Boolean).join(", ") || "Wilayah pesisir";
-                  const time = new Date(report.incident_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-                  return <tr key={report.id} style={{ borderBottom: "1px solid var(--line)" }}>
-                    <td style={{ padding: "16px 24px", fontWeight: 600, color: "var(--ink)" }}>{region}</td>
-                    <td style={{ padding: "16px 24px" }}>
-                      <span className={`badge severity-${report.severity}`}>
-                        {report.water_height_cm ? `${report.water_height_cm} cm` : report.severity.replace("_", " ")}
-                      </span>
-                    </td>
-                    <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: "14px" }}>{time} WIB</td>
-                    <td style={{ padding: "16px 24px" }}>
-                      <span className="badge status-divalidasi">
-                        <Icon name="verified" style={{ fontSize: 14 }} /> Divalidasi BPBD
-                      </span>
-                    </td>
-                  </tr>;
-                })}
-              </tbody>
-            </table></div>
-          </motion.section>
-        </div>
-
-        {/* Sidebar */}
-        <aside className="stack citizen-sidebar">
-          {/* Tindakan Card */}
-          <motion.section variants={itemVariants} className="panel flush" style={{ border: "none", boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}>
-            <div style={{ padding: "32px 24px" }}>
-              <div style={{ fontWeight: 800, fontSize: 18, color: "var(--ink-primary)", display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-                <Icon name="verified_user" style={{ fontSize: 24, color: "var(--accent-blue)" }} />
-                Rekomendasi Tindakan
-              </div>
-              <div className="citizen-recommendations">
-                {actionCards.map(([title, copy, icon], i) => {
-                  const isReportBtn = title === "Laporkan kejadian";
-                  return (
-                    <motion.div
-                      key={title}
-                      className="citizen-action-card"
-                      whileHover={{ x: 4 }}
-                      style={{
-                        borderRadius: 8,
-                        display: "flex",
-                        gap: 16,
-                        alignItems: "flex-start",
-                        cursor: isReportBtn ? "pointer" : "default"
-                      }}
-                      onClick={() => isReportBtn && (window.location.hash = "#/reports")}
-                    >
-                      <div style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 14,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        background: "var(--surface-soft)",
-                        color: isReportBtn ? "var(--accent-blue)" : "var(--ink-soft)",
-                        flexShrink: 0
-                      }}>
-                        <Icon name={icon} style={{ fontSize: 24 }} />
-                      </div>
-                      <div style={{ paddingTop: 2 }}>
-                        <strong style={{ display: "block", marginBottom: 6, fontSize: "15px", color: isReportBtn ? "var(--accent-blue)" : "var(--ink-primary)" }}>{title}</strong>
-                        <p style={{ margin: 0, fontSize: "14px", color: "var(--ink-soft)", lineHeight: 1.6 }}>{copy}</p>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.section>
-
-          {/* Bagikan Panel */}
-          <motion.section variants={itemVariants} className="panel">
-            <h2 style={{ fontSize: "1.15rem", margin: "0 0 16px 0" }}>Sebarkan Peringatan</h2>
-            <div className="citizen-share-actions"><button className="btn primary" type="button" style={{ width: "100%", justifyContent: "center", background: "#16a34a", borderColor: "#16a34a", fontSize: "14px" }}>
-              <Icon name="share" /> Bagikan via WhatsApp
-            </button><button className="btn secondary" type="button" style={{ width: "100%", justifyContent: "center", fontSize: "14px" }}>
-                <Icon name="content_copy" /> Salin Teks Peringatan
-              </button></div>
-          </motion.section>
-
-          {/* Model Info Panel */}
-          <motion.section variants={itemVariants} className="panel" style={{ background: "var(--surface-soft)", border: "none" }}>
-            <h2 style={{ fontSize: "1.05rem", margin: "0 0 16px 0" }}>Informasi Teknis Model</h2>
-            <div style={{ display: "grid", gap: 10, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Model AI</span> <strong>Random Forest v1.2.0</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Kepercayaan</span> <strong style={{ color: "var(--low)" }}>Tinggi (0.89)</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Sumber Data</span> <strong>BMKG + BIG + Laporan Warga</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Pembaruan Terakhir</span> <strong>21 Mei 2026 05:00 WIB</strong></div>
-            </div>
-          </motion.section>
-        </aside>
-      </motion.div>
-    </AppShell>
-  );
+  return <CitizenModeDesktop {...commonProps} />;
 }

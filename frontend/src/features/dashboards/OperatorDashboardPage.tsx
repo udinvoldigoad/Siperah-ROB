@@ -128,7 +128,7 @@ export function OperatorDashboardPage() {
         </motion.div>
 
         {/* Main Content Layout */}
-        <motion.div variants={itemVariants} style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "24px" }}>
+        <motion.div variants={itemVariants} className="dashboard-split-layout" style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "24px" }}>
           {/* Antrean Moderasi */}
           <div className="panel flush">
             <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>

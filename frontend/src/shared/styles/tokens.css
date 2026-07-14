@@ -1780,3 +1780,19 @@ select:focus {
   outline: none;
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
+
+/* Mobile Responsive Overrides */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-responsive .data-table {
+  min-width: 600px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-split-layout {
+    grid-template-columns: 1fr !important;
+  }
+}

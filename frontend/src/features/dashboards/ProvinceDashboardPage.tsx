@@ -171,7 +171,7 @@ export function ProvinceDashboardPage() {
         </motion.div>
 
         {/* KPI Grid */}
-        <motion.div variants={containerVariants} className="metric-grid" style={{ marginBottom: "32px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+        <motion.div variants={containerVariants} className="metric-grid" style={{ marginBottom: "32px", gap: "24px" }}>
           <motion.div variants={itemVariants} style={{ background: "#ffffff", padding: "28px", borderRadius: 8, boxShadow: "0 4px 20px rgba(0,0,0,0.03)", border: "1px solid var(--border-color)" }}>
             <span style={{ fontSize: "14px", color: "var(--ink-muted)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Wilayah Pantau Aktif</span>
             <strong style={{ color: "var(--accent-blue)", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.monitored_regencies}</strong>
@@ -205,6 +205,7 @@ export function ProvinceDashboardPage() {
               </div>
               <button className="btn secondary" style={{ fontSize: "12px" }}><Icon name="sort" style={{ fontSize: "14px" }} /> Urutkan</button>
             </div>
+            <div className="table-responsive">
             <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--line)" }}>
@@ -239,6 +240,7 @@ export function ProvinceDashboardPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </motion.div>
 
           {/* ML Prediction Timeline Chart */}
@@ -326,6 +328,7 @@ export function ProvinceDashboardPage() {
             </div>
             <button className="btn secondary" style={{ fontSize: "12px" }}><Icon name="download" style={{ fontSize: "14px" }} /> Ekspor CSV Data Utama</button>
           </div>
+          <div className="table-responsive">
           <table className="data-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
               <tr style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--line)" }}>
@@ -362,10 +365,11 @@ export function ProvinceDashboardPage() {
                   </td>
                 </motion.tr>
               ))}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+            </div>
+          </motion.div>
         </motion.div>
-      </motion.div>
     </AppShell>
   );
 }

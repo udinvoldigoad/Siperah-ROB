@@ -128,7 +128,7 @@ export function ResearchPortalPage() {
         </div>}
 
         {/* KPI Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px", marginBottom: "32px" }}>
+        <div className="metric-grid" style={{ marginBottom: "32px", gap: "20px" }}>
           {[
             { title: "Dataset Tersedia", val: datasets.length, sub: "set data tervalidasi" },
             { title: "Total Rekaman", val: "148,920", sub: "kejadian 2018–2026" },
