@@ -120,4 +120,50 @@ final class NotificationService
             ]);
         }
     }
+
+    public function notifyReportSlaOverdue(GroundTruthReport $report): void
+    {
+        $report->loadMissing('region');
+        $region = $report->region;
+
+        $recipients = User::query()
+            ->where('status', 'aktif')
+            ->whereIn('role', ['bpbd_operator', 'bpbd_provinsi', 'admin'])
+            ->get()
+            ->filter(function (User $user) use ($region, $report): bool {
+                if (in_array($user->role, ['bpbd_provinsi', 'admin'], true)) {
+                    return true;
+                }
+
+                if (!$user->region_id || !$region) {
+                    return $report->status === 'perlu_review';
+                }
+
+                return DB::table('regions')
+                    ->where('id', $user->region_id)
+                    ->where('regency', $region->regency)
+                    ->exists();
+            });
+
+        foreach ($recipients as $recipient) {
+            $alreadySent = DB::table('notification_inbox')
+                ->where('user_id', $recipient->id)
+                ->where('type', 'report_sla_overdue')
+                ->where('body', 'like', "%{$report->report_code}%")
+                ->exists();
+            if ($alreadySent) {
+                continue;
+            }
+
+            DB::table('notification_inbox')->insert([
+                'id' => (string) Str::uuid(),
+                'user_id' => $recipient->id,
+                'type' => 'report_sla_overdue',
+                'title' => 'SLA validasi laporan terlewati',
+                'body' => "Laporan {$report->report_code} belum selesai diverifikasi lebih dari 1x24 jam.",
+                'data' => json_encode(['report_id' => $report->id, 'report_code' => $report->report_code, 'status' => $report->status]),
+                'created_at' => now(),
+            ]);
+        }
+    }
 }
