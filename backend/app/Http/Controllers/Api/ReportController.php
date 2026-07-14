@@ -170,6 +170,18 @@ final class ReportController
         return $code;
     }
 
+    public function photo(string $photo)
+    {
+        $record = ReportPhoto::findOrFail($photo);
+        abort_unless(Storage::disk('public')->exists($record->file_url), 404);
+
+        return Storage::disk('public')->response(
+            $record->file_url,
+            $record->file_name,
+            ['Cache-Control' => 'public, max-age=86400'],
+        );
+    }
+
     private function severityFromWaterHeight(int $heightCm): string
     {
         return match (true) {

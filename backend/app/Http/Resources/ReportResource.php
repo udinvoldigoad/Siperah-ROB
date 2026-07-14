@@ -29,12 +29,12 @@ class ReportResource extends JsonResource
             'longitude' => $this->longitude,
             'severity' => $this->severity,
             'water_height_cm' => $this->water_height_cm,
-            'incident_time' => $this->incident_time,
+            'incident_time' => $this->incident_time?->toIso8601String(),
             'description' => $this->description,
             'status' => $this->status,
             'rejection_reason' => $this->rejection_reason,
-            'validated_at' => $this->validated_at,
-            'created_at' => $this->created_at,
+            'validated_at' => $this->validated_at?->toIso8601String(),
+            'created_at' => $this->created_at?->toIso8601String(),
             'sla_due_at' => $slaDueAt?->toIso8601String(),
             'sla_status' => $slaStatus,
             'is_within_monitoring_area' => $isWithinMonitoringArea,
@@ -46,7 +46,7 @@ class ReportResource extends JsonResource
             'photos' => $this->whenLoaded('photos', function() {
                 return $this->photos->map(fn($photo) => [
                     'id' => $photo->id,
-                    'url' => '/storage/' . $photo->file_url,
+                    'url' => '/api/reports/photo/' . $photo->id,
                     'name' => $photo->file_name
                 ]);
             }),

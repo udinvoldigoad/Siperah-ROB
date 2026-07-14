@@ -129,10 +129,11 @@ export function findOperatorReport(id: string) {
 }
 
 function mapReport(report: BackendReport): OperatorReport {
+  // Tampilkan dalam zona waktu perangkat pengguna agar konsisten dengan jam
+  // yang mereka lihat saat melapor (tidak dipaksa ke satu offset tetap).
   const dateTimeFormatter = new Intl.DateTimeFormat("id-ID", {
     dateStyle: "medium",
     timeStyle: "short",
-    timeZone: "Asia/Jakarta",
   });
   return {
     id: report.id,

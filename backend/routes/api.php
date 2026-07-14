@@ -52,6 +52,12 @@ Route::prefix('public')->middleware('throttle:120,1')->group(function () {
     Route::get('/onboarding', [PublicMapController::class, 'onboarding']);
 });
 
+// Foto laporan disajikan lewat route (bukan symlink storage) agar tetap
+// tampil di `php artisan serve` maupun web server produksi.
+Route::get('/reports/photo/{photo}', [ReportController::class, 'photo'])
+    ->middleware('throttle:120,1')
+    ->name('reports.photo');
+
 // ── Authenticated ────────────────────────────────────────────────
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
