@@ -1,6 +1,16 @@
 type ApiOptions = RequestInit & { token?: string };
 
-const apiBase = import.meta.env.VITE_API_BASE_URL ?? "/api";
+export const apiBase = import.meta.env.VITE_API_BASE_URL ?? "/api";
+
+export function apiUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
+  if (apiBase.startsWith("http")) {
+    const base = new URL(apiBase);
+    const origin = `${base.protocol}//${base.host}`;
+    return `${origin}${path.startsWith("/") ? path : `/${path}`}`;
+  }
+  return path.startsWith("/") ? path : `${apiBase}/${path}`;
+}
 
 export async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const headers = new Headers(options.headers);
