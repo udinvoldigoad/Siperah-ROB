@@ -3,12 +3,11 @@
 namespace App\Http\Middleware;
 
 use App\Models\ApiKey;
-use App\Models\AuditLog;
+use App\Services\AuditService;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Str;
 
 final class AuthenticateApiKey
 {
@@ -16,6 +15,7 @@ final class AuthenticateApiKey
     {
         $rawKey = $this->rawKey($request);
         if (!$rawKey || !str_starts_with($rawKey, 'spr_')) {
+            $this->audit($request, 'api_key_request', 'denied', $request->path(), ['reason' => 'missing_or_malformed_key']);
             return $this->unauthorized('API key wajib dikirim melalui header X-API-Key.');
         }
 
@@ -26,14 +26,18 @@ final class AuthenticateApiKey
             ->first();
 
         if (!$apiKey || !$apiKey->user || $apiKey->user->status !== 'aktif') {
+            $this->audit($request, 'api_key_request', 'denied', $request->path(), ['reason' => 'invalid_or_inactive_key']);
             return $this->unauthorized('API key tidak valid, dicabut, atau pemiliknya tidak aktif.');
         }
 
+        $request->setUserResolver(fn () => $apiKey->user);
         if (!in_array($apiKey->user->role, ['peneliti', 'admin'], true)) {
+            $this->audit($request, 'api_key_request', 'denied', $request->path(), ['api_key_id' => $apiKey->id, 'reason' => 'owner_role_not_allowed']);
             return new JsonResponse(['data' => null, 'message' => 'Pemilik API key tidak memiliki akses peneliti.'], 403);
         }
 
         if ($requiredScope && !in_array($requiredScope, $apiKey->scopes ?? [], true)) {
+            $this->audit($request, 'api_key_request', 'denied', $request->path(), ['api_key_id' => $apiKey->id, 'required_scope' => $requiredScope, 'reason' => 'missing_scope']);
             return new JsonResponse(['data' => null, 'message' => "API key tidak memiliki scope {$requiredScope}."], 403);
         }
 
@@ -42,22 +46,16 @@ final class AuthenticateApiKey
             'use_count' => $apiKey->use_count + 1,
         ])->save();
 
-        $request->setUserResolver(fn () => $apiKey->user);
         $request->attributes->set('api_key_id', $apiKey->id);
 
         $response = $next($request);
 
-        AuditLog::create([
-            'id' => (string) Str::uuid(),
-            'actor_user_id' => $apiKey->user->id,
-            'actor_name' => $apiKey->user->name,
-            'actor_role' => $apiKey->user->role,
-            'action' => 'api_key_request',
-            'target_resource' => $request->path(),
-            'outcome' => $response->getStatusCode() < 400 ? 'success' : 'fail',
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'payload' => ['api_key_id' => $apiKey->id, 'method' => $request->method(), 'status' => $response->getStatusCode()],
+        $this->audit($request, 'api_key_request', $response->getStatusCode() < 400 ? 'success' : 'fail', $request->path(), [
+            'api_key_id' => $apiKey->id,
+            'user_id' => $apiKey->user_id,
+            'method' => $request->method(),
+            'endpoint' => '/'.ltrim($request->path(), '/'),
+            'status' => $response->getStatusCode(),
         ]);
 
         return $response;
@@ -77,5 +75,10 @@ final class AuthenticateApiKey
     private function unauthorized(string $message): JsonResponse
     {
         return new JsonResponse(['data' => null, 'message' => $message], 401);
+    }
+
+    private function audit(Request $request, string $action, string $outcome, string $target, array $payload = []): void
+    {
+        app(AuditService::class)->write($request, $action, $outcome, $target, $payload);
     }
 }
