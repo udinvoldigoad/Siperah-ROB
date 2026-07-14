@@ -70,6 +70,7 @@ final class PublicMapController
                         'village' => $region->village,
                         'district' => $region->district,
                         'regency' => $region->regency,
+                        'population' => $region->population,
                         'risk_class' => $prediction->risk_class,
                         'risk_probability' => (float) $prediction->risk_probability,
                         'max_tidal_height' => (float) $prediction->max_tidal_height,
