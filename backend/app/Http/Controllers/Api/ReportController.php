@@ -6,7 +6,6 @@ use App\Http\Requests\StoreReportRequest;
 use App\Http\Requests\UpdateReportStatusRequest;
 use App\Http\Requests\RejectReportRequest;
 use App\Http\Resources\ReportResource;
-use App\Models\AuditLog;
 use App\Models\GroundTruthReport;
 use App\Models\ReportPhoto;
 use App\Services\AuditService;
@@ -14,6 +13,7 @@ use App\Services\NotificationService;
 use App\Services\ReportAccessService;
 use App\Services\RegionLocator;
 use App\Services\RegionMonitoringService;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -50,7 +50,13 @@ final class ReportController
             $query->where('region_id', $request->query('region_id'));
         }
 
-        $reports = $query->paginate(15);
+        if ($request->query('sla_status') === 'terlambat' || $request->query('sla') === 'overdue') {
+            $query->whereNotIn('status', ['divalidasi', 'ditolak', 'duplikat'])
+                ->where('created_at', '<', now()->subDay());
+        }
+
+        $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
+        $reports = $query->paginate($perPage);
 
         return ReportResource::collection($reports);
     }
@@ -88,6 +94,12 @@ final class ReportController
             (float) $data['latitude'],
             (float) $data['longitude'],
         );
+        $duplicate = $this->findPotentialDuplicate($user->id, (float) $data['latitude'], (float) $data['longitude'], CarbonImmutable::parse($data['incident_time']));
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'latitude' => "Laporan serupa sudah tercatat dengan kode {$duplicate->report_code}. Silakan cek riwayat laporan Anda.",
+            ]);
+        }
 
         try {
             $report = DB::transaction(function () use ($data, $region, $request, $user, &$storedPaths, $isPointMonitored) {
@@ -130,17 +142,21 @@ final class ReportController
             throw $exception;
         }
 
-        $report->load('photos');
+        $report->load(['region', 'photos']);
         $this->notifications->notifyNewReportForReview($report);
         $this->audit->write($request, 'create_report', 'success', "ground_truth_reports:{$report->id}", [
             'report_code' => $report->report_code,
             'region_id' => $report->region_id,
             'severity' => $report->severity,
             'water_height_cm' => $report->water_height_cm,
+            'is_within_monitoring_area' => $isPointMonitored,
+            'status' => $report->status,
         ]);
 
         return response()->json([
-            'message' => 'Laporan berhasil dikirim dan menunggu validasi.',
+            'message' => $isPointMonitored
+                ? 'Laporan berhasil dikirim dan menunggu validasi BPBD.'
+                : 'Laporan berhasil dikirim dan masuk antrean triase BPBD karena berada di luar wilayah pantauan prediksi rob.',
             'data' => new ReportResource($report)
         ], 201);
     }
@@ -174,6 +190,7 @@ final class ReportController
             'validated_by' => $request->user()->id,
             'validated_at' => now(),
         ]);
+        $reportData->load(['region', 'reporter', 'validator', 'photos']);
         $this->notifications->notifyReportStatus($reportData);
         $this->writeAudit($request, 'validate_report', $reportData);
 
@@ -194,6 +211,7 @@ final class ReportController
             'validated_at' => now(),
             'rejection_reason' => $request->input('reason'),
         ]);
+        $reportData->load(['region', 'reporter', 'validator', 'photos']);
         $this->notifications->notifyReportStatus($reportData);
         $this->writeAudit($request, 'reject_report', $reportData);
 
@@ -216,6 +234,7 @@ final class ReportController
             'validated_by' => in_array($status, ['divalidasi', 'ditolak']) ? $request->user()->id : null,
             'validated_at' => in_array($status, ['divalidasi', 'ditolak']) ? now() : null,
         ]);
+        $reportData->load(['region', 'reporter', 'validator', 'photos']);
         $this->notifications->notifyReportStatus($reportData);
         $this->writeAudit($request, 'update_report_status', $reportData);
 
@@ -227,24 +246,38 @@ final class ReportController
 
     private function writeAudit(Request $request, string $action, GroundTruthReport $report): void
     {
-        $actor = $request->user();
-
-        AuditLog::create([
-            'id' => (string) Str::uuid(),
-            'actor_user_id' => $actor->id,
-            'actor_name' => $actor->name,
-            'actor_role' => $actor->role,
-            'action' => $action,
-            'target_resource' => "ground_truth_reports:{$report->id}",
-            'outcome' => 'success',
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'payload' => [
-                'report_code' => $report->report_code,
-                'status' => $report->status,
-                'region_id' => $report->region_id,
-            ],
+        $this->audit->write($request, $action, 'success', "ground_truth_reports:{$report->id}", [
+            'report_code' => $report->report_code,
+            'status' => $report->status,
+            'region_id' => $report->region_id,
         ]);
     }
 
+    private function findPotentialDuplicate(string $userId, float $latitude, float $longitude, CarbonImmutable $incidentTime): ?GroundTruthReport
+    {
+        $radiusMeters = 100;
+        $latPadding = $radiusMeters / 111_320;
+        $lonPadding = $radiusMeters / (111_320 * max(cos(deg2rad($latitude)), 0.01));
+
+        return GroundTruthReport::query()
+            ->where('user_id', $userId)
+            ->whereIn('status', ['menunggu', 'perlu_review', 'divalidasi'])
+            ->whereBetween('incident_time', [$incidentTime->subHours(2), $incidentTime->addHours(2)])
+            ->whereBetween('latitude', [$latitude - $latPadding, $latitude + $latPadding])
+            ->whereBetween('longitude', [$longitude - $lonPadding, $longitude + $lonPadding])
+            ->latest()
+            ->get()
+            ->first(fn (GroundTruthReport $report) => $this->distanceMeters($latitude, $longitude, (float) $report->latitude, (float) $report->longitude) <= $radiusMeters);
+    }
+
+    private function distanceMeters(float $fromLat, float $fromLon, float $toLat, float $toLon): float
+    {
+        $earthRadius = 6_371_000;
+        $deltaLat = deg2rad($toLat - $fromLat);
+        $deltaLon = deg2rad($toLon - $fromLon);
+        $a = sin($deltaLat / 2) ** 2
+            + cos(deg2rad($fromLat)) * cos(deg2rad($toLat)) * sin($deltaLon / 2) ** 2;
+
+        return 2 * $earthRadius * atan2(sqrt($a), sqrt(1 - $a));
+    }
 }

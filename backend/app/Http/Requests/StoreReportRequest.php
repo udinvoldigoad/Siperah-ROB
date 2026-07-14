@@ -18,11 +18,22 @@ class StoreReportRequest extends FormRequest
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'region_id' => ['nullable', 'uuid', 'exists:regions,id'],
             'water_height_cm' => ['required', 'integer', 'min:0'],
-            'severity' => ['required', 'string', 'in:ringan,sedang,parah,sangat_parah'],
+            'severity' => ['nullable', 'string', 'in:ringan,sedang,parah,sangat_parah'],
             'incident_time' => ['required', 'date'],
             'description' => ['required', 'string', 'max:1000'],
             'photos' => ['nullable', 'array', 'max:5'],
-            'photos.*' => ['image', 'mimes:jpg,jpeg,png', 'max:2048'], // Maksimal 2 MB per foto sesuai SKPL
+            'photos.*' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png', 'mimetypes:image/jpeg,image/png', 'max:2048'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'photos.max' => 'Maksimal 5 foto untuk satu laporan.',
+            'photos.*.image' => 'File dokumentasi harus berupa gambar JPG atau PNG.',
+            'photos.*.mimes' => 'Foto hanya boleh berformat JPG atau PNG.',
+            'photos.*.mimetypes' => 'Foto hanya boleh berformat JPG atau PNG.',
+            'photos.*.max' => 'Setiap foto maksimal berukuran 2 MB.',
         ];
     }
 }
