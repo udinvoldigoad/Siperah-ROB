@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
-import { api } from "../../shared/api/client";
+import { api, apiUrl } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,6 +39,16 @@ export function AdminUsersPage() {
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const [isPermissionReview, setPermissionReview] = useState(false);
+  const [isCreateOpen, setCreateOpen] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "warga",
+    status: "aktif",
+    institution: "",
+    region_id: "",
+  });
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -78,6 +88,48 @@ export function AdminUsersPage() {
       fetchUsers();
     } catch (err: any) {
       toast.error(err.message || "Gagal menolak akun.");
+    }
+  };
+
+  const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    try {
+      await api("/admin/users", {
+        method: "POST",
+        body: JSON.stringify({
+          ...newUser,
+          institution: newUser.institution || null,
+          region_id: newUser.region_id || null,
+        }),
+      });
+      toast.success(`Akun "${newUser.name}" berhasil dibuat.`);
+      setNewUser({ name: "", email: "", password: "", role: "warga", status: "aktif", institution: "", region_id: "" });
+      setCreateOpen(false);
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal membuat pengguna.");
+    }
+  };
+
+  const handleExportUsers = async () => {
+    try {
+      const token = localStorage.getItem("siperah-token");
+      const response = await fetch(apiUrl("/api/admin/users/export"), {
+        headers: { Accept: "text/csv", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (!response.ok) throw new Error(`Export gagal (${response.status})`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "admin-users.csv";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Export pengguna berhasil diunduh.");
+    } catch (err: any) {
+      toast.error(err.message || "Gagal export pengguna.");
     }
   };
 
@@ -125,6 +177,46 @@ export function AdminUsersPage() {
             <Icon name="policy" /> Tinjau perizinan
           </button>
         </motion.section>}
+
+        {!isPermissionReview && (
+          <motion.section variants={itemVariants} className="panel" style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: "1rem" }}>Tambah pengguna manual</h2>
+                <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--ink-soft)" }}>Gunakan untuk membuat akun admin/operator/provinsi/peneliti saat diperlukan operasional.</p>
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button type="button" className="btn secondary" onClick={handleExportUsers}><Icon name="download" /> Export Pengguna</button>
+                <button type="button" className="btn primary" onClick={() => setCreateOpen((value) => !value)}><Icon name="person_add" /> {isCreateOpen ? "Tutup Form" : "Tambah Pengguna"}</button>
+              </div>
+            </div>
+            {isCreateOpen && (
+              <form onSubmit={handleCreateUser} style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14, marginTop: 18 }}>
+                <input required placeholder="Nama lengkap" value={newUser.name} onChange={(e) => setNewUser((u) => ({ ...u, name: e.target.value }))} />
+                <input required type="email" placeholder="Email" value={newUser.email} onChange={(e) => setNewUser((u) => ({ ...u, email: e.target.value }))} />
+                <input required type="password" minLength={8} placeholder="Password awal min. 8 karakter" value={newUser.password} onChange={(e) => setNewUser((u) => ({ ...u, password: e.target.value }))} />
+                <input placeholder="Instansi (wajib untuk peneliti)" value={newUser.institution} onChange={(e) => setNewUser((u) => ({ ...u, institution: e.target.value }))} />
+                <select value={newUser.role} onChange={(e) => setNewUser((u) => ({ ...u, role: e.target.value }))}>
+                  <option value="warga">Warga</option>
+                  <option value="bpbd_operator">BPBD Operator</option>
+                  <option value="bpbd_provinsi">BPBD Provinsi</option>
+                  <option value="peneliti">Peneliti</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <select value={newUser.status} onChange={(e) => setNewUser((u) => ({ ...u, status: e.target.value }))}>
+                  <option value="aktif">Aktif</option>
+                  <option value="menunggu">Menunggu approval</option>
+                  <option value="nonaktif">Nonaktif</option>
+                </select>
+                <input placeholder="Region ID wilayah kerja operator" value={newUser.region_id} onChange={(e) => setNewUser((u) => ({ ...u, region_id: e.target.value }))} style={{ gridColumn: "1 / -1" }} />
+                <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>Operator BPBD wajib punya Region ID. Peneliti wajib punya instansi agar perizinan jelas.</span>
+                  <button type="submit" className="btn primary"><Icon name="save" /> Simpan Pengguna</button>
+                </div>
+              </form>
+            )}
+          </motion.section>
+        )}
 
         {isPermissionReview && (
           <motion.div variants={itemVariants} className="permission-review-bar">

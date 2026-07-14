@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
-import { api } from "../../shared/api/client";
+import { api, apiUrl } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { motion, AnimatePresence } from "framer-motion";
@@ -86,6 +86,33 @@ export function AuditLogPage() {
     }
   };
 
+  const handleExportAudit = async () => {
+    try {
+      const query = new URLSearchParams();
+      if (action) query.append("action", action);
+      if (outcome) query.append("outcome", outcome);
+      if (search) query.append("search", search);
+      query.append("format", "csv");
+      const token = localStorage.getItem("siperah-token");
+      const response = await fetch(apiUrl(`/api/admin/audit-logs?${query.toString()}`), {
+        headers: { Accept: "text/csv", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (!response.ok) throw new Error(`Export gagal (${response.status})`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "audit_logs.csv";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Export audit log berhasil diunduh.");
+    } catch (err: any) {
+      toast.error(err.message || "Gagal export audit log.");
+    }
+  };
+
   return (
     <AppShell active="audit" title="Audit Log Aktivitas">
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="content" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
@@ -118,8 +145,9 @@ export function AuditLogPage() {
 
         {/* Audit Log Panel */}
         <motion.div variants={itemVariants} className="panel flush" style={{ overflow: "hidden", marginBottom: 32 }}>
-          <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
+          <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
             <h2 style={{ margin: 0, fontSize: "1.2rem" }}>Jejak Aktivitas Sistem (Audit Trail)</h2>
+            <button type="button" className="btn secondary" onClick={handleExportAudit}><Icon name="download" /> Export Audit CSV</button>
           </div>
 
           {/* Filter Bar */}
