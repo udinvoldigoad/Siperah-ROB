@@ -27,6 +27,10 @@ return Application::configure(basePath: dirname(__DIR__))
             ->dailyAt('05:00')
             ->timezone('Asia/Jakarta')
             ->withoutOverlapping();
+        $schedule->command('ml:predict')
+            ->dailyAt('06:00')
+            ->timezone('Asia/Jakarta')
+            ->withoutOverlapping();
         $schedule->command('reports:notify-overdue-sla')
             ->hourly()
             ->withoutOverlapping();
