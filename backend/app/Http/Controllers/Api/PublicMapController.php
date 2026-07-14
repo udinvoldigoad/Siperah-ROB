@@ -12,6 +12,7 @@ use App\Models\TidalStation;
 use App\Services\PredictionService;
 use App\Services\RegionLocator;
 use App\Services\RegionMonitoringService;
+use App\Support\CsvWriter;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -156,7 +157,7 @@ final class PublicMapController
         }
 
         try {
-            $geometrySelect = Schema::hasColumn('coastlines', 'geometry')
+            $geometrySelect = $this->usesPostgisGeometry('coastlines', 'geometry')
                 ? DB::raw('ST_AsGeoJSON(geometry) as geometry_json')
                 : 'geometry_geojson as geometry_json';
 
@@ -215,19 +216,34 @@ final class PublicMapController
             return [];
         }
 
-        try {
+        if ($this->usesPostgisGeometry('regions', 'geometry')) {
             return DB::table('regions')
                 ->whereIn('id', $regionIds)
                 ->pluck(DB::raw('ST_AsGeoJSON(geometry)'), 'id')
                 ->map(fn (string $geometry) => json_decode($geometry, true))
                 ->filter()
                 ->all();
+        }
+
+        return Region::whereIn('id', $regionIds)
+            ->get(['id', 'geometry'])
+            ->mapWithKeys(fn (Region $region) => [$region->id => $this->decodeGeometry($region->geometry)])
+            ->filter()
+            ->all();
+    }
+
+    private function usesPostgisGeometry(string $table, string $column): bool
+    {
+        try {
+            return DB::table('pg_extension')->where('extname', 'postgis')->exists()
+                && DB::table('information_schema.columns')
+                    ->where('table_schema', 'public')
+                    ->where('table_name', $table)
+                    ->where('column_name', $column)
+                    ->where('udt_name', 'geometry')
+                    ->exists();
         } catch (\Throwable) {
-            return Region::whereIn('id', $regionIds)
-                ->get(['id', 'geometry'])
-                ->mapWithKeys(fn (Region $region) => [$region->id => $this->decodeGeometry($region->geometry)])
-                ->filter()
-                ->all();
+            return false;
         }
     }
 
@@ -299,9 +315,9 @@ final class PublicMapController
 
         return response()->streamDownload(function () use ($query): void {
             $output = fopen('php://output', 'wb');
-            fputcsv($output, ['Tanggal', 'Kabupaten/Kota', 'Kecamatan', 'Desa/Kelurahan', 'Kelas Risiko', 'Probabilitas', 'Tinggi Pasang Maks', 'Waktu Puncak', 'Model', 'Sumber'], ',', '"', '');
+            CsvWriter::putRow($output, ['Tanggal', 'Kabupaten/Kota', 'Kecamatan', 'Desa/Kelurahan', 'Kelas Risiko', 'Probabilitas', 'Tinggi Pasang Maks', 'Waktu Puncak', 'Model', 'Sumber']);
             foreach ($query->cursor() as $prediction) {
-                fputcsv($output, [
+                CsvWriter::putRow($output, [
                     optional($prediction->prediction_date)->toDateString(),
                     $prediction->region?->regency,
                     $prediction->region?->district,
@@ -312,7 +328,7 @@ final class PublicMapController
                     $prediction->peak_time,
                     $prediction->model_version,
                     $prediction->data_source,
-                ], ',', '"', '');
+                ]);
             }
             fclose($output);
         }, 'peta-risiko-banjir-rob.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
@@ -360,33 +376,37 @@ final class PublicMapController
         $lat = $coordinates['lat'] ?? null;
         $lon = $coordinates['lon'] ?? null;
 
-        $region = $this->regionLocator->locate(
-            $lat === null ? null : (float) $lat,
-            $lon === null ? null : (float) $lon,
-        );
+        $latitude = $lat === null ? null : (float) $lat;
+        $longitude = $lon === null ? null : (float) $lon;
+        $hasCoordinates = $latitude !== null && $longitude !== null;
+
+        $region = $hasCoordinates
+            ? $this->regionLocator->locateAdministrative($latitude, $longitude)
+            : $this->regionLocator->locate(null, null);
 
         if (!$region) {
             return response()->json([
                 'data' => null,
-                'message' => $lat !== null
-                    ? 'Lokasi berada di luar cakupan wilayah pesisir yang dipantau.'
-                    : 'Tidak ada data region.',
+                'message' => $hasCoordinates
+                    ? 'Lokasi yang dipilih belum ada di data administrasi Lampung. Coba geser pin ke daratan Lampung terdekat.'
+                    : 'Data wilayah pantauan belum tersedia.',
             ]);
         }
 
+        $isMonitored = $hasCoordinates
+            ? $this->monitoring->isPointMonitored($region, $latitude, $longitude)
+            : $this->monitoring->isMonitored($region);
         $predictionData = $this->predictionService->sevenDayForecast($region->id);
         $prediction = $predictionData['current'];
         $forecast = $predictionData['forecast'];
-
-        $nearby = GroundTruthReport::with(['region', 'photos'])
-            ->where('status', 'divalidasi')
-            ->when($lat !== null && $lon !== null && $this->regionLocator->supportsDistanceQueries(), fn ($query) => $query->whereRaw(
-                'ST_DWithin(location::geography, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, 5000)',
-                [(float) $lon, (float) $lat],
-            ))
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
+        $nearby = $hasCoordinates
+            ? $this->nearbyValidatedReports($latitude, $longitude)
+            : GroundTruthReport::with(['region', 'photos'])
+                ->where('status', 'divalidasi')
+                ->where('region_id', $region->id)
+                ->latest()
+                ->limit(5)
+                ->get();
 
         return response()->json([
             'data' => [
@@ -398,6 +418,10 @@ final class PublicMapController
                     'provenance_status' => $region->provenance_status,
                     'data_source' => $region->data_source,
                 ],
+                'is_monitored' => $isMonitored,
+                'monitoring_status' => $isMonitored ? 'inside_monitoring_area' : 'outside_monitoring_area',
+                'status_label' => $isMonitored ? 'Masuk wilayah pantauan rob' : 'Di luar wilayah pantauan prediksi rob',
+                'guidance_message' => $this->modeAwamGuidanceMessage($isMonitored, $prediction?->risk_class),
                 'risk_class' => $prediction->risk_class ?? 'rendah',
                 'risk_probability' => $prediction->risk_probability ?? 0,
                 'max_tidal_height' => $prediction->max_tidal_height ?? 0,
@@ -406,6 +430,66 @@ final class PublicMapController
                 'nearby_reports' => ReportResource::collection($nearby),
             ],
         ]);
+    }
+
+    private function nearbyValidatedReports(float $latitude, float $longitude)
+    {
+        if ($this->regionLocator->supportsDistanceQueries()) {
+            return GroundTruthReport::with(['region', 'photos'])
+                ->where('status', 'divalidasi')
+                ->whereRaw(
+                    'ST_DWithin(ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, 5000)',
+                    [$longitude, $latitude],
+                )
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
+        }
+
+        $radiusMeters = 5000;
+        $latPadding = $radiusMeters / 111_320;
+        $lonPadding = $radiusMeters / (111_320 * max(cos(deg2rad($latitude)), 0.01));
+
+        return GroundTruthReport::with(['region', 'photos'])
+            ->where('status', 'divalidasi')
+            ->whereBetween('latitude', [$latitude - $latPadding, $latitude + $latPadding])
+            ->whereBetween('longitude', [$longitude - $lonPadding, $longitude + $lonPadding])
+            ->latest()
+            ->limit(25)
+            ->get()
+            ->map(function (GroundTruthReport $report) use ($latitude, $longitude): GroundTruthReport {
+                $report->distance_meters = $this->distanceMeters($latitude, $longitude, (float) $report->latitude, (float) $report->longitude);
+                return $report;
+            })
+            ->filter(fn (GroundTruthReport $report) => $report->distance_meters <= $radiusMeters)
+            ->sortBy('distance_meters')
+            ->take(5)
+            ->values();
+    }
+
+    private function distanceMeters(float $fromLat, float $fromLon, float $toLat, float $toLon): float
+    {
+        $earthRadius = 6_371_000;
+        $deltaLat = deg2rad($toLat - $fromLat);
+        $deltaLon = deg2rad($toLon - $fromLon);
+        $a = sin($deltaLat / 2) ** 2
+            + cos(deg2rad($fromLat)) * cos(deg2rad($toLat)) * sin($deltaLon / 2) ** 2;
+
+        return 2 * $earthRadius * atan2(sqrt($a), sqrt(1 - $a));
+    }
+
+    private function modeAwamGuidanceMessage(bool $isMonitored, ?string $riskClass): string
+    {
+        if (!$isMonitored) {
+            return 'Lokasi ini belum masuk area prediksi rob. Tetap waspada bila melihat genangan, dan laporan warga tetap bisa dikirim untuk ditinjau BPBD.';
+        }
+
+        return match ($riskClass) {
+            'sangat_tinggi' => 'Risiko rob sangat tinggi. Hindari area rendah dekat pesisir, amankan barang penting, dan ikuti arahan BPBD.',
+            'tinggi' => 'Risiko rob tinggi. Kurangi aktivitas di area rendah dekat pesisir dan pantau perubahan pasang.',
+            'sedang' => 'Risiko rob sedang. Tetap pantau kondisi sekitar, terutama saat mendekati waktu puncak pasang.',
+            default => 'Risiko rob rendah saat ini. Tetap cek pembaruan berkala dan laporkan jika melihat genangan.',
+        };
     }
 
     public function onboarding(): JsonResponse
