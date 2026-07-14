@@ -182,14 +182,14 @@ Status:
 - [x] API key list/regenerate tersedia.
 - [x] Referensi API tersedia.
 - [~] Statistik pemakaian tersedia sebagian.
-- [ ] API calls today harus benar-benar per hari, bukan lifetime counter.
-- [ ] Usage per endpoint 30 hari untuk tab “Penggunaan API”.
-- [ ] Lisensi/perizinan data sebagai tab terpisah.
-- [ ] Dataset filter kabupaten perlu dukungan metadata region/dataset.
-- [ ] API `/api/v1/*` harus stabil, terdokumentasi, dan punya contoh request/response.
-- [ ] API key middleware harus mencatat use_count, last_used_at, endpoint, outcome.
-- [ ] Rate limit API key perlu disesuaikan production.
-- [ ] CSV/JSON harus aman dari CSV injection dan data sensitif.
+- [~] API calls today sudah harian, tetapi timezone masih UTC.
+- [~] Usage per endpoint 30 hari sudah tersedia, tetapi logging outcome belum lengkap dan belum dites.
+- [~] Lisensi/perizinan sudah menjadi tab terpisah, tetapi kontennya belum lengkap.
+- [~] Filter kabupaten sudah diimplementasikan, tetapi migrasi belum dijalankan dan belum dites.
+- [~] API `/api/v1/*` sudah punya referensi dan contoh, tetapi stabilitas/kontrak belum terjamin.
+- [~] API key middleware mencatat penggunaan, tetapi belum mencakup semua exception dan increment belum atomic.
+- [~] Rate limit 120/menit tersedia, tetapi belum production-configurable atau load-tested.
+- [~] CSV injection dan penyaringan data sensitif tersedia sebagian; cakupan dataset dan test masih perlu diperbaiki.
 
 ### A14. Notifikasi (`FR-NOTIF`)
 
@@ -290,22 +290,22 @@ Status:
 - [x] Filter kabupaten dan auto zoom tersedia.
 - [~] Pin/zona ketika filter sudah pernah diperbaiki, perlu regression test.
 - [ ] Toggle layer semua PRD: zona bahaya, laporan, infrastruktur kritis, evakuasi, pasang surut.
-- [ ] Panel detail wilayah klik peta.
-- [ ] Horizon prediksi hari ini, +1, +2, +3, +7.
-- [ ] Banner peringatan BMKG aktif.
-- [ ] Export data peta dari UI.
-- [ ] Mobile map UX diuji.
-- [ ] Legend dan warna konsisten dengan severity/risk class.
+- [x] Panel detail wilayah klik peta.
+- [x] Horizon prediksi hari ini, +1, +2, +3, +7.
+- [x] Banner peringatan BMKG aktif.
+- [~] Export data peta dari UI.
+- [~] Mobile map UX diuji.
+- [~] Legend dan warna konsisten dengan severity/risk class.
 
 ### B5. Mode Awam (`FR-AWAM`)
 
 - [x] Mode awam tersedia dan sudah dipoles.
-- [~] Perlu validasi mobile dan geolokasi browser.
-- [ ] Manual lokasi dengan autocomplete/dropdown wilayah.
-- [ ] Pesan “di luar pantauan” harus konsisten dengan backend.
-- [ ] Prakiraan 7 hari tampil jelas.
-- [ ] Laporan sekitar lokasi tampil dengan status validasi.
-- [ ] Bahasa non-teknis final.
+- [x] Perlu validasi mobile dan geolokasi browser.
+- [x] Manual lokasi dengan autocomplete/dropdown wilayah.
+- [x] Pesan “di luar pantauan” harus konsisten dengan backend.
+- [x] Prakiraan 7 hari tampil jelas.
+- [x] Laporan sekitar lokasi tampil dengan status validasi.
+- [x] Bahasa non-teknis final.
 
 ### B6. Form laporan ground truth (`FR-GT`)
 
