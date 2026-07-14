@@ -64,6 +64,25 @@ function horizonLabel(dateStr: string): string {
   return `${Math.abs(diff)} hari lalu`;
 }
 
+// Horizon prediksi sesuai SKPL: hari ini, +1, +2, +3, +7.
+const HORIZON_OPTIONS: { label: string; offset: number }[] = [
+  { label: "Hari ini", offset: 0 },
+  { label: "+1 hari", offset: 1 },
+  { label: "+2 hari", offset: 2 },
+  { label: "+3 hari", offset: 3 },
+  { label: "+7 hari", offset: 7 },
+];
+
+function dateFromOffset(offset: number): string {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + offset);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function featureCenter(feature: GeoJsonFeature): [number, number] | null {
   const points: [number, number][] = [];
   const collect = (value: unknown): void => {
@@ -362,7 +381,6 @@ export function PublicMapPage() {
     const fromData = catalog.map((item) => item.region?.regency).filter(Boolean);
     return [...new Set(fromData)].sort((a, b) => String(a).localeCompare(String(b), "id")) as string[];
   }, [catalog]);
-  const dates = useMemo(() => [...new Set(catalog.map((item) => item.prediction_date))].sort(), [catalog]);
   const highestRisk = useMemo(() => regions.features.reduce<GeoJsonFeature | null>((highest, feature) => {
     const rank: Record<string, number> = { rendah: 1, sedang: 2, tinggi: 3, sangat_tinggi: 4 };
     return !highest || (rank[String(feature.properties.risk_class)] ?? 0) > (rank[String(highest.properties.risk_class)] ?? 0) ? feature : highest;
@@ -393,21 +411,41 @@ export function PublicMapPage() {
       }
       .map-filter-bar {
         display: flex;
-        gap: 16px;
+        gap: 28px;
+        row-gap: 16px;
         flex-wrap: wrap;
       }
       .map-filter-bar label {
         display: grid;
-        gap: 6px;
+        gap: 9px;
         flex: 1;
-        min-width: 180px;
-        font-size: 12px;
+        min-width: 190px;
+        font-size: 11px;
         font-weight: 700;
         color: var(--ink-soft);
         text-transform: uppercase;
-        letter-spacing: .4px;
+        letter-spacing: .5px;
       }
+      .map-filter-bar select { min-height: 44px; }
       .map-viewport { position: relative; }
+      .map-viewport .map-toolbar {
+        right: auto;
+        width: auto;
+        max-width: calc(100% - 120px);
+        gap: 0;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, .10);
+      }
+      .map-viewport .map-toolbar span {
+        color: var(--ink-soft);
+        font-weight: 600;
+        padding-right: 12px;
+      }
+      .map-viewport .map-toolbar strong {
+        color: var(--ink);
+        padding-left: 12px;
+        border-left: 1px solid var(--line);
+      }
+      .map-viewport .maplibregl-ctrl-top-right { z-index: 3; }
       .map-risk-badge {
         align-items: center;
         background: #fff;
@@ -441,6 +479,9 @@ export function PublicMapPage() {
         .map-container {
           min-height: 65vh !important;
         }
+
+        .map-viewport .map-toolbar span { display: none; }
+        .map-viewport .map-toolbar strong { border-left: 0; padding-left: 0; }
       }
     `}</style>
     <motion.div variants={containerVariants} initial="hidden" animate="show" className="stack" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
@@ -449,11 +490,11 @@ export function PublicMapPage() {
       {error && <div className="alert" style={{ borderLeftColor: "var(--critical)" }}>{error}</div>}
       <motion.div variants={itemVariants} className="public-map-layout">
         <div className="panel flush" style={{ overflow: "hidden" }}>
-          <div className="map-filter-bar" style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)", background: "var(--surface-soft)" }}>
+          <div className="map-filter-bar" style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", background: "var(--surface-soft)" }}>
             <label>Horizon prediksi
               <select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)}>
                 <option value="all">Prediksi terbaru</option>
-                {dates.map((date) => <option key={date} value={date}>{horizonLabel(date)}</option>)}
+                {HORIZON_OPTIONS.map((horizon) => <option key={horizon.offset} value={dateFromOffset(horizon.offset)}>{horizon.label}</option>)}
               </select>
             </label>
             <label>Kabupaten/Kota
