@@ -6,6 +6,7 @@ use App\Models\GroundTruthReport;
 use App\Services\AuditService;
 use App\Services\RegionMonitoringService;
 use App\Services\ReportAccessService;
+use App\Support\CsvWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -37,7 +38,11 @@ final class DashboardController
 
         $regionQuery = $this->monitoredRegionsQuery();
         if ($regency) {
-            $regionQuery->where('regency', $regency);
+            $normalizedRegency = $this->normalizeRegency($regency);
+            $regionQuery->whereRaw(
+                "REGEXP_REPLACE(LOWER(TRIM(regency)), '^(kabupaten|kota)\\s+', '') = ?",
+                [$normalizedRegency],
+            );
         }
         $regionIds = $regionQuery->pluck('id');
         $latestPredictionDate = DB::table('predictions')
@@ -58,8 +63,7 @@ final class DashboardController
             ->count();
 
         $startOfMonth = Carbon::now()->startOfMonth();
-        $monthlyValidations = DB::table('ground_truth_reports')
-            ->whereIn('region_id', $regionIds)
+        $monthlyValidations = $this->reports->accessible($user)
             ->where('status', 'divalidasi')
             ->where('validated_at', '>=', $startOfMonth)
             ->count();
@@ -99,6 +103,7 @@ final class DashboardController
             'pending_reports' => $pending,
             'monthly_validations' => $monthlyValidations,
             'latest_prediction_date' => $latestPredictionDate,
+            'operator_regency' => $regency,
             'region_statuses' => $riskStatuses,
             'pending_report_queue' => $pendingReports,
         ]]);
@@ -107,11 +112,19 @@ final class DashboardController
     /**
      * FR-PROV-1—4: Dashboard BPBD provinsi lintas kabupaten.
      */
-    public function provinceSummary(): JsonResponse
+    public function provinceSummary(Request $request): JsonResponse
     {
-        $latestPredictionDate = DB::table('predictions')->max('prediction_date');
+        $filters = $request->validate([
+            'month' => ['nullable', 'date_format:Y-m'],
+            'regency' => ['nullable', 'string', 'max:100'],
+        ]);
+        $selectedMonth = $filters['month'] ?? null;
+        $selectedRegency = $filters['regency'] ?? null;
+
+        $latestPredictionDate = $this->latestProvincePredictionDate($selectedMonth, $selectedRegency);
 
         $regencies = $this->monitoredRegionsQuery()
+            ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
             ->distinct('regency')
             ->count('regency');
 
@@ -122,6 +135,7 @@ final class DashboardController
             ->where(function ($query): void {
                 $this->applyMonitoredRegionFilter($query, 'regions');
             })
+            ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
             ->distinct('region_id')
             ->count('predictions.region_id');
 
@@ -132,24 +146,32 @@ final class DashboardController
             ->where(function ($query): void {
                 $this->applyMonitoredRegionFilter($query, 'regions');
             })
+            ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
             ->sum('regions.population');
 
-        $startOfMonth = Carbon::now()->startOfMonth();
+        $startOfMonth = $selectedMonth ? Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth() : Carbon::now()->startOfMonth();
+        $endOfMonth = (clone $startOfMonth)->endOfMonth();
         $validatedThisMonth = DB::table('ground_truth_reports')
+            ->join('regions', 'ground_truth_reports.region_id', '=', 'regions.id')
             ->where('status', 'divalidasi')
-            ->where('validated_at', '>=', $startOfMonth)
+            ->whereBetween('validated_at', [$startOfMonth, $endOfMonth])
+            ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
             ->count();
 
-        $regencyRows = $this->regencyRiskRows($latestPredictionDate);
+        $regencyRows = $this->regencyRiskRows($latestPredictionDate, $selectedRegency);
+        $trendStart = $latestPredictionDate ? Carbon::parse($latestPredictionDate)->subDays(29)->toDateString() : null;
         $trend = DB::table('predictions')
+            ->join('regions', 'predictions.region_id', '=', 'regions.id')
             ->selectRaw("prediction_date, COUNT(DISTINCT CASE WHEN risk_class IN ('tinggi', 'sangat_tinggi') THEN region_id END) AS high_risk_count")
-            ->when($latestPredictionDate, fn ($query) => $query->whereBetween('prediction_date', [
-                Carbon::parse($latestPredictionDate)->subDays(29)->toDateString(),
-                Carbon::parse($latestPredictionDate)->toDateString(),
-            ]))
+            ->where(function ($query): void {
+                $this->applyMonitoredRegionFilter($query, 'regions');
+            })
+            ->when($latestPredictionDate, fn ($query) => $query->whereBetween('prediction_date', [$trendStart, Carbon::parse($latestPredictionDate)->toDateString()]))
+            ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
             ->groupBy('prediction_date')
             ->orderBy('prediction_date')
             ->get();
+        $populationAudit = $this->populationAudit($selectedRegency);
 
         return response()->json(['data' => [
             'monitored_regencies' => $regencies,
@@ -159,20 +181,31 @@ final class DashboardController
             'latest_prediction_date' => $latestPredictionDate,
             'regencies' => $regencyRows,
             'trend_30_days' => $trend,
+            'filters' => [
+                'month' => $selectedMonth,
+                'regency' => $selectedRegency,
+            ],
+            'available_regencies' => $this->provinceRegencyOptions(),
+            'top_impacted' => $this->topImpactedRows($latestPredictionDate, $selectedRegency),
+            'population_audit' => $populationAudit,
         ]]);
     }
 
-    public function provinceExport(): StreamedResponse
+    public function provinceExport(Request $request): StreamedResponse
     {
-        $latestPredictionDate = DB::table('predictions')->max('prediction_date');
-        $rows = $this->regencyRiskRows($latestPredictionDate);
-        $this->audit->write(request(), 'export_province_dashboard', 'success', 'dashboard:province');
+        $filters = $request->validate([
+            'month' => ['nullable', 'date_format:Y-m'],
+            'regency' => ['nullable', 'string', 'max:100'],
+        ]);
+        $latestPredictionDate = $this->latestProvincePredictionDate($filters['month'] ?? null, $filters['regency'] ?? null);
+        $rows = $this->regencyRiskRows($latestPredictionDate, $filters['regency'] ?? null);
+        $this->audit->write($request, 'export_province_dashboard', 'success', 'dashboard:province', $filters);
 
         return response()->streamDownload(function () use ($rows): void {
             $output = fopen('php://output', 'wb');
-            fputcsv($output, ['Kabupaten/Kota', 'Rendah', 'Sedang', 'Tinggi', 'Sangat Tinggi', 'Populasi Risiko', 'Peluang Maksimum', 'Tren'], ',', '"', '');
+            CsvWriter::putRow($output, ['Kabupaten/Kota', 'Rendah', 'Sedang', 'Tinggi', 'Sangat Tinggi', 'Populasi Risiko', 'Peluang Maksimum', 'Tren']);
             foreach ($rows as $row) {
-                fputcsv($output, [
+                CsvWriter::putRow($output, [
                     $row->regency,
                     $row->low_count,
                     $row->medium_count,
@@ -181,7 +214,7 @@ final class DashboardController
                     $row->risk_population,
                     $row->max_probability,
                     $row->trend,
-                ], ',', '"', '');
+                ]);
             }
             fclose($output);
         }, 'dashboard-provinsi-risiko.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
@@ -200,10 +233,10 @@ final class DashboardController
 
         return response()->streamDownload(function () use ($rows): void {
             $output = fopen('php://output', 'wb');
-            fputcsv($output, ['Kode', 'Status', 'Keparahan', 'Tinggi Air CM', 'Wilayah', 'Waktu Kejadian', 'SLA', 'Dibuat'], ',', '"', '');
+            CsvWriter::putRow($output, ['Kode', 'Status', 'Keparahan', 'Tinggi Air CM', 'Wilayah', 'Waktu Kejadian', 'SLA', 'Dibuat']);
             foreach ($rows as $report) {
                 $summary = $this->reportSummary($report);
-                fputcsv($output, [
+                CsvWriter::putRow($output, [
                     $report->report_code,
                     $report->status,
                     $report->severity,
@@ -212,19 +245,47 @@ final class DashboardController
                     optional($report->incident_time)->toIso8601String(),
                     $summary['sla_status'],
                     optional($report->created_at)->toIso8601String(),
-                ], ',', '"', '');
+                ]);
             }
             fclose($output);
         }, 'dashboard-operator-laporan.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
-    private function regencyRiskRows(?string $latestPredictionDate)
+    private function regencyRiskRows(?string $latestPredictionDate, ?string $selectedRegency = null)
     {
+        $previousPredictionDate = $latestPredictionDate
+            ? DB::table('predictions')
+                ->join('regions', 'predictions.region_id', '=', 'regions.id')
+                ->whereDate('predictions.prediction_date', '<', $latestPredictionDate)
+                ->where(function ($query): void {
+                    $this->applyMonitoredRegionFilter($query, 'regions');
+                })
+                ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
+                ->max('predictions.prediction_date')
+            : null;
+
+        $previousRows = $previousPredictionDate
+            ? DB::table('predictions')
+                ->join('regions', 'predictions.region_id', '=', 'regions.id')
+                ->where(function ($query): void {
+                    $this->applyMonitoredRegionFilter($query, 'regions');
+                })
+                ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
+                ->whereDate('predictions.prediction_date', $previousPredictionDate)
+                ->selectRaw("
+                    regions.regency,
+                    COUNT(DISTINCT CASE WHEN predictions.risk_class IN ('tinggi', 'sangat_tinggi') THEN predictions.region_id END) AS previous_high_risk_count
+                ")
+                ->groupBy('regions.regency')
+                ->pluck('previous_high_risk_count', 'regency')
+            : collect();
+
         return DB::table('predictions')
             ->join('regions', 'predictions.region_id', '=', 'regions.id')
             ->where(function ($query): void {
                 $this->applyMonitoredRegionFilter($query, 'regions');
             })
+            ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
             ->when($latestPredictionDate, fn ($query) => $query->whereDate('predictions.prediction_date', $latestPredictionDate))
             ->selectRaw("
                 regions.regency,
@@ -239,10 +300,96 @@ final class DashboardController
             ->orderByDesc('critical_count')
             ->orderByDesc('high_count')
             ->get()
-            ->map(function ($row) {
-                $row->trend = ((int) $row->critical_count + (int) $row->high_count) > 0 ? 'naik' : 'stabil';
+            ->map(function ($row) use ($previousRows) {
+                $currentHighRisk = (int) $row->critical_count + (int) $row->high_count;
+                $previousHighRisk = (int) ($previousRows[$row->regency] ?? 0);
+                $delta = $currentHighRisk - $previousHighRisk;
+                $row->previous_high_risk_count = $previousHighRisk;
+                $row->high_risk_delta = $delta;
+                $row->trend = $delta > 0 ? 'naik' : ($delta < 0 ? 'turun' : 'stabil');
                 return $row;
             });
+    }
+
+    private function latestProvincePredictionDate(?string $selectedMonth = null, ?string $selectedRegency = null): ?string
+    {
+        return DB::table('predictions')
+            ->join('regions', 'predictions.region_id', '=', 'regions.id')
+            ->where(function ($query): void {
+                $this->applyMonitoredRegionFilter($query, 'regions');
+            })
+            ->when($selectedMonth, function ($query, string $month): void {
+                $start = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
+                $end = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
+                $query->whereBetween('predictions.prediction_date', [$start, $end]);
+            })
+            ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
+            ->max('predictions.prediction_date');
+    }
+
+    private function provinceRegencyOptions()
+    {
+        return $this->monitoredRegionsQuery()
+            ->whereNotNull('regency')
+            ->distinct()
+            ->orderBy('regency')
+            ->pluck('regency')
+            ->values();
+    }
+
+    private function topImpactedRows(?string $latestPredictionDate, ?string $selectedRegency = null)
+    {
+        return DB::table('predictions')
+            ->join('regions', 'predictions.region_id', '=', 'regions.id')
+            ->where(function ($query): void {
+                $this->applyMonitoredRegionFilter($query, 'regions');
+            })
+            ->when($latestPredictionDate, fn ($query) => $query->whereDate('predictions.prediction_date', $latestPredictionDate))
+            ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
+            ->select([
+                'predictions.id',
+                'predictions.prediction_date',
+                'predictions.risk_probability',
+                'predictions.risk_class',
+                'predictions.confidence_score',
+                'predictions.max_tidal_height',
+                'regions.village',
+                'regions.district',
+                'regions.regency',
+                'regions.population',
+                'regions.data_source as population_source',
+                'regions.provenance_status as population_provenance_status',
+            ])
+            ->orderByRaw("CASE predictions.risk_class WHEN 'sangat_tinggi' THEN 4 WHEN 'tinggi' THEN 3 WHEN 'sedang' THEN 2 ELSE 1 END DESC")
+            ->orderByDesc('predictions.risk_probability')
+            ->orderByDesc('regions.population')
+            ->limit(10)
+            ->get();
+    }
+
+    private function populationAudit(?string $selectedRegency = null): array
+    {
+        $query = $this->monitoredRegionsQuery()
+            ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'));
+
+        $total = (clone $query)->count();
+        $withPopulation = (clone $query)->whereNotNull('population')->where('population', '>', 0)->count();
+        $official = (clone $query)
+            ->whereNotNull('population')
+            ->where('population', '>', 0)
+            ->where(function ($items): void {
+                $items->whereRaw("LOWER(COALESCE(data_source, '')) LIKE '%bps%'")
+                    ->orWhereRaw("LOWER(COALESCE(source_reference, '')) LIKE '%bps%'");
+            })
+            ->count();
+
+        return [
+            'total_regions' => $total,
+            'with_population' => $withPopulation,
+            'official_bps_population' => $official,
+            'missing_population' => max(0, $total - $withPopulation),
+            'status' => $total > 0 && $official === $total ? 'bps_verified' : ($withPopulation === $total ? 'region_population_available' : 'incomplete'),
+        ];
     }
 
     private function reportSummary(GroundTruthReport $report): array
@@ -286,5 +433,18 @@ final class DashboardController
                     ->from('predictions as monitored_predictions')
                     ->whereColumn('monitored_predictions.region_id', "{$regionTable}.id");
             });
+    }
+
+    private function applyRegencyFilter($query, string $regency, string $regionTable): void
+    {
+        $query->whereRaw(
+            "REGEXP_REPLACE(LOWER(TRIM({$regionTable}.regency)), '^(kabupaten|kota)\\s+', '') = ?",
+            [$this->normalizeRegency($regency)],
+        );
+    }
+
+    private function normalizeRegency(string $regency): string
+    {
+        return preg_replace('/^(kabupaten|kota)\s+/i', '', mb_strtolower(trim($regency))) ?? '';
     }
 }
