@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { useToast } from "../../shared/components/Toast";
 import { fetchOperatorReports, updateOperatorReportStatus, type OperatorReport } from "../reports/reportData";
-import { api } from "../../shared/api/client";
+import { api, apiBase } from "../../shared/api/client";
 import { Icon } from "../../shared/components/Icon";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -24,6 +24,7 @@ type OperatorSummary = {
   critical_villages: number;
   pending_reports: number;
   monthly_validations: number;
+  operator_regency?: string | null;
   region_statuses: {
     id: string;
     village: string | null;
@@ -67,12 +68,14 @@ export function OperatorDashboardPage() {
 
   useEffect(() => {
     loadReports();
+    const timer = window.setInterval(loadReports, 30000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const handleValidate = async (report: OperatorReport) => {
     try {
       await updateOperatorReportStatus(report.id, "divalidasi");
-      setReports((current) => current.filter((item) => item.id !== report.id));
+      await loadReports();
       toast.success(`Laporan ${report.code} berhasil divalidasi ke database.`);
     } catch (err: any) {
       toast.error("Gagal melakukan validasi laporan.");
@@ -82,7 +85,7 @@ export function OperatorDashboardPage() {
   const handleReject = async (report: OperatorReport) => {
     try {
       await updateOperatorReportStatus(report.id, "ditolak", "Ditolak oleh operator BPBD");
-      setReports((current) => current.filter((item) => item.id !== report.id));
+      await loadReports();
       toast.info(`Laporan ${report.code} telah ditolak.`);
     } catch (err: any) {
       toast.error("Gagal melakukan penolakan laporan.");
@@ -90,7 +93,31 @@ export function OperatorDashboardPage() {
   };
 
   const pendingCount = reports.filter((r) => r.status === "menunggu" || r.status === "perlu_review").length;
-  const criticalCount = reports.filter((r) => r.severity === "parah" || r.severity === "sangat_parah").length;
+  const triageCount = reports.filter((r) => !r.isWithinMonitoringArea || r.status === "perlu_review").length;
+  const operatorArea = summary.operator_regency ?? "wilayah kerja operator";
+
+  const handleExport = async () => {
+    try {
+      const token = localStorage.getItem("siperah-token");
+      const response = await fetch(`${apiBase}/dashboard/operator/reports/export`, {
+        headers: {
+          Accept: "text/csv",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!response.ok) throw new Error("Gagal mengunduh export laporan.");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "dashboard-operator-laporan.csv";
+      link.click();
+      window.URL.revokeObjectURL(url);
+      toast.success("Export laporan operator berhasil diunduh.");
+    } catch (err: any) {
+      toast.error(err.message || "Gagal export laporan operator.");
+    }
+  };
 
   return (
     <AppShell active="operator" title="Dashboard Operator BPBD">
@@ -111,10 +138,10 @@ export function OperatorDashboardPage() {
             </motion.div>
             <div>
               <div style={{ fontSize: "15px", fontWeight: 600 }}>
-                {pendingCount} laporan baru masuk · perlu verifikasi segera
+                {pendingCount} laporan baru/review di {operatorArea} · dicek otomatis tiap 30 detik
               </div>
               <div style={{ fontSize: "13px", opacity: 0.9, marginTop: "2px" }}>
-                Utamakan validasi laporan dengan tingkat keparahan Sangat Parah.
+                {triageCount > 0 ? `${triageCount} laporan triase berada di luar wilayah pantauan rob.` : "Utamakan validasi laporan dengan tingkat keparahan Sangat Parah."}
               </div>
             </div>
           </div>
@@ -133,8 +160,8 @@ export function OperatorDashboardPage() {
         <motion.div variants={containerVariants} className="metric-grid" style={{ marginBottom: "32px" }}>
           {[
             { title: "Kelurahan pantau aktif", val: summary.monitored_villages, sub: "wilayah pesisir", cls: "" },
-            { title: "Bahaya Sangat Tinggi", val: summary.critical_villages || criticalCount, sub: "kelurahan hari ini", cls: "critical" },
-            { title: "Laporan menunggu", val: summary.pending_reports || pendingCount, sub: "perlu validasi", cls: "medium", customColor: "var(--medium)" },
+            { title: "Bahaya Sangat Tinggi", val: summary.critical_villages, sub: "kelurahan hari ini", cls: "critical" },
+            { title: "Laporan menunggu", val: summary.pending_reports, sub: "perlu validasi", cls: "medium", customColor: "var(--medium)" },
             { title: "Validasi bulan ini", val: summary.monthly_validations, sub: "laporan disetujui", cls: "success" }
           ].map((kpi, idx) => (
             <motion.div 
@@ -162,13 +189,21 @@ export function OperatorDashboardPage() {
           {/* Antrean Moderasi */}
           <div className="panel flush">
             <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Antrian Laporan Masuk</h2>
-              <motion.span 
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="badge severity-sangat_parah"
-              >
-                {pendingCount} baru
-              </motion.span>
+              <div>
+                <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Antrean Laporan Masuk</h2>
+                <span style={{ color: "var(--ink-soft)", fontSize: 12 }}>{operatorArea} · {pendingCount} laporan ditampilkan</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <motion.button whileHover={{ y: -2 }} type="button" className="btn secondary" style={{ padding: "9px 14px" }} onClick={handleExport}>
+                  <Icon name="download" /> Export CSV
+                </motion.button>
+                <motion.span 
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  className="badge severity-sangat_parah"
+                >
+                  {pendingCount} baru
+                </motion.span>
+              </div>
             </div>
 
             <div className="report-list" style={{ border: "none", borderRadius: 0 }}>
@@ -197,6 +232,7 @@ export function OperatorDashboardPage() {
                         <div>
                           <div className="report-title" style={{ fontSize: "15px" }}>Kel. {report.village} &bull; Kec. {report.district}</div>
                           <p>Dilaporkan: {report.submittedAt} &bull; oleh warga ({report.waterHeightCm ? `${report.waterHeightCm} cm` : "-"})</p>
+                          {!report.isWithinMonitoringArea && <p style={{ color: "var(--medium)", fontWeight: 700 }}>Triase: lokasi di luar wilayah pantauan rob, tetapi masih dalam {report.regency}.</p>}
                         </div>
                         <span className={`badge severity-${report.severity}`}>
                           {report.severity.replace("_", " ")}
@@ -226,7 +262,7 @@ export function OperatorDashboardPage() {
           {/* Status Kelurahan */}
           <div className="panel flush">
             <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Status Kelurahan Bandar Lampung</h2>
+              <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Status Kelurahan {operatorArea}</h2>
               <motion.a whileHover={{ x: 5 }} href="#/map" style={{ fontSize: "0.9rem", color: "var(--accent)", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}><Icon name="map" /> Buka peta</motion.a>
             </div>
               <div className="table-responsive">
