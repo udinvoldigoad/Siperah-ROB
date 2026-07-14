@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../../shared/api/client";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
@@ -14,10 +14,16 @@ type ModeAwamData = {
   confidence_score: number | null;
   data_source: string | null;
   generated_at: string | null;
+  is_monitored: boolean;
+  monitoring_status: string | null;
+  status_label: string | null;
+  guidance_message: string | null;
   region: { village: string | null; district: string | null; regency: string | null };
   forecast: { data: ForecastItem[] } | ForecastItem[];
   nearby_reports: NearbyReport[];
 };
+
+type WilayahOption = { label: string; lat: number; lon: number };
 
 type ForecastItem = { id: string; prediction_date: string; risk_class: RiskClass; risk_probability: number };
 type NearbyReport = { id: string; report_code: string; severity: "ringan" | "sedang" | "parah" | "sangat_parah"; water_height_cm: number | null; incident_time: string; status: string; region?: { village?: string | null; district?: string | null; regency?: string | null } | null };
@@ -74,6 +80,149 @@ const itemVariants: Variants = {
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
 
+function confidenceLabel(score: number | null | undefined): string {
+  if (score === null || score === undefined || Number.isNaN(score)) return "—";
+  const normalized = score > 1 ? score / 100 : score;
+  const label = normalized >= 0.8 ? "Tinggi" : normalized >= 0.6 ? "Sedang" : "Rendah";
+  return `${label} (${normalized.toFixed(2)})`;
+}
+
+function formatGeneratedAt(value: string | null | undefined): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return `${date.toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} WIB`;
+}
+
+// Titik tengah bounding box dari geometry GeoJSON (Polygon/MultiPolygon) → [lon, lat].
+function bboxCenter(coordinates: unknown): [number, number] | null {
+  const points: [number, number][] = [];
+  const collect = (value: unknown): void => {
+    if (!Array.isArray(value)) return;
+    if (typeof value[0] === "number" && typeof value[1] === "number") {
+      points.push([value[0], value[1]]);
+      return;
+    }
+    value.forEach(collect);
+  };
+  collect(coordinates);
+  if (!points.length) return null;
+  const lons = points.map(([lon]) => lon);
+  const lats = points.map(([, lat]) => lat);
+  return [(Math.min(...lons) + Math.max(...lons)) / 2, (Math.min(...lats) + Math.max(...lats)) / 2];
+}
+
+// Combobox pemilih wilayah dengan pencarian (autocomplete) + opsi GPS.
+function WilayahPicker({ options, currentLocation, onSelectWilayah, onRequestGps, variant }: {
+  options: WilayahOption[];
+  currentLocation: string;
+  onSelectWilayah: (option: WilayahOption) => void;
+  onRequestGps: () => void;
+  variant: "hero" | "mobile";
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  const needle = query.trim().toLowerCase();
+  const filtered = (needle ? options.filter((option) => option.label.toLowerCase().includes(needle)) : options).slice(0, 60);
+
+  return (
+    <div className={`wilayah-picker ${variant}`} ref={ref}>
+      <button type="button" className="wilayah-trigger" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+        <Icon name="location_on" style={{ fontSize: 18, flexShrink: 0 }} />
+        <span className="wilayah-trigger-label">{currentLocation}</span>
+        <Icon name="expand_more" style={{ fontSize: 18, flexShrink: 0 }} />
+      </button>
+      {open && (
+        <div className="wilayah-popover" role="listbox">
+          <div className="wilayah-search">
+            <Icon name="search" style={{ fontSize: 18, color: "var(--ink-soft)" }} />
+            <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari kelurahan atau kabupaten…" aria-label="Cari wilayah" />
+          </div>
+          <button type="button" className="wilayah-option gps" onClick={() => { onRequestGps(); setOpen(false); }}>
+            <Icon name="my_location" style={{ fontSize: 18 }} /> Gunakan lokasi perangkat
+          </button>
+          <div className="wilayah-list">
+            {filtered.length === 0 && <div className="wilayah-empty">Wilayah tidak ditemukan.</div>}
+            {filtered.map((option) => (
+              <button type="button" key={`${option.label}-${option.lat}-${option.lon}`} className="wilayah-option" onClick={() => { onSelectWilayah(option); setOpen(false); setQuery(""); }}>
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const WILAYAH_PICKER_STYLES = `
+  .wilayah-picker { position: relative; min-width: 0; }
+  .wilayah-picker.hero { max-width: 320px; width: 100%; }
+  .wilayah-picker.mobile { width: 100%; }
+  .wilayah-picker.mobile .wilayah-trigger { background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.28); color: #fff; }
+  .wilayah-trigger {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 10px;
+    color: var(--ink);
+    cursor: pointer;
+    display: flex;
+    font-size: 0.9rem;
+    font-weight: 600;
+    gap: 8px;
+    min-height: 42px;
+    padding: 8px 12px;
+    width: 100%;
+  }
+  .wilayah-trigger-label { flex: 1; min-width: 0; overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+  .wilayah-popover {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.22);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    left: 0;
+    max-height: 340px;
+    overflow: hidden;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    z-index: 40;
+  }
+  .wilayah-search { align-items: center; border-bottom: 1px solid var(--line); display: flex; gap: 8px; padding: 10px 12px; }
+  .wilayah-search input { border: 0; flex: 1; font-size: 0.9rem; min-height: 0; outline: none; padding: 0; width: 100%; }
+  .wilayah-list { max-height: 240px; overflow-y: auto; }
+  .wilayah-option {
+    background: transparent;
+    border: 0;
+    color: var(--ink);
+    cursor: pointer;
+    display: flex;
+    font-size: 0.88rem;
+    gap: 8px;
+    padding: 11px 14px;
+    text-align: left;
+    width: 100%;
+  }
+  .wilayah-option:hover { background: var(--surface-soft); }
+  .wilayah-option.gps { align-items: center; border-bottom: 1px solid var(--line); color: var(--accent-dark); font-weight: 650; }
+  .wilayah-empty { color: var(--ink-soft); font-size: 0.86rem; padding: 16px 14px; text-align: center; }
+`;
+
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   useEffect(() => {
@@ -88,12 +237,13 @@ function useIsMobile() {
 // DESKTOP VIEW
 // ==========================================
 function CitizenModeDesktop({
-  data, error, dataLoaded, locationNote, coordinates, setCoordinates, setLocationNote,
-  requestGpsLocation, locationOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
+  data, error, dataLoaded, setCoordinates, setLocationNote,
+  requestGpsLocation, wilayahOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
 }: any) {
   return (
     <AppShell active="awam" title="Status Bahaya Saya" subtitle="Panduan mitigasi dan peringatan dini disajikan dalam bahasa yang mudah dipahami.">
       <style>{`
+        ${WILAYAH_PICKER_STYLES}
         .citizen-mode-layout { grid-template-columns: minmax(0, 1fr) 340px; max-width: 1280px; padding-top: 24px; }
         .citizen-status-card { border-radius: 16px !important; padding: 34px !important; }
         .citizen-location-controls { align-items: center; display: flex; gap: 16px; justify-content: space-between; margin-bottom: 28px; }
@@ -132,29 +282,43 @@ function CitizenModeDesktop({
               padding: "40px",
               boxShadow: cardStyle.boxShadow,
               position: "relative",
-              overflow: "hidden"
+              overflow: "visible"
             }}
           >
-            <Icon
-              name={cardStyle.icon}
-              style={{ position: "absolute", right: "-20px", top: "-20px", fontSize: "280px", opacity: 0.1, transform: "rotate(-15deg)" }}
-            />
+            <div style={{ position: "absolute", inset: 0, overflow: "hidden", borderRadius: 16, pointerEvents: "none", zIndex: 0 }}>
+              <Icon
+                name={cardStyle.icon}
+                style={{ position: "absolute", right: "-20px", top: "-20px", fontSize: "280px", opacity: 0.1, transform: "rotate(-15deg)" }}
+              />
+            </div>
 
             <div style={{ position: "relative", zIndex: 1 }}>
               <div className="citizen-location-controls">
                 <div className="citizen-location-name">
                   <Icon name="location_on" style={{ fontSize: 20 }} /><span>{currentLocation}</span>
                 </div>
-                <select aria-label="Pilih lokasi" onChange={(event) => { const value = event.target.value; if (value === "gps") { requestGpsLocation(); return; } const [lat, lon] = value.split(",").map(Number); setCoordinates({ lat, lon }); setLocationNote(event.target.options[event.target.selectedIndex].text); }}>{locationOptions.map((option: any) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+                <WilayahPicker
+                  variant="hero"
+                  options={wilayahOptions}
+                  currentLocation={currentLocation}
+                  onRequestGps={requestGpsLocation}
+                  onSelectWilayah={(option: WilayahOption) => { setCoordinates({ lat: option.lat, lon: option.lon }); setLocationNote(option.label); }}
+                />
               </div>
 
-              <h1 className="citizen-status-title" style={{ fontWeight: 900, lineHeight: 1.1, margin: "0 0 16px 0", letterSpacing: "-0.03em" }}>
+              <h1 className="citizen-status-title" style={{ fontWeight: 900, lineHeight: 1.1, margin: "0 0 12px 0", letterSpacing: "-0.03em" }}>
                 Status <span style={{ color: "#fff" }}>{risk}</span>
               </h1>
 
+              {data?.status_label && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.24)", borderRadius: 999, padding: "5px 12px", fontSize: 13, fontWeight: 650, marginBottom: 16 }}>
+                  <Icon name={data.is_monitored ? "radar" : "info"} style={{ fontSize: 16 }} /> {data.status_label}
+                </span>
+              )}
+
               <p style={{ fontSize: "1.15rem", lineHeight: 1.6, color: "rgba(255,255,255,0.95)", maxWidth: "600px", margin: "0 0 40px 0" }}>
                 {data
-                  ? `Air laut diprediksi naik di sekitar wilayah Anda. Hindari jalan rendah dekat pesisir dan siapkan barang penting${data.peak_time ? ` sebelum puncak pasang pukul ${data.peak_time} WIB` : ""}.`
+                  ? (data.guidance_message ?? "Pantau kondisi rob di sekitar Anda dan ikuti arahan BPBD.")
                   : (dataLoaded ? "Lokasi Anda berada di luar wilayah pantauan Lampung. Pilih lokasi lain dari daftar di atas untuk melihat status bahaya rob." : "Menganalisis status ancaman rob terbaru di sekitar Anda...")}
               </p>
 
@@ -184,7 +348,7 @@ function CitizenModeDesktop({
           <motion.section variants={itemVariants} className="panel flush">
             <div style={{ padding: "24px", borderBottom: "1px solid var(--line)" }}>
               <h2 style={{ fontSize: "1.25rem", margin: 0, marginBottom: 4 }}>Prakiraan 7 Hari ke Depan</h2>
-              <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Sumber: BMKG & Prediksi AI. Waspada saat indikator merah mendominasi.</p>
+              <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Sumber: model prediksi SIPERAH-RoB. Waspada saat indikator merah mendominasi.</p>
             </div>
 
             <div className="citizen-forecast-grid">
@@ -321,10 +485,10 @@ function CitizenModeDesktop({
           <motion.section variants={itemVariants} className="panel" style={{ background: "var(--surface-soft)", border: "none" }}>
             <h2 style={{ fontSize: "1.05rem", margin: "0 0 16px 0" }}>Informasi Teknis Model</h2>
             <div style={{ display: "grid", gap: 10, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Model AI</span> <strong>Random Forest v2.0</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Kepercayaan</span> <strong style={{ color: "var(--low)" }}>Tinggi (0.89)</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Sumber Data</span> <strong>BMKG + BIG + Warga</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span>Pembaruan</span> <strong>Real-time</strong></div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span>Model AI</span> <strong style={{ textAlign: "right" }}>{data?.model_version ?? "—"}</strong></div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span>Kepercayaan</span> <strong style={{ textAlign: "right", color: "var(--low)" }}>{confidenceLabel(data?.confidence_score)}</strong></div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span>Sumber Data</span> <strong style={{ textAlign: "right" }}>{data?.data_source ?? "—"}</strong></div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span>Pembaruan</span> <strong style={{ textAlign: "right" }}>{formatGeneratedAt(data?.generated_at)}</strong></div>
             </div>
           </motion.section>
         </aside>
@@ -337,13 +501,14 @@ function CitizenModeDesktop({
 // MOBILE NATIVE VIEW
 // ==========================================
 function CitizenModeMobile({
-  data, error, dataLoaded, locationNote, coordinates, setCoordinates, setLocationNote,
-  requestGpsLocation, locationOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
+  data, error, dataLoaded, setCoordinates, setLocationNote,
+  requestGpsLocation, wilayahOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
 }: any) {
-  
+
   return (
     <AppShell active="awam" title="Status Bahaya Saya">
       <style>{`
+        ${WILAYAH_PICKER_STYLES}
         /* MOBILE NATIVE STYLES */
         .mobile-native-hero {
           background: ${cardStyle.background};
@@ -351,9 +516,17 @@ function CitizenModeMobile({
           padding: 32px 20px 40px 20px;
           margin: -24px -24px 24px -24px; /* Assume app-content has 24px padding */
           position: relative;
-          overflow: hidden;
+          overflow: visible;
           box-shadow: ${cardStyle.boxShadow};
           border-radius: 0 0 32px 32px;
+        }
+        .mobile-native-hero-bg {
+          position: absolute;
+          inset: 0;
+          overflow: hidden;
+          border-radius: 0 0 32px 32px;
+          pointer-events: none;
+          z-index: 0;
         }
         
         .mobile-location-pill {
@@ -448,38 +621,29 @@ function CitizenModeMobile({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
-        <Icon
-          name={cardStyle.icon}
-          style={{ position: "absolute", right: "-30px", top: "-10px", fontSize: "240px", opacity: 0.1, transform: "rotate(-15deg)" }}
-        />
-        
+        <div className="mobile-native-hero-bg">
+          <Icon
+            name={cardStyle.icon}
+            style={{ position: "absolute", right: "-30px", top: "-10px", fontSize: "240px", opacity: 0.1, transform: "rotate(-15deg)" }}
+          />
+        </div>
+
         <div style={{ position: "relative", zIndex: 1 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-            <div className="mobile-location-pill">
-              <Icon name="location_on" style={{ fontSize: 16 }} />
-              <span style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {currentLocation}
-              </span>
-            </div>
-            
-            {/* Minimal settings icon to open location selector */}
-            <select 
-              aria-label="Pilih lokasi" 
-              style={{ opacity: 0, position: "absolute", width: 40, height: 40, right: 0, top: 0, zIndex: 10 }}
-              onChange={(event) => { 
-                const value = event.target.value; 
-                if (value === "gps") { requestGpsLocation(); return; } 
-                const [lat, lon] = value.split(",").map(Number); 
-                setCoordinates({ lat, lon }); 
-                setLocationNote(event.target.options[event.target.selectedIndex].text); 
-              }}
-            >
-              {locationOptions.map((option: any) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-            <div style={{ background: "rgba(255,255,255,0.2)", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon name="tune" style={{ fontSize: 18 }} />
-            </div>
+          <div style={{ marginBottom: 20 }}>
+            <WilayahPicker
+              variant="mobile"
+              options={wilayahOptions}
+              currentLocation={currentLocation}
+              onRequestGps={requestGpsLocation}
+              onSelectWilayah={(option: WilayahOption) => { setCoordinates({ lat: option.lat, lon: option.lon }); setLocationNote(option.label); }}
+            />
           </div>
+
+          {data?.status_label && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.24)", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 650, marginBottom: 12 }}>
+              <Icon name={data.is_monitored ? "radar" : "info"} style={{ fontSize: 14 }} /> {data.status_label}
+            </span>
+          )}
 
           <h1 style={{ fontSize: "2.5rem", fontWeight: 900, lineHeight: 1.1, margin: "0 0 12px 0", letterSpacing: "-0.03em" }}>
             Status<br />{risk}
@@ -487,7 +651,7 @@ function CitizenModeMobile({
 
           <p style={{ fontSize: "1rem", lineHeight: 1.5, color: "rgba(255,255,255,0.9)", margin: "0 0 24px 0" }}>
             {data
-              ? `Air laut diprediksi naik. Siapkan barang penting${data.peak_time ? ` sebelum pasang pukul ${data.peak_time}` : ""}.`
+              ? (data.guidance_message ?? "Pantau kondisi rob di sekitar Anda dan ikuti arahan BPBD.")
               : (dataLoaded ? "Lokasi di luar wilayah pantauan Lampung. Pilih lokasi dari daftar." : "Menganalisis status rob...")}
           </p>
 
@@ -615,15 +779,33 @@ export function CitizenModePage() {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [locationNote, setLocationNote] = useState("Menggunakan wilayah pesisir terdekat");
   const [coordinates, setCoordinates] = useState<{ lat: number; lon: number } | null>(null);
-  
+  const [wilayahOptions, setWilayahOptions] = useState<WilayahOption[]>([]);
+
   const isMobile = useIsMobile();
 
-  const locationOptions = [
-    { label: "Gunakan lokasi perangkat", value: "gps" },
-    { label: "Telukbetung Selatan, Bandar Lampung", value: "-5.45,105.26" },
-    { label: "Panjang, Bandar Lampung", value: "-5.51,105.20" },
-    { label: "Kalianda, Lampung Selatan", value: "-5.58,105.59" },
-  ];
+  // Daftar wilayah pesisir yang dipantau, diambil dari peta publik (centroid tiap zona).
+  useEffect(() => {
+    let alive = true;
+    api<any>("/public/map")
+      .then((response) => {
+        if (!alive) return;
+        const features: any[] = response.data?.regions?.features ?? [];
+        const seen = new Set<string>();
+        const options: WilayahOption[] = [];
+        for (const feature of features) {
+          const center = bboxCenter(feature.geometry?.coordinates);
+          if (!center) continue;
+          const label = [feature.properties?.village, feature.properties?.district, feature.properties?.regency].filter(Boolean).join(", ") || "Wilayah pesisir";
+          if (seen.has(label)) continue;
+          seen.add(label);
+          options.push({ label, lat: center[1], lon: center[0] });
+        }
+        options.sort((a, b) => a.label.localeCompare(b.label, "id"));
+        setWilayahOptions(options);
+      })
+      .catch(() => undefined);
+    return () => { alive = false; };
+  }, []);
 
   const requestGpsLocation = () => {
     if (!navigator.geolocation) {
@@ -720,7 +902,7 @@ export function CitizenModePage() {
 
   const commonProps = {
     data, error, dataLoaded, locationNote, coordinates, setCoordinates, setLocationNote,
-    requestGpsLocation, locationOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
+    requestGpsLocation, wilayahOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
   };
 
   if (isMobile) {
