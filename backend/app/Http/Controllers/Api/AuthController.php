@@ -10,7 +10,6 @@ use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 final class AuthController
 {
@@ -42,18 +41,8 @@ final class AuthController
         $user->update(['last_login_at' => now()]);
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // Audit log
-        \App\Models\AuditLog::create([
-            'id' => (string) Str::uuid(),
-            'actor_user_id' => $user->id,
-            'actor_name' => $user->name,
-            'actor_role' => $user->role,
-            'action' => 'login',
-            'target_resource' => $user->email,
-            'outcome' => 'success',
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
+        $request->setUserResolver(fn () => $user);
+        $this->audit->write($request, 'login', 'success', $user->email);
 
         return response()->json([
             'access_token' => $token,
@@ -76,6 +65,12 @@ final class AuthController
             'region_id' => $data['region_id'] ?? null,
             'role' => 'warga', // Default to warga, admin must upgrade
             'status' => 'menunggu', // Default to pending approval
+        ]);
+
+        $this->audit->write($request, 'register', 'success', $user->email, [
+            'actor_name' => $user->name,
+            'actor_role' => $user->role,
+            'status' => $user->status,
         ]);
 
         return response()->json([
