@@ -1,14 +1,18 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { api } from "../../shared/api/client";
 import { AppShell } from "../../shared/components/AppShell";
 import { useToast } from "../../shared/components/Toast";
+import { statusLabels, type ReportStatus } from "./reportData";
 
 type ReportResponse = {
   message: string;
   data: {
     report_code: string;
+    status: ReportStatus;
+    is_within_monitoring_area?: boolean;
   };
 };
 
@@ -41,11 +45,54 @@ function severityFromWaterHeight(heightCm: number): (typeof severityOptions)[num
   return "sangat_parah";
 }
 
+const MAX_PHOTOS = 5;
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Kompres gambar ke WebP di sisi klien agar unggahan ringan.
+// Mengembalikan file asli jika browser tidak mendukung atau hasil malah lebih besar.
+async function compressToWebp(file: File): Promise<File> {
+  try {
+    if (typeof createImageBitmap !== "function") return file;
+    const bitmap = await createImageBitmap(file);
+    const maxDimension = 1600;
+    let { width, height } = bitmap;
+    if (width > maxDimension || height > maxDimension) {
+      const scale = Math.min(maxDimension / width, maxDimension / height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) { bitmap.close?.(); return file; }
+    context.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close?.();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", 0.82));
+    if (!blob || blob.size >= file.size) return file;
+    const newName = `${file.name.replace(/\.[^.]+$/, "")}.webp`;
+    return new File([blob], newName, { type: "image/webp", lastModified: Date.now() });
+  } catch {
+    return file;
+  }
+}
+
 export function ReportWizardPage() {
   const toast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
   const [isDeclarationAccepted, setDeclarationAccepted] = useState(false);
+  const [submitResult, setSubmitResult] = useState<{ code: string; status: ReportStatus; message: string } | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isProcessingPhotos, setProcessingPhotos] = useState(false);
+  const [isDraggingPhoto, setDraggingPhoto] = useState(false);
   
   // Form state for summary
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: -5.45, lng: 105.266 });
@@ -131,6 +178,7 @@ export function ReportWizardPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
+    setSubmitError(null);
 
     const form = event.currentTarget;
     const payload = new FormData();
@@ -150,6 +198,7 @@ export function ReportWizardPage() {
 
     try {
       const response = await api<ReportResponse>("/reports", { method: "POST", body: payload });
+      setSubmitResult({ code: response.data.report_code, status: response.data.status, message: response.message });
       toast.success(`Laporan terkirim. Kode verifikasi: ${response.data.report_code}.`);
       form.reset();
       setSelectedPhotos([]);
@@ -157,31 +206,79 @@ export function ReportWizardPage() {
       setIncidentTime(currentTimeValue());
       setDeclarationAccepted(false);
     } catch (error: any) {
-      toast.error(error.message || "Laporan belum terkirim. Cek isian dan coba lagi.");
+      const message = error.message || "Laporan belum terkirim. Cek isian dan coba lagi.";
+      setSubmitError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  function handlePhotos(files: FileList | null) {
-    const photos = Array.from(files ?? []);
-    if (photos.length > 5) {
-      toast.error("Maksimal 5 foto untuk satu laporan.");
+  async function handlePhotos(files: FileList | null) {
+    const incoming = Array.from(files ?? []);
+    if (incoming.length === 0) return;
+
+    const images = incoming.filter((photo) => ACCEPTED_PHOTO_TYPES.includes(photo.type));
+    if (images.length !== incoming.length) {
+      toast.error("Foto hanya boleh berformat JPG, PNG, atau WebP.");
+    }
+    if (images.length === 0) return;
+
+    const remainingSlots = MAX_PHOTOS - selectedPhotos.length;
+    if (remainingSlots <= 0) {
+      toast.error(`Maksimal ${MAX_PHOTOS} foto untuk satu laporan.`);
       return;
     }
-    if (photos.some((photo) => !["image/jpeg", "image/png"].includes(photo.type))) {
-      toast.error("Foto hanya boleh berformat JPG atau PNG.");
-      return;
+    const toProcess = images.slice(0, remainingSlots);
+    if (images.length > remainingSlots) {
+      toast.error(`Hanya ${remainingSlots} foto lagi yang bisa ditambahkan (maksimal ${MAX_PHOTOS}).`);
     }
-    if (photos.some((photo) => photo.size > 2 * 1024 * 1024)) {
-      toast.error("Setiap foto maksimal berukuran 2 MB.");
-      return;
+
+    setProcessingPhotos(true);
+    try {
+      const processed: File[] = [];
+      for (const image of toProcess) {
+        const compressed = await compressToWebp(image);
+        if (compressed.size > MAX_PHOTO_BYTES) {
+          toast.error(`"${image.name}" masih di atas 2 MB setelah dikompres dan dilewati.`);
+          continue;
+        }
+        processed.push(compressed);
+      }
+      if (processed.length === 0) return;
+      setSelectedPhotos((previous) => {
+        const seen = new Set(previous.map((photo) => `${photo.name}:${photo.size}`));
+        const merged = [...previous];
+        for (const photo of processed) {
+          const key = `${photo.name}:${photo.size}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(photo);
+          }
+        }
+        return merged.slice(0, MAX_PHOTOS);
+      });
+    } finally {
+      setProcessingPhotos(false);
     }
-    setSelectedPhotos(photos);
+  }
+
+  function removePhoto(index: number) {
+    setSelectedPhotos((previous) => previous.filter((_, position) => position !== index));
   }
 
   const selectedSeverityLabel = severityOptions.find(o => o.key === derivedSeverity)?.label || "Parah";
   const isMonitoredRegion = resolvedRegion ? (resolvedRegion.is_monitored ?? resolvedRegion.coastal_flag) : false;
+  const photoPreviews = useMemo(() => selectedPhotos.map((file) => ({ file, url: URL.createObjectURL(file) })), [selectedPhotos]);
+  useEffect(() => () => { photoPreviews.forEach((preview) => URL.revokeObjectURL(preview.url)); }, [photoPreviews]);
+
+  // Kunci scroll halaman saat modal sukses terbuka agar tampilan tidak rusak.
+  useEffect(() => {
+    if (!submitResult) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [submitResult]);
 
   return (
     <AppShell 
@@ -190,6 +287,22 @@ export function ReportWizardPage() {
       subtitle="Pilih lokasi, isi detail kejadian, unggah foto, lalu kirim."
       breadcrumbs={[{ label: "Dashboard", href: "#/" }, { label: "Pelaporan" }]}
     >
+      <style>{`
+        @keyframes reportSpin { to { transform: rotate(360deg); } }
+        .report-spin { animation: reportSpin 0.9s linear infinite; }
+        .report-success-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px); display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 24px; z-index: 1000; }
+        .report-success-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25); margin: auto; max-width: 460px; padding: 32px; text-align: center; width: 100%; animation: reportSuccessIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes reportSuccessIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .photo-dropzone { align-items: center; background: var(--surface-soft); border: 2px dashed var(--line); border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 26px 20px; text-align: center; transition: border-color .2s ease, background .2s ease; }
+        .photo-dropzone:hover, .photo-dropzone.dragging { border-color: var(--accent); background: var(--accent-soft); }
+        .photo-dropzone.disabled { cursor: not-allowed; opacity: 0.7; }
+        .photo-dropzone.disabled:hover { border-color: var(--line); background: var(--surface-soft); }
+        .photo-thumb { border: 1px solid var(--line); border-radius: 10px; margin: 0; overflow: hidden; position: relative; }
+        .photo-thumb img { display: block; height: 96px; object-fit: cover; width: 100%; }
+        .photo-thumb figcaption { background: var(--surface); color: var(--ink-soft); font-size: 11px; padding: 5px 8px; text-align: center; }
+        .photo-remove { align-items: center; background: rgba(15, 23, 42, .72); border: 0; border-radius: 999px; color: #fff; cursor: pointer; display: flex; height: 24px; justify-content: center; position: absolute; right: 6px; top: 6px; width: 24px; }
+        .photo-remove:hover { background: var(--critical); }
+      `}</style>
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px" }}>
         <div className="step-strip" aria-label="Tahap laporan ground truth" style={{ marginBottom: 28, maxWidth: 640 }}>
           <span><b>1</b> Pilih lokasi</span>
@@ -290,13 +403,51 @@ export function ReportWizardPage() {
               />
             </section>
 
-            <section style={{ display: "grid", gap: 8 }}>
-              <label htmlFor="photos" style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Foto dokumentasi</label>
-              <input id="photos" name="photos" type="file" accept="image/png,image/jpeg" multiple onChange={(event) => handlePhotos(event.target.files)} style={{ padding: "12px 14px" }} />
-              <p className="form-note" style={{ marginTop: 8, fontSize: 12, color: "var(--ink-soft)" }}>JPG/PNG, maksimal 5 foto dan 2 MB per foto. Laporan diverifikasi BPBD maksimal 1x24 jam.</p>
-              {selectedPhotos.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10, marginTop: 6 }}>
-                {selectedPhotos.map((photo) => <figure key={`${photo.name}-${photo.lastModified}`} style={{ margin: 0, border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden" }}><img src={URL.createObjectURL(photo)} alt={photo.name} style={{ display: "block", width: "100%", height: 84, objectFit: "cover" }} /><figcaption style={{ padding: 6, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{photo.name}</figcaption></figure>)}
-              </div>}
+            <section style={{ display: "grid", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <label style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Foto dokumentasi</label>
+                <span style={{ fontSize: 12, fontWeight: 700, color: photoPreviews.length ? "var(--accent-dark)" : "var(--ink-soft)" }}>{photoPreviews.length}/{MAX_PHOTOS} foto</span>
+              </div>
+
+              <label
+                className={`photo-dropzone ${isDraggingPhoto ? "dragging" : ""} ${selectedPhotos.length >= MAX_PHOTOS ? "disabled" : ""}`}
+                onDragOver={(event) => { event.preventDefault(); if (selectedPhotos.length < MAX_PHOTOS) setDraggingPhoto(true); }}
+                onDragLeave={() => setDraggingPhoto(false)}
+                onDrop={(event) => { event.preventDefault(); setDraggingPhoto(false); void handlePhotos(event.dataTransfer.files); }}
+              >
+                <input
+                  id="photos"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  multiple
+                  disabled={isProcessingPhotos || selectedPhotos.length >= MAX_PHOTOS}
+                  onChange={(event) => { void handlePhotos(event.target.files); event.target.value = ""; }}
+                  style={{ display: "none" }}
+                />
+                <span className={`material-symbols-outlined ${isProcessingPhotos ? "report-spin" : ""}`} style={{ fontSize: 34, color: "var(--accent)" }}>
+                  {isProcessingPhotos ? "progress_activity" : "add_photo_alternate"}
+                </span>
+                <strong style={{ fontSize: 14 }}>
+                  {isProcessingPhotos ? "Mengompres foto…" : selectedPhotos.length >= MAX_PHOTOS ? "Batas 5 foto tercapai" : "Seret & letakkan atau klik untuk pilih foto"}
+                </strong>
+                <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>JPG, PNG, atau WebP · dikompres otomatis · maks {MAX_PHOTOS} foto, 2 MB per foto</span>
+              </label>
+
+              <p className="form-note" style={{ marginTop: 0, fontSize: 12, color: "var(--ink-soft)" }}>Foto dikompres ke WebP di perangkat Anda agar unggahan ringan. Laporan diverifikasi BPBD maksimal 1x24 jam.</p>
+
+              {photoPreviews.length > 0 && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10 }}>
+                  {photoPreviews.map((preview, index) => (
+                    <figure key={preview.url} className="photo-thumb">
+                      <img src={preview.url} alt={preview.file.name} />
+                      <button type="button" className="photo-remove" aria-label={`Hapus ${preview.file.name}`} onClick={() => removePhoto(index)}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>close</span>
+                      </button>
+                      <figcaption>{formatBytes(preview.file.size)}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              )}
             </section>
           </div>
 
@@ -333,16 +484,48 @@ export function ReportWizardPage() {
               <span style={{ fontSize: 12.5, color: "var(--ink)", lineHeight: 1.6 }}>Saya menyatakan bahwa data yang dilaporkan adalah informasi nyata yang saya saksikan sendiri. Data ini akan digunakan untuk meningkatkan model prediksi banjir rob SIPERAH-RoB.</span>
             </div>
 
+            {submitError && !isSubmitting && (
+              <div className="alert" style={{ borderLeftColor: "var(--critical)", display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <span className="material-symbols-outlined" style={{ color: "var(--critical)", fontSize: 20 }}>error</span>
+                <div style={{ fontSize: 13 }}>
+                  <strong style={{ display: "block", color: "var(--ink)", marginBottom: 2 }}>Laporan belum terkirim</strong>
+                  <span style={{ color: "var(--ink-soft)" }}>{submitError} Periksa isian, lalu kirim ulang.</span>
+                </div>
+              </div>
+            )}
             <button className="btn primary" type="submit" disabled={isSubmitting || !isDeclarationAccepted} style={{ padding: "14px 24px", fontSize: 15 }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>send</span>
-              {isSubmitting ? "Mengirim..." : "Kirim laporan sekarang"}
+              <span className={`material-symbols-outlined ${isSubmitting ? "report-spin" : ""}`} style={{ fontSize: 18 }}>{isSubmitting ? "progress_activity" : (submitError ? "refresh" : "send")}</span>
+              {isSubmitting ? "Mengirim..." : (submitError ? "Kirim ulang laporan" : "Kirim laporan sekarang")}
             </button>
-            <button type="button" className="btn secondary" style={{ padding: "14px 24px", fontSize: 14, border: "none", background: "transparent" }}>
+            <a href="#/history" className="btn secondary" style={{ padding: "14px 24px", fontSize: 14, border: "none", background: "transparent", justifyContent: "center" }}>
               Batal
-            </button>
+            </a>
           </div>
         </form>
       </div>
+
+      {submitResult && createPortal(
+        <div className="report-success-overlay" role="dialog" aria-modal="true" aria-label="Laporan terkirim">
+          <div className="report-success-card">
+            <span className="material-symbols-outlined" style={{ fontSize: 56, color: "var(--low)" }}>check_circle</span>
+            <h2 style={{ fontSize: "1.35rem", margin: "12px 0 6px" }}>Laporan Terkirim</h2>
+            <p style={{ margin: "0 0 16px", color: "var(--ink-soft)", fontSize: 14 }}>
+              Kode verifikasi: <strong style={{ color: "var(--ink)" }}>{submitResult.code}</strong>
+            </p>
+            <span className={`badge status-${submitResult.status}`}>{statusLabels[submitResult.status] ?? submitResult.status}</span>
+            <p style={{ margin: "16px 0 24px", fontSize: 14, lineHeight: 1.6 }}>{submitResult.message}</p>
+            <div style={{ display: "grid", gap: 10 }}>
+              <a className="btn primary" href="#/history" style={{ justifyContent: "center" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>history</span> Lihat Riwayat Laporan
+              </a>
+              <button type="button" className="btn secondary" onClick={() => setSubmitResult(null)} style={{ justifyContent: "center" }}>
+                Buat Laporan Lain
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </AppShell>
   );
 }

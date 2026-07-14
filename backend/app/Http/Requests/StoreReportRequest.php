@@ -22,7 +22,7 @@ class StoreReportRequest extends FormRequest
             'incident_time' => ['required', 'date'],
             'description' => ['required', 'string', 'max:1000'],
             'photos' => ['nullable', 'array', 'max:5'],
-            'photos.*' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png', 'mimetypes:image/jpeg,image/png', 'max:2048'],
+            'photos.*' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
         ];
     }
 
@@ -30,9 +30,9 @@ class StoreReportRequest extends FormRequest
     {
         return [
             'photos.max' => 'Maksimal 5 foto untuk satu laporan.',
-            'photos.*.image' => 'File dokumentasi harus berupa gambar JPG atau PNG.',
-            'photos.*.mimes' => 'Foto hanya boleh berformat JPG atau PNG.',
-            'photos.*.mimetypes' => 'Foto hanya boleh berformat JPG atau PNG.',
+            'photos.*.image' => 'File dokumentasi harus berupa gambar JPG, PNG, atau WebP.',
+            'photos.*.mimes' => 'Foto hanya boleh berformat JPG, PNG, atau WebP.',
+            'photos.*.mimetypes' => 'Foto hanya boleh berformat JPG, PNG, atau WebP.',
             'photos.*.max' => 'Setiap foto maksimal berukuran 2 MB.',
         ];
     }
