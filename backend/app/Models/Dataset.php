@@ -25,11 +25,13 @@ class Dataset extends Model
         'csv_url',
         'json_url',
         'visibility',
+        'coverage_regencies',
     ];
 
     protected $casts = [
         'record_count' => 'integer',
         'period_start' => 'date',
         'period_end' => 'date',
+        'coverage_regencies' => 'array',
     ];
 }
