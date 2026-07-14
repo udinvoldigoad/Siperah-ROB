@@ -26,9 +26,16 @@ RateLimiter::for('login', function (Request $request) {
 });
 
 RateLimiter::for('registration', fn (Request $request) => Limit::perHour(5)->by($request->ip()));
-RateLimiter::for('api-key', fn (Request $request) => Limit::perMinute(60)->by(
-    (string) ($request->attributes->get('api_key_id') ?? $request->ip()),
-));
+
+// API key: 120 req/menit per kunci (fallback ke IP bila belum terautentikasi).
+// Melebihi batas mengembalikan HTTP 429 dengan pesan yang jelas + header Retry-After.
+RateLimiter::for('api-key', fn (Request $request) => Limit::perMinute(120)
+    ->by((string) ($request->attributes->get('api_key_id') ?? $request->ip()))
+    ->response(fn (Request $request, array $headers) => response()->json([
+        'data' => null,
+        'message' => 'Batas permintaan API tercapai (120/menit). Coba lagi sebentar.',
+        'retry_after' => (int) ($headers['Retry-After'] ?? 60),
+    ], 429, $headers)));
 
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:registration');
@@ -72,6 +79,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/users', [AdminController::class, 'users']);
+        Route::post('/admin/users', [AdminController::class, 'storeUser']);
+        Route::get('/admin/users/export', [AdminController::class, 'exportUsers']);
         Route::post('/admin/users/{user}/approve', [AdminController::class, 'approveUser']);
         Route::post('/admin/users/{user}/reject', [AdminController::class, 'rejectUser']);
         Route::patch('/admin/users/{user}', [AdminController::class, 'updateUser']);
@@ -80,7 +89,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::middleware('role:peneliti,admin')->group(function () {
         Route::get('/research/datasets', [ResearchController::class, 'datasets']);
+        Route::get('/research/datasets/{dataset}/download', [ResearchController::class, 'downloadDataset']);
         Route::get('/research/stats', [ResearchController::class, 'stats']);
+        Route::get('/research/usage', [ResearchController::class, 'usage']);
         Route::get('/research/api-reference', [ResearchController::class, 'apiReference']);
         Route::get('/research/api-keys', [ResearchController::class, 'apiKeys']);
         Route::post('/research/api-keys', [ResearchController::class, 'regenerateKey']);
