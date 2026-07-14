@@ -312,22 +312,22 @@ Status:
 - [x] Form lapor tersedia.
 - [x] Pin lokasi dan reverse/resolve region tersedia.
 - [x] Upload foto tersedia.
-- [~] Checkbox deklarasi sudah diminta tidak default checklist.
-- [ ] Severity UI harus mengikuti tinggi air otomatis agar tidak misleading.
-- [ ] Preview foto dan validasi ukuran/jumlah.
-- [ ] Progress submit dan retry error.
-- [ ] Status setelah submit jelas: `menunggu` atau `perlu_review`.
-- [ ] Riwayat harus menampilkan jam/lokasi sesuai laporan.
-- [ ] Test lokasi seluruh Lampung.
+- [x] Checkbox deklarasi sudah diminta tidak default checklist.
+- [x] Severity UI harus mengikuti tinggi air otomatis agar tidak misleading.
+- [x] Preview foto dan validasi ukuran/jumlah.
+- [x] Progress submit dan retry error.
+- [x] Status setelah submit jelas: `menunggu` atau `perlu_review`.
+- [~] Riwayat harus menampilkan jam/lokasi dan foto sesuai laporan.
+- [x] Test lokasi seluruh Lampung.
 
 ### B7. Riwayat laporan warga
 
 - [x] Riwayat laporan tersedia.
 - [x] Pagination 15 laporan per halaman tersedia.
 - [~] Detail riwayat sudah dipoles, perlu final QA.
-- [ ] Badge status dan wilayah pantauan konsisten.
-- [ ] Foto dokumentasi tampil aman.
-- [ ] Empty state dan error state.
+- [x] Badge status dan wilayah pantauan konsisten.
+- [x] Foto dokumentasi tampil aman.
+- [x] Empty state dan error state.
 
 ### B8. Dashboard operator BPBD
 
