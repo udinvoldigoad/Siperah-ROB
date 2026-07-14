@@ -527,6 +527,7 @@ final class DatabaseSeeder extends Seeder
                 'csv_url' => '/api/v1/tidal?format=csv',
                 'json_url' => '/api/v1/tidal?format=json',
                 'visibility' => 'peneliti',
+                'coverage_regencies' => json_encode(['Kota Bandar Lampung', 'Kabupaten Pesawaran']),
             ],
             [
                 'id' => '55555555-5555-4555-8555-555555555552',
@@ -541,6 +542,7 @@ final class DatabaseSeeder extends Seeder
                 'csv_url' => '/api/v1/reports?format=csv',
                 'json_url' => '/api/v1/reports?format=json',
                 'visibility' => 'peneliti',
+                'coverage_regencies' => null,
             ],
             [
                 'id' => '55555555-5555-4555-8555-555555555553',
@@ -555,6 +557,7 @@ final class DatabaseSeeder extends Seeder
                 'csv_url' => '/api/v1/predictions/daily?format=csv',
                 'json_url' => '/api/v1/predictions/daily?format=json',
                 'visibility' => 'peneliti',
+                'coverage_regencies' => null,
             ],
         ];
 

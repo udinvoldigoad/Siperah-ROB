@@ -18,6 +18,16 @@ class UserResource extends JsonResource
             'institution' => $this->institution,
             'status' => $this->status,
             'region_id' => $this->region_id,
+            'region_name' => $this->whenLoaded('region', fn () => trim(implode(', ', array_filter([
+                $this->region?->village,
+                $this->region?->district,
+                $this->region?->regency,
+            ])))),
+            'permission_workflow' => $this->role === 'peneliti' ? [
+                'status' => $this->status,
+                'institution' => $this->institution,
+                'reason' => $this->institution ? "Permohonan akses data untuk institusi {$this->institution}." : null,
+            ] : null,
             'last_login_at' => $this->last_login_at,
             'created_at' => $this->created_at,
         ];

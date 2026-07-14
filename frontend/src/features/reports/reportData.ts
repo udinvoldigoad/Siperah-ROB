@@ -30,9 +30,10 @@ type BackendReport = {
   status: ReportStatus;
   incident_time: string;
   created_at: string;
+  is_within_monitoring_area?: boolean;
   water_height_cm: number | null;
   description: string;
-  region?: { village?: string; district?: string; regency?: string; coastal_flag?: boolean };
+  region?: { village?: string; district?: string; regency?: string; coastal_flag?: boolean; is_monitored?: boolean };
   reporter?: { name?: string };
   photos?: { name?: string; url?: string }[];
 };
@@ -151,12 +152,12 @@ function mapReport(report: BackendReport): OperatorReport {
       name: photo.name ?? "Foto laporan",
       url: photo.url,
     })),
-    isWithinMonitoringArea: Boolean(report.region?.coastal_flag),
+    isWithinMonitoringArea: Boolean(report.is_within_monitoring_area ?? report.region?.is_monitored ?? report.region?.coastal_flag),
   };
 }
 
 export async function fetchOperatorReports() {
-  const response = await api<ReportListResponse>("/reports?status=menunggu,perlu_review");
+  const response = await api<ReportListResponse>("/reports?status=menunggu,perlu_review&per_page=100");
   return response.data.map(mapReport);
 }
 

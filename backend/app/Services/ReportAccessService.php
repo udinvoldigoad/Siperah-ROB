@@ -15,12 +15,14 @@ final class ReportAccessService
 
         return match ($user->role) {
             'warga' => $query->where('user_id', $user->id),
-            'bpbd_operator' => $query->whereHas('region', function (Builder $q) use ($user) {
+            'bpbd_operator' => $query->where(function (Builder $reports) use ($user): void {
                 $regency = $this->operatorRegency($user);
-                $q->whereRaw(
-                    "REGEXP_REPLACE(LOWER(TRIM(regency)), '^(kabupaten|kota)\\s+', '') = ?",
-                    [$regency],
-                );
+                $reports->whereHas('region', function (Builder $q) use ($regency): void {
+                    $q->whereRaw(
+                        "REGEXP_REPLACE(LOWER(TRIM(regency)), '^(kabupaten|kota)\\s+', '') = ?",
+                        [$regency],
+                    );
+                });
             }),
             'bpbd_provinsi', 'admin' => $query,
             default => abort(403, 'Role ini tidak memiliki akses ke laporan ground truth.'),
@@ -36,6 +38,7 @@ final class ReportAccessService
         }
         if ($user->role === 'bpbd_operator') {
             $report->loadMissing('region');
+
             abort_unless(
                 $this->normalizeRegency((string) $report->region?->regency) === $this->operatorRegency($user),
                 403,
