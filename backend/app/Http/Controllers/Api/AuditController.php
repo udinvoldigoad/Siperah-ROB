@@ -60,6 +60,17 @@ final class AuditController
             }, 'audit_logs.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
         }
 
-        return AuditLogResource::collection($query->paginate($filters['per_page'] ?? 15));
+        // Ringkasan global per-outcome agar KPI akurat lintas halaman
+        // (bukan hanya baris yang sedang ditampilkan).
+        $summary = [
+            'total' => AuditLog::count(),
+            'success' => AuditLog::where('outcome', 'success')->count(),
+            'denied' => AuditLog::where('outcome', 'denied')->count(),
+            'fail' => AuditLog::where('outcome', 'fail')->count(),
+            'partial' => AuditLog::where('outcome', 'partial')->count(),
+        ];
+
+        return AuditLogResource::collection($query->paginate($filters['per_page'] ?? 15))
+            ->additional(['summary' => $summary]);
     }
 }
