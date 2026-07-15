@@ -128,6 +128,12 @@ export function findOperatorReport(id: string) {
   return operatorReports.find((report) => report.id === id);
 }
 
+function parseApiDate(dateStr: string | undefined): Date {
+  if (!dateStr) return new Date();
+  if (dateStr.endsWith("Z") || dateStr.includes("+")) return new Date(dateStr);
+  return new Date(dateStr.replace(" ", "T") + "Z");
+}
+
 function mapReport(report: BackendReport): OperatorReport {
   // Tampilkan dalam zona waktu perangkat pengguna agar konsisten dengan jam
   // yang mereka lihat saat melapor (tidak dipaksa ke satu offset tetap).
@@ -143,8 +149,8 @@ function mapReport(report: BackendReport): OperatorReport {
     regency: report.region?.regency ?? "-",
     severity: report.severity,
     status: report.status,
-    incidentTime: dateTimeFormatter.format(new Date(report.incident_time)),
-    submittedAt: dateTimeFormatter.format(new Date(report.created_at)),
+    incidentTime: dateTimeFormatter.format(parseApiDate(report.incident_time)),
+    submittedAt: dateTimeFormatter.format(parseApiDate(report.created_at)),
     waterHeightCm: report.water_height_cm,
     reporter: report.reporter?.name ?? "Warga",
     coordinates: `${report.latitude}, ${report.longitude}`,
