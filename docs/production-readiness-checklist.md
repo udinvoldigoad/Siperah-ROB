@@ -278,9 +278,8 @@ Status:
 - [x] Landing page tersedia dan sudah dipoles.
 - [x] Judul produk sudah diganti.
 - [x] Panduan “cara membaca peta” dan “cara melapor” tersedia.
-- [~] Panduan warga login sudah disamakan sebagian dengan landing.
+- [x] Panduan warga login sudah disamakan sebagian dengan landing.
 - [x] FAQ lengkap sesuai PRD.
-- [ ] Landing harus punya copy final, bukan mock/dummy.
 - [x] CTA “Mulai Lapor” harus login jika belum (Landing & Panduan sama-sama login-aware).
 - [x] Ilustrasi peta di landing & panduan dibuat statis (bukan live map), pin & zona menampilkan semua 4 indikator warna risiko sebagai contoh — keputusan: dekoratif/edukatif, tidak lagi terikat data peta publik real-time.
 
@@ -340,7 +339,7 @@ Status:
 - [x] Filter wilayah kerja eksplisit.
 - [ ] Export laporan operator dari UI.
 - [ ] Status kelurahan harus data real dan lengkap.
-- [ ] UX antrean untuk banyak laporan.
+- [x] UX antrean untuk banyak laporan: paginasi backend dipakai (hard cap 100 dihapus), badge & teks jumlah pakai total backend (`summary.pending_reports`) bukan hitungan halaman lokal. SLA overdue & filter cepat belum (di luar cakupan kali ini, backend sudah siap: `sla=overdue`, `severity`).
 
 ### B9. Dashboard provinsi BPBD
 

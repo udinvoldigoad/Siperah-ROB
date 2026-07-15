@@ -38,7 +38,6 @@ type BackendReport = {
   photos?: { name?: string; url?: string }[];
 };
 
-type ReportListResponse = { data: BackendReport[] };
 type ReportResponse = { data: BackendReport };
 type ReportHistoryResponse = {
   data: BackendReport[];
@@ -163,9 +162,27 @@ function mapReport(report: BackendReport): OperatorReport {
   };
 }
 
-export async function fetchOperatorReports() {
-  const response = await api<ReportListResponse>("/reports?status=menunggu,perlu_review&per_page=100");
-  return response.data.map(mapReport);
+export type OperatorReportsPageData = {
+  reports: OperatorReport[];
+  currentPage: number;
+  lastPage: number;
+  perPage: number;
+  total: number;
+  from: number;
+  to: number;
+};
+
+export async function fetchOperatorReports(page = 1, perPage = 20): Promise<OperatorReportsPageData> {
+  const response = await api<ReportHistoryResponse>(`/reports?status=menunggu,perlu_review&per_page=${perPage}&page=${page}`);
+  return {
+    reports: response.data.map(mapReport),
+    currentPage: response.meta.current_page,
+    lastPage: response.meta.last_page,
+    perPage: response.meta.per_page,
+    total: response.meta.total,
+    from: response.meta.from ?? 0,
+    to: response.meta.to ?? 0,
+  };
 }
 
 export async function fetchOperatorReport(id: string) {

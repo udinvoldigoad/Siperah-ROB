@@ -40,6 +40,8 @@ type OperatorSummaryResponse = { data: OperatorSummary };
 
 export function OperatorDashboardPage() {
   const [reports, setReports] = useState<OperatorReport[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageMeta, setPageMeta] = useState({ currentPage: 1, lastPage: 1, total: 0, from: 0, to: 0 });
   const [summary, setSummary] = useState<OperatorSummary>({
     monitored_villages: 0,
     critical_villages: 0,
@@ -50,14 +52,21 @@ export function OperatorDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const toast = useToast();
 
-  const loadReports = async () => {
+  const loadReports = async (targetPage = page) => {
     setIsLoading(true);
     try {
       const [data, summaryRes] = await Promise.all([
-        fetchOperatorReports(),
+        fetchOperatorReports(targetPage),
         api<OperatorSummaryResponse>("/dashboard/operator/summary"),
       ]);
-      setReports(data);
+      // Kalau laporan di halaman ini habis tervalidasi/tolak dan halaman jadi kosong
+      // (bukan halaman pertama), mundur satu halaman alih-alih menampilkan antrean kosong palsu.
+      if (data.reports.length === 0 && data.currentPage > 1 && data.total > 0) {
+        return loadReports(data.currentPage - 1);
+      }
+      setReports(data.reports);
+      setPage(data.currentPage);
+      setPageMeta({ currentPage: data.currentPage, lastPage: data.lastPage, total: data.total, from: data.from, to: data.to });
       setSummary(summaryRes.data);
     } catch (err: any) {
       toast.error(err.message || "Gagal memuat antrean laporan.");
@@ -67,10 +76,15 @@ export function OperatorDashboardPage() {
   };
 
   useEffect(() => {
-    loadReports();
-    const timer = window.setInterval(loadReports, 30000);
+    loadReports(1);
+    const timer = window.setInterval(() => loadReports(), 30000);
     return () => window.clearInterval(timer);
   }, []);
+
+  const changePage = (nextPage: number) => {
+    if (nextPage < 1 || nextPage > pageMeta.lastPage || nextPage === page) return;
+    void loadReports(nextPage);
+  };
 
   const handleValidate = async (report: OperatorReport) => {
     try {
@@ -92,8 +106,10 @@ export function OperatorDashboardPage() {
     }
   };
 
-  const pendingCount = reports.filter((r) => r.status === "menunggu" || r.status === "perlu_review").length;
-  const triageCount = reports.filter((r) => !r.isWithinMonitoringArea || r.status === "perlu_review").length;
+  // Total antrean sebenarnya dari backend (summary.pending_reports), bukan hitungan
+  // halaman ini saja -- dengan paginasi, `reports` cuma memuat laporan halaman aktif.
+  const pendingCount = summary.pending_reports;
+  const triageCountOnPage = reports.filter((r) => !r.isWithinMonitoringArea || r.status === "perlu_review").length;
   const operatorArea = summary.operator_regency ?? "wilayah kerja operator";
 
   const handleExport = async () => {
@@ -121,7 +137,14 @@ export function OperatorDashboardPage() {
 
   return (
     <AppShell active="operator" title="Dashboard Operator BPBD">
-      <motion.div 
+      <style>{`
+        .operator-pagination { align-items: center; border-top: 1px solid var(--line); display: flex; gap: 8px; justify-content: space-between; padding: 14px 24px; flex-wrap: wrap; }
+        .operator-page-btn { align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); cursor: pointer; display: inline-flex; height: 34px; justify-content: center; min-width: 34px; padding: 0 10px; }
+        .operator-page-btn:hover:not(:disabled) { background: var(--surface-soft); border-color: var(--accent); }
+        .operator-page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 800; }
+        .operator-page-btn:disabled { cursor: not-allowed; opacity: .45; }
+      `}</style>
+      <motion.div
         className="content"
         variants={containerVariants}
         initial="hidden"
@@ -142,7 +165,7 @@ export function OperatorDashboardPage() {
                 {pendingCount} laporan baru/review di {operatorArea} · dicek otomatis tiap 30 detik
               </div>
               <div style={{ fontSize: "13px", opacity: 0.9, marginTop: "2px" }}>
-                {triageCount > 0 ? `${triageCount} laporan triase berada di luar wilayah pantauan rob.` : "Utamakan validasi laporan dengan tingkat keparahan Sangat Parah."}
+                {triageCountOnPage > 0 ? `${triageCountOnPage} dari ${reports.length} laporan pada halaman ini berada di luar wilayah pantauan rob.` : "Utamakan validasi laporan dengan tingkat keparahan Sangat Parah."}
               </div>
             </div>
           </div>
@@ -192,7 +215,9 @@ export function OperatorDashboardPage() {
             <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Antrean Laporan Masuk</h2>
-                <span style={{ color: "var(--ink-soft)", fontSize: 12 }}>{operatorArea} · {pendingCount} laporan ditampilkan</span>
+                <span style={{ color: "var(--ink-soft)", fontSize: 12 }}>
+                  {operatorArea} · {pendingCount === 0 ? "tidak ada laporan menunggu" : `menampilkan ${pageMeta.from}-${pageMeta.to} dari ${pendingCount} laporan`}
+                </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <motion.button whileHover={{ y: -2 }} type="button" className="btn secondary" style={{ padding: "9px 14px" }} onClick={handleExport}>
@@ -258,6 +283,28 @@ export function OperatorDashboardPage() {
                 </AnimatePresence>
               )}
             </div>
+
+            {!isLoading && pageMeta.lastPage > 1 && (
+              <nav className="operator-pagination" aria-label="Navigasi halaman antrean laporan">
+                <span style={{ color: "var(--ink-soft)", fontSize: 12 }}>Halaman {pageMeta.currentPage} dari {pageMeta.lastPage}</span>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <button type="button" className="operator-page-btn" disabled={page <= 1} onClick={() => changePage(page - 1)} aria-label="Halaman sebelumnya">
+                    <Icon name="chevron_left" />
+                  </button>
+                  {Array.from({ length: pageMeta.lastPage }, (_, i) => i + 1)
+                    .filter((n) => pageMeta.lastPage <= 7 || n === 1 || n === pageMeta.lastPage || Math.abs(n - pageMeta.currentPage) <= 1)
+                    .map((n, i, arr) => (
+                      <span key={n} style={{ display: "contents" }}>
+                        {i > 0 && n - arr[i - 1] > 1 && <span style={{ alignSelf: "center", padding: "0 3px" }}>…</span>}
+                        <button type="button" className={`operator-page-btn ${n === pageMeta.currentPage ? "active" : ""}`} onClick={() => changePage(n)} aria-current={n === pageMeta.currentPage ? "page" : undefined}>{n}</button>
+                      </span>
+                    ))}
+                  <button type="button" className="operator-page-btn" disabled={page >= pageMeta.lastPage} onClick={() => changePage(page + 1)} aria-label="Halaman berikutnya">
+                    <Icon name="chevron_right" />
+                  </button>
+                </div>
+              </nav>
+            )}
           </div>
 
           {/* Status Kelurahan */}
