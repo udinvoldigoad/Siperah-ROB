@@ -45,14 +45,14 @@ STATIONS = {
 #   GET https://api.bmkg.go.id/publik/prakiraan-cuaca?adm3=<kode-kecamatan>
 # Kosongkan/None untuk memakai Open-Meteo saja.
 BMKG_ADM4_CODES: dict[str, str | None] = {
-    "bandar_lampung": None,
-    "lampung_selatan": None,
-    "pesawaran": None,
-    "tanggamus": None,
-    "pesisir_barat": None,
-    "lampung_timur": None,
-    "tulang_bawang": None,
-    "mesuji": None,
+    "bandar_lampung": "18.71",
+    "lampung_selatan": "18.01",
+    "pesawaran": "18.09",
+    "tanggamus": "18.06",
+    "pesisir_barat": "18.13",
+    "lampung_timur": "18.07",
+    "tulang_bawang": "18.05",
+    "mesuji": "18.11",
 }
 
 BASE_DIR = Path(__file__).resolve().parent.parent

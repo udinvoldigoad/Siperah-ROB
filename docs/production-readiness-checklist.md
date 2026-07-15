@@ -63,7 +63,7 @@ Status:
 
 - [x] Ada model/tabel/pipeline data pasang surut.
 - [~] Import pasang surut lokal sudah ada, tetapi cakupan belum merata seluruh Lampung.
-- [ ] Integrasi sumber BMKG resmi untuk prakiraan cuaca.
+- [x] Integrasi sumber BMKG resmi untuk prakiraan cuaca.
 - [ ] Integrasi peringatan dini cuaca BMKG.
 - [ ] Integrasi data gempa/tsunami BMKG jika relevan dengan peringatan pesisir.
 - [ ] Integrasi data pasang surut real/historis yang sumbernya jelas.
