@@ -255,13 +255,12 @@ export function LoginPage() {
                   />
                 </div>
                 
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "32px" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", cursor: "pointer", color: "var(--ink-soft)", fontWeight: 500 }}>
-                    <input type="checkbox" style={{ accentColor: "#1e40af", width: "16px", height: "16px", borderRadius: "4px" }} />
-                    Ingat saya
-                  </label>
-                  <a href="#" style={{ fontSize: "13px", color: "#1e40af", fontWeight: 700, textDecoration: "none" }}>Lupa kata sandi?</a>
-                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#475569", cursor: "pointer" }}>
+                      <input type="checkbox" style={{ accentColor: "#1e40af", width: "16px", height: "16px", borderRadius: "4px" }} />
+                      Ingat saya
+                    </label>
+                  </div>
 
                 <button 
                   className="btn solid" 

@@ -314,6 +314,17 @@ export function ReportWizardPage() {
         .photo-thumb figcaption { background: var(--surface); color: var(--ink-soft); font-size: 11px; padding: 5px 8px; text-align: center; }
         .photo-remove { align-items: center; background: rgba(15, 23, 42, .72); border: 0; border-radius: 999px; color: #fff; cursor: pointer; display: flex; height: 24px; justify-content: center; position: absolute; right: 6px; top: 6px; width: 24px; }
         .photo-remove:hover { background: var(--critical); }
+        
+        .wizard-layout { display: grid; grid-template-columns: 1.5fr 400px; gap: 32px; align-items: start; justify-content: center; }
+        .severity-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 992px) {
+          .wizard-layout { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+          .severity-grid { grid-template-columns: repeat(2, 1fr); }
+          .details-grid { grid-template-columns: 1fr; }
+        }
       `}</style>
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px" }}>
         <div className="step-strip" aria-label="Tahap laporan ground truth" style={{ margin: "0 auto 28px", maxWidth: 640 }}>
@@ -322,9 +333,9 @@ export function ReportWizardPage() {
           <span><b>3</b> Foto & kirim</span>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1.5fr 400px", gap: 32, alignItems: "start", justifyContent: "center" }}>
+        <form onSubmit={handleSubmit} className="wizard-layout">
           {/* Left Column: Form Fields */}
-          <div className="panel" style={{ display: "grid", gap: 24, padding: 32 }}>
+          <div className="panel" style={{ display: "grid", gap: 24, padding: "32px clamp(16px, 4vw, 32px)" }}>
             <h2 style={{ fontSize: "1.25rem", margin: 0, paddingBottom: 16, borderBottom: "1px solid var(--line)" }}>Detail Informasi</h2>
 
             <section style={{ display: "grid", gap: 8 }}>
@@ -365,7 +376,7 @@ export function ReportWizardPage() {
             <section style={{ display: "grid", gap: 10 }}>
               <label style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Tingkat keparahan otomatis</label>
               <p className="form-note" style={{ marginTop: 0 }}>Sistem menentukan keparahan dari estimasi tinggi air. Anda cukup isi tinggi genangan, lalu kategori akan berubah otomatis.</p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
+              <div className="severity-grid">
                 {severityOptions.map((option) => {
                   const isSelected = derivedSeverity === option.key;
                   return (
@@ -396,7 +407,7 @@ export function ReportWizardPage() {
               </div>
             </section>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="details-grid">
               <div style={{ display: "grid", gap: 8 }}>
                 <label htmlFor="water_height_cm" style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Estimasi ketinggian air (cm)</label>
                 <input id="water_height_cm" name="water_height_cm" type="number" min="0" max="500" value={waterHeight} onChange={e => setWaterHeight(e.target.value)} required />
@@ -467,8 +478,8 @@ export function ReportWizardPage() {
             </section>
           </div>
 
-          {/* Right Column: Summary & Actions */}
-          <div className="panel" style={{ display: "flex", flexDirection: "column", gap: 24, position: "sticky", top: 100, padding: 32 }}>
+          {/* Right Column: Submission Panel */}
+          <div className="panel" style={{ display: "grid", gap: 24, padding: "32px clamp(16px, 4vw, 32px)", position: "sticky", top: 24, height: "fit-content" }}>
             <div>
               <h2 style={{ fontSize: "1.25rem", margin: 0, paddingBottom: 16, borderBottom: "1px solid var(--line)" }}>Ringkasan Laporan</h2>
               <div className="summary-grid" style={{ display: "grid", gap: 14 }}>
