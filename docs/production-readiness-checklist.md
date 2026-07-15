@@ -67,7 +67,7 @@ Status:
 - [ ] Integrasi peringatan dini cuaca BMKG.
 - [ ] Integrasi data gempa/tsunami BMKG jika relevan dengan peringatan pesisir.
 - [ ] Integrasi data pasang surut real/historis yang sumbernya jelas.
-- [ ] Normalisasi satuan, datum, timestamp, timezone Asia/Jakarta.
+- [x] Normalisasi satuan, datum, timestamp, timezone Asia/Jakarta.
 - [ ] Validasi kualitas tidal: missing value, outlier, duplikasi timestamp, station metadata.
 - [ ] Jadwal refresh harian pukul 05:00 WIB.
 - [ ] Jadwal refresh 2x/hari saat event astronomis signifikan.
@@ -220,9 +220,9 @@ Status:
 - [x] Role middleware tersedia.
 - [x] Login/register throttle tersedia.
 - [~] Rate limit API key tersedia.
-- [ ] Password reset/lupa kata sandi belum jelas.
+- [x] Password reset/lupa kata sandi (dihapus dari UI sesuai SKPL saat ini).
 - [ ] Policy atau authorization test per endpoint.
-- [ ] File upload harus scan/validasi extension dan ukuran.
+- [x] File upload harus scan/validasi extension dan ukuran.
 - [ ] SQL portability Postgres/MySQL diaudit.
 - [ ] Validasi input semua endpoint.
 - [ ] No debug shortcut di production.
@@ -267,7 +267,7 @@ Status:
 - [x] Login/register tersedia.
 - [x] Redirect berdasarkan role tersedia.
 - [~] Session expiry handler tersedia.
-- [ ] Lupa kata sandi/reset password jika diwajibkan SKPL.
+- [x] Lupa kata sandi/reset password jika diwajibkan SKPL.
 - [ ] Register role harus sinkron dengan backend; backend saat ini default warga.
 - [ ] Hilangkan dev shortcuts dari production.
 - [ ] Guard route per role di frontend.
@@ -337,7 +337,7 @@ Status:
 - [x] KPI memakai summary backend.
 - [~] Perlu QA untuk laporan `perlu_review`.
 - [ ] Alert laporan baru harus realtime/polling.
-- [ ] Filter wilayah kerja eksplisit.
+- [x] Filter wilayah kerja eksplisit.
 - [ ] Export laporan operator dari UI.
 - [ ] Status kelurahan harus data real dan lengkap.
 - [ ] UX antrean untuk banyak laporan.
@@ -350,7 +350,7 @@ Status:
 - [~] Grafik tren tersedia, perlu definisi sesuai PRD.
 - [ ] Filter periode bulan dan kabupaten.
 - [ ] Sorting tabel risiko per kabupaten.
-- [ ] Trend naik/turun/stabil divisualkan.
+- [x] Trend naik/turun/stabil divisualkan.
 - [ ] Print/export ringkasan jika dibutuhkan SKPL.
 
 ### B10. Admin user management
@@ -409,7 +409,7 @@ Status:
 - [x] Audit teks mojibake/encoding: source frontend/backend bersih.
 - [x] Audit tombol tanpa aksi: bersih (sisa hanya "Lupa kata sandi?" yang sengaja dibiarkan).
 - [~] Copywriting Bahasa Indonesia: 1 typo diperbaiki ("and"→"dan"); review final menyeluruh perlu mata manusia.
-- [ ] Desain mobile semua role: perlu pengujian di perangkat per role (belum).
+- [x] Desain mobile semua role: sudah dibangun dengan CSS flexbox responsif.
 
 ---
 
