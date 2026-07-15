@@ -76,6 +76,7 @@ final class PublicMapController
                         'max_tidal_height' => (float) $prediction->max_tidal_height,
                         'peak_time' => $prediction->peak_time ? substr($prediction->peak_time, 0, 5) : null,
                         'prediction_date' => $prediction->prediction_date,
+                        'generated_at' => $prediction->generated_at,
                         'provenance_status' => $prediction->provenance_status,
                         'data_source' => $prediction->data_source,
                     ],

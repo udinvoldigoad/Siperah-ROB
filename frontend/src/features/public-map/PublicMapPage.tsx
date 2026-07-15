@@ -386,6 +386,13 @@ export function PublicMapPage() {
     return !highest || (rank[String(feature.properties.risk_class)] ?? 0) > (rank[String(highest.properties.risk_class)] ?? 0) ? feature : highest;
   }, null), [regions]);
 
+  const isStaleData = useMemo(() => {
+    if (!regions.features.length) return false;
+    const generatedAt = regions.features[0]?.properties?.generated_at;
+    if (!generatedAt) return false;
+    return daysFromToday(String(generatedAt).substring(0, 10)) < 0;
+  }, [regions]);
+
   useEffect(() => {
     if (!regions.features.length) { setSelectedFeature(null); return; }
     setSelectedFeature((current) => {
@@ -486,6 +493,17 @@ export function PublicMapPage() {
     `}</style>
     <motion.div variants={containerVariants} initial="hidden" animate="show" className="stack" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
       <motion.p variants={itemVariants} style={{ margin: 0, color: "var(--ink-soft)", fontSize: 14 }}>Pantau prediksi risiko banjir rob per wilayah pesisir Provinsi Lampung.</motion.p>
+      {isStaleData && (
+        <motion.div variants={itemVariants} className="alert" style={{ borderLeftColor: "var(--warning)", backgroundColor: "#fef3c7" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <Icon name="history" style={{ fontSize: 24, color: "var(--warning)" }} />
+            <div>
+              <strong style={{ display: "block", marginBottom: 3, color: "var(--ink)" }}>Menampilkan Prediksi Historis</strong>
+              <span style={{ color: "var(--ink-soft)", fontSize: 13 }}>Data peringatan cuaca hari ini gagal dimuat atau tertunda. Anda sedang melihat prediksi historis dari {regions.features[0]?.properties?.generated_at ? String(regions.features[0].properties.generated_at).substring(0, 10) : "sebelumnya"}.</span>
+            </div>
+          </div>
+        </motion.div>
+      )}
       <motion.div variants={itemVariants} className="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, borderLeftColor: riskColor[String(highestRisk?.properties.risk_class)] ?? "var(--accent)" }}><div style={{ display: "flex", alignItems: "center", gap: 14 }}><Icon name="warning" style={{ fontSize: 24, color: riskColor[String(highestRisk?.properties.risk_class)] ?? "var(--accent)" }} /><div><strong style={{ display: "block", marginBottom: 3, color: "var(--ink)" }}>{highestRisk ? `Risiko ${riskText(highestRisk.properties.risk_class)} terdeteksi` : "Memuat peringatan risiko"}</strong><span style={{ color: "var(--ink-soft)", fontSize: 13 }}>{highestRisk ? `${highestRisk.properties.village ?? "Wilayah pesisir"}, ${highestRisk.properties.regency ?? "Lampung"} · peluang rob ${Math.round(Number(highestRisk.properties.risk_probability ?? 0))}%` : "Mengambil data peta dari server."}</span></div></div>{(!userRole || userRole === "warga") && <a className="btn secondary" href="#/awam">Lihat mode awam</a>}</motion.div>
       {error && <div className="alert" style={{ borderLeftColor: "var(--critical)" }}>{error}</div>}
       <motion.div variants={itemVariants} className="public-map-layout">
