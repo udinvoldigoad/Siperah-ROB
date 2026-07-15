@@ -209,10 +209,10 @@ Status:
 ### A15. Onboarding dan FAQ (`FR-OB`)
 
 - [x] Endpoint onboarding tersedia.
-- [~] Landing/panduan sudah dipoles, tetapi perlu dicocokkan lagi dengan PRD/SKPL.
-- [ ] FAQ akurasi model, sumber data, hak akses, dan frekuensi update harus lengkap.
-- [ ] Konten edukasi harus bahasa awam dan mobile-friendly.
-- [ ] CTA lapor harus login jika belum autentikasi.
+- [~] Landing/panduan sudah dipoles; FAQ diselaraskan dg implementasi nyata, cross-check teks PRD/SKPL formal masih perlu.
+- [x] FAQ lengkap 4 topik & akurat: akurasi model, sumber data (Open-Meteo/harmonik/laporan warga), hak akses, frekuensi update (harian 06:00 WIB).
+- [x] Konten edukasi bahasa awam (jargon "Machine Learning"/"Perigee" disederhanakan) + layout responsif mobile.
+- [x] CTA lapor login jika belum auth (Portal + Onboarding kini mengarah ke #/login).
 
 ### A16. Keamanan backend
 

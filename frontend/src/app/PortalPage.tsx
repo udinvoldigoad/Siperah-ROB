@@ -75,7 +75,7 @@ const faqData = [
   },
   {
     q: "Data apa yang digunakan model prediksi?",
-    a: "Model mengintegrasikan data pasang surut dari BMKG, data batimetri dari BIG, data kependudukan BPS, data historis banjir rob 2018–2024, dan laporan ground truth dari warga yang telah divalidasi BPBD."
+    a: "Model memadukan data cuaca dan gelombang laut historis dari Open-Meteo (reanalisis ERA5), proyeksi pasang surut berbasis model harmonik, estimasi populasi wilayah pesisir, serta laporan lapangan warga yang telah divalidasi BPBD. Integrasi sumber resmi seperti pasang surut BIG/Pushidrosal dan prakiraan BMKG sedang disiapkan secara bertahap."
   },
   {
     q: "Siapa saja yang bisa menggunakan SIPERAH-RoB?",
@@ -83,7 +83,7 @@ const faqData = [
   },
   {
     q: "Seberapa sering peta diperbarui?",
-    a: "Peta menampilkan data prediksi terbaru yang tersedia di sistem. Jadwal pembaruan mengikuti import data dan pipeline prediksi yang dikelola operator."
+    a: "Prediksi diperbarui otomatis setiap hari sekitar pukul 06:00 WIB melalui pipeline model, dan dapat dijalankan ulang oleh operator saat ada pembaruan data penting. Laporan warga yang telah divalidasi BPBD langsung tampil di peta."
   }
 ];
 

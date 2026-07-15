@@ -15,7 +15,7 @@ const faqData = [
   },
   {
     q: "Data apa yang digunakan model prediksi?",
-    a: "Model mengintegrasikan data pasang surut dari BMKG, data batimetri dari BIG, data kependudukan BPS, data historis banjir rob 2018–2024, dan laporan ground truth dari warga yang telah divalidasi BPBD."
+    a: "Model memadukan data cuaca dan gelombang laut historis dari Open-Meteo (reanalisis ERA5), proyeksi pasang surut berbasis model harmonik, estimasi populasi wilayah pesisir, serta laporan lapangan warga yang telah divalidasi BPBD. Integrasi sumber resmi seperti pasang surut BIG/Pushidrosal dan prakiraan BMKG sedang disiapkan secara bertahap."
   },
   {
     q: "Siapa saja yang bisa menggunakan SIPERAH-RoB?",
@@ -23,13 +23,21 @@ const faqData = [
   },
   {
     q: "Seberapa sering peta diperbarui?",
-    a: "Peta menampilkan data prediksi terbaru yang tersedia di sistem. Waktu pembaruan mengikuti jadwal import data dan pipeline prediksi yang dikelola operator."
+    a: "Prediksi diperbarui otomatis setiap hari sekitar pukul 06:00 WIB melalui pipeline model, dan dapat dijalankan ulang oleh operator saat ada pembaruan data penting. Laporan warga yang telah divalidasi BPBD langsung tampil di peta."
   }
 ];
 
 export function OnboardingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+
+  // CTA "Mulai Melapor" harus mengarah ke login bila belum autentikasi.
+  let reportHref = "#/login";
+  try {
+    const user = JSON.parse(localStorage.getItem("siperah-user") || "null") as { role?: string } | null;
+    const isLoggedIn = !!localStorage.getItem("siperah-token") && !!user;
+    if (isLoggedIn) reportHref = user?.role === "warga" || user?.role === "admin" ? "#/reports" : "#/map";
+  } catch { /* fallback ke #/login */ }
 
   useEffect(() => {
     void api<PredictionResponse>("/public/predictions").then((response) => setPredictions(response.data)).catch(() => undefined);
@@ -100,7 +108,7 @@ export function OnboardingPage() {
           <div className="citizen-warning-box">
             <div className="citizen-warning-label"><Icon name="warning" /> Faktor Utama</div>
             <ul className="citizen-warning-list">
-              <li><Icon name="warning_amber" /> Pasang tinggi (Perigee)</li>
+              <li><Icon name="warning_amber" /> Pasang laut sangat tinggi</li>
               <li><Icon name="air" /> Angin darat kencang</li>
               <li><Icon name="brightness_3" /> Fase bulan purnama</li>
               <li><Icon name="vertical_align_bottom" /> Penurunan muka tanah</li>
@@ -127,7 +135,7 @@ export function OnboardingPage() {
           <div style={{ order: 1 }}>
             <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink)", marginBottom: "20px", letterSpacing: "-0.02em" }}>Cara Membaca Peta Prediksi</h2>
             <p style={{ fontSize: "1.05rem", color: "var(--ink-soft)", lineHeight: 1.7, marginBottom: "32px" }}>
-              Sistem Machine Learning kami memproyeksikan probabilitas banjir ke dalam empat kelas warna yang intuitif. Hal ini memudahkan Anda dan pengambil kebijakan untuk memprioritaskan tindakan mitigasi pada area yang paling berisiko.
+              Sistem prediksi cerdas kami mengubah kemungkinan banjir menjadi empat warna yang mudah dipahami. Ini memudahkan Anda dan petugas untuk mengutamakan tindakan pada area yang paling berisiko.
             </p>
             <div style={{ display: "grid", gap: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#ef4444" }}></div><strong style={{ minWidth: "120px" }}>Sangat Tinggi</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&gt;75% Probabilitas)</span></div>
@@ -150,7 +158,7 @@ export function OnboardingPage() {
         >
           <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink)", marginBottom: "16px", letterSpacing: "-0.02em" }}>Cara Melaporkan Kejadian</h2>
           <p style={{ fontSize: "1.05rem", color: "var(--ink-soft)", lineHeight: 1.7, maxWidth: 700, margin: "0 auto 48px" }}>
-            Bantu kami memvalidasi model Machine Learning dengan membagikan kondisi riil di wilayah Anda. Prosesnya sangat mudah dan terintegrasi langsung dengan dashboard BPBD.
+            Bantu kami menyempurnakan prediksi dengan membagikan kondisi nyata di wilayah Anda. Prosesnya sangat mudah dan langsung terhubung dengan dashboard BPBD.
           </p>
           <div className="citizen-report-flow">
             <div className="citizen-report-step">
@@ -167,7 +175,7 @@ export function OnboardingPage() {
             </div>
           </div>
           <div style={{ marginTop: "40px" }}>
-            <a href="#/reports" className="btn solid" style={{ background: "#0f172a", color: "#fff", padding: "14px 32px", borderRadius: "10px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            <a href={reportHref} className="btn solid" style={{ background: "#0f172a", color: "#fff", padding: "14px 32px", borderRadius: "10px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
               Mulai Melapor Sekarang <Icon name="add_circle" />
             </a>
           </div>
