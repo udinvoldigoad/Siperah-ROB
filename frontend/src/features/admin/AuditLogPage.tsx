@@ -56,10 +56,59 @@ const itemVariants: any = {
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
 
+const actionLabels: Record<string, string> = {
+  create_report: "Membuat Laporan",
+  update_report_status: "Update Status Laporan",
+  validate_report: "Memvalidasi Laporan",
+  reject_report: "Menolak Laporan",
+  approve_user: "Menyetujui Pengguna",
+  reject_user: "Menolak Pengguna",
+  update_user_role: "Ubah Role Pengguna",
+  update_user_region: "Ubah Wilayah Pengguna",
+  update_user_status: "Ubah Status Pengguna",
+  auth_login: "Sistem Login",
+  auth_logout: "Sistem Logout",
+  export_audit: "Ekspor Audit",
+  export_reports: "Ekspor Laporan",
+  export_provincial_reports: "Ekspor Laporan Provinsi",
+  generate_api_key: "Buat API Key",
+  download_dataset: "Unduh Dataset",
+  update_notification_settings: "Update Konfigurasi Notifikasi",
+};
+
+const payloadKeyLabels: Record<string, string> = {
+  report_code: "Kode Laporan",
+  water_height_cm: "Tinggi Air (cm)",
+  is_within_monitoring_area: "Masuk Area Pantauan",
+  severity: "Tingkat Keparahan",
+  region_id: "ID Wilayah",
+  old_role: "Role Lama",
+  new_role: "Role Baru",
+  old_status: "Status Lama",
+  new_status: "Status Baru",
+  old_region: "Wilayah Lama",
+  new_region: "Wilayah Baru",
+  dataset_year: "Tahun Dataset",
+  dataset_type: "Jenis Dataset",
+  rejection_reason: "Alasan Penolakan",
+};
+
 function formatPayloadValue(value: unknown): string {
   if (value === null || value === undefined) return "—";
+  if (typeof value === "boolean") return value ? "Ya" : "Tidak";
   if (typeof value === "object") return JSON.stringify(value);
+  if (typeof value === "string") {
+    // Capitalize simple strings like "parah", "sedang", etc.
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  }
   return String(value);
+}
+
+function formatTargetResource(target: string | null): string {
+  if (!target) return "-";
+  return target.replace("ground_truth_reports:", "ID Laporan: ")
+               .replace("users:", "ID Pengguna: ")
+               .replace("api_keys:", "ID API Key: ");
 }
 
 export function AuditLogPage() {
@@ -304,9 +353,13 @@ export function AuditLogPage() {
                             </span>
                           </td>
                           <td style={{ padding: "16px 24px" }}>
-                            <code style={{ fontSize: 12, color: "var(--accent)", background: "var(--accent-soft)", padding: "4px 8px", borderRadius: 6, fontWeight: 600 }}>{log.action}</code>
+                            <span style={{ fontSize: 12, color: "var(--accent)", background: "var(--accent-soft)", padding: "4px 8px", borderRadius: 6, fontWeight: 600 }}>
+                              {actionLabels[log.action] || log.action}
+                            </span>
                           </td>
-                          <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: 13 }}>{log.target_resource || "-"}</td>
+                          <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: 13, wordBreak: "break-all" }}>
+                            {formatTargetResource(log.target_resource)}
+                          </td>
                           <td style={{ padding: "16px 24px", textAlign: "right" }}>
                             <span className={`badge outcome-${log.outcome}`} style={{ fontSize: 11, padding: "4px 8px" }}>
                               {outcomes[log.outcome] || log.outcome}
@@ -321,7 +374,7 @@ export function AuditLogPage() {
                                   <div><dt>Alamat IP</dt><dd>{log.ip_address || "—"}</dd></div>
                                   <div><dt>Waktu (lengkap)</dt><dd>{formatDate(log.created_at)}</dd></div>
                                   {payloadEntries.map(([key, value]) => (
-                                    <div key={key}><dt>{key.replace(/_/g, " ")}</dt><dd>{formatPayloadValue(value)}</dd></div>
+                                    <div key={key}><dt>{payloadKeyLabels[key] || key.replace(/_/g, " ")}</dt><dd>{formatPayloadValue(value)}</dd></div>
                                   ))}
                                 </dl>
                                 {payloadEntries.length === 0 && (
