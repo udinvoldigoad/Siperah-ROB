@@ -5,6 +5,7 @@ import { motion, type Variants } from "framer-motion";
 import { api } from "../../shared/api/client";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
+import { riskColors as riskColor } from "../../shared/constants/risk";
 
 type GeoJsonFeature = { type: "Feature"; id: string; geometry: { type: string; coordinates: unknown }; properties: Record<string, unknown> };
 type FeatureCollection = { type: "FeatureCollection"; features: GeoJsonFeature[] };
@@ -20,7 +21,6 @@ type MapResponse = { data: { regions: FeatureCollection; reports: FeatureCollect
 type PredictionResponse = { data: Prediction[] };
 type LayerOption = "bahaya_rob" | "laporan" | "pasang_surut" | "garis_pantai";
 
-const riskColor: Record<string, string> = { sangat_tinggi: "#e52421", tinggi: "#f4510b", sedang: "#d97706", rendah: "#16a34a" };
 const riskDotClass: Record<string, string> = { sangat_tinggi: "critical", tinggi: "high", sedang: "medium", rendah: "low" };
 
 const regencyCoordinates: Record<string, { center: [number, number]; zoom: number }> = {

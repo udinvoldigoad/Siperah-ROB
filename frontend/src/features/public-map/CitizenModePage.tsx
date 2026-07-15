@@ -898,7 +898,7 @@ export function CitizenModePage() {
   }) : [];
 
   const actionCards = [
-    ["Jauhi area rendah", "Hindari jalan pesisir and area yang mudah tergenang.", "priority_high"],
+    ["Jauhi area rendah", "Hindari jalan pesisir dan area yang mudah tergenang.", "priority_high"],
     ["Siapkan barang penting", "Amankan dokumen dan barang elektronik sebelum puncak pasang.", "inventory_2"],
     ["Ikuti arahan BPBD", "Jika kondisi memburuk, ikuti informasi resmi dari petugas.", "campaign"],
     ["Laporkan kejadian", "Tambahkan foto dan lokasi bila melihat genangan di sekitar Anda.", "add_location_alt"],

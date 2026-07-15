@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { api } from "../shared/api/client";
+import { riskColors } from "../shared/constants/risk";
 
 type LandingMapFeature = { geometry: { coordinates: unknown }; properties: Record<string, unknown> };
 type LandingMapResponse = { data: { regions: { features: LandingMapFeature[] } } };
@@ -46,7 +47,7 @@ export function LandingRiskMapPreview() {
       },
     });
     const markers: maplibregl.Marker[] = [];
-    const colors: Record<string, string> = { sangat_tinggi: "#dc2626", tinggi: "#f97316", sedang: "#d97706", rendah: "#16a34a" };
+    const colors = riskColors;
     api<LandingMapResponse>("/public/map").then((response) => {
       if (!active) return;
       const bounds = new maplibregl.LngLatBounds();

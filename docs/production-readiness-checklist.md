@@ -404,12 +404,12 @@ Status:
 
 - [x] Scrollbar invisible sudah pernah diterapkan.
 - [x] Navbar publik login/dashboard sudah disesuaikan.
-- [~] Badge severity/risk class sudah dipetakan di beberapa halaman.
-- [ ] Audit semua warna badge `sangat_tinggi`, `tinggi`, `sedang`, `rendah`.
-- [ ] Audit semua teks mojibake/encoding.
-- [ ] Audit semua tombol tanpa aksi.
-- [ ] Audit copywriting Bahasa Indonesia final.
-- [ ] Desain mobile semua role.
+- [x] Badge severity/risk class dari satu sumber warna (`shared/constants/risk`).
+- [x] Audit warna badge `sangat_tinggi`/`tinggi`/`sedang`/`rendah`: hex disatukan lintas peta/portal.
+- [x] Audit teks mojibake/encoding: source frontend/backend bersih.
+- [x] Audit tombol tanpa aksi: bersih (sisa hanya "Lupa kata sandi?" yang sengaja dibiarkan).
+- [~] Copywriting Bahasa Indonesia: 1 typo diperbaiki ("and"→"dan"); review final menyeluruh perlu mata manusia.
+- [ ] Desain mobile semua role: perlu pengujian di perangkat per role (belum).
 
 ---
 
