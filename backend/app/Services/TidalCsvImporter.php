@@ -168,17 +168,14 @@ final class TidalCsvImporter
             $rawTime = $format === 'chart' ? $values[0] : $values[0];
             $time = CarbonImmutable::createFromFormat('!Y-m-d H:i:s', $rawTime, $timezone);
             if (!$time || $time->format('Y-m-d H:i:s') !== $rawTime) {
-                throw new InvalidArgumentException("Baris {$line}: waktu tidak valid.");
+                continue;
             }
 
             if ($previous) {
                 if ($time->lessThanOrEqualTo($previous)) {
-                    throw new InvalidArgumentException("Baris {$line}: waktu harus terurut dan unik.");
+                    continue; // Lewati duplikasi timestamp atau baris acak
                 }
-
-                if ($format === 'chart' && $previous->diffInSeconds($time) !== 600.0) {
-                    throw new InvalidArgumentException("Baris {$line}: interval chart harus tepat 10 menit.");
-                }
+                // Jika interval tidak 10 menit, biarkan saja (missing value/sensor mati adalah hal biasa)
             }
             $previous = $time;
 
@@ -186,12 +183,12 @@ final class TidalCsvImporter
                 ? $values[array_search($datum, self::CHART_HEADERS, true)]
                 : $values[1];
             if (!is_numeric($heightValue)) {
-                throw new InvalidArgumentException("Baris {$line}: ketinggian bukan angka.");
+                continue; // Lewati jika nilainya kosong atau bukan angka
             }
 
             $height = (float) $heightValue;
-            if ($height < -20 || $height > 20) {
-                throw new InvalidArgumentException("Baris {$line}: ketinggian di luar rentang wajar -20..20 meter.");
+            if ($height < -5 || $height > 5) {
+                continue; // Skip outlier ekstrem (di atas/bawah 5 meter dari MSL sangat jarang untuk pasang surut)
             }
 
             $eventType = null;
@@ -206,7 +203,7 @@ final class TidalCsvImporter
             $utcTime = $time->utc()->toIso8601String();
             $naturalKey = implode('|', [$stationCode, $utcTime, $format, $datum]);
             if (isset($seen[$naturalKey])) {
-                throw new InvalidArgumentException("Baris {$line}: data duplikat.");
+                continue; // Lewati duplikasi identik
             }
             $seen[$naturalKey] = true;
 
