@@ -40,11 +40,11 @@ Status:
 - [x] Migration schema utama tersedia.
 - [x] Seeder demo tersedia.
 - [~] Seeder deterministic sudah ada, tetapi perlu dipastikan tidak dipakai sebagai data production.
-- [~] Migration PostGIS tersedia, tetapi perlu fallback/strategi MySQL jika branch migrasi MySQL dipakai.
-- [ ] Semua migration idempotent dan aman untuk deploy bertahap.
-- [ ] Index untuk query berat dipastikan: `predictions`, `regions`, `ground_truth_reports`, `audit_logs`, `notification_inbox`.
-- [ ] Foreign key dan cascade dicek ulang untuk report photos, api keys, notifications.
-- [ ] Data `frontend/dist` diputuskan: tidak ikut Git atau memang bagian artefak deploy.
+- [x] Migration PostGIS: keputusan **Postgres-required** (lihat A16), fallback MySQL tidak dikejar.
+- [~] Semua migration idempotent dan aman untuk deploy bertahap (perlu review lanjutan; schema berbasis migrate:fresh).
+- [x] Index query berat terverifikasi: `predictions_date_idx`, unique `(region_id, prediction_date)`, `audit_logs_action_idx`, `reports_coordinates_idx`, GIST spasial, `notification_inbox (user_id, created_at)`.
+- [x] FK & cascade dicek: report_photos & notification_inbox CASCADE; ditambahkan `ON DELETE CASCADE` untuk api_keys & notification_settings.
+- [x] `frontend/dist` diputuskan: **tidak ikut Git** (di-ignore + di-untrack, dibangun ulang saat deploy).
 - [ ] Data seed demo dipisah jelas dari seed reference production.
 - [ ] Test migration fresh + seed + rollback di CI.
 

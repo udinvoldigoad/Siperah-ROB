@@ -107,7 +107,7 @@ create table datasets (
 
 create table api_keys (
   id uuid primary key,
-  user_id uuid not null references users(id),
+  user_id uuid not null references users(id) on delete cascade,
   key_hash varchar(255) not null,
   key_prefix varchar(24) not null,
   status varchar(30) not null default 'aktif',
@@ -118,7 +118,7 @@ create table api_keys (
 
 create table notification_settings (
   id uuid primary key,
-  user_id uuid not null unique references users(id),
+  user_id uuid not null unique references users(id) on delete cascade,
   channels jsonb not null default '[]',
   event_types jsonb not null default '[]',
   quiet_start time,
