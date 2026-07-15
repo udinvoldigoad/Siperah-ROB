@@ -239,7 +239,8 @@ function useIsMobile() {
 // ==========================================
 function CitizenModeDesktop({
   data, error, dataLoaded, setCoordinates, setLocationNote,
-  requestGpsLocation, wilayahOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
+  requestGpsLocation, wilayahOptions, risk, cardStyle, forecastDays, currentLocation, actionCards,
+  handleShareWhatsApp, handleCopyWarning
 }: any) {
   return (
     <AppShell active="awam" title="Status Bahaya Saya" subtitle="Panduan mitigasi dan peringatan dini disajikan dalam bahasa yang mudah dipahami.">
@@ -473,10 +474,10 @@ function CitizenModeDesktop({
           <motion.section variants={itemVariants} className="panel">
             <h2 style={{ fontSize: "1.15rem", margin: "0 0 16px 0" }}>Sebarkan Peringatan</h2>
             <div className="citizen-share-actions">
-              <button className="btn primary" type="button" style={{ width: "100%", justifyContent: "center", background: "#16a34a", borderColor: "#16a34a", fontSize: "14px" }}>
+              <button className="btn primary" type="button" onClick={handleShareWhatsApp} style={{ width: "100%", justifyContent: "center", background: "#16a34a", borderColor: "#16a34a", fontSize: "14px" }}>
                 <Icon name="share" /> Bagikan via WhatsApp
               </button>
-              <button className="btn secondary" type="button" style={{ width: "100%", justifyContent: "center", fontSize: "14px" }}>
+              <button className="btn secondary" type="button" onClick={handleCopyWarning} style={{ width: "100%", justifyContent: "center", fontSize: "14px" }}>
                 <Icon name="content_copy" /> Salin Teks Peringatan
               </button>
             </div>
@@ -503,7 +504,8 @@ function CitizenModeDesktop({
 // ==========================================
 function CitizenModeMobile({
   data, error, dataLoaded, setCoordinates, setLocationNote,
-  requestGpsLocation, wilayahOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
+  requestGpsLocation, wilayahOptions, risk, cardStyle, forecastDays, currentLocation, actionCards,
+  handleShareWhatsApp, handleCopyWarning
 }: any) {
 
   return (
@@ -759,10 +761,10 @@ function CitizenModeMobile({
 
       {/* Bottom Share Buttons */}
       <motion.section variants={itemVariants} initial="hidden" animate="show" style={{ display: "flex", gap: 10, paddingBottom: 24 }}>
-        <button className="btn primary" type="button" style={{ flex: 1, justifyContent: "center", background: "#16a34a", borderColor: "#16a34a", fontSize: "13px", padding: "12px" }}>
+        <button className="btn primary" type="button" onClick={handleShareWhatsApp} style={{ flex: 1, justifyContent: "center", background: "#16a34a", borderColor: "#16a34a", fontSize: "13px", padding: "12px" }}>
           <Icon name="share" style={{ fontSize: 18 }} /> WA
         </button>
-        <button className="btn secondary" type="button" style={{ flex: 1, justifyContent: "center", fontSize: "13px", padding: "12px" }}>
+        <button className="btn secondary" type="button" onClick={handleCopyWarning} style={{ flex: 1, justifyContent: "center", fontSize: "13px", padding: "12px" }}>
           <Icon name="content_copy" style={{ fontSize: 18 }} /> Salin
         </button>
       </motion.section>
@@ -782,6 +784,7 @@ export function CitizenModePage() {
   const [coordinates, setCoordinates] = useState<{ lat: number; lon: number } | null>(null);
   const [wilayahOptions, setWilayahOptions] = useState<WilayahOption[]>([]);
 
+  const toast = useToast();
   const isMobile = useIsMobile();
 
   // Daftar wilayah pesisir yang dipantau, diambil dari peta publik (centroid tiap zona).
