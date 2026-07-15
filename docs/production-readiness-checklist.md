@@ -362,17 +362,17 @@ Status:
 - [x] Tambah user manual tersedia.
 - [~] Edit role/wilayah/status backend tersedia; UX edit inline masih bisa dipoles.
 - [x] Filter/search tersedia dan diuji backend.
-- [~] Pagination user harus rapi.
-- [~] Konfirmasi aksi destructive/nonaktif.
+- [x] Pagination user harus rapi.
+- [x] Konfirmasi aksi destructive/nonaktif.
 
 ### B11. Audit log viewer
 
 - [x] Halaman audit tersedia.
 - [~] Filter/search tersedia sebagian.
 - [x] Export audit log dari UI.
-- [~] Detail payload audit aman via resource ringkas; tampilan detail payload readable masih bisa dipoles.
-- [ ] Pagination, empty state, dan error state final.
-- [ ] Warna outcome konsisten.
+- [x] Detail payload audit aman via resource ringkas; tampilan detail payload readable via baris expandable.
+- [x] Pagination, empty state, dan error state final.
+- [x] Warna outcome konsisten.
 
 ### B12. Portal peneliti dan arsip data
 
