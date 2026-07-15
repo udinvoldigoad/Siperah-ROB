@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { api, apiUrl } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
@@ -110,6 +110,9 @@ export function ProvinceDashboardPage() {
   const [selectedRegency, setSelectedRegency] = useState("all");
   const [sortKey, setSortKey] = useState<"risk" | "probability" | "population" | "name" | "trend">("risk");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [trendHoverIdx, setTrendHoverIdx] = useState<number | null>(null);
+  const trendSvgRef = useRef<SVGSVGElement>(null);
+  const [chartRegency, setChartRegency] = useState("all");
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -121,7 +124,8 @@ export function ProvinceDashboardPage() {
       const summaryRes = await api<SummaryResponse>(`/dashboard/province/summary${query}`);
       setSummary(summaryRes.data);
 
-      const predRes = await api<PredictionListResponse>(`/public/predictions${selectedRegency !== "all" ? `?regency=${encodeURIComponent(selectedRegency)}` : ""}`);
+      // Fetch all predictions (no regency filter here — chart needs all data for client-side filtering)
+      const predRes = await api<PredictionListResponse>(`/public/predictions?per_page=1000`);
       setPredictions(predRes.data);
 
     } catch (err: any) {
@@ -231,20 +235,25 @@ export function ProvinceDashboardPage() {
   }, [summary.regencies, predictions, sortKey, sortDirection]);
 
   const trendData = useMemo(() => {
-    const counts = predictions.reduce<Record<string, number>>((acc, prediction) => {
-      if (prediction.risk_class === "tinggi" || prediction.risk_class === "sangat_tinggi") {
-        const dateKey = prediction.prediction_date.substring(0, 10);
-        acc[dateKey] = (acc[dateKey] ?? 0) + 1;
-      }
+    // Filter predictions by chart-specific regency filter
+    const filteredPreds = chartRegency === "all"
+      ? predictions
+      : predictions.filter((p) => p.region?.regency === chartRegency);
+
+    const stats = filteredPreds.reduce<Record<string, { sum: number; count: number }>>((acc, prediction) => {
+      const dateKey = prediction.prediction_date.substring(0, 10);
+      if (!acc[dateKey]) acc[dateKey] = { sum: 0, count: 0 };
+      acc[dateKey].sum += Number(prediction.risk_probability);
+      acc[dateKey].count += 1;
       return acc;
     }, {});
 
-    (summary.trend_30_days ?? []).forEach((item) => {
-      counts[item.prediction_date] = toNumber(item.high_risk_count);
-    });
+    // For the percentage chart, we do NOT use summary.trend_30_days 
+    // because that contains high-risk counts, not probabilities.
+    // Since we fetch 1000 predictions, we have all the data needed here.
 
     const endDateKey = summary.latest_prediction_date
-      ?? Object.keys(counts).sort((a, b) => a.localeCompare(b)).at(-1)
+      ?? Object.keys(stats).sort((a, b) => a.localeCompare(b)).at(-1)
       ?? toDateKey(new Date());
     const endDate = new Date(`${endDateKey}T00:00:00`);
     const startDate = new Date(endDate);
@@ -258,7 +267,7 @@ export function ProvinceDashboardPage() {
         const date = new Date(today);
         date.setDate(today.getDate() - 29 + index);
         const key = toDateKey(date);
-        return { count: 0, date, isToday: key === actualToday };
+        return { percent: 0, date, isToday: key === actualToday };
       });
     }
 
@@ -266,11 +275,11 @@ export function ProvinceDashboardPage() {
       const d = new Date(startDate);
       d.setDate(startDate.getDate() + index);
       const key = toDateKey(d);
-      return { count: toNumber(counts[key]), date: d, isToday: key === actualToday };
+      const stat = stats[key];
+      const avg = stat ? (stat.sum / stat.count) : 0;
+      return { percent: avg, date: d, isToday: key === actualToday };
     });
-  }, [predictions, summary.latest_prediction_date, summary.trend_30_days]);
-
-  const maxTrend = Math.max(1, ...trendData.map((item) => item.count));
+  }, [predictions, summary.latest_prediction_date, chartRegency]);
 
   return (
     <AppShell active="province" title="Dashboard BPBD Provinsi Lampung">
@@ -312,27 +321,27 @@ export function ProvinceDashboardPage() {
 
         {/* KPI Grid */}
         <motion.div variants={containerVariants} className="metric-grid" style={{ marginBottom: "32px", gap: "24px" }}>
-          <motion.div variants={itemVariants} style={{ background: "#ffffff", padding: "28px", borderRadius: 8, boxShadow: "0 4px 20px rgba(0,0,0,0.03)", border: "1px solid var(--border-color)" }}>
-            <span style={{ fontSize: "14px", color: "var(--ink-muted)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Wilayah Pantau Aktif</span>
-            <strong style={{ color: "var(--accent-blue)", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.monitored_regencies}</strong>
+          <motion.div variants={itemVariants} className="metric-card" style={{ padding: "28px", borderRadius: 8 }}>
+            <span style={{ fontSize: "14px", color: "var(--ink-soft)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Wilayah Pantau Aktif</span>
+            <strong style={{ color: "var(--accent)", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.monitored_regencies}</strong>
             <small style={{ fontSize: "13px", color: "var(--ink-soft)", display: "block", marginTop: "12px" }}>Kabupaten & Kota di Lampung</small>
           </motion.div>
-          <motion.div variants={itemVariants} style={{ background: "#fff1f2", padding: "28px", borderRadius: 8, boxShadow: "0 4px 20px rgba(225, 29, 72, 0.05)", border: "1px solid #ffe4e6" }}>
-            <span style={{ fontSize: "14px", color: "#e11d48", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Zona Sangat Bahaya</span>
-            <strong style={{ color: "#be123c", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.high_risk_villages}</strong>
-            <small style={{ fontSize: "13px", color: "#e11d48", opacity: 0.8, display: "block", marginTop: "12px" }}>Kelurahan butuh perhatian khusus</small>
+          <motion.div variants={itemVariants} className="metric-card critical" style={{ padding: "28px", borderRadius: 8 }}>
+            <span style={{ fontSize: "14px", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Zona Sangat Bahaya</span>
+            <strong style={{ fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.high_risk_villages}</strong>
+            <small style={{ fontSize: "13px", display: "block", marginTop: "12px" }}>Kelurahan butuh perhatian khusus</small>
           </motion.div>
-          <motion.div variants={itemVariants} style={{ background: "#ffffff", padding: "28px", borderRadius: 8, boxShadow: "0 4px 20px rgba(0,0,0,0.03)", border: "1px solid var(--border-color)" }}>
-            <span style={{ fontSize: "14px", color: "var(--ink-muted)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Warga Terdampak Potensial</span>
-            <strong style={{ color: "#ea580c", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{toNumber(summary.risk_population).toLocaleString("id-ID")}</strong>
+          <motion.div variants={itemVariants} className="metric-card medium" style={{ padding: "28px", borderRadius: 8 }}>
+            <span style={{ fontSize: "14px", color: "var(--ink-soft)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Warga Terdampak Potensial</span>
+            <strong style={{ fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{toNumber(summary.risk_population).toLocaleString("id-ID")}</strong>
             <small style={{ fontSize: "13px", color: "var(--ink-soft)", display: "block", marginTop: "12px" }}>
               {summary.population_audit?.status === "bps_verified" ? "BPS terverifikasi" : summary.population_audit?.status === "region_population_available" ? "Berdasarkan data region" : "Data populasi belum lengkap"}
             </small>
           </motion.div>
-          <motion.div variants={itemVariants} style={{ background: "#f0fdf4", padding: "28px", borderRadius: 8, boxShadow: "0 4px 20px rgba(22, 163, 74, 0.05)", border: "1px solid #dcfce7" }}>
-            <span style={{ fontSize: "14px", color: "#16a34a", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Laporan Masuk (Bulan Ini)</span>
-            <strong style={{ color: "#15803d", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.validated_reports_this_month}</strong>
-            <small style={{ fontSize: "13px", color: "#16a34a", opacity: 0.8, display: "block", marginTop: "12px" }}>Telah divalidasi oleh operator</small>
+          <motion.div variants={itemVariants} className="metric-card success" style={{ padding: "28px", borderRadius: 8 }}>
+            <span style={{ fontSize: "14px", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Laporan Masuk (Bulan Ini)</span>
+            <strong style={{ fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.validated_reports_this_month}</strong>
+            <small style={{ fontSize: "13px", display: "block", marginTop: "12px" }}>Telah divalidasi oleh operator</small>
           </motion.div>
         </motion.div>
 
@@ -408,86 +417,214 @@ export function ProvinceDashboardPage() {
             </div>
           </motion.div>
 
-          {/* ML Prediction Timeline Chart */}
+          {/* ML Prediction Timeline — Line Chart */}
           <motion.div variants={itemVariants} className="panel" style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+            <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)" }}>Tren Prediksi — Kelurahan Risiko Tinggi</h2>
-                <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--ink-soft)" }}>Data aktual yang tersedia dari endpoint prediksi, dikelompokkan per tanggal.</p>
+                <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)" }}>
+                  Tren Statistik Prediksi Rob
+                  {chartRegency !== "all" && (
+                    <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "var(--ink-soft)", marginLeft: 10 }}>({chartRegency})</span>
+                  )}
+                </h2>
+                <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--ink-soft)" }}>Rata-rata persentase peluang rob per hari. Arahkan kursor pada garis untuk melihat detail tanggal & nilai.</p>
               </div>
-              <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--ink-soft)" }}>
-                  <div style={{ width: 12, height: 12, borderRadius: 2, background: "#ef4444" }}></div> Kritis
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--ink-soft)" }}>
-                  <div style={{ width: 12, height: 12, borderRadius: 2, background: "#ea580c" }}></div> Waspada
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--ink-soft)" }}>
-                  <div style={{ width: 12, height: 12, borderRadius: 2, background: "#4ade80" }}></div> Aman
-                </div>
-              </div>
-            </div>
-            
-            <div style={{ position: "relative", height: 280, marginTop: "20px" }}>
-              {/* Y-Axis Labels & Grid Lines */}
-              {[maxTrend, Math.ceil(maxTrend / 2), 0].map((tick) => (
-                <div key={tick} style={{ position: "absolute", bottom: `${(tick / maxTrend) * 100}%`, width: "100%", display: "flex", alignItems: "center" }}>
-                  <div style={{ width: "30px", fontSize: "12px", color: "var(--ink-soft)", fontWeight: 500, textAlign: "right", paddingRight: "12px" }}>
-                    {tick}
+              <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+                <select
+                  value={chartRegency}
+                  onChange={(e) => setChartRegency(e.target.value)}
+                  style={{ minWidth: 180, fontSize: "13px", padding: "6px 10px", borderRadius: 6, border: "1px solid var(--line)", background: "var(--surface, #fff)", color: "var(--ink)" }}
+                >
+                  <option value="all">Semua Kabupaten/Kota</option>
+                  {(summary.available_regencies ?? []).map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+                <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--ink-soft)" }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--critical)" }} /> Kritis (≥70%)
                   </div>
-                  <div style={{ flex: 1, borderBottom: "1px solid var(--line)", opacity: 0.5 }}></div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--ink-soft)" }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--high)" }} /> Waspada (≥40%)
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--ink-soft)" }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--low)" }} /> Aman
+                  </div>
                 </div>
-              ))}
-
-              {/* Data Bars Container */}
-              <div style={{ position: "absolute", left: "42px", right: 0, bottom: 0, height: "100%", display: "flex", alignItems: "flex-end", gap: "6px", paddingBottom: "2px" }}>
-                {(() => {
-                  const data = trendData;
-                  
-                  return data.map(({ count: val, date, isToday }, idx) => {
-                    let color = "#4ade80"; // Aman (green)
-                    if (val >= 12) color = "#ef4444"; // Kritis (red)
-                    else if (val >= 5) color = "#ea580c"; // Waspada (orange)
-
-                    return (
-                      <div key={idx} style={{ flex: 1, display: "flex", justifyContent: "center", height: "100%", position: "relative" }}>
-                        
-                        {isToday && (
-                          <div style={{ position: "absolute", top: -25, display: "flex", flexDirection: "column", alignItems: "center", height: "115%", zIndex: 10 }}>
-                            <span style={{ color: "#ef4444", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap" }}>Hari ini</span>
-                            <div style={{ width: 1, flex: 1, borderLeft: "1.5px dashed #ef4444", marginTop: "4px" }}></div>
-                          </div>
-                        )}
-
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: `${(val / maxTrend) * 100}%` }}
-                          transition={{ delay: 0.2 + (idx * 0.03), type: "spring", stiffness: 60 }}
-                          style={{
-                            width: "100%",
-                            maxWidth: "28px",
-                            background: color,
-                            borderRadius: "4px 4px 0 0",
-                            alignSelf: "flex-end",
-                            zIndex: 5
-                          }}
-                        />
-                        {[0, 14, data.length - 1].includes(idx) && !isToday && (
-                          <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "var(--ink-soft)", fontWeight: 500, whiteSpace: "nowrap" }}>
-                            {date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
-                          </div>
-                        )}
-                        {isToday && (
-                          <div style={{ position: "absolute", bottom: -28, fontSize: "11px", color: "#ef4444", fontWeight: 700, whiteSpace: "nowrap" }}>
-                            {date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  });
-                })()}
               </div>
             </div>
+
+            {(() => {
+              const svgW = 800, svgH = 260;
+              const pad = { top: 30, right: 20, bottom: 40, left: 44 };
+              const chartW = svgW - pad.left - pad.right;
+              const chartH = svgH - pad.top - pad.bottom;
+              const data = trendData;
+              // Persentase selalu max 100
+              const max = 100;
+
+              const xOf = (i: number) => pad.left + (i / Math.max(1, data.length - 1)) * chartW;
+              const yOf = (v: number) => pad.top + chartH - (v / max) * chartH;
+
+              const linePath = data.map((d, i) => `${i === 0 ? "M" : "L"}${xOf(i).toFixed(1)},${yOf(d.percent).toFixed(1)}`).join(" ");
+              const areaPath = `${linePath} L${xOf(data.length - 1).toFixed(1)},${yOf(0).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(0).toFixed(1)} Z`;
+
+              // Y ticks — nice round steps
+              const yTicks = [0, Math.ceil(max / 4), Math.ceil(max / 2), Math.ceil((max * 3) / 4), max];
+              const uniqueYTicks = [...new Set(yTicks)];
+
+              // X ticks — show ~6 date labels
+              const xTickStep = Math.max(1, Math.floor(data.length / 5));
+              const xTicks = data.map((_, i) => i).filter((i) => i % xTickStep === 0 || i === data.length - 1);
+
+              // Today index
+              const todayIdx = data.findIndex((d) => d.isToday);
+
+              // Hover point
+              const hovered = trendHoverIdx !== null ? data[trendHoverIdx] : null;
+              const hoverX = trendHoverIdx !== null ? xOf(trendHoverIdx) : 0;
+              const hoverY = hovered ? yOf(hovered.percent) : 0;
+              const hoverColor = hovered ? (hovered.percent >= 70 ? "var(--critical)" : hovered.percent >= 40 ? "var(--high)" : "var(--low)") : "var(--high)";
+
+              const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+                const svg = trendSvgRef.current;
+                if (!svg) return;
+                
+                // Gunakan CTM untuk mengkonversi titik layar (mouse) secara akurat ke koordinat internal SVG
+                const pt = svg.createSVGPoint();
+                pt.x = e.clientX;
+                pt.y = e.clientY;
+                const ctm = svg.getScreenCTM();
+                if (!ctm) return;
+                
+                const svgP = pt.matrixTransform(ctm.inverse());
+                const mouseX = svgP.x;
+                
+                const relX = mouseX - pad.left;
+                if (relX < -10 || relX > chartW + 10) { setTrendHoverIdx(null); return; }
+                const idx = Math.round((relX / chartW) * (data.length - 1));
+                setTrendHoverIdx(Math.max(0, Math.min(data.length - 1, idx)));
+              };
+
+              // Zone boundaries — clamped to max so rects never get negative height
+              const zoneKritisTop = yOf(100);
+              const zoneKritisBottom = yOf(70);
+              const zoneWaspadaTop = yOf(70);
+              const zoneWaspadaBottom = yOf(40);
+              const zoneAmanTop = yOf(40);
+              const zoneAmanBottom = yOf(0);
+
+              return (
+                <svg
+                  ref={trendSvgRef}
+                  viewBox={`0 0 ${svgW} ${svgH}`}
+                  style={{ width: "100%", height: "auto", maxHeight: 320, cursor: "crosshair", overflow: "visible" }}
+                  onMouseMove={handleMouseMove}
+                  onMouseLeave={() => setTrendHoverIdx(null)}
+                >
+                  <defs>
+                    <linearGradient id="trendAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.02" />
+                    </linearGradient>
+                    <linearGradient id="trendLineGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="var(--accent)" />
+                      <stop offset="100%" stopColor="var(--accent-dark)" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Zone backgrounds */}
+                  <rect x={pad.left} y={zoneKritisTop} width={chartW} height={zoneKritisBottom - zoneKritisTop} fill="var(--critical)" opacity="0.04" rx="2" />
+                  <rect x={pad.left} y={zoneWaspadaTop} width={chartW} height={zoneWaspadaBottom - zoneWaspadaTop} fill="var(--high)" opacity="0.04" rx="2" />
+                  <rect x={pad.left} y={zoneAmanTop} width={chartW} height={zoneAmanBottom - zoneAmanTop} fill="var(--low)" opacity="0.04" rx="2" />
+
+                  {/* Zone threshold lines */}
+                  <line x1={pad.left} y1={yOf(70)} x2={pad.left + chartW} y2={yOf(70)} stroke="var(--critical)" strokeWidth="1" strokeDasharray="6 4" opacity="0.35" />
+                  <line x1={pad.left} y1={yOf(40)} x2={pad.left + chartW} y2={yOf(40)} stroke="var(--high)" strokeWidth="1" strokeDasharray="6 4" opacity="0.35" />
+
+                  {/* Y Grid lines */}
+                  {uniqueYTicks.map((t) => (
+                    <g key={`y-${t}`}>
+                      <line x1={pad.left} y1={yOf(t)} x2={pad.left + chartW} y2={yOf(t)} stroke="var(--line, #e5e7eb)" strokeWidth="0.8" opacity="0.5" />
+                      <text x={pad.left - 8} y={yOf(t) + 4} textAnchor="end" fontSize="11" fill="var(--ink-soft, #94a3b8)" fontWeight="500">
+                        {t}%
+                      </text>
+                    </g>
+                  ))}
+
+                  {/* Area fill */}
+                  <path d={areaPath} fill="url(#trendAreaGrad)" />
+
+                  {/* Line */}
+                  <path d={linePath} fill="none" stroke="url(#trendLineGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+                  {/* Data dots (small) */}
+                  {data.map((d, i) => {
+                    const dotColor = d.percent >= 70 ? "var(--critical)" : d.percent >= 40 ? "var(--high)" : "var(--low)";
+                    return (
+                      <circle
+                        key={i}
+                        cx={xOf(i)}
+                        cy={yOf(d.percent)}
+                        r={d.isToday ? 4.5 : 2.5}
+                        fill={d.isToday ? "var(--critical)" : dotColor}
+                        stroke={d.isToday ? "var(--surface)" : "none"}
+                        strokeWidth={d.isToday ? 2 : 0}
+                        opacity={trendHoverIdx === i ? 0 : 1}
+                      />
+                    );
+                  })}
+
+                  {/* Today vertical marker */}
+                  {todayIdx >= 0 && (
+                    <g>
+                      <line x1={xOf(todayIdx)} y1={pad.top - 14} x2={xOf(todayIdx)} y2={yOf(0)} stroke="var(--critical)" strokeWidth="1.2" strokeDasharray="4 3" opacity="0.6" />
+                      <rect x={xOf(todayIdx) - 24} y={pad.top - 26} width="48" height="18" rx="4" fill="var(--critical)" />
+                      <text x={xOf(todayIdx)} y={pad.top - 13.5} textAnchor="middle" fontSize="10" fill="var(--surface)" fontWeight="700">Hari ini</text>
+                    </g>
+                  )}
+
+                  {/* X-Axis labels */}
+                  {xTicks.map((i) => (
+                    <text key={`x-${i}`} x={xOf(i)} y={svgH - 6} textAnchor="middle" fontSize="10.5" fill={data[i]?.isToday ? "var(--critical)" : "var(--ink-soft)"} fontWeight={data[i]?.isToday ? 700 : 500}>
+                      {data[i]?.date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
+                    </text>
+                  ))}
+
+                  {/* Hover crosshair & tooltip */}
+                  {trendHoverIdx !== null && hovered && (
+                    <g>
+                      {/* Vertical line */}
+                      <line x1={hoverX} y1={pad.top} x2={hoverX} y2={yOf(0)} stroke={hoverColor} strokeWidth="1" opacity="0.45" strokeDasharray="3 2" />
+                      {/* Horizontal line */}
+                      <line x1={pad.left} y1={hoverY} x2={pad.left + chartW} y2={hoverY} stroke={hoverColor} strokeWidth="0.8" opacity="0.25" strokeDasharray="3 2" />
+                      {/* Active dot */}
+                      <circle cx={hoverX} cy={hoverY} r="6" fill={hoverColor} stroke="var(--surface)" strokeWidth="2.5" />
+                      <circle cx={hoverX} cy={hoverY} r="10" fill={hoverColor} opacity="0.15" />
+
+                      {/* Tooltip */}
+                      {(() => {
+                        const tooltipW = 160, tooltipH = 56;
+                        let tx = hoverX - tooltipW / 2;
+                        if (tx < pad.left) tx = pad.left;
+                        if (tx + tooltipW > pad.left + chartW) tx = pad.left + chartW - tooltipW;
+                        const ty = hoverY - tooltipH - 14;
+                        const label = hovered.percent >= 70 ? "Kritis" : hovered.percent >= 40 ? "Waspada" : "Aman";
+                        return (
+                          <g>
+                            <rect x={tx} y={ty} width={tooltipW} height={tooltipH} rx="8" fill="var(--surface, #fff)" stroke="var(--line, #e2e8f0)" strokeWidth="1" filter="drop-shadow(0 4px 12px rgba(0,0,0,0.12))" />
+                            <text x={tx + tooltipW / 2} y={ty + 20} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--ink, #1e293b)">
+                              {hovered.date.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "long" })}
+                            </text>
+                            <text x={tx + tooltipW / 2} y={ty + 40} textAnchor="middle" fontSize="12" fontWeight="600" fill={hoverColor}>
+                              {hovered.percent.toFixed(1)}% Peluang Rob · {label}
+                            </text>
+                          </g>
+                        );
+                      })()}
+                    </g>
+                  )}
+                </svg>
+              );
+            })()}
           </motion.div>
         </div>
 

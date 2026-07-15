@@ -22,8 +22,19 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
   const [isSidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem(SIDEBAR_STORAGE_KEY) !== "closed");
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isNotificationOpen, setNotificationOpen] = useState(false);
+  const [isDarkMode, setDarkMode] = useState(() => localStorage.getItem("siperah-theme") === "dark");
   const [notifications, setNotifications] = useState<InboxItem[]>([]);
   const notificationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.setAttribute("data-theme", "dark");
+      localStorage.setItem("siperah-theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+      localStorage.setItem("siperah-theme", "light");
+    }
+  }, [isDarkMode]);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_STORAGE_KEY, isSidebarOpen ? "open" : "closed");
@@ -161,7 +172,15 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
             <span className="breadcrumb-current">{title}</span>
           </div>
           
-          <div className="topbar-actions">
+          <div className="topbar-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button 
+              type="button" 
+              className="notification-trigger" 
+              aria-label="Ganti Tema" 
+              onClick={() => setDarkMode(!isDarkMode)}
+            >
+              <Icon name={isDarkMode ? "light_mode" : "dark_mode"} />
+            </button>
             {isUserLoggedIn ? (
               <div className="notification-menu" ref={notificationRef}>
                 <button

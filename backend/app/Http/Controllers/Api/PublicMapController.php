@@ -283,7 +283,7 @@ final class PublicMapController
         $filters = $request->validate([
             'regency' => ['nullable', 'string', 'max:100'],
             'date' => ['nullable', 'date_format:Y-m-d'],
-            'per_page' => ['nullable', 'integer', 'between:1,200'],
+            'per_page' => ['nullable', 'integer', 'between:1,1000'],
         ]);
 
         $query = Prediction::with('region')->orderBy('prediction_date', 'desc');
