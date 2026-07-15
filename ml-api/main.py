@@ -390,7 +390,7 @@ def run_predict(conn, simulate: bool = False):
             tide_row = tide_lookup.loc[pred_date]
             cursor.execute(insert_query, (
                 str(uuid.uuid4()), region_id, pred_date,
-                round(max(5.0, min(98.0, float(row["prob_rob"]) * 100)), 2),
+                round(max(max(2.0, (float(tide_row["tide_height_cm"]) - 100) / 10.0), min(98.0, float(row["prob_rob"]) * 100)), 2),
                 row["risk_class"],
                 float(row["confidence"]),
                 round(float(tide_row["tide_height_cm"]) / 100, 3),  # meter utk backend

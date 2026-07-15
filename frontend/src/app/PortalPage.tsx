@@ -88,6 +88,17 @@ const faqData = [
 
 export function PortalPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [isDarkMode, setDarkMode] = useState(() => localStorage.getItem("siperah-theme") === "dark" || document.documentElement.getAttribute("data-theme") === "dark");
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.setAttribute("data-theme", "dark");
+      localStorage.setItem("siperah-theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+      localStorage.setItem("siperah-theme", "light");
+    }
+  }, [isDarkMode]);
 
   const userStr = localStorage.getItem("siperah-user");
   const isLoggedIn = Boolean(localStorage.getItem("siperah-token") && userStr);
@@ -98,11 +109,11 @@ export function PortalPage() {
       const user = JSON.parse(userStr);
       currentRole = user.role || "";
       const roleMap: Record<string, string> = {
-        admin: "#/admin/users",
-        bpbd_operator: "#/operator",
-        bpbd_provinsi: "#/province",
         warga: "#/map",
-        peneliti: "#/research"
+        peneliti: "#/research",
+        operator_kabkota: "#/operator",
+        operator_provinsi: "#/province",
+        admin: "#/admin"
       };
       dashboardRoute = roleMap[user.role] || "#/login";
     } catch (e) {}
@@ -126,8 +137,43 @@ export function PortalPage() {
           --border-color: #e2e8f0;
           --accent-blue: #1557b0;
           --accent-blue-soft: #eff6ff;
-          
-          background-color: var(--bg-primary);
+          --bg-header: rgba(246, 249, 252, 0.88);
+          --brand-bg: #ffffff;
+          --bg-overlay-start: rgba(246, 249, 252, 0.7);
+          --bg-overlay-end: rgba(246, 249, 252, 1);
+          --bg-marquee: rgba(255, 255, 255, 0.62);
+          --ink-inverse: #ffffff;
+          --bg-footer: #0f172a;
+        }
+
+        [data-theme="dark"] .siperah-landing-root {
+          --bg-primary: #020617;
+          --bg-card: #0f172a;
+          --bg-card-dark: #FFFFFF;
+          --ink-primary: #f8fafc;
+          --ink-muted: #94a3b8;
+          --border-color: #334155;
+          --accent-blue: #3b82f6;
+          --accent-blue-soft: #1e3a8a;
+          --bg-header: rgba(2, 6, 23, 0.88);
+          --brand-bg: #0f172a;
+          --bg-overlay-start: rgba(2, 6, 23, 0.85);
+          --bg-overlay-end: rgba(2, 6, 23, 1);
+          --bg-marquee: rgba(15, 23, 42, 0.62);
+          --ink-inverse: #020617;
+          --bg-footer: #000000;
+        }
+
+        /* Component-Specific Dark Mode Overrides */
+        [data-theme="dark"] .siperah-landing-root .bento-card-el.dark-theme { background: #1e293b; border-color: #334155; }
+        [data-theme="dark"] .siperah-landing-root .warning-factor-box { background: #0f172a; border-color: #1e293b; }
+        [data-theme="dark"] .siperah-landing-root .warning-factor-label { background: #451a03; border-color: #78350f; color: #fef3c7; }
+        [data-theme="dark"] .siperah-landing-root .reporting-step { background: #0f172a; border-color: #1e293b; }
+        [data-theme="dark"] .siperah-landing-root .reporting-step-icon { background: #1e293b; color: #38bdf8; }
+        [data-theme="dark"] .siperah-landing-root .landing-map-frame { background: #0f172a; border-color: #1e293b; box-shadow: 0 16px 40px rgba(0, 0, 0, .4); }
+        [data-theme="dark"] .siperah-landing-root .reporting-step-number { background: #0284c7; border-color: #0f172a; box-shadow: 0 0 0 1px #0369a1; }
+
+        .siperah-landing-root {
           color: var(--ink-primary);
           font-family: 'Inter', sans-serif;
           min-height: 100vh;
@@ -150,7 +196,7 @@ export function PortalPage() {
           width: 100%;
           height: 76px;
           padding: 0 clamp(24px, 5vw, 72px);
-          background: rgba(246, 249, 252, 0.88);
+          background: var(--bg-header);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-bottom: 1px solid var(--border-color);
@@ -172,7 +218,7 @@ export function PortalPage() {
           justify-content: center;
           width: 30px;
           height: 30px;
-          background: #ffffff;
+          background: var(--brand-bg);
           color: #2563eb;
           border: 2px solid #2563eb;
           border-radius: 8px;
@@ -226,7 +272,7 @@ export function PortalPage() {
         .btn-nav-primary {
           font-size: 0.92rem;
           font-weight: 600;
-          color: #fff;
+          color: var(--ink-inverse);
           background: var(--ink-primary);
           border: 1px solid var(--ink-primary);
           border-radius: 10px;
@@ -293,7 +339,7 @@ export function PortalPage() {
         .btn-hero-primary {
           font-size: 0.95rem;
           font-weight: 600;
-          color: #fff;
+          color: var(--ink-inverse);
           background: var(--ink-primary);
           border: 1px solid var(--ink-primary);
           border-radius: 10px;
@@ -311,7 +357,7 @@ export function PortalPage() {
           font-size: 0.95rem;
           font-weight: 600;
           color: var(--ink-primary);
-          background: #fff;
+          background: var(--brand-bg);
           border: 1px solid var(--border-color);
           border-radius: 10px;
           padding: 13px 28px;
@@ -333,7 +379,7 @@ export function PortalPage() {
           height: 100vh;
           background-image:
             radial-gradient(circle at 50% 18%, rgba(37, 99, 235, .12), transparent 34%),
-            linear-gradient(rgba(246, 249, 252, .7), rgba(246, 249, 252, 1)),
+            linear-gradient(var(--bg-overlay-start), var(--bg-overlay-end)),
             linear-gradient(rgba(148, 163, 184, 0.14) 1px, transparent 1px),
             linear-gradient(90deg, rgba(148, 163, 184, 0.14) 1px, transparent 1px),
             url('/bg-laut.jpg');
@@ -349,7 +395,7 @@ export function PortalPage() {
           overflow: hidden;
           border-top: 1px solid var(--border-color);
           border-bottom: 1px solid var(--border-color);
-          background: rgba(255, 255, 255, .62);
+          background: var(--bg-marquee);
           padding: 20px 0;
           margin-bottom: 104px;
         }
@@ -603,8 +649,8 @@ export function PortalPage() {
           position: relative;
         }
         .reporting-step {
-          background: linear-gradient(180deg, #fff 0%, #f6f9fc 100%);
-          border: 1px solid #dbe5ef;
+          background: var(--bg-card);
+          border: 1px solid var(--border-color);
           border-radius: 16px;
           min-height: 260px;
           padding: 30px 26px 28px;
@@ -781,6 +827,14 @@ export function PortalPage() {
           <a href="#panduan">Panduan</a>
         </nav>
         <div className="header-actions">
+          <button 
+            type="button" 
+            aria-label="Ganti Tema" 
+            onClick={() => setDarkMode(!isDarkMode)}
+            style={{ background: 'transparent', border: 'none', color: 'var(--ink-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Icon name={isDarkMode ? "light_mode" : "dark_mode"} />
+          </button>
           <a className="btn-nav-primary" href={isLoggedIn ? dashboardRoute : "#/login"}>{isLoggedIn ? "Dashboard" : "Login"}</a>
         </div>
       </header>
@@ -894,21 +948,20 @@ export function PortalPage() {
               <p>
                 Pusat kendali dan monitoring prediksi risiko, analisis dampak, dan manajemen logistik untuk operator dan pengambil keputusan.
               </p>
-              
-              <div style={{ marginTop: 40, width: "100%", height: 180, background: "rgba(255,255,255,.72)", borderRadius: 12, border: "1px solid #cfe2fb", display: "flex", flexDirection: "column", padding: 16, gap: 12 }}>
-                <div style={{ display: "flex", gap: 8 }}>
-                   <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ef4444" }} />
-                   <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#f59e0b" }} />
-                   <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#10b981" }} />
+              <div style={{ marginTop: 40, width: "100%", height: 180, background: "var(--bg-primary)", borderRadius: 12, border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", padding: 16, gap: 12 }}>
+                  <div style={{ display: "flex", gap: 8 }}>
+                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ef4444" }} />
+                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#f59e0b" }} />
+                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#10b981" }} />
+                  </div>
+                  <div style={{ display: "flex", gap: 12, flex: 1 }}>
+                     <div style={{ width: "35%", height: "100%", background: "var(--bg-card)", borderRadius: 8 }} />
+                     <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+                       <div style={{ width: "100%", height: "35%", background: "var(--bg-card)", borderRadius: 8 }} />
+                       <div style={{ width: "100%", flex: 1, background: "var(--bg-card)", borderRadius: 8 }} />
+                     </div>
+                  </div>
                 </div>
-                <div style={{ display: "flex", gap: 12, flex: 1 }}>
-                   <div style={{ width: "35%", height: "100%", background: "#dceafb", borderRadius: 8 }} />
-                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-                     <div style={{ width: "100%", height: "35%", background: "#dceafb", borderRadius: 8 }} />
-                     <div style={{ width: "100%", flex: 1, background: "#eef5fd", borderRadius: 8 }} />
-                   </div>
-                </div>
-              </div>
             </div>
             <div className="card-links-row">
               <a className="card-action-link" href="#/login">Masuk Dashboard <Icon name="arrow_forward" /></a>
@@ -982,7 +1035,7 @@ export function PortalPage() {
           <div style={{ order: 1 }}>
             <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink)", marginBottom: "20px", letterSpacing: "-0.02em" }}>Cara Membaca Peta Prediksi</h2>
             <p style={{ fontSize: "1.05rem", color: "var(--ink-soft)", lineHeight: 1.7, marginBottom: "32px" }}>
-              Sistem AI kami memproyeksikan probabilitas banjir ke dalam empat kelas warna yang intuitif. Hal ini memudahkan Anda dan pengambil kebijakan untuk memprioritaskan tindakan mitigasi pada area yang paling berisiko.
+              Sistem Machine Learning kami memproyeksikan probabilitas banjir ke dalam empat kelas warna yang intuitif. Hal ini memudahkan Anda dan pengambil kebijakan untuk memprioritaskan tindakan mitigasi pada area yang paling berisiko.
             </p>
             <div style={{ display: "grid", gap: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#ef4444" }}></div><strong style={{ minWidth: "120px" }}>Sangat Tinggi</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&gt;75% Probabilitas)</span></div>
@@ -1005,7 +1058,7 @@ export function PortalPage() {
         >
           <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink-primary)", marginBottom: "16px", letterSpacing: "-0.02em" }}>Cara Melaporkan Kejadian</h2>
           <p style={{ fontSize: "1.05rem", color: "var(--ink-muted)", lineHeight: 1.7, maxWidth: 700, margin: "0 auto 48px" }}>
-            Bantu kami memvalidasi model AI dengan membagikan kondisi riil di wilayah Anda. Prosesnya sangat mudah dan terintegrasi langsung dengan dashboard BPBD.
+            Bantu kami memvalidasi model Machine Learning dengan membagikan kondisi riil di wilayah Anda. Prosesnya sangat mudah dan terintegrasi langsung dengan dashboard BPBD.
           </p>
           <div className="reporting-flow">
             <div className="reporting-step">
@@ -1079,7 +1132,7 @@ export function PortalPage() {
       </section>
 
       {/* Minimal Landing Footer */}
-      <footer style={{ background: "#0f172a", color: "#cbd5e1", padding: "60px 40px 40px", marginTop: "auto" }}>
+      <footer style={{ background: "var(--bg-footer)", color: "#cbd5e1", padding: "60px 40px 40px", marginTop: "auto", borderTop: "1px solid var(--border-color)" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", flexWrap: "wrap", gap: "40px", justifyContent: "space-between" }}>
           <div style={{ lineHeight: '1.6', maxWidth: "400px" }}>
             <strong style={{ fontSize: '1.1rem', color: '#fff' }}>SIPERAH-RoB</strong><br />

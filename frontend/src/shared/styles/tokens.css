@@ -314,7 +314,7 @@ textarea { min-height: 100px; resize: vertical; }
 }
 .step-strip span {
   align-items: center;
-  background: #fff;
+  background: var(--surface);
   border-radius: calc(var(--radius) - 2px);
   color: var(--ink-soft);
   display: flex;

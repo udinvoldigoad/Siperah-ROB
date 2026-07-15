@@ -96,7 +96,7 @@ export function ReportWizardPage() {
   
   // Form state for summary
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: -5.45, lng: 105.266 });
-  const [waterHeight, setWaterHeight] = useState("45");
+  const [waterHeight, setWaterHeight] = useState("");
   const [incidentTime, setIncidentTime] = useState(currentTimeValue);
   const [resolvedRegion, setResolvedRegion] = useState<ResolvedRegion | null>(null);
   const [isResolvingRegion, setResolvingRegion] = useState(false);
@@ -304,13 +304,13 @@ export function ReportWizardPage() {
         .photo-remove:hover { background: var(--critical); }
       `}</style>
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px" }}>
-        <div className="step-strip" aria-label="Tahap laporan ground truth" style={{ marginBottom: 28, maxWidth: 640 }}>
+        <div className="step-strip" aria-label="Tahap laporan ground truth" style={{ margin: "0 auto 28px", maxWidth: 640 }}>
           <span><b>1</b> Pilih lokasi</span>
           <span><b>2</b> Detail kejadian</span>
           <span><b>3</b> Foto & kirim</span>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: 32, alignItems: "start" }}>
+        <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1.5fr 400px", gap: 32, alignItems: "start", justifyContent: "center" }}>
           {/* Left Column: Form Fields */}
           <div className="panel" style={{ display: "grid", gap: 24, padding: 32 }}>
             <h2 style={{ fontSize: "1.25rem", margin: 0, paddingBottom: 16, borderBottom: "1px solid var(--line)" }}>Detail Informasi</h2>
@@ -393,13 +393,13 @@ export function ReportWizardPage() {
 
             <section style={{ display: "grid", gap: 8 }}>
               <label htmlFor="description" style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>
-                Deskripsi kejadian <span style={{ color: "var(--ink-soft)", fontWeight: 400 }}>(opsional)</span>
+                Deskripsi kejadian
               </label>
               <textarea
                 id="description"
                 name="description"
                 placeholder="Deskripsikan kondisi banjir rob yang Anda amati…"
-                defaultValue="Air masuk ke jalan setinggi lutut, beberapa rumah terendam di RT 03."
+                required
               />
             </section>
 
@@ -452,9 +452,9 @@ export function ReportWizardPage() {
           </div>
 
           {/* Right Column: Summary & Actions */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 100 }}>
-            <div className="panel" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-              <h2 style={{ fontSize: "1.1rem", marginBottom: 20 }}>Ringkasan Laporan</h2>
+          <div className="panel" style={{ display: "flex", flexDirection: "column", gap: 24, position: "sticky", top: 100, padding: 32 }}>
+            <div>
+              <h2 style={{ fontSize: "1.25rem", margin: 0, paddingBottom: 16, borderBottom: "1px solid var(--line)" }}>Ringkasan Laporan</h2>
               <div className="summary-grid" style={{ display: "grid", gap: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, paddingBottom: 14, borderBottom: "1px solid var(--line)" }}>
                   <span style={{ color: "var(--ink-soft)", fontSize: 13 }}>Koordinat</span>
@@ -493,7 +493,7 @@ export function ReportWizardPage() {
                 </div>
               </div>
             )}
-            <button className="btn primary" type="submit" disabled={isSubmitting || !isDeclarationAccepted} style={{ padding: "14px 24px", fontSize: 15 }}>
+            <button className="btn primary" type="submit" disabled={isSubmitting || !isDeclarationAccepted || selectedPhotos.length === 0} style={{ padding: "14px 24px", fontSize: 15 }}>
               <span className={`material-symbols-outlined ${isSubmitting ? "report-spin" : ""}`} style={{ fontSize: 18 }}>{isSubmitting ? "progress_activity" : (submitError ? "refresh" : "send")}</span>
               {isSubmitting ? "Mengirim..." : (submitError ? "Kirim ulang laporan" : "Kirim laporan sekarang")}
             </button>

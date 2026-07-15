@@ -293,7 +293,7 @@ final class DashboardController
                 SUM(CASE WHEN predictions.risk_class = 'sedang' THEN 1 ELSE 0 END) AS medium_count,
                 SUM(CASE WHEN predictions.risk_class = 'tinggi' THEN 1 ELSE 0 END) AS high_count,
                 SUM(CASE WHEN predictions.risk_class = 'sangat_tinggi' THEN 1 ELSE 0 END) AS critical_count,
-                SUM(CASE WHEN predictions.risk_class IN ('tinggi', 'sangat_tinggi') THEN COALESCE(regions.population, 0) ELSE 0 END) AS risk_population,
+                SUM(COALESCE(regions.population, 0)) AS risk_population,
                 MAX(predictions.risk_probability) AS max_probability
             ")
             ->groupBy('regions.regency')

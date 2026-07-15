@@ -121,16 +121,16 @@ export function ResearchPortalPage() {
   const [datasetMeta, setDatasetMeta] = useState<DatasetResponse["meta"] | null>(null);
   const [availableRegencies, setAvailableRegencies] = useState<string[]>([]);
 
-  const datasetDownloadUrl = (dataset: DatasetData, format: "csv" | "json") => (
+  const datasetDownloadUrl = (dataset: DatasetData, format: "csv" | "json" | "xlsx") => (
     apiUrl(`/api/research/datasets/${dataset.id}/download?format=${format}`)
   );
 
-  const handleDatasetDownload = async (dataset: DatasetData, format: "csv" | "json") => {
+  const handleDatasetDownload = async (dataset: DatasetData, format: "csv" | "json" | "xlsx") => {
     try {
       const token = localStorage.getItem("siperah-token");
       const response = await fetch(datasetDownloadUrl(dataset, format), {
         headers: {
-          Accept: format === "csv" ? "text/csv" : "application/json",
+          Accept: format === "csv" ? "text/csv" : format === "xlsx" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
@@ -371,6 +371,9 @@ export function ResearchPortalPage() {
                           <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
                             <button type="button" onClick={() => handleDatasetDownload(ds, "csv")} className="btn primary" style={{ fontSize: "11px", padding: "6px 12px", background: "var(--ocean-dark, #0284c7)", color: "#fff", textDecoration: "none", borderRadius: "6px" }}>
                               <Icon name="download" style={{ fontSize: "14px" }} /> CSV
+                            </button>
+                            <button type="button" onClick={() => handleDatasetDownload(ds, "xlsx")} className="btn primary" style={{ fontSize: "11px", padding: "6px 12px", background: "#15803d", color: "#fff", textDecoration: "none", borderRadius: "6px", border: "1px solid #166534" }}>
+                              <Icon name="table_view" style={{ fontSize: "14px" }} /> EXCEL
                             </button>
                             <button type="button" onClick={() => handleDatasetDownload(ds, "json")} className="btn secondary" style={{ fontSize: "11px", padding: "6px 12px", textDecoration: "none", borderRadius: "6px" }}>
                               <Icon name="code" style={{ fontSize: "14px" }} /> JSON

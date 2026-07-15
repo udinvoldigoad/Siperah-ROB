@@ -21,7 +21,7 @@ final class CsvWriter
      */
     public static function putRow($handle, array $row): void
     {
-        fputcsv($handle, array_map(self::sanitize(...), $row), ',', '"', '');
+        fputcsv($handle, array_map(self::sanitize(...), $row), ';', '"', '');
     }
 
     /**
