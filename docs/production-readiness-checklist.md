@@ -382,12 +382,12 @@ Status:
 - [x] Download CSV/JSON aktif via token login.
 - [x] API key regenerate tersedia.
 - [x] Referensi API tersedia.
-- [~] Statistik download dataset tersedia.
-- [ ] Tab “Penggunaan API” masih placeholder.
-- [ ] Filter kabupaten perlu backend metadata.
-- [ ] Tab lisensi/perizinan data terpisah.
-- [ ] UX salin API key harus jelas: raw key hanya sekali tampil.
-- [ ] Dokumentasi contoh response API.
+- [x] Statistik download dataset tersedia.
+- [x] Tab “Penggunaan API” terisi: total call, tren harian, per-endpoint.
+- [x] Filter kabupaten via metadata backend (available_regencies).
+- [x] Tab lisensi/perizinan data terpisah.
+- [x] UX salin API key jelas: raw key hanya tampil sekali, tombol Salin hanya aktif untuk kunci baru.
+- [x] Dokumentasi contoh response API (request + response per endpoint).
 
 ### B13. Notifikasi
 

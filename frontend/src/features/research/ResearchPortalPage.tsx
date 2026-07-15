@@ -214,11 +214,22 @@ export function ResearchPortalPage() {
       });
       setRawGeneratedKey(res.raw_key);
       toast.success("API key baru berhasil dibuat! Segera salin kunci Anda.");
-      
+
       const keysRes = await api<ApiKeyResponse>("/research/api-keys");
       setApiKeys(keysRes.data);
     } catch (err: any) {
       toast.error(err.message || "Gagal meregenerasi API key.");
+    }
+  };
+
+  // Salin hanya berlaku untuk raw key yang baru dibuat (kunci penuh tampil sekali).
+  const handleCopyKey = async () => {
+    if (!rawGeneratedKey) return;
+    try {
+      await navigator.clipboard.writeText(rawGeneratedKey);
+      toast.success("API key disalin ke clipboard.");
+    } catch {
+      toast.error("Gagal menyalin otomatis. Salin manual dari layar.");
     }
   };
 
@@ -248,23 +259,29 @@ export function ResearchPortalPage() {
             <div>
               <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--ink)" }}>Kredensial API Aktif</div>
               {rawGeneratedKey ? (
-                <div style={{ fontSize: "13px", color: "var(--ink-soft)", fontFamily: "monospace", marginTop: "2px" }}>{rawGeneratedKey} (Salin sekarang!)</div>
+                <>
+                  <div style={{ fontSize: "13px", color: "var(--ink)", fontFamily: "monospace", marginTop: "2px", wordBreak: "break-all" }}>{rawGeneratedKey}</div>
+                  <div style={{ fontSize: "12px", color: "var(--medium)", fontWeight: 700, marginTop: "3px", display: "flex", alignItems: "center", gap: 4 }}>
+                    <Icon name="warning" style={{ fontSize: 14 }} /> Kunci penuh hanya ditampilkan sekali — salin & simpan sekarang.
+                  </div>
+                </>
               ) : activeKey ? (
-                <div style={{ fontSize: "13px", color: "var(--ink-soft)", fontFamily: "monospace", marginTop: "2px" }}>{activeKey.key_prefix}****************</div>
+                <div style={{ fontSize: "13px", color: "var(--ink-soft)", fontFamily: "monospace", marginTop: "2px" }}>
+                  {activeKey.key_prefix}**************** · <span style={{ fontFamily: "inherit" }}>kunci penuh hanya tampil sekali saat dibuat</span>
+                </div>
               ) : (
                 <div style={{ fontSize: "13px", color: "var(--critical)", marginTop: "2px" }}>Belum ada kunci API.</div>
               )}
             </div>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
-            <button className="btn secondary" style={{ fontSize: "12px", padding: "8px 16px" }} onClick={() => {
-              if (rawGeneratedKey) navigator.clipboard.writeText(rawGeneratedKey);
-              toast.success("Tersalin ke clipboard!");
-            }}>
-              <Icon name="content_copy" style={{ fontSize: "16px" }} /> Salin
-            </button>
+            {rawGeneratedKey && (
+              <button className="btn secondary" style={{ fontSize: "12px", padding: "8px 16px" }} onClick={handleCopyKey}>
+                <Icon name="content_copy" style={{ fontSize: "16px" }} /> Salin Kunci
+              </button>
+            )}
             <button className="btn outline" style={{ fontSize: "12px", padding: "8px 16px", color: "var(--critical)", borderColor: "var(--critical)" }} onClick={handleRegenerateKey}>
-              <Icon name="refresh" style={{ fontSize: "16px" }} /> Regenerasi
+              <Icon name="refresh" style={{ fontSize: "16px" }} /> {activeKey || rawGeneratedKey ? "Regenerasi" : "Buat Kunci"}
             </button>
           </div>
         </div>}
