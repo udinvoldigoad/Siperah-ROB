@@ -144,10 +144,31 @@ export function NotificationSettingsPage() {
   const activeEventsCount = eventTypes.length;
 
   return (
-    <AppShell active="notifications" title="Pengaturan Notifikasi">
+    <AppShell active="settings" title="Pengaturan Notifikasi" subtitle="Atur saluran peringatan dini dan laporan ground truth yang ingin Anda terima.">
+      <style>{`
+        .notif-layout {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+        }
+        .notif-time-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          margin-bottom: 16px;
+          padding-top: 16px;
+          border-top: 1px solid var(--line);
+        }
+        @media (max-width: 992px) {
+          .notif-layout { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+          .notif-time-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="content" style={{ maxWidth: 1000, margin: "0 auto", paddingBottom: 60 }}>
         <motion.section variants={itemVariants} className="panel flush" style={{ marginBottom: 24 }}>
-          <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "center" }}><div><h2 style={{ margin: 0, fontSize: "1rem" }}>Notifikasi terbaru</h2><p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--ink-soft)" }}>Perubahan status laporan Anda akan muncul di sini.</p></div><span className="badge status-menunggu">{inbox.filter((item) => !item.read_at).length} baru</span></div>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}><div><h2 style={{ margin: 0, fontSize: "1rem" }}>Notifikasi terbaru</h2><p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--ink-soft)" }}>Perubahan status laporan Anda akan muncul di sini.</p></div><span className="badge status-menunggu">{inbox.filter((item) => !item.read_at).length} baru</span></div>
           {inbox.length === 0 ? <p style={{ padding: "16px 20px", margin: 0, color: "var(--ink-soft)", fontSize: 13 }}>Belum ada notifikasi status laporan.</p> : <div>{inbox.slice(0, 5).map((item) => <button type="button" key={item.id} onClick={() => void markRead(item)} style={{ width: "100%", padding: "14px 20px", textAlign: "left", background: item.read_at ? "var(--surface)" : "var(--accent-soft)", border: "none", borderBottom: "1px solid var(--line)", cursor: "pointer" }}><strong style={{ display: "block", fontSize: 13 }}>{item.title}</strong><span style={{ display: "block", marginTop: 4, fontSize: 12, color: "var(--ink-soft)" }}>{item.body}</span></button>)}</div>}
         </motion.section>
         
@@ -176,7 +197,7 @@ export function NotificationSettingsPage() {
         </motion.div>
 
         {/* 2-Column Layout for Settings */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+        <div className="notif-layout">
           
           {/* Left Column */}
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -240,9 +261,9 @@ export function NotificationSettingsPage() {
                 </h3>
               </div>
               
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", flexWrap: "wrap", gap: 16 }}>
                 <div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>Aktifkan mode jam sunyi</div>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>Jeda notifikasi otomatis</div>
                   <div style={{ fontSize: "12px", color: "var(--ink-soft)", marginTop: "2px" }}>Tahan notifikasi non-kritis selama periode ini</div>
                 </div>
                 <label style={{ position: "relative", width: "44px", height: "24px", cursor: "pointer" }}>
@@ -272,7 +293,7 @@ export function NotificationSettingsPage() {
                     initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                     style={{ overflow: "hidden" }}
                   >
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px", paddingTop: "16px", borderTop: "1px solid var(--line)" }}>
+                    <div className="notif-time-grid">
                       <div>
                         <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-soft)", display: "block", marginBottom: "6px" }}>Mulai (WIB)</label>
                         <input 
