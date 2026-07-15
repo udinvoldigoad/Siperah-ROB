@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../../shared/api/client";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
+import { useToast } from "../../shared/components/Toast";
 import { motion, type Variants } from "framer-motion";
 import type { RiskClass } from "../../shared/types/domain";
 
@@ -900,9 +901,33 @@ export function CitizenModePage() {
     ["Laporkan kejadian", "Tambahkan foto dan lokasi bila melihat genangan di sekitar Anda.", "add_location_alt"],
   ];
 
+  const shareText = [
+    "⚠️ Peringatan Banjir Rob — SIPERAH-RoB",
+    `Lokasi: ${currentLocation}`,
+    `Status: ${risk}`,
+    ...(data ? [
+      ...(data.guidance_message ? [data.guidance_message] : []),
+      `Peluang rob ${data.risk_probability}%${data.peak_time ? `, puncak pasang ${data.peak_time} WIB` : ""}.`,
+    ] : []),
+    "Sumber: SIPERAH-RoB",
+  ].join("\n");
+
+  const handleShareWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
+  };
+  const handleCopyWarning = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText);
+      toast.success("Teks peringatan disalin ke clipboard.");
+    } catch {
+      toast.error("Gagal menyalin otomatis. Silakan salin manual.");
+    }
+  };
+
   const commonProps = {
     data, error, dataLoaded, locationNote, coordinates, setCoordinates, setLocationNote,
-    requestGpsLocation, wilayahOptions, risk, cardStyle, forecastDays, currentLocation, actionCards
+    requestGpsLocation, wilayahOptions, risk, cardStyle, forecastDays, currentLocation, actionCards,
+    handleShareWhatsApp, handleCopyWarning,
   };
 
   if (isMobile) {

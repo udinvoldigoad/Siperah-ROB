@@ -39,7 +39,17 @@ final class AdminController
             });
         }
 
-        return UserResource::collection($query->paginate(15));
+        // Ringkasan global (mengabaikan filter) agar KPI & banner approval akurat
+        // lintas halaman, bukan hanya 15 baris yang sedang ditampilkan.
+        $summary = [
+            'total' => User::count(),
+            'aktif' => User::where('status', 'aktif')->count(),
+            'menunggu' => User::where('status', 'menunggu')->count(),
+            'nonaktif' => User::where('status', 'nonaktif')->count(),
+            'peneliti_menunggu' => User::where('role', 'peneliti')->where('status', 'menunggu')->count(),
+        ];
+
+        return UserResource::collection($query->paginate(15))->additional(['summary' => $summary]);
     }
 
     public function storeUser(StoreAdminUserRequest $request): JsonResponse

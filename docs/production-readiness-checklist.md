@@ -362,8 +362,8 @@ Status:
 - [x] Tambah user manual tersedia.
 - [~] Edit role/wilayah/status backend tersedia; UX edit inline masih bisa dipoles.
 - [x] Filter/search tersedia dan diuji backend.
-- [ ] Pagination user harus rapi.
-- [ ] Konfirmasi aksi destructive/nonaktif.
+- [~] Pagination user harus rapi.
+- [~] Konfirmasi aksi destructive/nonaktif.
 
 ### B11. Audit log viewer
 

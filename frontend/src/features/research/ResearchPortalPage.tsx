@@ -397,14 +397,6 @@ export function ResearchPortalPage() {
                   <button className="btn secondary" style={{ padding: "6px 10px" }} disabled={(datasetMeta?.current_page ?? 1) >= (datasetMeta?.last_page ?? 1)} onClick={() => changeDatasetPage((datasetMeta?.current_page ?? 1) + 1)}>›</button>
                 </div>
               </div>
-              <div style={{ display: "none" }}>
-                <div>Menampilkan 1–{datasets.length} dari {datasets.length} dataset</div>
-                <div style={{ display: "flex", gap: "4px" }}>
-                  <button className="btn secondary" style={{ padding: "6px 10px" }} disabled>‹</button>
-                  <button className="btn primary" aria-current="page" style={{ padding: "6px 12px", minWidth: 36, background: "#0284c7", borderColor: "#0369a1", color: "#fff", fontWeight: 700 }}>1</button>
-                  <button className="btn secondary" style={{ padding: "6px 10px" }}>›</button>
-                </div>
-              </div>
             </motion.div>
           )}
 
