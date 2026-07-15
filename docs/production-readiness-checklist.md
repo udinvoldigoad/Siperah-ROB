@@ -223,11 +223,11 @@ Status:
 - [x] Password reset/lupa kata sandi (dihapus dari UI sesuai SKPL saat ini).
 - [ ] Policy atau authorization test per endpoint.
 - [x] File upload harus scan/validasi extension dan ukuran.
-- [ ] SQL portability Postgres/MySQL diaudit.
-- [ ] Validasi input semua endpoint.
-- [ ] No debug shortcut di production.
-- [ ] Security headers di reverse proxy/frontend host.
-- [ ] Dependency audit Composer.
+- [x] SQL portability diaudit → **keputusan: PostgreSQL + PostGIS wajib** (query spasial `ST_*`/`::geography` & jsonb `@>`/`->>` khusus Postgres). MySQL tidak didukung.
+- [x] Validasi input semua endpoint: seluruh controller API pakai FormRequest/`validate()`.
+- [~] No debug shortcut: `backend/check_prob.php` masih ada (diminta dibiarkan) — **wajib dihapus sebelum production**. Tidak ada `dd/dump` di app/routes.
+- [ ] Security headers: ranah reverse-proxy/host (nginx/Caddy) — CSP, X-Frame-Options, HSTS, X-Content-Type-Options belum dikonfigurasi.
+- [x] Dependency audit Composer: bersih, tidak ada advisory (`composer audit`).
 
 ### A17. Testing backend
 
