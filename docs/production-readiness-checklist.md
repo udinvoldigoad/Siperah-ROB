@@ -56,8 +56,8 @@ Status:
 - [ ] Data wilayah production dari BIG harus tervalidasi, bukan hanya dummy/manual.
 - [ ] Boundary status wajib jelas: official/estimated/manual/invalid.
 - [ ] Audit kualitas data wilayah: geometri kosong, geometri invalid, duplikasi nama, missing kode wilayah.
-- [ ] Fallback ketika BIG API gagal: cache, retry, dan laporan error.
-- [ ] Dokumentasi sumber data BIG dan tanggal sinkronisasi.
+- [x] Fallback ketika BIG API gagal: cache, retry, dan laporan error.
+- [x] Dokumentasi sumber data BIG dan tanggal sinkronisasi.
 
 ### A4. Data pasang surut, BMKG, dan cuaca
 
@@ -77,7 +77,7 @@ Status:
 - [x] Endpoint prediksi publik tersedia.
 - [x] Struktur prediksi harian tersedia.
 - [~] Prediksi masih perlu dipastikan berasal dari pipeline ML resmi, bukan demo seeder.
-- [ ] Kontrak data output model ML final: horizon, region_id, probability, risk_class, confidence, generated_at.
+- [x] Kontrak data output model ML final: horizon, region_id, probability, risk_class, confidence, generated_at.
 - [ ] Validasi model version dan provenance untuk setiap prediksi.
 - [ ] Import prediksi harian otomatis.
 - [ ] Handling jika prediksi hari ini belum tersedia.

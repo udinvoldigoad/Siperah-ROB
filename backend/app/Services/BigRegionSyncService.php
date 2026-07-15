@@ -37,6 +37,11 @@ final class BigRegionSyncService
         try {
             return $this->performSync($province, $dryRun, $runId, $progress);
         } catch (Throwable $exception) {
+            $fallbackResult = $this->attemptFallback($province, $dryRun, $runId);
+            if ($fallbackResult !== null) {
+                return $fallbackResult;
+            }
+
             if ($runId) {
                 DB::table('data_import_runs')->where('id', $runId)->update([
                     'status' => 'failed',
@@ -124,7 +129,8 @@ final class BigRegionSyncService
                 return $stats;
             }
 
-            DB::transaction(function () use ($runId, &$stats): void {
+            DB::transaction(function () use ($runId, $province, &$stats): void {
+                $backupData = [];
                 foreach (DB::table('region_import_staging')->where('run_id', $runId)->orderBy('region_code')->cursor() as $row) {
                     $this->persist([
                         'code' => $row->region_code,
@@ -136,7 +142,14 @@ final class BigRegionSyncService
                             ? $row->geometry_geojson
                             : json_encode($row->geometry_geojson, JSON_THROW_ON_ERROR),
                     ], $stats);
+                    $backupData[] = (array) $row;
                 }
+
+                $backupPath = storage_path('app/geo/big_sync_'.Str::slug($province).'_backup.json');
+                if (!file_exists(dirname($backupPath))) {
+                    mkdir(dirname($backupPath), 0755, true);
+                }
+                file_put_contents($backupPath, json_encode($backupData, JSON_THROW_ON_ERROR));
 
                 DB::table('data_import_runs')->where('id', $runId)->update([
                     'status' => 'completed',
@@ -148,6 +161,59 @@ final class BigRegionSyncService
                     'completed_at' => now(),
                 ]);
                 DB::table('region_import_staging')->where('run_id', $runId)->delete();
+            });
+        }
+
+        return $stats;
+    }
+
+    private function attemptFallback(string $province, bool $dryRun, ?string $runId): ?array
+    {
+        $backupPath = storage_path('app/geo/big_sync_'.Str::slug($province).'_backup.json');
+        if (!file_exists($backupPath)) {
+            return null;
+        }
+
+        $backupData = json_decode(file_get_contents($backupPath), true, 512, JSON_THROW_ON_ERROR);
+        if (!$backupData) {
+            return null;
+        }
+
+        $stats = [
+            'reported' => count($backupData),
+            'fetched' => count($backupData),
+            'valid' => count($backupData),
+            'invalid' => 0,
+            'inserted' => 0,
+            'updated' => 0,
+            'errors' => ['Peringatan: Menggunakan data fallback lokal karena BIG gagal.'],
+        ];
+
+        if ($runId) {
+            DB::transaction(function () use ($runId, $backupData, &$stats): void {
+                foreach ($backupData as $row) {
+                    $this->persist([
+                        'code' => $row['region_code'],
+                        'province' => $row['province'],
+                        'regency' => $row['regency'],
+                        'district' => $row['district'],
+                        'village' => $row['village'],
+                        'geometry' => is_string($row['geometry_geojson'])
+                            ? $row['geometry_geojson']
+                            : json_encode($row['geometry_geojson'], JSON_THROW_ON_ERROR),
+                    ], $stats);
+                }
+
+                DB::table('data_import_runs')->where('id', $runId)->update([
+                    'status' => 'completed',
+                    'fetched_count' => $stats['fetched'],
+                    'valid_count' => $stats['valid'],
+                    'invalid_count' => 0,
+                    'inserted_count' => $stats['inserted'],
+                    'updated_count' => $stats['updated'],
+                    'completed_at' => now(),
+                    'error_summary' => json_encode($stats['errors']),
+                ]);
             });
         }
 

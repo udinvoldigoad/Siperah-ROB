@@ -20,8 +20,24 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
+from pydantic import BaseModel, Field, field_validator, ValidationError
 
 from files import data_fetcher, feature_engineering, labeler, predict_forecast, train_model
+
+class PredictionContract(BaseModel):
+    risk_probability: float = Field(ge=0.0, le=100.0)
+    risk_class: str
+    confidence_score: float = Field(ge=0.0, le=100.0)
+    max_tidal_height: float
+    peak_time: str
+
+    @field_validator("risk_class")
+    @classmethod
+    def check_risk_class(cls, v: str) -> str:
+        allowed = {"rendah", "sedang", "tinggi", "sangat_tinggi"}
+        if v not in allowed:
+            raise ValueError(f"risk_class harus salah satu dari {allowed}, got {v}")
+        return v
 
 # 1. Environment ---------------------------------------------------------------
 base_dir = Path(__file__).resolve().parent.parent
@@ -388,13 +404,28 @@ def run_predict(conn, simulate: bool = False):
             if pred_date not in tide_lookup.index:
                 continue
             tide_row = tide_lookup.loc[pred_date]
+
+            raw_prob = round(max(max(2.0, (float(tide_row["tide_height_cm"]) - 100) / 10.0), min(98.0, float(row["prob_rob"]) * 100)), 2)
+            
+            try:
+                contract = PredictionContract(
+                    risk_probability=raw_prob,
+                    risk_class=row["risk_class"],
+                    confidence_score=float(row["confidence"]),
+                    max_tidal_height=round(float(tide_row["tide_height_cm"]) / 100, 3),
+                    peak_time=tide_row["peak_time"]
+                )
+            except ValidationError as e:
+                print(f"[WARNING] Validasi kontrak gagal untuk region_id {region_id} pada {pred_date}: {e}")
+                continue
+
             cursor.execute(insert_query, (
                 str(uuid.uuid4()), region_id, pred_date,
-                round(max(max(2.0, (float(tide_row["tide_height_cm"]) - 100) / 10.0), min(98.0, float(row["prob_rob"]) * 100)), 2),
-                row["risk_class"],
-                float(row["confidence"]),
-                round(float(tide_row["tide_height_cm"]) / 100, 3),  # meter utk backend
-                tide_row["peak_time"],
+                contract.risk_probability,
+                contract.risk_class,
+                contract.confidence_score,
+                contract.max_tidal_height,
+                contract.peak_time,
                 train_model.MODEL_VERSION,
                 generated_at,
                 data_source,
