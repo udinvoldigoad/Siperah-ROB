@@ -279,10 +279,10 @@ Status:
 - [x] Judul produk sudah diganti.
 - [x] Panduan “cara membaca peta” dan “cara melapor” tersedia.
 - [~] Panduan warga login sudah disamakan sebagian dengan landing.
-- [ ] FAQ lengkap sesuai PRD.
+- [x] FAQ lengkap sesuai PRD.
 - [ ] Landing harus punya copy final, bukan mock/dummy.
-- [ ] CTA “Mulai Lapor” harus login jika belum.
-- [ ] Ilustrasi peta final harus konsisten dengan data peta publik.
+- [x] CTA “Mulai Lapor” harus login jika belum (Landing & Panduan sama-sama login-aware).
+- [x] Ilustrasi peta di landing & panduan dibuat statis (bukan live map), pin & zona menampilkan semua 4 indikator warna risiko sebagai contoh — keputusan: dekoratif/edukatif, tidak lagi terikat data peta publik real-time.
 
 ### B4. Peta publik (`FR-PUB`)
 

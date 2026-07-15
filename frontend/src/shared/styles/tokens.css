@@ -707,6 +707,7 @@ textarea { min-height: 100px; resize: vertical; }
 .hazard.critical { background: rgba(180, 35, 24, 0.36); height: 34%; right: 18%; top: 34%; width: 28%; }
 .hazard.high { background: rgba(194, 65, 12, 0.24); height: 52%; right: 8%; top: 24%; width: 48%; }
 .hazard.medium { background: rgba(161, 98, 7, 0.18); height: 66%; left: 12%; top: 23%; width: 62%; }
+.hazard.low { background: rgba(16, 128, 85, 0.16); height: 30%; left: 0%; top: 52%; width: 26%; }
 .pin {
   align-items: center;
   background: #fff;
@@ -721,7 +722,8 @@ textarea { min-height: 100px; resize: vertical; }
 }
 .pin.red { color: var(--critical); left: 63%; top: 39%; }
 .pin.orange { color: var(--high); left: 48%; top: 60%; }
-.pin.green { color: var(--low); left: 24%; top: 54%; }
+.pin.amber { color: var(--medium); left: 40%; top: 36%; }
+.pin.green { color: var(--low); left: 20%; top: 62%; }
 .map-label {
   color: rgba(17, 24, 39, 0.74);
   font-size: 0.84rem;

@@ -3,7 +3,7 @@ import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../../shared/api/client";
-import { LandingRiskMapPreview } from "../../app/PortalPage";
+import { MapPreview } from "../../shared/components/MapPreview";
 
 type Prediction = { risk_class: string; risk_probability: number; region?: { village?: string | null; regency?: string | null } | null };
 type PredictionResponse = { data: Prediction[] };
@@ -61,14 +61,13 @@ export function OnboardingPage() {
           .citizen-warning-list li:last-child { border:0; }
           .citizen-warning-list .material-symbols-outlined, .citizen-warning-label .material-symbols-outlined { color:var(--medium); font-size:20px; }
           .citizen-map-frame { background:var(--surface-soft); border:1px solid var(--line); border-radius:16px; min-height:400px; overflow:hidden; padding:8px; }
-          .citizen-map-frame .landing-risk-map { min-height:382px; }
           .citizen-report-flow { display:grid; gap:28px; grid-template-columns:repeat(3,minmax(0,1fr)); margin:0 auto; max-width:940px; }
           .citizen-report-step { background:var(--surface); border:1px solid var(--line); border-radius:16px; min-height:260px; padding:30px 26px 28px; text-align:center; }
           .citizen-step-number { align-items:center; background:var(--accent); border:5px solid var(--surface); border-radius:999px; box-shadow:0 0 0 1px var(--line); color:#fff; display:flex; font-size:15px; font-weight:850; height:54px; justify-content:center; margin:0 auto 28px; width:54px; }
           .citizen-step-icon { align-items:center; background:var(--accent-soft); border-radius:9px; color:var(--accent); display:flex; height:38px; justify-content:center; margin:0 auto 14px; width:38px; }
           .citizen-report-step h3 { font-size:1.05rem; margin:0 0 9px; }
           .citizen-report-step p { font-size:.9rem; line-height:1.55; margin:0 auto; max-width:28ch; }
-          @media(max-width:768px){ .citizen-guide-grid,.citizen-report-flow,.citizen-faq-grid{grid-template-columns:1fr!important;gap:24px!important}.citizen-map-frame{min-height:300px}.citizen-map-frame .landing-risk-map{min-height:284px}.citizen-hero-metrics{grid-template-columns:1fr!important} }
+          @media(max-width:768px){ .citizen-guide-grid,.citizen-report-flow,.citizen-faq-grid{grid-template-columns:1fr!important;gap:24px!important}.citizen-map-frame{min-height:300px}.citizen-hero-metrics{grid-template-columns:1fr!important} }
         `}</style>
         
         {/* Modern Cinematic Hero */}
@@ -145,7 +144,7 @@ export function OnboardingPage() {
             </div>
           </div>
           <div className="citizen-map-frame" style={{ order: 2 }}>
-            <LandingRiskMapPreview />
+            <MapPreview />
           </div>
         </motion.div>
 

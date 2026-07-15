@@ -7,11 +7,13 @@ export function MapPreview({ large = false }: { large?: boolean }) {
       </div>
       <span className="coast" />
       <span className="water" />
+      <span className="hazard low" />
       <span className="hazard medium" />
       <span className="hazard high" />
       <span className="hazard critical" />
       <span className="pin red">4</span>
       <span className="pin orange">8</span>
+      <span className="pin amber">5</span>
       <span className="pin green">2</span>
       <span className="map-label">Teluk Lampung</span>
       <div className="legend">

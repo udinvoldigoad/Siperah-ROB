@@ -1,72 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "../shared/components/Icon";
 import { MapPreview } from "../shared/components/MapPreview";
 import { motion, AnimatePresence } from "framer-motion";
-import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
-import { api } from "../shared/api/client";
-import { riskColors } from "../shared/constants/risk";
-
-type LandingMapFeature = { geometry: { coordinates: unknown }; properties: Record<string, unknown> };
-type LandingMapResponse = { data: { regions: { features: LandingMapFeature[] } } };
-
-function landingFeatureCenter(feature: LandingMapFeature): [number, number] | null {
-  const points: [number, number][] = [];
-  const collect = (value: unknown): void => {
-    if (!Array.isArray(value)) return;
-    if (typeof value[0] === "number" && typeof value[1] === "number") {
-      points.push([value[0], value[1]]);
-      return;
-    }
-    value.forEach(collect);
-  };
-  collect(feature.geometry.coordinates);
-  if (!points.length) return null;
-  return [
-    (Math.min(...points.map(([lng]) => lng)) + Math.max(...points.map(([lng]) => lng))) / 2,
-    (Math.min(...points.map(([, lat]) => lat)) + Math.max(...points.map(([, lat]) => lat))) / 2,
-  ];
-}
-
-export function LandingRiskMapPreview() {
-  const container = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!container.current) return;
-    let active = true;
-    const map = new maplibregl.Map({
-      container: container.current,
-      center: [105.15, -5.15],
-      zoom: 7.6,
-      interactive: false,
-      attributionControl: false,
-      style: {
-        version: 8,
-        sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256 } },
-        layers: [{ id: "osm", type: "raster", source: "osm" }],
-      },
-    });
-    const markers: maplibregl.Marker[] = [];
-    const colors = riskColors;
-    api<LandingMapResponse>("/public/map").then((response) => {
-      if (!active) return;
-      const bounds = new maplibregl.LngLatBounds();
-      response.data.regions.features.forEach((feature) => {
-        const center = landingFeatureCenter(feature);
-        if (!center) return;
-        bounds.extend(center);
-        const marker = new maplibregl.Marker({ color: colors[String(feature.properties.risk_class)] ?? colors.rendah, scale: .72 })
-          .setLngLat(center)
-          .addTo(map);
-        markers.push(marker);
-      });
-      if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 36, maxZoom: 9, duration: 0 });
-    }).catch(() => undefined);
-    return () => { active = false; markers.forEach((marker) => marker.remove()); map.remove(); };
-  }, []);
-
-  return <div ref={container} className="landing-risk-map" aria-label="Ilustrasi peta risiko banjir rob Provinsi Lampung" />;
-}
 
 const faqData = [
   {
@@ -639,8 +574,6 @@ export function PortalPage() {
           overflow: hidden;
           padding: 8px;
         }
-        .landing-risk-map { border-radius: 10px; height: 100%; min-height: 382px; overflow: hidden; width: 100%; }
-        .landing-risk-map .maplibregl-canvas { filter: saturate(.9) contrast(.98); }
         .reporting-flow {
           display: grid;
           gap: 28px;
@@ -803,7 +736,6 @@ export function PortalPage() {
           .guide-definition-grid h2 { font-size: 2.15rem !important; }
           .guide-map-grid > div:last-child { height: 300px !important; padding: 20px !important; }
           .landing-map-frame { min-height: 300px !important; padding: 6px !important; }
-          .landing-risk-map { min-height: 286px; }
           .reporting-flow { grid-template-columns: 1fr; gap: 16px; }
           .reporting-step { min-height: 0; padding: 24px; }
           .reporting-step-number { margin-bottom: 20px; }
@@ -1046,7 +978,7 @@ export function PortalPage() {
             </div>
           </div>
           <div className="landing-map-frame" style={{ order: 2 }}>
-            <LandingRiskMapPreview />
+            <MapPreview />
           </div>
         </motion.div>
 
