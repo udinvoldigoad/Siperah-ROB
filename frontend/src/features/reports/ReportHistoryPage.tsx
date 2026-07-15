@@ -96,11 +96,12 @@ export function ReportHistoryPage() {
         ) : (
           <div className="report-history-list" style={{ display: "grid", gap: 16 }}>
             {reports.map((report) => (
-              <div key={report.id} className="history-report-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+              <div key={report.id} className="history-report-card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap", paddingBottom: 16, borderBottom: "1px solid var(--line)" }}>
                   <div>
-                    <h3 style={{ margin: "0 0 4px 0", fontSize: "1.1rem" }}>{report.code} - {report.village}</h3>
-                    <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--tx2)" }}>Dilaporkan {report.submittedAt}</p>
+                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.05em" }}>KODE: {report.code}</span>
+                    <h3 style={{ margin: "4px 0", fontSize: "1.35rem", color: "var(--ink)" }}>{report.village}</h3>
+                    <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--ink-soft)" }}>Dilaporkan {report.submittedAt}</p>
                   </div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <span className={`badge severity-${report.severity}`}>{severityLabels[report.severity]}</span>
@@ -108,28 +109,35 @@ export function ReportHistoryPage() {
                   </div>
                 </div>
                 
-                <p style={{ margin: 0, fontSize: "0.95rem", color: "var(--tx1)" }}>{report.description}</p>
+                {report.description && (
+                  <div style={{ padding: "12px 16px", background: "var(--surface-soft)", borderRadius: 8, borderLeft: "3px solid var(--accent)", fontSize: "0.95rem", color: "var(--ink)", lineHeight: 1.6 }}>
+                    {report.description}
+                  </div>
+                )}
                 
-                <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: "0.85rem", color: "var(--tx2)" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <Icon name="schedule" style={{ fontSize: 16 }} /> Kejadian: {report.incidentTime}
-                  </span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <Icon name="water_drop" style={{ fontSize: 16 }} /> {report.waterHeightCm ? `${report.waterHeightCm} cm` : "-"}
-                  </span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <Icon name="location_on" style={{ fontSize: 16 }} /> {report.coordinates}
-                  </span>
-                  <span className={`badge ${report.isWithinMonitoringArea ? "history-badge-monitored" : "history-badge-outside"}`}>{report.isWithinMonitoringArea ? "Wilayah pantauan rob" : "Di luar cakupan prediksi"}</span>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: "0.85rem", color: "var(--ink)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-soft)", padding: "6px 14px", borderRadius: 20 }}>
+                    <Icon name="schedule" style={{ fontSize: 16, color: "var(--accent)" }} /> <strong>{report.incidentTime}</strong>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-soft)", padding: "6px 14px", borderRadius: 20 }}>
+                    <Icon name="water_drop" style={{ fontSize: 16, color: "var(--accent)" }} /> <strong>{report.waterHeightCm ? `${report.waterHeightCm} cm` : "-"}</strong>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-soft)", padding: "6px 14px", borderRadius: 20 }}>
+                    <Icon name="location_on" style={{ fontSize: 16, color: "var(--accent)" }} /> <span>{report.coordinates}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-soft)", padding: "6px 14px", borderRadius: 20 }}>
+                    <Icon name={report.isWithinMonitoringArea ? "my_location" : "location_disabled"} style={{ fontSize: 16, color: report.isWithinMonitoringArea ? "var(--success)" : "var(--ink-soft)" }} />
+                    <span style={{ color: report.isWithinMonitoringArea ? "var(--success)" : "var(--ink-soft)", fontWeight: 600 }}>{report.isWithinMonitoringArea ? "Pantauan ROB" : "Di luar area"}</span>
+                  </div>
                   {report.photos.length > 0 && (
-                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <Icon name="image" style={{ fontSize: 16 }} /> {report.photos.length} Foto
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-soft)", padding: "6px 14px", borderRadius: 20 }}>
+                      <Icon name="image" style={{ fontSize: 16, color: "var(--accent)" }} /> <strong>{report.photos.length} Foto</strong>
+                    </div>
                   )}
                 </div>
-                <button type="button" className="btn secondary history-detail-button" aria-expanded={expandedReportId === report.id} onClick={() => setExpandedReportId((current) => current === report.id ? null : report.id)} style={{ alignSelf: "flex-start", boxShadow: "none", marginTop: 4 }}>
-                  <Icon name={expandedReportId === report.id ? "expand_less" : "visibility"} />
-                  {expandedReportId === report.id ? "Tutup detail" : "Lihat detail"}
+                <button type="button" className="btn secondary history-detail-button" aria-expanded={expandedReportId === report.id} onClick={() => setExpandedReportId((current) => current === report.id ? null : report.id)} style={{ width: "100%", justifyContent: "center", marginTop: 8, padding: "10px" }}>
+                  <Icon name={expandedReportId === report.id ? "expand_less" : "expand_more"} />
+                  {expandedReportId === report.id ? "Tutup Detail Laporan" : "Lihat Detail Laporan"}
                 </button>
                 {expandedReportId === report.id && (
                   <section className="history-detail" aria-label={`Detail laporan ${report.code}`}>

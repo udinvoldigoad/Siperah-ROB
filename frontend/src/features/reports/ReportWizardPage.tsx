@@ -180,6 +180,18 @@ export function ReportWizardPage() {
     setIsSubmitting(true);
     setSubmitError(null);
 
+    if (selectedPhotos.length === 0) {
+      toast.error("Mohon lampirkan setidaknya 1 foto dokumentasi kejadian.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!isDeclarationAccepted) {
+      toast.error("Anda harus menyetujui pernyataan kebenaran laporan pada kotak di atas.");
+      setIsSubmitting(false);
+      return;
+    }
+
     const form = event.currentTarget;
     const payload = new FormData();
 
@@ -493,7 +505,7 @@ export function ReportWizardPage() {
                 </div>
               </div>
             )}
-            <button className="btn primary" type="submit" disabled={isSubmitting || !isDeclarationAccepted || selectedPhotos.length === 0} style={{ padding: "14px 24px", fontSize: 15 }}>
+            <button className="btn primary" type="submit" disabled={isSubmitting} style={{ padding: "14px 24px", fontSize: 15 }}>
               <span className={`material-symbols-outlined ${isSubmitting ? "report-spin" : ""}`} style={{ fontSize: 18 }}>{isSubmitting ? "progress_activity" : (submitError ? "refresh" : "send")}</span>
               {isSubmitting ? "Mengirim..." : (submitError ? "Kirim ulang laporan" : "Kirim laporan sekarang")}
             </button>
