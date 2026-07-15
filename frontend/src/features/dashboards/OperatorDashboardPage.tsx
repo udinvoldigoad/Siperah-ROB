@@ -206,7 +206,7 @@ export function OperatorDashboardPage() {
               </div>
             </div>
 
-            <div className="report-list" style={{ border: "none", borderRadius: 0 }}>
+            <div className="report-list" style={{ border: "none", borderRadius: 0, maxHeight: "500px", overflowY: "auto" }}>
               {isLoading ? (
                 <div style={{ padding: "32px", textAlign: "center", color: "var(--ink-soft)" }}>Memuat laporan...</div>
               ) : reports.length === 0 ? (
@@ -265,7 +265,7 @@ export function OperatorDashboardPage() {
               <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Status Kelurahan {operatorArea}</h2>
               <motion.a whileHover={{ x: 5 }} href="#/map" style={{ fontSize: "0.9rem", color: "var(--accent)", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}><Icon name="map" /> Buka peta</motion.a>
             </div>
-              <div className="table-responsive">
+              <div className="table-responsive" style={{ maxHeight: "500px", overflowY: "auto" }}>
                 <table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--line)", background: "var(--surface-soft)" }}>

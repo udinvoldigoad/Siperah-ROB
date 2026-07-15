@@ -225,7 +225,7 @@ final class ResearchController
     public function apiReference(): JsonResponse
     {
         return response()->json(['data' => [
-            'base_path' => '/api/v1',
+            'base_path' => '/api',
             'authentication' => [
                 'header' => 'X-API-Key: spr_xxx',
                 'alternative' => 'Authorization: ApiKey spr_xxx',
@@ -252,7 +252,7 @@ final class ResearchController
                     'scope' => 'predictions:read',
                     'query' => ['from' => 'YYYY-MM-DD', 'to' => 'YYYY-MM-DD', 'region' => 'uuid', 'format' => 'json|csv', 'per_page' => '1-200'],
                     'description' => 'Prediksi risiko harian per wilayah.',
-                    'example_request' => "curl -H \"X-API-Key: spr_xxx\" \\\n  \"/api/v1/predictions/daily?from=2026-05-01&to=2026-05-07&format=json\"",
+                    'example_request' => "curl -H \"X-API-Key: spr_xxx\" \\\n  \"/api/predictions/daily?from=2026-05-01&to=2026-05-07&format=json\"",
                     'example_response' => [
                         'data' => [[
                             'id' => 'a1b2c3d4-...',
@@ -277,7 +277,7 @@ final class ResearchController
                     'scope' => 'reports:read',
                     'query' => ['from' => 'YYYY-MM-DD', 'to' => 'YYYY-MM-DD', 'region' => 'uuid', 'format' => 'json|csv', 'per_page' => '1-200'],
                     'description' => 'Laporan ground truth yang telah divalidasi. Koordinat dibulatkan 3 desimal demi privasi pelapor.',
-                    'example_request' => "curl -H \"X-API-Key: spr_xxx\" \\\n  \"/api/v1/reports?from=2026-05-01&to=2026-05-31&format=json\"",
+                    'example_request' => "curl -H \"X-API-Key: spr_xxx\" \\\n  \"/api/reports?from=2026-05-01&to=2026-05-31&format=json\"",
                     'example_response' => [
                         'data' => [[
                             'id' => 'e5f6a7b8-...',
@@ -302,7 +302,7 @@ final class ResearchController
                     'scope' => 'tidal:read',
                     'query' => ['station' => 'kode_stasiun', 'from' => 'YYYY-MM-DD', 'to' => 'YYYY-MM-DD', 'format' => 'json|csv', 'per_page' => '1-200'],
                     'description' => 'Data pasang surut yang tersedia di sistem.',
-                    'example_request' => "curl -H \"X-API-Key: spr_xxx\" \\\n  \"/api/v1/tidal?station=PANJANG&from=2026-05-01&to=2026-05-02&format=json\"",
+                    'example_request' => "curl -H \"X-API-Key: spr_xxx\" \\\n  \"/api/tidal?station=PANJANG&from=2026-05-01&to=2026-05-02&format=json\"",
                     'example_response' => [
                         'data' => [[
                             'id' => 'c9d0e1f2-...',
@@ -428,6 +428,15 @@ final class ResearchController
                 }
                 fclose($output);
             }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        } elseif (($data['format'] ?? 'json') === 'xlsx') {
+            $xlsxFilename = str_replace('.csv', '.xlsx', $filename);
+            return response()->streamDownload(function () use ($query): void {
+                $writer = \Spatie\SimpleExcel\SimpleExcelWriter::stream('php://output', 'xlsx');
+                foreach ($query->cursor() as $row) {
+                    $writer->addRow((array) $row);
+                }
+                $writer->close();
+            }, $xlsxFilename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
         }
 
         /** @var LengthAwarePaginator $paginator */

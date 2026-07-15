@@ -168,7 +168,7 @@ export function LoginPage() {
             style={{ color: "rgba(255,255,255,0.8)", fontSize: "1.1rem", lineHeight: 1.6, marginBottom: "48px" }}
           >
             Akses platform terpadu untuk memantau ancaman banjir rob secara real-time, 
-            dilengkapi dengan prediksi AI tingkat lanjut dan validasi data berbasis komunitas.
+            dilengkapi dengan prediksi Machine Learning tingkat lanjut dan validasi data berbasis komunitas.
           </motion.p>
 
 

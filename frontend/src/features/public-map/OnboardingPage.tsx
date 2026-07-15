@@ -46,18 +46,18 @@ export function OnboardingPage() {
       <div className="content" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 100px" }}>
         <style>{`
           .citizen-guide-grid { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:stretch; margin-bottom:110px; }
-          .citizen-warning-box { background:#dbeafe; border:1px solid #7dd3fc; border-radius:16px; box-shadow:0 16px 40px rgba(2,132,199,.14); display:flex; flex-direction:column; justify-content:center; padding:28px; }
-          .citizen-warning-label { align-items:center; background:#fef3c7; border:1px solid #f4cf68; border-radius:8px; color:#92400e; display:inline-flex; font-size:12px; font-weight:800; gap:8px; letter-spacing:.08em; margin-bottom:18px; padding:8px 11px; text-transform:uppercase; }
+          .citizen-warning-box { background:var(--surface-soft); border:1px solid var(--line); border-radius:16px; box-shadow:0 16px 40px rgba(0,0,0,.05); display:flex; flex-direction:column; justify-content:center; padding:28px; }
+          .citizen-warning-label { align-items:center; background:rgba(245, 158, 11, 0.15); border:1px solid rgba(245, 158, 11, 0.3); border-radius:8px; color:var(--medium); display:inline-flex; font-size:12px; font-weight:800; gap:8px; letter-spacing:.08em; margin-bottom:18px; padding:8px 11px; text-transform:uppercase; }
           .citizen-warning-list { display:grid; list-style:none; margin:0; padding:0; }
-          .citizen-warning-list li { align-items:center; border-bottom:1px solid rgba(2,132,199,.25); display:flex; font-size:1rem; font-weight:650; gap:11px; padding:13px 2px; }
+          .citizen-warning-list li { align-items:center; border-bottom:1px solid var(--line); display:flex; font-size:1rem; font-weight:650; gap:11px; padding:13px 2px; }
           .citizen-warning-list li:last-child { border:0; }
-          .citizen-warning-list .material-symbols-outlined, .citizen-warning-label .material-symbols-outlined { color:#d97706; font-size:20px; }
-          .citizen-map-frame { background:#dbeafe; border:1px solid #bae6fd; border-radius:16px; min-height:400px; overflow:hidden; padding:8px; }
+          .citizen-warning-list .material-symbols-outlined, .citizen-warning-label .material-symbols-outlined { color:var(--medium); font-size:20px; }
+          .citizen-map-frame { background:var(--surface-soft); border:1px solid var(--line); border-radius:16px; min-height:400px; overflow:hidden; padding:8px; }
           .citizen-map-frame .landing-risk-map { min-height:382px; }
           .citizen-report-flow { display:grid; gap:28px; grid-template-columns:repeat(3,minmax(0,1fr)); margin:0 auto; max-width:940px; }
-          .citizen-report-step { background:linear-gradient(180deg,#fff,#f6f9fc); border:1px solid #dbe5ef; border-radius:16px; min-height:260px; padding:30px 26px 28px; text-align:center; }
-          .citizen-step-number { align-items:center; background:#0284c7; border:5px solid #e0f2fe; border-radius:999px; box-shadow:0 0 0 1px #7dd3fc; color:#fff; display:flex; font-size:15px; font-weight:850; height:54px; justify-content:center; margin:0 auto 28px; width:54px; }
-          .citizen-step-icon { align-items:center; background:#e0f2fe; border-radius:9px; color:#0284c7; display:flex; height:38px; justify-content:center; margin:0 auto 14px; width:38px; }
+          .citizen-report-step { background:var(--surface); border:1px solid var(--line); border-radius:16px; min-height:260px; padding:30px 26px 28px; text-align:center; }
+          .citizen-step-number { align-items:center; background:var(--accent); border:5px solid var(--surface); border-radius:999px; box-shadow:0 0 0 1px var(--line); color:#fff; display:flex; font-size:15px; font-weight:850; height:54px; justify-content:center; margin:0 auto 28px; width:54px; }
+          .citizen-step-icon { align-items:center; background:var(--accent-soft); border-radius:9px; color:var(--accent); display:flex; height:38px; justify-content:center; margin:0 auto 14px; width:38px; }
           .citizen-report-step h3 { font-size:1.05rem; margin:0 0 9px; }
           .citizen-report-step p { font-size:.9rem; line-height:1.55; margin:0 auto; max-width:28ch; }
           @media(max-width:768px){ .citizen-guide-grid,.citizen-report-flow,.citizen-faq-grid{grid-template-columns:1fr!important;gap:24px!important}.citizen-map-frame{min-height:300px}.citizen-map-frame .landing-risk-map{min-height:284px}.citizen-hero-metrics{grid-template-columns:1fr!important} }
@@ -70,13 +70,13 @@ export function OnboardingPage() {
           style={{ 
             textAlign: "center", 
             padding: "80px 24px 60px",
-            background: "linear-gradient(180deg, var(--ocean-light, #e0f2fe) 0%, transparent 100%)",
+            background: "linear-gradient(180deg, var(--accent-soft) 0%, transparent 100%)",
             borderRadius: "0 0 40px 40px",
             marginBottom: "60px"
           }}
         >
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(14, 165, 233, 0.1)", color: "var(--ocean-dark, #0284c7)", padding: "6px 16px", borderRadius: "100px", fontSize: "0.85rem", fontWeight: 700, marginBottom: "24px" }}>
-            <span style={{ width: 8, height: 8, borderRadius: 999, background: "#2563eb" }} /> WebGIS Kebencanaan Provinsi Lampung
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "var(--accent-soft)", color: "var(--accent)", padding: "6px 16px", borderRadius: "100px", fontSize: "0.85rem", fontWeight: 700, margin: "0 auto 24px" }}>
+            <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--accent)" }} /> WebGIS Kebencanaan Provinsi Lampung
           </div>
           <h1 style={{ fontSize: "clamp(2.5rem, 4vw, 3.5rem)", fontWeight: 900, margin: "0 auto 20px", color: "var(--ink)", maxWidth: 800, letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             Sistem Informasi Prediksi Risiko<br />Banjir Rob Terpadu Provinsi Lampung.
@@ -127,7 +127,7 @@ export function OnboardingPage() {
           <div style={{ order: 1 }}>
             <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink)", marginBottom: "20px", letterSpacing: "-0.02em" }}>Cara Membaca Peta Prediksi</h2>
             <p style={{ fontSize: "1.05rem", color: "var(--ink-soft)", lineHeight: 1.7, marginBottom: "32px" }}>
-              Sistem AI kami memproyeksikan probabilitas banjir ke dalam empat kelas warna yang intuitif. Hal ini memudahkan Anda dan pengambil kebijakan untuk memprioritaskan tindakan mitigasi pada area yang paling berisiko.
+              Sistem Machine Learning kami memproyeksikan probabilitas banjir ke dalam empat kelas warna yang intuitif. Hal ini memudahkan Anda dan pengambil kebijakan untuk memprioritaskan tindakan mitigasi pada area yang paling berisiko.
             </p>
             <div style={{ display: "grid", gap: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#ef4444" }}></div><strong style={{ minWidth: "120px" }}>Sangat Tinggi</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&gt;75% Probabilitas)</span></div>
@@ -150,7 +150,7 @@ export function OnboardingPage() {
         >
           <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink)", marginBottom: "16px", letterSpacing: "-0.02em" }}>Cara Melaporkan Kejadian</h2>
           <p style={{ fontSize: "1.05rem", color: "var(--ink-soft)", lineHeight: 1.7, maxWidth: 700, margin: "0 auto 48px" }}>
-            Bantu kami memvalidasi model AI dengan membagikan kondisi riil di wilayah Anda. Prosesnya sangat mudah dan terintegrasi langsung dengan dashboard BPBD.
+            Bantu kami memvalidasi model Machine Learning dengan membagikan kondisi riil di wilayah Anda. Prosesnya sangat mudah dan terintegrasi langsung dengan dashboard BPBD.
           </p>
           <div className="citizen-report-flow">
             <div className="citizen-report-step">

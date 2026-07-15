@@ -174,8 +174,8 @@ const WILAYAH_PICKER_STYLES = `
   .wilayah-picker.mobile .wilayah-trigger { background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.28); color: #fff; }
   .wilayah-trigger {
     align-items: center;
-    background: rgba(255, 255, 255, 0.96);
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: var(--surface);
+    border: 1px solid var(--line);
     border-radius: 10px;
     color: var(--ink);
     cursor: pointer;
