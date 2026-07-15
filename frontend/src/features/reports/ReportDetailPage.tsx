@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
-import { MapPreview } from "../../shared/components/MapPreview";
 import { fetchOperatorReport, findOperatorReport, severityLabels, statusLabels, updateOperatorReportStatus, type OperatorReport, type ReportStatus } from "./reportData";
 
 export function ReportDetailPage({ reportId }: { reportId: string }) {
@@ -124,9 +125,47 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
             </div>
             <p className="validation-note">Cocokkan laporan dengan peta risiko dan bukti foto sebelum mengubah status validasi.</p>
           </section>
-          <div className="panel flush"><MapPreview large /></div>
+          <div className="panel flush" style={{ overflow: "hidden", minHeight: 400 }}><ReportMap coordinates={report.coordinates} severity={report.severity} /></div>
         </aside>
       </div>
     </AppShell>
   );
+}
+
+function ReportMap({ coordinates, severity }: { coordinates: string, severity: string }) {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<maplibregl.Map | null>(null);
+
+  useEffect(() => {
+    if (!mapContainer.current || map.current) return;
+    
+    const [latStr, lngStr] = coordinates.split(",");
+    const lat = parseFloat(latStr);
+    const lng = parseFloat(lngStr);
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    map.current = new maplibregl.Map({
+      container: mapContainer.current,
+      center: [lng, lat],
+      zoom: 14,
+      style: {
+        version: 8,
+        sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap contributors" } },
+        layers: [{ id: "osm", type: "raster", source: "osm" }],
+      },
+    });
+
+    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.current.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: "metric" }), "bottom-right");
+
+    const color = severity === "sangat_parah" ? "#ef4444" : severity === "parah" ? "#f97316" : severity === "sedang" ? "#eab308" : "#22c55e";
+    
+    new maplibregl.Marker({ color })
+      .setLngLat([lng, lat])
+      .addTo(map.current);
+
+    return () => { map.current?.remove(); map.current = null; };
+  }, [coordinates, severity]);
+
+  return <div ref={mapContainer} style={{ width: "100%", height: "100%", minHeight: "400px" }} />;
 }

@@ -74,14 +74,24 @@ final class ReportController
         $user = $request->user();
 
         $region = $this->regionLocator->locateAdministrative((float) $data['latitude'], (float) $data['longitude']);
+        $isOutside = false;
 
         if (!$region) {
-            throw ValidationException::withMessages([
-                'latitude' => 'Lokasi laporan berada di luar batas administrasi Provinsi Lampung yang tersedia.',
-            ]);
+            $isOutside = true;
+            $region = $this->regionLocator->locate((float) $data['latitude'], (float) $data['longitude']);
+            
+            if (!$region) {
+                $region = \App\Models\Region::where('coastal_flag', true)->first();
+            }
+            
+            if (!$region) {
+                throw ValidationException::withMessages([
+                    'latitude' => 'Lokasi laporan berada terlalu jauh dan sistem gagal menemukan wilayah referensi untuk penyimpanan.',
+                ]);
+            }
         }
 
-        if (isset($data['region_id']) && $data['region_id'] !== $region->id) {
+        if (isset($data['region_id']) && !$isOutside && $data['region_id'] !== $region->id) {
             throw ValidationException::withMessages([
                 'region_id' => 'Wilayah yang dipilih tidak sesuai dengan koordinat laporan.',
             ]);
