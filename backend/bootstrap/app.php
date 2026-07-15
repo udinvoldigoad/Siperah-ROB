@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
+        health: '/up',
         api: __DIR__.'/../routes/api.php',
         then: function (): void {
             Route::get('/', fn () => response()->json([
@@ -38,6 +39,12 @@ return Application::configure(basePath: dirname(__DIR__))
             ->dailyAt('03:30')
             ->timezone('Asia/Jakarta')
             ->withoutOverlapping();
+        $schedule->command('backup:clean')
+            ->dailyAt('01:00')
+            ->timezone('Asia/Jakarta');
+        $schedule->command('backup:run')
+            ->dailyAt('01:30')
+            ->timezone('Asia/Jakarta');
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
