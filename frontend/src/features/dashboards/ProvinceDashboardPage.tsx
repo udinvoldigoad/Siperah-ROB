@@ -290,19 +290,20 @@ export function ProvinceDashboardPage() {
         animate="show"
       >
         {/* Alert Banner */}
-        <motion.div variants={itemVariants} className="alert" style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+        <motion.div variants={itemVariants} className="alert" style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", flex: "1 1 300px" }}>
             <motion.div 
               animate={{ scale: [1, 1.15, 1] }} 
               transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+              style={{ flexShrink: 0 }}
             >
               <Icon name="campaign" style={{ fontSize: "28px", color: "var(--critical)" }} />
             </motion.div>
-            <div>
+            <div style={{ flex: 1 }}>
               <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--ink)" }}>
-                {isLoading ? "Memuat peringatan risiko…" : `${summary.high_risk_villages} kelurahan berisiko tinggi sedang dipantau`}
+                {isLoading ? "Memuat peringatan risiko..." : `${summary.high_risk_villages} kelurahan berisiko tinggi sedang dipantau`}
               </div>
-              <div style={{ fontSize: "13.5px", opacity: 0.85, marginTop: "2px" }}>
+              <div style={{ fontSize: "13px", opacity: 0.9, marginTop: "4px" }}>
                 Ringkasan ini dihitung dari prediksi risiko terbaru dan laporan yang telah tervalidasi di sistem.
               </div>
             </div>
@@ -349,7 +350,7 @@ export function ProvinceDashboardPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "32px", marginBottom: "32px" }}>
           {/* Table per Kabupaten */}
           <motion.div variants={itemVariants} className="panel flush">
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: "1.15rem" }}>Tingkat Risiko per Kabupaten/Kota</h2>
                 <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--ink-soft)" }}>
@@ -630,7 +631,7 @@ export function ProvinceDashboardPage() {
 
         {/* Kelurahan Paling Terdampak */}
         <motion.div variants={itemVariants} className="panel flush">
-          <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
             <div>
               <h2 style={{ margin: 0, fontSize: "1.15rem" }}>10 Kelurahan Paling Terdampak & Kritis</h2>
               <p style={{ margin: "4px 0 0", fontSize: "12.5px", color: "var(--ink-soft)" }}>
@@ -703,3 +704,4 @@ export function ProvinceDashboardPage() {
     </AppShell>
   );
 }
+

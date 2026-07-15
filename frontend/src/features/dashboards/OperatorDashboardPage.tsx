@@ -128,15 +128,16 @@ export function OperatorDashboardPage() {
         animate="show"
       >
         {/* Alert Banner */}
-        <motion.div variants={itemVariants} className="alert" style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+        <motion.div variants={itemVariants} className="alert" style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", flex: "1 1 300px" }}>
             <motion.div 
               animate={{ scale: [1, 1.2, 1], rotate: [0, -10, 10, 0] }} 
               transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              style={{ flexShrink: 0 }}
             >
               <Icon name="warning" style={{ fontSize: "24px", color: "#7a1a13" }} />
             </motion.div>
-            <div>
+            <div style={{ flex: 1 }}>
               <div style={{ fontSize: "15px", fontWeight: 600 }}>
                 {pendingCount} laporan baru/review di {operatorArea} · dicek otomatis tiap 30 detik
               </div>
@@ -146,11 +147,11 @@ export function OperatorDashboardPage() {
             </div>
           </div>
           <motion.a 
-            whileHover={{ scale: 1.03, backgroundColor: "#5f140f" }}
-            whileTap={{ scale: 0.97 }}
-            className="btn primary" 
-            href="#/province" 
-            style={{ background: "#7a1a13", borderColor: "#7a1a13", fontSize: "13px" }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            href="#/province"
+            className="btn primary"
+            style={{ background: "#7a1a13", borderColor: "#7a1a13", fontSize: "13px", whiteSpace: "nowrap" }}
           >
             Ringkasan Provinsi <Icon name="arrow_forward" style={{ fontSize: "16px" }} />
           </motion.a>
@@ -185,10 +186,10 @@ export function OperatorDashboardPage() {
         </motion.div>
 
         {/* Main Content Layout */}
-        <motion.div variants={itemVariants} className="dashboard-split-layout" style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "24px" }}>
+        <motion.div variants={itemVariants} className="dashboard-split-layout">
           {/* Antrean Moderasi */}
           <div className="panel flush">
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Antrean Laporan Masuk</h2>
                 <span style={{ color: "var(--ink-soft)", fontSize: 12 }}>{operatorArea} · {pendingCount} laporan ditampilkan</span>
@@ -261,7 +262,7 @@ export function OperatorDashboardPage() {
 
           {/* Status Kelurahan */}
           <div className="panel flush">
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
               <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Status Kelurahan {operatorArea}</h2>
               <motion.a whileHover={{ x: 5 }} href="#/map" style={{ fontSize: "0.9rem", color: "var(--accent)", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}><Icon name="map" /> Buka peta</motion.a>
             </div>
@@ -304,3 +305,4 @@ export function OperatorDashboardPage() {
     </AppShell>
   );
 }
+
