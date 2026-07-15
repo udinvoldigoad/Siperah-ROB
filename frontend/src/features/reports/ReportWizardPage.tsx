@@ -335,14 +335,14 @@ export function ReportWizardPage() {
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>Koordinat Terpilih</div>
                   <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{coords.lat.toFixed(5)}°, {coords.lng.toFixed(5)}°</div>
-                  <div style={{ fontSize: 12, color: resolvedRegion ? "var(--ink)" : "var(--critical)", marginTop: 4 }}>
+                  <div style={{ fontSize: 12, color: resolvedRegion ? "var(--ink)" : "var(--medium)", marginTop: 4 }}>
                     {isResolvingRegion ? "Mencari nama wilayah..." : resolvedRegion
                       ? `${resolvedRegion.village ?? "-"}, ${resolvedRegion.district ?? "-"}, ${resolvedRegion.regency ?? "-"}`
-                      : "Wilayah administratif belum ditemukan untuk titik ini."}
+                      : "Bukan wilayah administrasi Bandar Lampung."}
                   </div>
                 </div>
               </div>
-              {resolvedRegion && (
+              {resolvedRegion ? (
                 <p
                   className="form-note"
                   style={{
@@ -355,7 +355,11 @@ export function ReportWizardPage() {
                     ? "Lokasi masuk wilayah pantauan prediksi rob. Laporan akan masuk antrean validasi BPBD sesuai wilayah kerja."
                     : "Lokasi berada di luar wilayah pantauan prediksi rob. Laporan tetap dapat dikirim dan akan masuk antrean triase BPBD untuk peninjauan."}
                 </p>
-              )}
+              ) : !isResolvingRegion ? (
+                <p className="form-note" style={{ borderLeftColor: "var(--medium)" }}>
+                  Lokasi berada di luar wilayah administrasi yang terdata. Laporan tetap dapat dikirim dan akan masuk antrean triase BPBD untuk peninjauan.
+                </p>
+              ) : null}
             </section>
 
             <section style={{ display: "grid", gap: 10 }}>
