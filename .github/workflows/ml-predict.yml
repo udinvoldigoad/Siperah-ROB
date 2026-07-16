@@ -27,7 +27,9 @@ jobs:
 
       - name: Jalankan prediksi & tulis ke database
         working-directory: ml-api
+        timeout-minutes: 20
         env:
+          PYTHONUNBUFFERED: "1"
           DB_CONNECTION: pgsql
           DB_HOST: ${{ secrets.SUPABASE_DB_HOST }}
           DB_PORT: ${{ secrets.SUPABASE_DB_PORT }}

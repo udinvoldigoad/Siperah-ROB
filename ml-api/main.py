@@ -57,13 +57,19 @@ WEATHER_SOURCE = os.getenv("ML_WEATHER_SOURCE", "openmeteo")  # openmeteo | bmkg
 
 
 def get_db_connection():
+    # connect_timeout wajib: tanpa ini koneksi yang paketnya di-drop diam-diam
+    # (firewall/pooler) menggantung tanpa batas, bukan gagal dengan error.
     if DB_CONN == "pgsql":
         import psycopg2
-        return psycopg2.connect(host=DB_HOST, port=int(DB_PORT), database=DB_DATABASE,
-                                user=DB_USERNAME, password=DB_PASSWORD)
+        print(f"[INFO] Koneksi DB pgsql -> {DB_HOST}:{DB_PORT} ...", flush=True)
+        conn = psycopg2.connect(host=DB_HOST, port=int(DB_PORT), database=DB_DATABASE,
+                                user=DB_USERNAME, password=DB_PASSWORD, connect_timeout=20)
+        print("[INFO] Koneksi DB berhasil.", flush=True)
+        return conn
     import mysql.connector
     return mysql.connector.connect(host=DB_HOST, port=int(DB_PORT), database=DB_DATABASE,
-                                   user=DB_USERNAME, password=DB_PASSWORD)
+                                   user=DB_USERNAME, password=DB_PASSWORD,
+                                   connection_timeout=20)
 
 
 # 2. Model pasang surut harmonik -------------------------------------------------
