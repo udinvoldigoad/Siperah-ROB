@@ -47,3 +47,4 @@ backend/test-db.php
 .env
 .env.local
 .env.*.local
+scripts/deploy.env
