@@ -37,13 +37,16 @@ jobs:
 
       - name: Jalankan prediksi & tulis ke database
         working-directory: ml-api
-        timeout-minutes: 20
+        timeout-minutes: 15
         env:
           PYTHONUNBUFFERED: "1"
+          PYTHONFAULTHANDLER: "1"
           DB_CONNECTION: pgsql
           DB_HOST: ${{ secrets.SUPABASE_DB_HOST }}
           DB_PORT: ${{ secrets.SUPABASE_DB_PORT }}
           DB_DATABASE: ${{ secrets.SUPABASE_DB_DATABASE }}
           DB_USERNAME: ${{ secrets.SUPABASE_DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: python main.py --mode predict
+        # timeout SIGABRT: bila proses menggantung >10 menit, faulthandler
+        # mencetak stack trace Python tepat di titik macetnya lalu keluar.
+        run: timeout --signal=SIGABRT 10m python main.py --mode predict

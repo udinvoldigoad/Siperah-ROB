@@ -282,6 +282,7 @@ def fetch_daily_forecast_for_inference(days: int = 7, weather_source: str = "ope
     """
     result: dict[str, dict[str, pd.DataFrame]] = {}
     for key, station in STATIONS.items():
+        print(f"[INFO]   prakiraan stasiun {key}...", flush=True)
         weather = pd.DataFrame()
 
         if weather_source == "bmkg":
