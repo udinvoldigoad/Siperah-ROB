@@ -395,6 +395,7 @@ def run_predict(conn, simulate: bool = False):
     generated_at = datetime.now()
     default_station = "bandar_lampung"
     written = 0
+    pending_rows: list[tuple] = []
     station_hits: dict[str, int] = {}
 
     for region in regions:
@@ -425,7 +426,7 @@ def run_predict(conn, simulate: bool = False):
                 print(f"[WARNING] Validasi kontrak gagal untuk region_id {region_id} pada {pred_date}: {e}")
                 continue
 
-            cursor.execute(insert_query, (
+            pending_rows.append((
                 str(uuid.uuid4()), region_id, pred_date,
                 contract.risk_probability,
                 contract.risk_class,
@@ -438,7 +439,16 @@ def run_predict(conn, simulate: bool = False):
                 f"{train_model.MODEL_VERSION} - {row['horizon_type']} - stasiun {station_key}",
                 "official" if not simulate else "demo",
             ))
-            written += 1
+
+    # Batch insert: satu roundtrip per ratusan baris. Insert per baris memakan
+    # ~300 md/roundtrip ke DB lintas-benua (runner CI) -> ribuan baris = >13 menit.
+    print(f"[INFO] Menulis {len(pending_rows)} prediksi ke database (batch)...", flush=True)
+    if DB_CONN == "pgsql":
+        from psycopg2.extras import execute_batch
+        execute_batch(cursor, insert_query, pending_rows, page_size=500)
+    else:
+        cursor.executemany(insert_query, pending_rows)
+    written = len(pending_rows)
 
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM predictions WHERE prediction_date >= %s", (today.date(),))
