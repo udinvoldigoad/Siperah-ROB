@@ -98,7 +98,8 @@ return [
             'timezone' => 'UTC',
             'prefix' => '',
             'prefix_indexes' => true,
-            'search_path' => 'public',
+            // "extensions" untuk fungsi PostGIS di Supabase; schema yang tidak ada diabaikan Postgres.
+            'search_path' => env('DB_SEARCH_PATH', 'public,extensions'),
             'sslmode' => 'prefer',
         ],
 
