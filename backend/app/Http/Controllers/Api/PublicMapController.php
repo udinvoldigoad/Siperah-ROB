@@ -14,6 +14,7 @@ use App\Services\RegionLocator;
 use App\Services\RegionMonitoringService;
 use App\Support\CsvWriter;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\JsonResponse;
@@ -35,6 +36,20 @@ final class PublicMapController
             'date' => ['nullable', 'date'],
         ]);
 
+        // Payload berat (GeoJSON banyak wilayah + garis pantai); prediksi hanya
+        // berubah sekali sehari, jadi cache singkat aman dan memangkas beban DB.
+        $payload = Cache::remember(
+            'public-map:'.md5(json_encode($filters)),
+            now()->addMinutes(15),
+            fn (): array => $this->buildMapPayload($filters),
+        );
+
+        return response()->json(['data' => $payload]);
+    }
+
+    /** @return array<string, mixed> */
+    private function buildMapPayload(array $filters): array
+    {
         $query = Prediction::with('region')->orderByDesc('prediction_date');
 
         if (!empty($filters['regency'])) {
@@ -106,19 +121,17 @@ final class PublicMapController
             ],
         ])->values();
 
-        return response()->json([
-            'data' => [
-                'regions' => ['type' => 'FeatureCollection', 'features' => $regionFeatures],
-                'reports' => ['type' => 'FeatureCollection', 'features' => $reportFeatures],
-                'layers' => [
-                    'tidal_stations' => $this->tidalStationFeatures(),
-                    'coastlines' => $this->coastlineFeatures(),
-                    'critical_infrastructure' => ['type' => 'FeatureCollection', 'features' => []],
-                    'evacuation_routes' => ['type' => 'FeatureCollection', 'features' => []],
-                ],
-                'active_warning' => $this->activeWarning($predictions),
+        return [
+            'regions' => ['type' => 'FeatureCollection', 'features' => $regionFeatures->all()],
+            'reports' => ['type' => 'FeatureCollection', 'features' => $reportFeatures->all()],
+            'layers' => [
+                'tidal_stations' => $this->tidalStationFeatures(),
+                'coastlines' => $this->coastlineFeatures(),
+                'critical_infrastructure' => ['type' => 'FeatureCollection', 'features' => []],
+                'evacuation_routes' => ['type' => 'FeatureCollection', 'features' => []],
             ],
-        ]);
+            'active_warning' => $this->activeWarning($predictions),
+        ];
     }
 
     private function tidalStationFeatures(): array
@@ -159,9 +172,14 @@ final class PublicMapController
         }
 
         try {
-            $geometrySelect = $this->usesPostgisGeometry('coastlines', 'geometry')
-                ? DB::raw('ST_AsGeoJSON(geometry) as geometry_json')
-                : 'geometry_geojson as geometry_json';
+            if ($this->usesPostgisGeometry('coastlines', 'geometry')) {
+                $geometrySelect = DB::raw('ST_AsGeoJSON(ST_SimplifyPreserveTopology(geometry, 0.0002), 5) as geometry_json');
+            } elseif ($this->hasPostgis()) {
+                // Kolomnya jsonb, tetapi PostGIS tetap bisa menyederhanakannya on-the-fly.
+                $geometrySelect = DB::raw('ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_GeomFromGeoJSON(geometry_geojson::text), 0.0002), 5) as geometry_json');
+            } else {
+                $geometrySelect = 'geometry_geojson as geometry_json';
+            }
 
             $features = DB::table('coastlines')
                 ->select(['id', 'shoreline_type', 'source_year', 'source', 'source_reference', $geometrySelect])
@@ -219,9 +237,11 @@ final class PublicMapController
         }
 
         if ($this->usesPostgisGeometry('regions', 'geometry')) {
+            // Simplifikasi ~22 m + presisi 5 desimal (~1 m): tak terlihat pada
+            // zoom peta publik, tetapi memangkas ukuran GeoJSON belasan kali.
             return DB::table('regions')
                 ->whereIn('id', $regionIds)
-                ->select('id', DB::raw('ST_AsGeoJSON(geometry) as geojson'))
+                ->select('id', DB::raw('ST_AsGeoJSON(ST_SimplifyPreserveTopology(geometry, 0.0002), 5) as geojson'))
                 ->pluck('geojson', 'id')
                 ->map(fn (string $geometry) => json_decode($geometry, true))
                 ->filter()
@@ -238,13 +258,22 @@ final class PublicMapController
     private function usesPostgisGeometry(string $table, string $column): bool
     {
         try {
-            return DB::table('pg_extension')->where('extname', 'postgis')->exists()
+            return $this->hasPostgis()
                 && DB::table('information_schema.columns')
                     ->where('table_schema', 'public')
                     ->where('table_name', $table)
                     ->where('column_name', $column)
                     ->where('udt_name', 'geometry')
                     ->exists();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    private function hasPostgis(): bool
+    {
+        try {
+            return DB::table('pg_extension')->where('extname', 'postgis')->exists();
         } catch (\Throwable) {
             return false;
         }
