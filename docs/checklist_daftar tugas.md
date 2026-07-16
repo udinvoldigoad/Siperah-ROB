@@ -195,7 +195,7 @@ Sesuai skema hosting yang sudah disepakati: single VPS, nginx + PHP-FPM + Postgr
 - [ ] **P1** `VITE_API_BASE_URL` production terdokumentasi; tidak ada hardcoded localhost di source.
 - [ ] **P1** Cron scheduler aktif di server (`schedule:run` tiap menit) — menjalankan fetch 05:00 & `ml:predict` 06:00.
 - [ ] **P1** Queue worker jalan via supervisor/systemd (dibutuhkan Tahap 4).
-- [ ] **P1** Backup otomatis DB (pg_dump harian) + storage foto laporan, dengan retention.
+- [ ] **P1** Backup otomatis DB + storage foto laporan, dengan retention. **Catatan production 2026-07-16**: Hostinger tidak punya `pg_dump` (jadwal spatie backup dimatikan via `BACKUP_SCHEDULE_ENABLED=false`) dan Supabase free tidak punya auto-backup — backup harus dari luar (mis. pg_dump terjadwal dari laptop/GitHub Actions ke penyimpanan privat; JANGAN artifact repo public).
 - [ ] **P1** Health check endpoint backend (`/api/health` atau sejenis) untuk monitoring.
 - [ ] **P2** Log channel production dengan rotation/retention.
 - [ ] **P2** CI backend: composer install + PHP lint + PHPUnit. CI frontend: npm ci + tsc + build.
