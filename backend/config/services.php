@@ -13,6 +13,9 @@ return [
     'ml_api' => [
         'path' => env('ML_API_PATH'),
         'python' => env('ML_API_PYTHON'),
+        // Matikan di host tanpa Python (mis. shared hosting); prediksi harian
+        // dijalankan dari GitHub Actions yang menulis langsung ke database.
+        'schedule_enabled' => env('ML_SCHEDULE_ENABLED', true),
     ],
 
 ];

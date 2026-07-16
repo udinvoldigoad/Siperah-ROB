@@ -31,7 +31,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('ml:predict')
             ->dailyAt('06:00')
             ->timezone('Asia/Jakarta')
-            ->withoutOverlapping();
+            ->withoutOverlapping()
+            ->when(fn (): bool => (bool) config('services.ml_api.schedule_enabled'));
         $schedule->command('reports:notify-overdue-sla')
             ->hourly()
             ->withoutOverlapping();
