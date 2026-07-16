@@ -1,0 +1,37 @@
+name: Prediksi ML Harian
+
+on:
+  schedule:
+    # 23:00 UTC = 06:00 WIB
+    - cron: "0 23 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Hanya jalan di repo utama (bukan fork) supaya secrets tersedia.
+    if: github.repository == 'udinvoldigoad/Siperah-ROB'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ml-api/requirements.txt
+
+      - name: Install dependensi
+        working-directory: ml-api
+        run: pip install -r requirements.txt
+
+      - name: Jalankan prediksi & tulis ke database
+        working-directory: ml-api
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: ${{ secrets.SUPABASE_DB_HOST }}
+          DB_PORT: ${{ secrets.SUPABASE_DB_PORT }}
+          DB_DATABASE: ${{ secrets.SUPABASE_DB_DATABASE }}
+          DB_USERNAME: ${{ secrets.SUPABASE_DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: python main.py --mode predict

@@ -1,0 +1,32 @@
+{
+  "recall_rob": 0.9934,
+  "precision_rob": 1.0,
+  "f1_rob": 0.9967,
+  "test_rows": 5056,
+  "test_positives": 304,
+  "roc_auc": 1.0,
+  "pr_auc": 1.0,
+  "feature_importance": {
+    "rainfall_mm": 0.3214,
+    "tide_x_rainfall": 0.2957,
+    "rain_x_wind": 0.1599,
+    "rainfall_3d_avg": 0.1022,
+    "rainfall_7d_avg": 0.0664,
+    "rainfall_14d_avg": 0.0268,
+    "consecutive_rain_days": 0.0119,
+    "tide_anomaly_cm": 0.0048,
+    "is_full_moon_period": 0.0033,
+    "max_tide_height_cm": 0.0033,
+    "wind_speed_ms": 0.0017,
+    "pressure_hpa": 0.0009,
+    "month": 0.0006,
+    "is_wet_season": 0.0006,
+    "is_king_tide": 0.0002,
+    "swell_wave_height_max_m": 0.0001,
+    "wave_height_max_m": 0.0001,
+    "tide_x_wave": 0.0
+  },
+  "targets_met": true,
+  "data_source": "openmeteo_era5",
+  "trained_rows": 23592
+}
