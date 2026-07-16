@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 final class ClassifyCoastalRegions extends Command
 {
@@ -23,7 +22,8 @@ final class ClassifyCoastalRegions extends Command
         $province = (string) $this->option('province');
 
         $postgis = (bool) DB::table('pg_extension')->where('extname', 'postgis')->exists();
-        if ($postgis && Schema::hasColumn('coastlines', 'geometry')) {
+        $regionsSpatial = $this->columnIsGeometry('regions', 'geometry');
+        if ($postgis && $regionsSpatial) {
             return $this->classifyWithPostgis($province, $distance);
         }
 
@@ -34,26 +34,57 @@ final class ClassifyCoastalRegions extends Command
 
     private function classifyWithPostgis(string $province, int $distance): int
     {
-        $count = DB::table('regions')->whereRaw('LOWER(province)=LOWER(?)', [$province])
-            ->whereExists(fn ($q) => $q->selectRaw('1')->from('coastlines')->whereRaw(
-                'ST_DWithin(regions.geometry::geography, coastlines.geometry::geography, ?)', [$distance]
-            ))->count();
+        // Garis pantai: pakai kolom geometry bila ada; kalau tidak, bangun dari
+        // jsonb geometry_geojson. Temp table + simplifikasi ringan + GIST index
+        // supaya join spasial 2.6k wilayah x 757 garis tidak kena statement timeout.
+        $coastExpr = $this->columnIsGeometry('coastlines', 'geometry')
+            ? 'geometry'
+            : 'ST_GeomFromGeoJSON(geometry_geojson::text)';
 
-        $this->info("{$count} wilayah terklasifikasi pesisir (jarak {$distance} meter).");
+        DB::statement('DROP TABLE IF EXISTS coast_classify_tmp');
+        DB::statement("CREATE TEMP TABLE coast_classify_tmp AS SELECT ST_Simplify({$coastExpr}, 0.0001) AS g FROM coastlines");
+        DB::statement('CREATE INDEX coast_classify_tmp_gix ON coast_classify_tmp USING gist (g)');
+        DB::statement('ANALYZE coast_classify_tmp');
+
+        // Prefilter bbox (&& memakai GIST) sebelum uji jarak geography yang mahal.
+        $bboxPad = max(0.002, $distance / 111_320 * 1.5);
+        $matchSql = 'SELECT DISTINCT r.id FROM regions r JOIN coast_classify_tmp c
+            ON r.geometry && ST_Expand(c.g, ?) AND ST_DWithin(r.geometry::geography, c.g::geography, ?)
+            WHERE LOWER(r.province)=LOWER(?)';
+
+        $perRegency = DB::select(
+            "SELECT regency, count(*) n FROM regions WHERE id IN ({$matchSql}) GROUP BY regency ORDER BY regency",
+            [$bboxPad, $distance, $province],
+        );
+        $total = array_sum(array_map(fn ($r) => (int) $r->n, $perRegency));
+
+        $this->info("{$total} wilayah terklasifikasi pesisir (jarak {$distance} meter, PostGIS polygon asli).");
+        $this->table(['Kab/Kota', 'Wilayah pesisir'], array_map(fn ($r) => [$r->regency, $r->n], $perRegency));
+
         if ($this->option('dry-run')) {
             return self::SUCCESS;
         }
 
-        DB::transaction(function () use ($province, $distance): void {
+        DB::transaction(function () use ($province, $matchSql, $bboxPad, $distance): void {
             DB::table('regions')->whereRaw('LOWER(province)=LOWER(?)', [$province])->update(['coastal_flag' => false]);
             DB::update(
-                'UPDATE regions SET coastal_flag=true, updated_at=now() WHERE LOWER(province)=LOWER(?) AND EXISTS (
-                 SELECT 1 FROM coastlines WHERE ST_DWithin(regions.geometry::geography, coastlines.geometry::geography, ?))',
-                [$province, $distance],
+                "UPDATE regions SET coastal_flag=true, updated_at=now() WHERE id IN ({$matchSql})",
+                [$bboxPad, $distance, $province],
             );
         });
+        $this->info('coastal_flag diperbarui.');
 
         return self::SUCCESS;
+    }
+
+    private function columnIsGeometry(string $table, string $column): bool
+    {
+        return (bool) DB::table('information_schema.columns')
+            ->where('table_schema', 'public')
+            ->where('table_name', $table)
+            ->where('column_name', $column)
+            ->where('udt_name', 'geometry')
+            ->exists();
     }
 
     private function classifyWithHaversine(string $province, int $distanceMeters): int
