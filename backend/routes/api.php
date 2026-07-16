@@ -9,33 +9,9 @@ use App\Http\Controllers\Api\PublicMapController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ResearchController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 
-RateLimiter::for('login', function (Request $request) {
-    $email = Str::lower(trim((string) $request->input('email')));
-
-    return Limit::perMinute(10)
-        ->by($email.'|'.$request->ip())
-        ->response(fn (Request $request, array $headers) => response()->json([
-            'message' => 'Terlalu banyak percobaan login untuk akun ini. Coba lagi sebentar.',
-            'retry_after' => (int) ($headers['Retry-After'] ?? 60),
-        ], 429, $headers));
-});
-
-RateLimiter::for('registration', fn (Request $request) => Limit::perHour(5)->by($request->ip()));
-
-// API key: 120 req/menit per kunci (fallback ke IP bila belum terautentikasi).
-// Melebihi batas mengembalikan HTTP 429 dengan pesan yang jelas + header Retry-After.
-RateLimiter::for('api-key', fn (Request $request) => Limit::perMinute(120)
-    ->by((string) ($request->attributes->get('api_key_id') ?? $request->ip()))
-    ->response(fn (Request $request, array $headers) => response()->json([
-        'data' => null,
-        'message' => 'Batas permintaan API tercapai (120/menit). Coba lagi sebentar.',
-        'retry_after' => (int) ($headers['Retry-After'] ?? 60),
-    ], 429, $headers)));
+// Rate limiter login/registration/api-key didefinisikan di
+// App\Providers\AppServiceProvider — aman terhadap route:cache.
 
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:registration');
