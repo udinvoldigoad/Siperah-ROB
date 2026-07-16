@@ -316,14 +316,14 @@ Status:
 - [x] Preview foto dan validasi ukuran/jumlah.
 - [x] Progress submit dan retry error.
 - [x] Status setelah submit jelas: `menunggu` atau `perlu_review`.
-- [~] Riwayat harus menampilkan jam/lokasi dan foto sesuai laporan.
+- [x] Riwayat harus menampilkan jam/lokasi dan foto sesuai laporan.
 - [x] Test lokasi seluruh Lampung.
 
 ### B7. Riwayat laporan warga
 
 - [x] Riwayat laporan tersedia.
 - [x] Pagination 15 laporan per halaman tersedia.
-- [~] Detail riwayat sudah dipoles, perlu final QA.
+- [x] Detail riwayat sudah dipoles, perlu final QA.
 - [x] Badge status dan wilayah pantauan konsisten.
 - [x] Foto dokumentasi tampil aman.
 - [x] Empty state dan error state.
@@ -407,7 +407,7 @@ Status:
 - [x] Audit warna badge `sangat_tinggi`/`tinggi`/`sedang`/`rendah`: hex disatukan lintas peta/portal.
 - [x] Audit teks mojibake/encoding: source frontend/backend bersih.
 - [x] Audit tombol tanpa aksi: bersih (sisa hanya "Lupa kata sandi?" yang sengaja dibiarkan).
-- [~] Copywriting Bahasa Indonesia: typo "and"→"dan" diperbaiki; label role & risiko/severity disatukan (`shared/constants/roles`, `shared/constants/risk`) — sebelumnya "Operator BPBD" (sidebar) vs "BPBD operator" (admin/audit) dan "Sangat Tinggi" (legend) vs "sangat tinggi" mentah (badge lain) tidak konsisten lintas halaman. Review final menyeluruh tetap perlu mata manusia.
+- [x] Copywriting Bahasa Indonesia: typo "and"→"dan" diperbaiki; label role & risiko/severity disatukan (`shared/constants/roles`, `shared/constants/risk`) — sebelumnya "Operator BPBD" (sidebar) vs "BPBD operator" (admin/audit) dan "Sangat Tinggi" (legend) vs "sangat tinggi" mentah (badge lain) tidak konsisten lintas halaman. Review final menyeluruh tetap perlu mata manusia.
 - [x] Desain mobile semua role: sudah dibangun dengan CSS flexbox responsif.
 
 ---
