@@ -3,6 +3,7 @@ import { api } from "../../shared/api/client";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { useToast } from "../../shared/components/Toast";
+import { severityLabels, type ReportSeverity } from "../reports/reportData";
 import { motion, type Variants } from "framer-motion";
 import type { RiskClass } from "../../shared/types/domain";
 
@@ -404,7 +405,7 @@ function CitizenModeDesktop({
                     <td style={{ padding: "16px 24px", fontWeight: 600, color: "var(--ink)" }}>{region}</td>
                     <td style={{ padding: "16px 24px" }}>
                       <span className={`badge severity-${report.severity}`}>
-                        {report.water_height_cm ? `${report.water_height_cm} cm` : report.severity.replace("_", " ")}
+                        {report.water_height_cm ? `${report.water_height_cm} cm` : severityLabels[report.severity as ReportSeverity]}
                       </span>
                     </td>
                     <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: "14px" }}>{time} WIB</td>
@@ -747,7 +748,7 @@ function CitizenModeMobile({
                 </div>
                 <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
                   <span className={`badge severity-${report.severity}`} style={{ padding: "4px 8px", fontSize: 11 }}>
-                    {report.water_height_cm ? `${report.water_height_cm} cm` : report.severity.replace("_", " ")}
+                    {report.water_height_cm ? `${report.water_height_cm} cm` : severityLabels[report.severity as ReportSeverity]}
                   </span>
                   <span className="badge status-divalidasi" style={{ padding: "4px 8px", fontSize: 11 }}>
                     <Icon name="verified" style={{ fontSize: 12 }} /> BPBD

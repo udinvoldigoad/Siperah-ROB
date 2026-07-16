@@ -3,6 +3,7 @@ import { AppShell } from "../../shared/components/AppShell";
 import { api, apiUrl } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
+import { riskLabels } from "../../shared/constants/risk";
 import { motion, type Variants } from "framer-motion";
 
 interface SummaryData {
@@ -397,7 +398,7 @@ export function ProvinceDashboardPage() {
                     </td>
                     <td style={{ padding: "16px 24px" }}>
                       <span className={`badge severity-${riskBadgeClass(item.riskClass)}`}>
-                        {item.riskClass.replace("_", " ")}
+                        {riskLabels[item.riskClass] ?? item.riskClass}
                       </span>
                     </td>
                     <td style={{ padding: "16px 24px", textAlign: "right", fontFamily: "monospace", fontSize: "14px", fontWeight: 700 }}>
@@ -683,7 +684,7 @@ export function ProvinceDashboardPage() {
                   <td style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>{p.district ?? "-"}, {p.regency ?? "-"}</td>
                   <td style={{ padding: "16px 24px" }}>
                     <span className={`badge severity-${riskBadgeClass(p.risk_class)}`}>
-                      {p.risk_class.replace("_", " ")}
+                      {riskLabels[p.risk_class] ?? p.risk_class}
                     </span>
                   </td>
                   <td style={{ padding: "16px 24px", textAlign: "right", fontWeight: 700 }}>

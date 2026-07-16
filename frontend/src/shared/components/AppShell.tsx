@@ -5,6 +5,7 @@ import { Icon } from "./Icon";
 import { Breadcrumbs, type BreadcrumbItem } from "./Breadcrumbs";
 import { useToast } from "./Toast";
 import { api } from "../api/client";
+import { roleLabels } from "../constants/roles";
 
 const SIDEBAR_STORAGE_KEY = "siperah-sidebar";
 
@@ -81,14 +82,6 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
       await api(`/notifications/${item.id}/read`, { method: "PATCH" });
       setNotifications((current) => current.map((entry) => entry.id === item.id ? { ...entry, read_at: new Date().toISOString() } : entry));
     }
-  };
-
-  const roleLabels: Record<string, string> = {
-    warga: "Warga",
-    bpbd_operator: "Operator BPBD",
-    bpbd_provinsi: "BPBD Provinsi",
-    admin: "Admin Sistem",
-    peneliti: "Peneliti"
   };
 
   const allowedNavItems = navItems.filter((item) => {

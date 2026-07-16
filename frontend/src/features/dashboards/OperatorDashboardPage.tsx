@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { useToast } from "../../shared/components/Toast";
-import { fetchOperatorReports, updateOperatorReportStatus, type OperatorReport } from "../reports/reportData";
+import { fetchOperatorReports, severityLabels, updateOperatorReportStatus, type OperatorReport } from "../reports/reportData";
 import { api, apiBase } from "../../shared/api/client";
 import { Icon } from "../../shared/components/Icon";
 import { motion, AnimatePresence } from "framer-motion";
@@ -261,7 +261,7 @@ export function OperatorDashboardPage() {
                           {!report.isWithinMonitoringArea && <p style={{ color: "var(--medium)", fontWeight: 700 }}>Triase: lokasi di luar wilayah pantauan rob, tetapi masih dalam {report.regency}.</p>}
                         </div>
                         <span className={`badge severity-${report.severity}`}>
-                          {report.severity.replace("_", " ")}
+                          {severityLabels[report.severity]}
                         </span>
                       </div>
                       <div style={{ fontSize: "14px", color: "var(--ink)", marginBottom: "20px", padding: "16px", background: "var(--surface-soft)", borderRadius: "var(--radius)" }}>

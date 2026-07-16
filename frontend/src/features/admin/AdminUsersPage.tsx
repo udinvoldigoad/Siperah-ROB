@@ -4,6 +4,7 @@ import { AppShell } from "../../shared/components/AppShell";
 import { api, apiUrl } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
+import { roleLabel } from "../../shared/constants/roles";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface UserData {
@@ -441,8 +442,8 @@ export function AdminUsersPage() {
                         <td style={{ padding: "16px 24px", fontWeight: 600, color: "var(--ink)", fontSize: 14 }}>{user.name}</td>
                         <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: 13 }}>{user.email}</td>
                         <td style={{ padding: "16px 24px" }}>
-                          <span className="badge" style={{ background: "var(--accent-soft)", color: "var(--accent)", textTransform: "capitalize", fontSize: 11, padding: "4px 8px" }}>
-                            {user.role.replace("bpbd_", "BPBD ").replace("_", " ")}
+                          <span className="badge" style={{ background: "var(--accent-soft)", color: "var(--accent)", fontSize: 11, padding: "4px 8px" }}>
+                            {roleLabel(user.role)}
                           </span>
                         </td>
                         <td style={{ padding: "16px 24px" }}>

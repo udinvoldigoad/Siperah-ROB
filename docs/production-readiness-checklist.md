@@ -407,7 +407,7 @@ Status:
 - [x] Audit warna badge `sangat_tinggi`/`tinggi`/`sedang`/`rendah`: hex disatukan lintas peta/portal.
 - [x] Audit teks mojibake/encoding: source frontend/backend bersih.
 - [x] Audit tombol tanpa aksi: bersih (sisa hanya "Lupa kata sandi?" yang sengaja dibiarkan).
-- [~] Copywriting Bahasa Indonesia: 1 typo diperbaiki ("and"→"dan"); review final menyeluruh perlu mata manusia.
+- [~] Copywriting Bahasa Indonesia: typo "and"→"dan" diperbaiki; label role & risiko/severity disatukan (`shared/constants/roles`, `shared/constants/risk`) — sebelumnya "Operator BPBD" (sidebar) vs "BPBD operator" (admin/audit) dan "Sangat Tinggi" (legend) vs "sangat tinggi" mentah (badge lain) tidak konsisten lintas halaman. Review final menyeluruh tetap perlu mata manusia.
 - [x] Desain mobile semua role: sudah dibangun dengan CSS flexbox responsif.
 
 ---

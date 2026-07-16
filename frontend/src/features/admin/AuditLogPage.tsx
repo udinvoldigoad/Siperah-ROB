@@ -3,6 +3,7 @@ import { AppShell } from "../../shared/components/AppShell";
 import { api, apiUrl } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
+import { roleLabel } from "../../shared/constants/roles";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface AuditLogData {
@@ -348,8 +349,8 @@ export function AuditLogPage() {
                           <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: 13 }}>{formatDate(log.created_at)}</td>
                           <td style={{ padding: "16px 24px", fontWeight: 600, color: "var(--ink)", fontSize: 14 }}>{log.actor_name}</td>
                           <td style={{ padding: "16px 24px" }}>
-                            <span className="badge" style={{ background: "var(--surface-muted)", color: "var(--ink-soft)", textTransform: "capitalize", fontSize: 11, padding: "4px 8px" }}>
-                              {log.actor_role.replace("bpbd_", "BPBD ").replace("_", " ")}
+                            <span className="badge" style={{ background: "var(--surface-muted)", color: "var(--ink-soft)", fontSize: 11, padding: "4px 8px" }}>
+                              {roleLabel(log.actor_role)}
                             </span>
                           </td>
                           <td style={{ padding: "16px 24px" }}>
