@@ -16,8 +16,8 @@ Fondasi semua fitur: peta, dashboard, dan mode awam hanya sebagus datanya. Kerja
 
 ### 1.1 Data wilayah
 
-- [ ] **P1** Audit cakupan wilayah: pastikan 15 kabupaten/kota dan 283+ kelurahan pesisir Lampung ada di tabel `regions`.
-  - Selesai jika: query hitung per kabupaten cocok dengan referensi BIG/BPS, hasil audit dicatat di docs.
+- [ ] **P1** Audit cakupan wilayah pesisir: PRD menyebut **7 dari 15 kabupaten/kota** (283 kelurahan pesisir); pipeline ML memakai **8 stasiun pesisir** (`ml-api/files/data_fetcher.py`: Bandar Lampung, Lampung Selatan, Pesawaran, Tanggamus, Pesisir Barat, Lampung Timur, Tulang Bawang, Mesuji). Samakan dulu daftar resminya (7 vs 8), lalu pastikan semua kabupaten pesisir itu + kelurahannya ada di tabel `regions`. Angka 15 kab/kota hanya batas skala "hingga" di PRD, bukan target sekarang.
+  - Selesai jika: daftar kabupaten pesisir resmi diputuskan & didokumentasikan, query hitung per kabupaten cocok dengan referensi BIG/BPS, hasil audit dicatat di docs.
 - [ ] **P1** Audit kualitas geometri: cari geometri kosong, geometri invalid (`ST_IsValid`), duplikasi nama, kode wilayah kosong.
   - Selesai jika: ada skrip/command audit yang bisa diulang, dan semua temuan dibereskan atau dicatat alasannya.
 - [ ] **P2** Tegakkan `boundary_status` yang jelas per wilayah: official / estimated / manual / invalid.
