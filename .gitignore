@@ -48,3 +48,4 @@ backend/test-db.php
 .env.local
 .env.*.local
 scripts/deploy.env
+scratch/

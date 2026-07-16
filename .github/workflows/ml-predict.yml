@@ -25,6 +25,16 @@ jobs:
         working-directory: ml-api
         run: pip install -r requirements.txt
 
+      - name: Tes konektivitas API cuaca dari runner
+        run: |
+          for url in \
+            "https://api.open-meteo.com/v1/forecast?latitude=-5.45&longitude=105.26&daily=precipitation_sum&timezone=Asia%2FJakarta" \
+            "https://marine-api.open-meteo.com/v1/marine?latitude=-5.55&longitude=105.32&daily=wave_height_max&timezone=Asia%2FJakarta" \
+            "https://archive-api.open-meteo.com/v1/archive?latitude=-5.45&longitude=105.26&start_date=2026-07-01&end_date=2026-07-02&daily=precipitation_sum&timezone=Asia%2FJakarta"; do
+            echo "== $url"
+            curl -sS --max-time 20 -o /dev/null -w "   HTTP %{http_code} dalam %{time_total}s\n" "$url" || echo "   GAGAL/TIMEOUT"
+          done
+
       - name: Jalankan prediksi & tulis ke database
         working-directory: ml-api
         timeout-minutes: 20
