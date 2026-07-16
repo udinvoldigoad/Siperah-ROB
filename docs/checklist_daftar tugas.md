@@ -17,9 +17,10 @@ Fondasi semua fitur: peta, dashboard, dan mode awam hanya sebagus datanya. Kerja
 ### 1.1 Data wilayah
 
 - [ ] **P1** Audit cakupan wilayah pesisir: cakupan resmi = **8 kabupaten/kota pesisir** sesuai stasiun pipeline ML (`ml-api/files/data_fetcher.py`): Bandar Lampung, Lampung Selatan, Pesawaran, Tanggamus, Pesisir Barat, Lampung Timur, Tulang Bawang, Mesuji *(keputusan 2026-07-16; teks PRD "7 dari 15" perlu dikoreksi menyusul)*. Pastikan 8 kabupaten itu + kelurahan pesisirnya lengkap di tabel `regions`. Angka 15 kab/kota hanya batas skala "hingga" di PRD, bukan target sekarang.
+  - *Progres 2026-07-16*: `coastal_flag` diperbaiki 20 → **321** wilayah via `data:classify-coastal-regions` (fallback Haversine ke garis pantai BIG); prediksi ML kini mencakup semuanya (9.951 baris). Sisa: **Mesuji masih 0** (polygon desa 8+ km dari garis pantai terpetakan), verifikasi silang 321 vs referensi 283 kelurahan PRD/BPS. Detail: `docs/audit-wilayah-2026-07-16.md`.
   - Selesai jika: query hitung per kabupaten cocok dengan referensi BIG/BPS untuk 8 wilayah itu, hasil audit dicatat di docs.
-- [ ] **P1** Audit kualitas geometri: cari geometri kosong, geometri invalid (`ST_IsValid`), duplikasi nama, kode wilayah kosong.
-  - Selesai jika: ada skrip/command audit yang bisa diulang, dan semua temuan dibereskan atau dicatat alasannya.
+- [x] **P1** Audit kualitas geometri: command `data:audit-regions` diperluas (breakdown pesisir vs 8 stasiun ML, boundary_status, format geometri GeoJSON/WKT, duplikasi, kode kosong; `ST_IsValid` otomatis saat PostGIS ada). Temuan: 2.640 GeoJSON BIG asli + 8 kotak demo, tidak ada geometri kosong/duplikat — dicatat di `docs/audit-wilayah-2026-07-16.md`.
+- [ ] **P1** Pasang PostGIS di database (dev & production): Postgres 18.3 dev belum punya ekstensi (`geometry` masih text/GeoJSON) padahal keputusan arsitektur "PostGIS wajib". Pasang bundel PostGIS untuk PG18 (Stack Builder), `CREATE EXTENSION postgis`, jalankan migrasi konversi spasial, lalu ulangi `data:classify-coastal-regions` via jalur PostGIS.
 - [ ] **P2** Tegakkan `boundary_status` yang jelas per wilayah: official / estimated / manual / invalid.
   - Selesai jika: tiap baris `regions` punya status, dan peta publik bisa membedakannya (minimal di metadata).
 - [ ] **P2** Validasi data wilayah production dari BIG (bukan dummy/manual).
