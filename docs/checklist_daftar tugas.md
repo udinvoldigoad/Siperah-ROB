@@ -63,7 +63,7 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 - [ ] **P1** Layer jalur evakuasi (data + endpoint + geometri).
   - Catatan: dua layer ini butuh **sumber data** dulu — pastikan datanya ada sebelum koding. `(keputusan sumber data)`
 - [ ] **P2** Rate limit endpoint publik disetel untuk trafik production (bukan default dev).
-- [ ] **P2** Pantau/cache ukuran response GeoJSON agar peta cepat (simplify geometri atau cache per horizon).
+- [x] **P2** Pantau/cache ukuran response GeoJSON agar peta cepat: `ST_SimplifyPreserveTopology` ~22 m + presisi 5 desimal + cache payload 15 menit — terukur di production 13,5 MB/6,9 dtk → 535 KB/0,33 dtk (2026-07-17). Dev lokal tanpa PostGIS tetap fallback tanpa simplifikasi.
 
 ### 2.2 Dashboard operator & provinsi
 
