@@ -227,6 +227,21 @@ export function AdminUsersPage() {
         .admin-confirm-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 1000; }
         .admin-confirm-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25); max-width: 440px; padding: 26px; width: 100%; animation: adminConfirmIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes adminConfirmIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .admin-create-card { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 16px; margin-top: 18px; overflow: hidden; }
+        .admin-create-grid { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 22px; }
+        .admin-field { display: grid; gap: 7px; }
+        .admin-field.span-2 { grid-column: 1 / -1; }
+        .admin-field label { align-items: center; color: var(--ink-soft); display: flex; font-size: 12px; font-weight: 700; gap: 6px; letter-spacing: 0.02em; text-transform: uppercase; }
+        .admin-field label .material-symbols-outlined, .admin-field label .material-symbols-rounded { font-size: 15px; }
+        .admin-field input, .admin-field select { background: var(--surface); }
+        .admin-role-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+        .admin-role-pill { align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; cursor: pointer; display: inline-flex; font-size: 13px; font-weight: 600; gap: 6px; padding: 8px 14px; transition: all 0.15s ease; }
+        .admin-role-pill:hover { border-color: var(--accent); }
+        .admin-role-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .admin-create-footer { align-items: center; background: var(--surface); border-top: 1px solid var(--line); display: flex; gap: 14px; justify-content: space-between; padding: 16px 22px; flex-wrap: wrap; }
+        .admin-create-hint { align-items: flex-start; color: var(--ink-soft); display: flex; font-size: 12.5px; gap: 8px; line-height: 1.5; max-width: 480px; }
+        .admin-create-hint .material-symbols-outlined, .admin-create-hint .material-symbols-rounded { color: var(--accent); font-size: 17px; }
+        @media (max-width: 640px) { .admin-create-grid { grid-template-columns: 1fr; } }
       `}</style>
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="content" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
         
@@ -278,31 +293,78 @@ export function AdminUsersPage() {
                 <button type="button" className="btn primary" onClick={() => setCreateOpen((value) => !value)}><Icon name="person_add" /> {isCreateOpen ? "Tutup Form" : "Tambah Pengguna"}</button>
               </div>
             </div>
-            {isCreateOpen && (
-              <form onSubmit={handleCreateUser} style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14, marginTop: 18 }}>
-                <input required placeholder="Nama lengkap" value={newUser.name} onChange={(e) => setNewUser((u) => ({ ...u, name: e.target.value }))} />
-                <input required type="email" placeholder="Email" value={newUser.email} onChange={(e) => setNewUser((u) => ({ ...u, email: e.target.value }))} />
-                <input required type="password" minLength={8} placeholder="Password awal min. 8 karakter" value={newUser.password} onChange={(e) => setNewUser((u) => ({ ...u, password: e.target.value }))} />
-                <input placeholder="Instansi (wajib untuk peneliti)" value={newUser.institution} onChange={(e) => setNewUser((u) => ({ ...u, institution: e.target.value }))} />
-                <select value={newUser.role} onChange={(e) => setNewUser((u) => ({ ...u, role: e.target.value }))}>
-                  <option value="warga">Warga</option>
-                  <option value="bpbd_operator">BPBD Operator</option>
-                  <option value="bpbd_provinsi">BPBD Provinsi</option>
-                  <option value="peneliti">Peneliti</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <select value={newUser.status} onChange={(e) => setNewUser((u) => ({ ...u, status: e.target.value }))}>
-                  <option value="aktif">Aktif</option>
-                  <option value="menunggu">Menunggu approval</option>
-                  <option value="nonaktif">Nonaktif</option>
-                </select>
-                <input placeholder="Region ID wilayah kerja operator" value={newUser.region_id} onChange={(e) => setNewUser((u) => ({ ...u, region_id: e.target.value }))} style={{ gridColumn: "1 / -1" }} />
-                <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>Operator BPBD wajib punya Region ID. Peneliti wajib punya instansi agar perizinan jelas.</span>
-                  <button type="submit" className="btn primary"><Icon name="save" /> Simpan Pengguna</button>
-                </div>
-              </form>
-            )}
+            <AnimatePresence>
+              {isCreateOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  style={{ overflow: "hidden" }}
+                >
+                  <form onSubmit={handleCreateUser} className="admin-create-card">
+                    <div className="admin-create-grid">
+                      <div className="admin-field">
+                        <label><Icon name="person" /> Nama lengkap</label>
+                        <input required placeholder="cth. Siti Amalia" value={newUser.name} onChange={(e) => setNewUser((u) => ({ ...u, name: e.target.value }))} />
+                      </div>
+                      <div className="admin-field">
+                        <label><Icon name="mail" /> Email</label>
+                        <input required type="email" placeholder="nama@instansi.go.id" value={newUser.email} onChange={(e) => setNewUser((u) => ({ ...u, email: e.target.value }))} />
+                      </div>
+                      <div className="admin-field">
+                        <label><Icon name="lock" /> Password awal</label>
+                        <input required type="password" minLength={8} placeholder="Minimal 8 karakter" value={newUser.password} onChange={(e) => setNewUser((u) => ({ ...u, password: e.target.value }))} />
+                      </div>
+                      <div className="admin-field">
+                        <label><Icon name="apartment" /> Instansi</label>
+                        <input placeholder="Wajib untuk peneliti" value={newUser.institution} onChange={(e) => setNewUser((u) => ({ ...u, institution: e.target.value }))} />
+                      </div>
+                      <div className="admin-field span-2">
+                        <label><Icon name="badge" /> Peran</label>
+                        <div className="admin-role-pills">
+                          {[
+                            { v: "warga", l: "Warga" },
+                            { v: "bpbd_operator", l: "BPBD Operator" },
+                            { v: "bpbd_provinsi", l: "BPBD Provinsi" },
+                            { v: "peneliti", l: "Peneliti" },
+                            { v: "admin", l: "Admin" },
+                          ].map((opt) => (
+                            <button
+                              key={opt.v}
+                              type="button"
+                              className={`admin-role-pill ${newUser.role === opt.v ? "active" : ""}`}
+                              onClick={() => setNewUser((u) => ({ ...u, role: opt.v }))}
+                            >
+                              {opt.l}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="admin-field">
+                        <label><Icon name="toggle_on" /> Status awal</label>
+                        <select value={newUser.status} onChange={(e) => setNewUser((u) => ({ ...u, status: e.target.value }))}>
+                          <option value="aktif">Aktif</option>
+                          <option value="menunggu">Menunggu approval</option>
+                          <option value="nonaktif">Nonaktif</option>
+                        </select>
+                      </div>
+                      <div className="admin-field">
+                        <label><Icon name="pin_drop" /> Region ID (wilayah operator)</label>
+                        <input placeholder="cth. 1801010" value={newUser.region_id} onChange={(e) => setNewUser((u) => ({ ...u, region_id: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="admin-create-footer">
+                      <span className="admin-create-hint">
+                        <Icon name="info" />
+                        Operator BPBD wajib punya Region ID. Peneliti wajib punya instansi agar perizinan jelas.
+                      </span>
+                      <button type="submit" className="btn primary"><Icon name="save" /> Simpan Pengguna</button>
+                    </div>
+                  </form>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.section>
         )}
 
