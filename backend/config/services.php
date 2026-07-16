@@ -18,4 +18,9 @@ return [
         'schedule_enabled' => env('ML_SCHEDULE_ENABLED', true),
     ],
 
+    'backup' => [
+        // Matikan di host tanpa pg_dump (mis. shared hosting).
+        'schedule_enabled' => env('BACKUP_SCHEDULE_ENABLED', true),
+    ],
+
 ];

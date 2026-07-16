@@ -40,12 +40,15 @@ return Application::configure(basePath: dirname(__DIR__))
             ->dailyAt('03:30')
             ->timezone('Asia/Jakarta')
             ->withoutOverlapping();
+        $backupEnabled = fn (): bool => (bool) config('services.backup.schedule_enabled');
         $schedule->command('backup:clean')
             ->dailyAt('01:00')
-            ->timezone('Asia/Jakarta');
+            ->timezone('Asia/Jakarta')
+            ->when($backupEnabled);
         $schedule->command('backup:run')
             ->dailyAt('01:30')
-            ->timezone('Asia/Jakarta');
+            ->timezone('Asia/Jakarta')
+            ->when($backupEnabled);
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
