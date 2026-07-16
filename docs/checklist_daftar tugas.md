@@ -17,10 +17,12 @@ Fondasi semua fitur: peta, dashboard, dan mode awam hanya sebagus datanya. Kerja
 ### 1.1 Data wilayah
 
 - [ ] **P1** Audit cakupan wilayah pesisir: cakupan resmi = **8 kabupaten/kota pesisir** sesuai stasiun pipeline ML (`ml-api/files/data_fetcher.py`): Bandar Lampung, Lampung Selatan, Pesawaran, Tanggamus, Pesisir Barat, Lampung Timur, Tulang Bawang, Mesuji *(keputusan 2026-07-16; teks PRD "7 dari 15" perlu dikoreksi menyusul)*. Pastikan 8 kabupaten itu + kelurahan pesisirnya lengkap di tabel `regions`. Angka 15 kab/kota hanya batas skala "hingga" di PRD, bukan target sekarang.
-  - *Progres 2026-07-16*: `coastal_flag` diperbaiki 20 → **321** wilayah via `data:classify-coastal-regions` (fallback Haversine ke garis pantai BIG); prediksi ML kini mencakup semuanya (9.951 baris). Sisa: **Mesuji masih 0** (polygon desa 8+ km dari garis pantai terpetakan), verifikasi silang 321 vs referensi 283 kelurahan PRD/BPS. Detail: `docs/audit-wilayah-2026-07-16.md`.
+  - *Progres 2026-07-16/17*: `coastal_flag` diperbaiki 20 → **321** wilayah via `data:classify-coastal-regions` (fallback Haversine ke garis pantai BIG); prediksi ML harian via GitHub Actions kini mencakup semuanya (9.630 baris/30 hari, terverifikasi di production). Sisa: **Mesuji masih 0** (polygon desa 8+ km dari garis pantai terpetakan — perlu penandaan manual per kecamatan), verifikasi silang 321 vs referensi 283 kelurahan PRD/BPS. Detail: `docs/audit-wilayah-2026-07-16.md`.
   - Selesai jika: query hitung per kabupaten cocok dengan referensi BIG/BPS untuk 8 wilayah itu, hasil audit dicatat di docs.
 - [x] **P1** Audit kualitas geometri: command `data:audit-regions` diperluas (breakdown pesisir vs 8 stasiun ML, boundary_status, format geometri GeoJSON/WKT, duplikasi, kode kosong; `ST_IsValid` otomatis saat PostGIS ada). Temuan: 2.640 GeoJSON BIG asli + 8 kotak demo, tidak ada geometri kosong/duplikat — dicatat di `docs/audit-wilayah-2026-07-16.md`.
-- [ ] **P1** Pasang PostGIS di database (dev & production): Postgres 18.3 dev belum punya ekstensi (`geometry` masih text/GeoJSON) padahal keputusan arsitektur "PostGIS wajib". Pasang bundel PostGIS untuk PG18 (Stack Builder), `CREATE EXTENSION postgis`, jalankan migrasi konversi spasial, lalu ulangi `data:classify-coastal-regions` via jalur PostGIS.
+- [ ] **P1** Pasang PostGIS di database (dev & production).
+  - *Production SELESAI 2026-07-16*: Supabase PostGIS 3.3.7 aktif, kolom `regions.geometry` & `reports.location` sudah tipe spasial asli + GIST index + trigger (2.648 valid, 0 invalid); `search_path` diatur via `config/database.php`.
+  - *Sisa*: dev lokal (PG 18.3) masih tanpa PostGIS (text/GeoJSON, fallback Haversine) — pasang bundel PostGIS PG18 via Stack Builder; lalu jalankan ulang `data:classify-coastal-regions` di production via jalur `ST_DWithin` (klasifikasi 321 wilayah saat ini masih hasil fallback Haversine, termasuk artefak "Lampung Tengah 1" yang perlu hilang).
 - [ ] **P2** Tegakkan `boundary_status` yang jelas per wilayah: official / estimated / manual / invalid.
   - Selesai jika: tiap baris `regions` punya status, dan peta publik bisa membedakannya (minimal di metadata).
 - [ ] **P2** Validasi data wilayah production dari BIG (bukan dummy/manual).
@@ -32,8 +34,9 @@ Fondasi semua fitur: peta, dashboard, dan mode awam hanya sebagus datanya. Kerja
   - Selesai jika: tabel `tidal_data` terisi dari sumber resmi, dan `ml-api` membaca dari tabel itu (bukan simulasi) saat tersedia.
 - [ ] **P1** Validasi kualitas tidal: missing value, outlier, duplikasi timestamp, metadata stasiun.
   - Selesai jika: ada langkah validasi di pipeline import yang menolak/menandai data buruk.
-- [ ] **P2** Jadwal refresh data harian pukul 05:00 WIB (sebelum `ml:predict` 06:00 yang sudah terpasang).
-  - Selesai jika: scheduler Laravel menjalankan fetch data 05:00 Asia/Jakarta dan hasilnya terverifikasi.
+- [ ] **P2** Jadwal refresh data harian pukul 05:00 WIB (sebelum prediksi ML 06:00).
+  - *Progres 2026-07-17*: `data:refresh-operational` terjadwal 05:00 WIB dan cron production sudah berdetak — tinggal **verifikasi hasil run pertamanya** (cek log/`data_import_runs` setelah jam 05:00).
+  - Selesai jika: scheduler menjalankan fetch data 05:00 Asia/Jakarta dan hasilnya terverifikasi.
 - [ ] **P3** Refresh 2x/hari saat event astronomis signifikan (purnama/perigee).
 - [ ] **P2** Integrasi peringatan dini cuaca BMKG (untuk banner peringatan di peta publik).
   - Selesai jika: banner "peringatan aktif" di peta publik membaca sumber resmi, bukan derivasi prediksi sendiri.
@@ -96,7 +99,7 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 - [ ] **P1** Guard route per role di frontend (warga tidak bisa buka URL admin, dst. — backend sudah menolak, UI harus redirect rapi).
 - [ ] **P1** UI status akun pending/nonaktif/ditolak yang jelas saat login.
 - [ ] **P2** Sinkronkan role saat register dengan backend (backend default warga — form register jangan menjanjikan role lain).
-- [ ] **P2** Hilangkan dev shortcuts dari build production.
+- [ ] **P2** Hilangkan dev shortcuts dari build production. *(Keputusan 2026-07-17: DITUNDA — masih dipakai untuk pengujian; situs sudah live publik, jadi wajib dihapus sebelum dipublikasikan luas/UAT eksternal.)*
 - [ ] **P2** Code splitting (dynamic import) untuk map/dashboard/research — hilangkan warning chunk >500 kB.
 - [ ] **P2** Konsistenkan loading/skeleton state, empty state, dan toast di semua halaman.
 - [ ] **P3** Accessibility audit: navigasi keyboard, focus ring, kontras, aria-label.
@@ -151,7 +154,7 @@ Blok fitur utuh yang paling besar sisa pekerjaannya. Kerjakan sebagai satu paket
 
 ## Tahap 5 — Keamanan & RBAC final
 
-- [ ] **P1** Hapus `backend/check_prob.php` sebelum production (sudah ditandai wajib).
+- [ ] **P1** Hapus `backend/check_prob.php` sebelum production (sudah ditandai wajib). *(Catatan 2026-07-17: file ikut ke server via git clone; tidak bisa diakses web karena docroot = `backend/public`, tapi tetap hapus dari repo.)*
 - [ ] **P1** Test authorization/policy per endpoint: RBAC negative path semua role (warga → admin = 403, dst.).
 - [ ] **P1** Security headers di reverse proxy (nginx/Caddy): CSP, HSTS, X-Frame-Options, X-Content-Type-Options.
 - [ ] **P2** Rencana rotasi secret: `APP_KEY`, token API, kredensial DB/email/WA/SMS — tulis prosedurnya.
@@ -188,26 +191,29 @@ Tulis test sambil/tepat setelah fitur terkait selesai — jangan ditumpuk di akh
 
 ## Tahap 7 — Infrastruktur production & deploy
 
-Sesuai skema hosting yang sudah disepakati: single VPS, nginx + PHP-FPM + PostgreSQL/PostGIS + Python venv.
+**Arsitektur final (LIVE sejak 2026-07-16, tanpa VPS)**: Hostinger shared (frontend + Laravel, subdomain `siperah-rob.girimulyo.com`, PHP 8.4) + Supabase free Singapura (PostgreSQL 17 + PostGIS via session pooler) + GitHub Actions (prediksi ML harian 06:00 WIB). Deploy: `bash scripts/deploy-hostinger.sh` (butuh tethering — firewall Hostinger memblokir IP rumah). Detail di memori proyek & `docs/backup-database.md`.
 
-- [ ] **P1** `.env.production` terdokumentasi tanpa secret asli (`APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` valid).
-- [ ] **P1** CORS production hanya mengizinkan domain frontend resmi; Sanctum/session cookie sesuai domain.
-- [ ] **P1** `VITE_API_BASE_URL` production terdokumentasi; tidak ada hardcoded localhost di source.
-- [ ] **P1** Cron scheduler aktif di server (`schedule:run` tiap menit) — menjalankan fetch 05:00 & `ml:predict` 06:00.
-- [ ] **P1** Queue worker jalan via supervisor/systemd (dibutuhkan Tahap 4).
-- [ ] **P1** Backup otomatis DB + storage foto laporan, dengan retention. **Catatan production 2026-07-16**: Hostinger tidak punya `pg_dump` (jadwal spatie backup dimatikan via `BACKUP_SCHEDULE_ENABLED=false`) dan Supabase free tidak punya auto-backup — backup harus dari luar (mis. pg_dump terjadwal dari laptop/GitHub Actions ke penyimpanan privat; JANGAN artifact repo public).
-- [ ] **P1** Health check endpoint backend (`/api/health` atau sejenis) untuk monitoring.
-- [ ] **P2** Log channel production dengan rotation/retention.
+- [ ] **P1** `.env.production` terdokumentasi tanpa secret asli. *(Server sudah punya `.env` production yang benar — `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` valid; tinggal tulis template `.env.production.example` di repo.)*
+- [ ] **P1** CORS production hanya mengizinkan domain frontend resmi. *(Urgensi turun: deployment satu-origin + Bearer token, bukan cookie lintas domain — tapi tetap rapikan `config/cors.php`.)*
+- [x] **P1** `VITE_API_BASE_URL` production: default `/api` same-origin dipakai (tidak perlu env), tidak ada hardcoded localhost di build production.
+- [x] **P1** Cron scheduler aktif: hPanel Cron tiap menit → `schedule:run` (PHP84 + flag pgsql), terverifikasi 2026-07-16. `ml:predict` & `backup:run` sengaja OFF di Hostinger (`ML_SCHEDULE_ENABLED`/`BACKUP_SCHEDULE_ENABLED=false`) — prediksi via GitHub Actions.
+- [ ] **P1** Queue worker (dibutuhkan Tahap 4). *(Saat ini `QUEUE_CONNECTION=sync` — cukup sampai notifikasi multi-kanal dikerjakan; di Hostinger nanti pakai database queue + cron `queue:work --stop-when-empty`.)*
+- [ ] **P1** Backup otomatis DB + storage foto laporan, dengan retention.
+  - *Progres 2026-07-17*: pipeline & panduan selesai (`docs/backup-database.md`) — pg_dump 17 mingguan via GitHub Actions di **repo private** (dump berisi PII warga, dilarang jadi artifact repo public). **Tinggal eksekusi user**: buat repo private `siperah-backups`, salin 5 secrets, tempel workflow, uji sekali. Foto laporan di Hostinger belum ter-backup (unduh berkala via SFTP).
+- [x] **P1** Health check endpoint: `/up` bawaan Laravel aktif & terverifikasi 200 di production.
+- [x] **P2** Log channel production: `LOG_CHANNEL=daily` + `LOG_LEVEL=warning` di server (retensi default 14 hari).
 - [ ] **P2** CI backend: composer install + PHP lint + PHPUnit. CI frontend: npm ci + tsc + build.
-- [ ] **P2** Observability minimal: error log terpantau + alert saat scheduler/pipeline gagal.
-- [ ] **P2** Backup restore drill: latihan restore sekali sebelum go-live.
-- [ ] **P3** Load test endpoint peta publik, reports, API research.
+- [ ] **P2** Observability minimal: error log terpantau + alert saat scheduler/pipeline gagal. *(Sebagian: workflow Actions gagal = email otomatis dari GitHub ke pemilik repo; log Laravel server belum ada alert.)*
+- [ ] **P2** Backup restore drill: latihan restore sekali sebelum go-live (prosedur sudah ditulis di `docs/backup-database.md`).
+- [ ] **P3** Load test endpoint peta publik, reports, API research. *(Peta publik sudah dioptimasi 25x + cache 15 menit.)*
+- [ ] **P2** Reset password database Supabase (terpapar di riwayat chat 2026-07-16) → update `.env` server + secret `SUPABASE_DB_PASSWORD` di repo utama (dan repo backup bila sudah ada).
+- [ ] **P3** Selesaikan blokir IP rumah oleh firewall Hostinger (restart router untuk IP baru / delisting AbuseIPDB) agar SSH tidak butuh tethering.
 
 ---
 
 ## Tahap 8 — Dokumentasi & serah-terima
 
-- [ ] **P1** Deployment guide (langkah setup VPS sampai jalan, termasuk rollback plan).
+- [ ] **P1** Deployment guide — **perlu ditulis ulang**: `docs/deployment_guide.md` yang ada masih menggambarkan arsitektur VPS + Redis + Nginx yang TIDAK jadi dipakai; arsitektur nyata = Hostinger shared + Supabase + GitHub Actions (lihat header Tahap 7 + `scripts/deploy-hostinger.sh` + `docs/backup-database.md`). Sertakan rollback plan (symlink `public_html` bisa dialihkan balik ke `~/apps/siperah-backend` lama).
 - [ ] **P1** Ekstrak SKPL dari `docs/SKPL_SIPERAH_RoB.docx` ke Markdown, lalu buat traceability matrix: Requirement → Endpoint/UI → Test → Status.
 - [ ] **P2** Dokumen API final (sudah ada referensi API peneliti — rapikan jadi dokumen utuh).
 - [ ] **P2** ERD/database final (update `database/schema.sql` + diagram).
