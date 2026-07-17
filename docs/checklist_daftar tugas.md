@@ -28,17 +28,13 @@ Fondasi semua fitur: peta, dashboard, dan mode awam hanya sebagus datanya. Kerja
 
 ### 1.2 Data pasang surut & cuaca
 
-- [ ] **P1** Integrasikan data pasang surut real/historis dengan sumber jelas (mengganti model harmonik simulasi).
-  - Selesai jika: tabel `tidal_data` terisi dari sumber resmi, dan `ml-api` membaca dari tabel itu (bukan simulasi) saat tersedia.
-- [ ] **P1** Validasi kualitas tidal: missing value, outlier, duplikasi timestamp, metadata stasiun.
-  - Selesai jika: ada langkah validasi di pipeline import yang menolak/menandai data buruk.
-- [ ] **P2** Jadwal refresh data harian pukul 05:00 WIB (sebelum prediksi ML 06:00).
-  - *Progres 2026-07-17*: `data:refresh-operational` terjadwal 05:00 WIB dan cron production sudah berdetak — tinggal **verifikasi hasil run pertamanya** (cek log/`data_import_runs` setelah jam 05:00).
-  - Selesai jika: scheduler menjalankan fetch data 05:00 Asia/Jakarta dan hasilnya terverifikasi.
+- [x] **P1** Integrasikan data pasang surut real/historis (2026-07-18): command `data:fetch-tidal-sealevel` menarik tinggi muka laut per jam dari **Open-Meteo Marine (model pasut FES)** untuk 8 titik stasiun (sinkron dgn `ml-api` STATIONS). Backfill 2 tahun dev & production: **138.048 baris valid**, 8 stasiun terisi. `ml-api` `load_tide_model` kini fit harmonik dari data real (`tide_simulated=False`, fix Decimal→float). Sumber dilabeli jujur: FES model, `provenance_status=unverified` (bukan observasi stasiun BIG/BMKG). Layer stasiun pasut di peta publik kini tampil (8 titik, terverifikasi live).
+- [x] **P1** Validasi kualitas tidal (2026-07-18): pipeline `data:fetch-tidal-sealevel` menolak null (2.112 jam kosong terbukti tersaring), outlier |h|>3m, dan duplikat timestamp (index unik `station_code+recorded_at` → upsert idempotent); setiap run tercatat di `data_import_runs` (fetched/valid/invalid/inserted).
+- [x] **P2** Jadwal refresh data harian sebelum prediksi ML (2026-07-18): terjadwal berurutan & terverifikasi live di production — `data:fetch-tidal-sealevel` 04:50 → `data:refresh-operational` 05:00 → `ml:predict` 06:00 (semua Asia/Jakarta; ml:predict sendiri via GitHub Actions). Cron Hostinger sudah berdetak sejak 2026-07-16.
 - [ ] **P3** Refresh 2x/hari saat event astronomis signifikan (purnama/perigee).
 - [ ] **P2** Integrasi peringatan dini cuaca BMKG (untuk banner peringatan di peta publik).
   - Selesai jika: banner "peringatan aktif" di peta publik membaca sumber resmi, bukan derivasi prediksi sendiri.
-- [ ] **P3** `(keputusan)` Integrasi data gempa/tsunami BMKG — putuskan relevan atau tidak untuk lingkup RoB.
+- [x] **P3** `(keputusan)` Integrasi data gempa/tsunami BMKG — **DIPUTUSKAN TIDAK DIPERLUKAN** (2026-07-18): di luar lingkup prediksi rob (banjir pasang surut); gempa/tsunami adalah domain peringatan BMKG/BPBD terpisah.
 
 ### 1.3 Prediksi ML production
 
