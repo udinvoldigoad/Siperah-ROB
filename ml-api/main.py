@@ -11,6 +11,7 @@ Jika model belum ada saat predict, training dijalankan otomatis terlebih dahulu.
 """
 
 import argparse
+import json
 import os
 import sys
 import uuid
@@ -456,11 +457,43 @@ def run_predict(conn, simulate: bool = False):
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM predictions WHERE prediction_date >= %s", (today.date(),))
     total = cursor.fetchone()[0]
+
+    # Audit trail: catat run prediksi ke data_import_runs (kapan, versi model,
+    # jumlah, sumber) — ml-api menulis langsung ke DB, jadi ini jejak resminya.
+    _log_prediction_run(conn, written, data_source, tide_simulated)
     cursor.close()
 
     print(f"[SUCCESS] {written} prediksi ditulis/diperbarui "
           f"({len(station_results)} stasiun, pemetaan: {station_hits}).")
     print(f"[VERIFY] Total prediksi di DB mulai hari ini: {total} baris.")
+
+
+def _log_prediction_run(conn, written, data_source, tide_simulated):
+    """Catat run prediksi ke data_import_runs sebagai audit trail."""
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT to_regclass('public.data_import_runs')")
+        if cur.fetchone()[0] is None:
+            cur.close()
+            return
+        summary = json.dumps({
+            "model_version": train_model.MODEL_VERSION,
+            "data_source": data_source,
+            "tide_simulated": bool(tide_simulated),
+        })
+        cur.execute(
+            """INSERT INTO data_import_runs
+               (id, source, dataset_type, status, source_reference,
+                fetched_count, valid_count, inserted_count, error_summary,
+                started_at, completed_at)
+               VALUES (%s, %s, 'predictions', 'completed', %s, %s, %s, %s, %s, now(), now())""",
+            (str(uuid.uuid4()), f"ML {train_model.MODEL_VERSION}", data_source,
+             written, written, written, summary),
+        )
+        conn.commit()
+        cur.close()
+    except Exception as error:  # noqa: BLE001 - audit tak boleh menggagalkan prediksi
+        print(f"[WARNING] Gagal mencatat audit run prediksi: {error}")
 
 
 def main():
