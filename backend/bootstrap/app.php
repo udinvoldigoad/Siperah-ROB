@@ -24,6 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withCommands()
     ->withSchedule(function (Schedule $schedule): void {
+        $schedule->command('data:fetch-tidal-sealevel --days-back=3')
+            ->dailyAt('04:50')
+            ->timezone('Asia/Jakarta')
+            ->withoutOverlapping();
         $schedule->command('data:refresh-operational --province=Lampung')
             ->dailyAt('05:00')
             ->timezone('Asia/Jakarta')

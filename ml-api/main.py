@@ -133,6 +133,9 @@ def load_tide_model(conn):
         if series.dt.tz is not None:
             series = series.dt.tz_convert("UTC").dt.tz_localize(None)
         df_tide["recorded_at"] = series
+        # Kolom numeric Postgres tiba sebagai Decimal; lstsq butuh float murni.
+        df_tide["tidal_height"] = pd.to_numeric(df_tide["tidal_height"], errors="coerce").astype(float)
+        df_tide = df_tide.dropna(subset=["tidal_height"])
         t0, beta = fit_harmonic_model(df_tide)
 
     if t0 is None or beta is None:
