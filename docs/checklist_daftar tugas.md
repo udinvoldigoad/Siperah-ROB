@@ -37,15 +37,11 @@ Fondasi semua fitur: peta, dashboard, dan mode awam hanya sebagus datanya. Kerja
 
 ### 1.3 Prediksi ML production
 
-- [ ] **P1** Validasi `model_version` dan provenance untuk setiap baris prediksi.
-  - Selesai jika: tiap prediksi menyimpan versi model + sumber data, dan endpoint publik menampilkannya.
-- [ ] **P1** Handling saat prediksi hari ini belum tersedia (pipeline gagal/terlambat).
-  - Selesai jika: frontend & mode awam menampilkan status "prediksi belum diperbarui" dengan timestamp terakhir, bukan data basi tanpa keterangan.
-- [ ] **P2** Evaluasi akurasi model berkala: precision, recall, drift tracking dari laporan tervalidasi BPBD.
-  - Selesai jika: ada command/laporan evaluasi yang membandingkan prediksi vs kejadian nyata per periode.
-- [ ] **P2** Audit log untuk update model/prediksi (siapa/kapan/versi apa).
-- [ ] **P2** Pisahkan seed demo dari data reference production secara tegas.
-  - Selesai jika: `DemoSeeder` tidak pernah tersentuh di production, dan seed reference (wilayah, dsb.) punya seeder terpisah.
+- [x] **P1** Validasi `model_version` dan provenance untuk setiap baris prediksi (2026-07-18, terverifikasi sudah terpenuhi): tiap prediksi menyimpan `model_version=flood_classifier_v1`, `data_source`, `provenance_status`; `PredictionResource` + endpoint publik/mode-awam menampilkannya.
+- [x] **P1** Handling saat prediksi hari ini belum tersedia (2026-07-18): `PredictionService` kini cari prediksi HARI INI eksplisit + status `fresh`/`stale`/`unavailable` (>30 jam sejak generated_at). Mode Awam menampilkan banner "Prediksi belum diperbarui sejak … WIB"; peta publik `data_freshness` + panel notice. Tidak lagi menampilkan data basi seolah terbaru.
+- [ ] **P2** Evaluasi akurasi model berkala: precision, recall, drift tracking dari laporan tervalidasi BPBD. *(SATU-SATUNYA sisa di 1.3 — butuh command evaluasi bandingkan prediksi vs laporan tervalidasi; catatan: ground truth production masih sangat sedikit, jadi command harus jujur soal ukuran sampel.)*
+- [x] **P2** Audit log untuk update model/prediksi (2026-07-18): ml-api mencatat tiap run prediksi ke `data_import_runs` (model_version, data_source, tide_simulated, jumlah, waktu) — fail-safe.
+- [x] **P2** Pisahkan seed demo dari data reference (2026-07-18, terverifikasi sudah terpenuhi): `DatabaseSeeder` punya penjaga `if environment('production') return` — `DemoSeeder` tak pernah jalan di production; data reference (wilayah) berasal dari sinkron BIG, bukan seeder. *(Sisa opsional: 8 baris demo legacy di production dari setup awal, ditandai provenance `demo`/boundary `manual` — bisa dibersihkan saat sinkron BIG ulang.)*
 
 ---
 
