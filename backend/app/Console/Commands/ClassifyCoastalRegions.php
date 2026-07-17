@@ -77,15 +77,27 @@ final class ClassifyCoastalRegions extends Command
         DB::statement('CREATE INDEX coast_classify_tmp_gix ON coast_classify_tmp USING gist (g)');
         DB::statement('ANALYZE coast_classify_tmp');
 
+        // Uji jarak memakai BAGIAN TERBESAR polygon tiap wilayah, bukan seluruh
+        // multipolygon: snapshot BIG memuat pecahan nyasar (sliver 1 ha bisa
+        // menempel pantai 25 km dari badan desa) yang membuat positif palsu.
+        DB::statement('DROP TABLE IF EXISTS region_main_tmp');
+        DB::statement(
+            'CREATE TEMP TABLE region_main_tmp AS
+             SELECT r.id, (SELECT d.geom FROM ST_Dump(r.geometry) d ORDER BY ST_Area(d.geom) DESC LIMIT 1) AS g
+             FROM regions r WHERE LOWER(r.province)=LOWER(?)',
+            [$province],
+        );
+        DB::statement('CREATE INDEX region_main_tmp_gix ON region_main_tmp USING gist (g)');
+        DB::statement('ANALYZE region_main_tmp');
+
         // Prefilter bbox (&& memakai GIST) sebelum uji jarak geography yang mahal.
         $bboxPad = max(0.002, $distance / 111_320 * 1.5);
-        $matchSql = 'SELECT DISTINCT r.id FROM regions r JOIN coast_classify_tmp c
-            ON r.geometry && ST_Expand(c.g, ?) AND ST_DWithin(r.geometry::geography, c.g::geography, ?)
-            WHERE LOWER(r.province)=LOWER(?)';
+        $matchSql = 'SELECT DISTINCT m.id FROM region_main_tmp m JOIN coast_classify_tmp c
+            ON m.g && ST_Expand(c.g, ?) AND ST_DWithin(m.g::geography, c.g::geography, ?)';
 
         $perRegency = DB::select(
             "SELECT regency, count(*) n FROM regions WHERE id IN ({$matchSql}) GROUP BY regency ORDER BY regency",
-            [$bboxPad, $distance, $province],
+            [$bboxPad, $distance],
         );
         $total = array_sum(array_map(fn ($r) => (int) $r->n, $perRegency));
 
@@ -100,7 +112,7 @@ final class ClassifyCoastalRegions extends Command
             DB::table('regions')->whereRaw('LOWER(province)=LOWER(?)', [$province])->update(['coastal_flag' => false]);
             DB::update(
                 "UPDATE regions SET coastal_flag=true, updated_at=now() WHERE id IN ({$matchSql})",
-                [$bboxPad, $distance, $province],
+                [$bboxPad, $distance],
             );
         });
         $this->info('coastal_flag diperbarui.');
