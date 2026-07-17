@@ -16,6 +16,16 @@ final class ClassifyCoastalRegions extends Command
     private const GRID_CELL_DEG = 0.05;
     private const VERTEX_SAMPLING = 10; // vertex BIG rapat (~20 m); sampling tiap 10 titik masih < 250 m
 
+    /**
+     * Kecamatan yang ditandai pesisir MANUAL (keputusan, bukan hasil hitung jarak).
+     * Rawa Jitu Utara (Mesuji): desa rawa pasang surut di muara — rob merambat
+     * lewat sungai, tetapi polygon desa 6,8+ km dari garis pantai BIG
+     * (keputusan 2026-07-17). Format: [regency, district].
+     */
+    private const MANUAL_COASTAL_DISTRICTS = [
+        ['Mesuji', 'Rawa Jitu Utara'],
+    ];
+
     public function handle(): int
     {
         $distance = max(0, (int) $this->option('distance-meters'));
@@ -23,13 +33,34 @@ final class ClassifyCoastalRegions extends Command
 
         $postgis = (bool) DB::table('pg_extension')->where('extname', 'postgis')->exists();
         $regionsSpatial = $this->columnIsGeometry('regions', 'geometry');
-        if ($postgis && $regionsSpatial) {
-            return $this->classifyWithPostgis($province, $distance);
+        $result = ($postgis && $regionsSpatial)
+            ? $this->classifyWithPostgis($province, $distance)
+            : $this->classifyWithHaversineWarned($province, $distance);
+
+        if ($result === self::SUCCESS && !$this->option('dry-run')) {
+            $this->applyManualDistricts($province);
         }
 
+        return $result;
+    }
+
+    private function classifyWithHaversineWarned(string $province, int $distance): int
+    {
         $this->warn('PostGIS tidak tersedia; memakai fallback Haversine dari coastlines.geometry_geojson (aproksimasi bounding box wilayah).');
 
         return $this->classifyWithHaversine($province, $distance);
+    }
+
+    private function applyManualDistricts(string $province): void
+    {
+        foreach (self::MANUAL_COASTAL_DISTRICTS as [$regency, $district]) {
+            $n = DB::table('regions')
+                ->whereRaw('LOWER(province)=LOWER(?)', [$province])
+                ->where('regency', $regency)
+                ->where('district', $district)
+                ->update(['coastal_flag' => true, 'updated_at' => now()]);
+            $this->info("Manual: {$n} wilayah Kec. {$district} ({$regency}) ditandai pesisir.");
+        }
     }
 
     private function classifyWithPostgis(string $province, int $distance): int
