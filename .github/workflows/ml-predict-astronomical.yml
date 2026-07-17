@@ -1,0 +1,40 @@
+name: Prediksi ML Sore (Pasang Purnama)
+
+# Refresh prediksi kedua di sore hari, HANYA saat jendela pasang purnama/bulan
+# baru (king tide) — risiko rob tertinggi. main.py --only-if-astronomical keluar
+# tanpa aksi di hari biasa, jadi workflow ini murah dijalankan tiap sore.
+
+on:
+  schedule:
+    # 09:00 UTC = 16:00 WIB
+    - cron: "0 9 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  predict-sore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.repository == 'udinvoldigoad/Siperah-ROB'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ml-api/requirements.txt
+      - name: Install dependensi
+        working-directory: ml-api
+        run: pip install -r requirements.txt
+      - name: Prediksi ekstra (hanya bila hari pasang purnama)
+        working-directory: ml-api
+        timeout-minutes: 15
+        env:
+          PYTHONUNBUFFERED: "1"
+          PYTHONFAULTHANDLER: "1"
+          DB_CONNECTION: pgsql
+          DB_HOST: ${{ secrets.SUPABASE_DB_HOST }}
+          DB_PORT: ${{ secrets.SUPABASE_DB_PORT }}
+          DB_DATABASE: ${{ secrets.SUPABASE_DB_DATABASE }}
+          DB_USERNAME: ${{ secrets.SUPABASE_DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: timeout --signal=SIGABRT 10m python main.py --mode predict --only-if-astronomical

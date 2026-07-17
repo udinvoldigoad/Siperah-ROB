@@ -216,6 +216,14 @@ final class PublicMapController
 
     private function activeWarning($predictions): ?array
     {
+        // Utama: peringatan cuaca resmi BMKG (bukan derivasi prediksi sendiri).
+        $bmkg = $this->bmkgWarning();
+        if ($bmkg !== null) {
+            return $bmkg;
+        }
+
+        // Sekunder: bila tak ada peringatan BMKG, tetap tandai zona risiko sangat
+        // tinggi dari model — dilabeli jelas sebagai prediksi internal.
         $critical = $predictions->filter(fn (Prediction $prediction) => $prediction->risk_class === 'sangat_tinggi');
         if ($critical->isEmpty()) {
             return null;
@@ -223,10 +231,46 @@ final class PublicMapController
 
         return [
             'type' => 'risk_threshold',
-            'title' => 'Risiko sangat tinggi terdeteksi',
-            'message' => $critical->count().' zona pantau berada pada kelas sangat tinggi. Pantau pembaruan BMKG dan laporan lapangan.',
+            'title' => 'Risiko rob sangat tinggi (prediksi model)',
+            'message' => $critical->count().' zona pantau berada pada kelas sangat tinggi menurut model SIPERAH-RoB. Belum ada peringatan cuaca BMKG aktif.',
             'affected_regencies' => $critical->pluck('region.regency')->filter()->unique()->values(),
             'source' => 'SIPERAH-RoB prediction',
+        ];
+    }
+
+    private function bmkgWarning(): ?array
+    {
+        if (!Schema::hasTable('weather_warnings')) {
+            return null;
+        }
+
+        $active = DB::table('weather_warnings')
+            ->where('valid_until', '>=', now())
+            ->orderByRaw("CASE severity WHEN 'tinggi' THEN 2 ELSE 1 END DESC")
+            ->orderBy('valid_from')
+            ->get();
+
+        if ($active->isEmpty()) {
+            return null;
+        }
+
+        $regencies = $active->pluck('regency')->unique()->values();
+        $topDesc = $active->first()->weather_desc;
+
+        return [
+            'type' => 'bmkg_weather',
+            'title' => 'Peringatan cuaca BMKG aktif',
+            'message' => sprintf(
+                '%s diprakirakan BMKG di %d kabupaten pesisir (a.l. %s). Waspadai potensi genangan rob saat pasang.',
+                $topDesc,
+                $regencies->count(),
+                $regencies->take(3)->implode(', '),
+            ),
+            'affected_regencies' => $regencies,
+            'valid_until' => optional($active->max('valid_until'))
+                ? \Carbon\CarbonImmutable::parse($active->max('valid_until'))->toIso8601String()
+                : null,
+            'source' => 'BMKG prakiraan-cuaca',
         ];
     }
 

@@ -28,6 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
             ->dailyAt('04:50')
             ->timezone('Asia/Jakarta')
             ->withoutOverlapping();
+        // Peringatan cuaca BMKG diperbarui beberapa kali sehari; refresh tiap 3 jam.
+        $schedule->command('data:fetch-bmkg-warnings')
+            ->everyThreeHours()
+            ->withoutOverlapping();
         $schedule->command('data:refresh-operational --province=Lampung')
             ->dailyAt('05:00')
             ->timezone('Asia/Jakarta')

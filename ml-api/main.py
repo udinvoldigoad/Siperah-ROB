@@ -471,7 +471,17 @@ def main():
     parser.add_argument("--tune", action="store_true", help="Hyperparameter tuning saat training")
     parser.add_argument("--simulate", action="store_true",
                         help="Pakai data cuaca simulasi (offline/demo, provenance 'estimated')")
+    parser.add_argument("--only-if-astronomical", action="store_true",
+                        help="Keluar tanpa aksi kecuali hari ini dalam jendela pasang purnama/bulan baru (refresh sore ekstra)")
     args = parser.parse_args()
+
+    if args.only_if_astronomical:
+        import pandas as pd
+        from files.feature_engineering import is_full_moon_period
+        if not bool(is_full_moon_period(pd.Series([datetime.now()])).iloc[0]):
+            print("[INFO] Hari ini di luar jendela pasang purnama/bulan baru — refresh sore dilewati.")
+            return
+        print("[INFO] Jendela pasang purnama/bulan baru aktif — menjalankan refresh ekstra.")
 
     if args.mode == "fetch":
         data_fetcher.fetch_all_historical(args.start, args.end)
