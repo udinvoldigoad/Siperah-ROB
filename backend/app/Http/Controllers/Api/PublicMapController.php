@@ -93,6 +93,7 @@ final class PublicMapController
                         'prediction_date' => $prediction->prediction_date,
                         'generated_at' => $prediction->generated_at,
                         'provenance_status' => $prediction->provenance_status,
+                        'boundary_status' => $region->boundary_status,
                         'data_source' => $prediction->data_source,
                     ],
                 ];

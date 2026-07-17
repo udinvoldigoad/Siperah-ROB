@@ -23,6 +23,7 @@ class RegionResource extends JsonResource
                 ? app(RegionMonitoringService::class)->isMonitored($this->resource)
                 : false,
             'provenance_status' => $this->provenance_status,
+            'boundary_status' => $this->boundary_status,
             'data_source' => $this->data_source,
             // Skip large geometry string for list views unless requested or specific to map
         ];

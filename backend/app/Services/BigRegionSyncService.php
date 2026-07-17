@@ -322,7 +322,7 @@ final class BigRegionSyncService
                 'regency' => $feature['regency'], 'district' => $feature['district'], 'village' => $feature['village'],
                 'geometry' => $feature['geometry'], 'data_source' => 'Badan Informasi Geospasial',
                 'source_reference' => self::SOURCE_URL, 'provenance_status' => 'official',
-                'boundary_status' => 'reference', 'source_edition' => '2020-10',
+                'boundary_status' => 'official', 'source_edition' => '2020-10',
                 'source_synced_at' => now(), 'updated_at' => now(),
             ];
             if ($existing) {
@@ -347,7 +347,7 @@ final class BigRegionSyncService
             DB::update(
                 "UPDATE regions SET geometry={$geometrySql}, region_code=?, province=?, regency=?, district=?, village=?,
                  data_source='Badan Informasi Geospasial', source_reference=?, provenance_status='official',
-                 boundary_status='reference', source_edition='2020-10', source_synced_at=?, updated_at=now()
+                 boundary_status='official', source_edition='2020-10', source_synced_at=?, updated_at=now()
                  WHERE id=?",
                 $values,
             );
@@ -360,7 +360,7 @@ final class BigRegionSyncService
              coastal_flag, data_source, source_reference, provenance_status, boundary_status, source_edition,
              source_synced_at, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, {$geometrySql}, NULL, false, 'Badan Informasi Geospasial', ?,
-             'official', 'reference', '2020-10', ?, now(), now())",
+             'official', 'official', '2020-10', ?, now(), now())",
             [
                 $id, $feature['code'], $feature['province'], $feature['regency'], $feature['district'],
                 $feature['village'], $feature['geometry'], self::SOURCE_URL, now(),

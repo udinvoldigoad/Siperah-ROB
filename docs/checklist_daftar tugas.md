@@ -22,12 +22,10 @@ Fondasi semua fitur: peta, dashboard, dan mode awam hanya sebagus datanya. Kerja
 - [x] **P1** Audit kualitas geometri: command `data:audit-regions` diperluas (breakdown pesisir vs 8 stasiun ML, boundary_status, format geometri GeoJSON/WKT, duplikasi, kode kosong; `ST_IsValid` otomatis saat PostGIS ada). Temuan: 2.640 GeoJSON BIG asli + 8 kotak demo, tidak ada geometri kosong/duplikat — dicatat di `docs/audit-wilayah-2026-07-16.md`.
 - [ ] **P1** Pasang PostGIS di database (dev & production).
   - *Production SELESAI 2026-07-16*: Supabase PostGIS 3.3.7 aktif, kolom `regions.geometry` & `reports.location` sudah tipe spasial asli + GIST index + trigger (2.648 valid, 0 invalid); `search_path` diatur via `config/database.php`.
-  - *Update 2026-07-17*: klasifikasi ulang via jalur PostGIS asli SELESAI di production (302+13 manual = 315; jalur PostGIS kini mendukung coastlines jsonb via temp table). "Lampung Tengah 1" terbukti BUKAN artefak — desa itu benar menyentuh pantai.
+  - *Update 2026-07-17 (final)*: klasifikasi ulang via jalur PostGIS asli SELESAI di production — **298 + 13 manual = 311 wilayah** (jalur PostGIS mendukung coastlines jsonb via temp table; uji jarak memakai bagian terbesar polygon setelah 4 positif palsu sliver ditemukan, termasuk "Lampung Tengah 1"/Rantau Jaya Ilir yang ternyata artefak).
   - *Sisa*: dev lokal (PG 18.3) masih tanpa PostGIS (text/GeoJSON, fallback Haversine) — pasang bundel PostGIS PG18 via Stack Builder bila ingin paritas dev-production.
-- [ ] **P2** Tegakkan `boundary_status` yang jelas per wilayah: official / estimated / manual / invalid.
-  - Selesai jika: tiap baris `regions` punya status, dan peta publik bisa membedakannya (minimal di metadata).
-- [ ] **P2** Validasi data wilayah production dari BIG (bukan dummy/manual).
-  - Selesai jika: sinkronisasi BIG dijalankan penuh dan tanggal sinkron tercatat.
+- [x] **P2** Tegakkan `boundary_status` yang jelas per wilayah (2026-07-17): taksonomi official/estimated/manual/invalid ditegakkan — istilah lama `reference` dinormalisasi ke `official` (migrasi `2026_07_17_normalize_region_boundary_status`, dev+production: official=2640, manual=8 baris demo), `BigRegionSyncService` kini menulis `official`, dan `boundary_status` diekspos di `RegionResource` + properti GeoJSON peta publik.
+- [x] **P2** Validasi data wilayah production dari BIG (2026-07-17, terbukti sudah terpenuhi): sinkronisasi BIG penuh dijalankan 2026-07-12 — 2.640 fitur diambil, 2.640 valid, 0 invalid, status `completed` tercatat di `data_import_runs`; edisi sumber `2020-10` + `source_synced_at` tersimpan di tiap baris; seluruh 2.648 geometri lolos `ST_IsValid`. Sisa non-BIG hanya 8 baris demo (ditandai `manual`, akan terganti saat sinkron ulang).
 
 ### 1.2 Data pasang surut & cuaca
 
