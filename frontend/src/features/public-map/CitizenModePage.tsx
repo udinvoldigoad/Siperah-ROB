@@ -20,6 +20,9 @@ type ModeAwamData = {
   monitoring_status: string | null;
   status_label: string | null;
   guidance_message: string | null;
+  prediction_status?: "fresh" | "stale" | "unavailable" | null;
+  last_generated_at?: string | null;
+  prediction_notice?: string | null;
   region: { village: string | null; district: string | null; regency: string | null };
   forecast: { data: ForecastItem[] } | ForecastItem[];
   nearby_reports: NearbyReport[];
@@ -317,6 +320,13 @@ function CitizenModeDesktop({
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.24)", borderRadius: 999, padding: "5px 12px", fontSize: 13, fontWeight: 650, marginBottom: 16 }}>
                   <Icon name={data.is_monitored ? "radar" : "info"} style={{ fontSize: 16 }} /> {data.status_label}
                 </span>
+              )}
+
+              {data?.prediction_notice && (
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "rgba(245, 158, 11, 0.18)", border: "1px solid rgba(245, 158, 11, 0.5)", borderRadius: 12, padding: "10px 14px", fontSize: 13.5, lineHeight: 1.5, marginBottom: 16, maxWidth: 600 }}>
+                  <Icon name={data.prediction_status === "unavailable" ? "schedule" : "update"} style={{ fontSize: 17, flexShrink: 0, marginTop: 1 }} />
+                  <span>{data.prediction_notice}</span>
+                </div>
               )}
 
               <p style={{ fontSize: "1.15rem", lineHeight: 1.6, color: "rgba(255,255,255,0.95)", maxWidth: "600px", margin: "0 0 40px 0" }}>

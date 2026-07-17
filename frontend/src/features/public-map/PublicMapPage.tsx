@@ -17,7 +17,8 @@ type MapLayers = {
   evacuation_routes: FeatureCollection;
 };
 type ActiveWarning = { title: string; message: string; affected_regencies?: string[]; source?: string };
-type MapResponse = { data: { regions: FeatureCollection; reports: FeatureCollection; layers?: MapLayers; active_warning?: ActiveWarning | null } };
+type DataFreshness = { last_generated_at: string | null; is_stale: boolean; notice: string | null };
+type MapResponse = { data: { regions: FeatureCollection; reports: FeatureCollection; layers?: MapLayers; active_warning?: ActiveWarning | null; data_freshness?: DataFreshness } };
 type PredictionResponse = { data: Prediction[] };
 type LayerOption = "bahaya_rob" | "laporan" | "pasang_surut" | "garis_pantai";
 
@@ -349,6 +350,7 @@ export function PublicMapPage() {
     evacuation_routes: { type: "FeatureCollection", features: [] },
   });
   const [activeWarning, setActiveWarning] = useState<ActiveWarning | null>(null);
+  const [staleNotice, setStaleNotice] = useState<string | null>(null);
   const [catalog, setCatalog] = useState<Prediction[]>([]);
   const [selectedRegency, setSelectedRegency] = useState("all");
   const [selectedDate, setSelectedDate] = useState("all");
@@ -373,6 +375,7 @@ export function PublicMapPage() {
       setRegions(response.data.regions); setReports(response.data.reports);
       if (response.data.layers) setLayers(response.data.layers);
       setActiveWarning(response.data.active_warning ?? null);
+      setStaleNotice(response.data.data_freshness?.notice ?? null);
     }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Data peta belum bisa dimuat."); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [selectedDate, selectedRegency]);
@@ -561,6 +564,12 @@ export function PublicMapPage() {
               <a className="btn primary" href="#/reports" style={{ justifyContent: "center" }}><Icon name="add_location_alt" /> Lapor Kejadian di Sini</a>
             </div>}
           </motion.div>
+          {staleNotice && <motion.div variants={itemVariants} className="panel" style={{ padding: 16, borderLeft: "3px solid var(--medium)" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+              <Icon name="update" style={{ color: "var(--medium)", fontSize: 18 }} />
+              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{staleNotice}</p>
+            </div>
+          </motion.div>}
           {activeWarning && <motion.div variants={itemVariants} className="panel" style={{ padding: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <Icon name="campaign" style={{ color: "var(--critical)" }} />

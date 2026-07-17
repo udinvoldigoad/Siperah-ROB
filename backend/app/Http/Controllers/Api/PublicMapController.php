@@ -122,6 +122,10 @@ final class PublicMapController
             ],
         ])->values();
 
+        $lastGenerated = $predictions->max('generated_at');
+        $lastGeneratedAt = $lastGenerated ? CarbonImmutable::parse($lastGenerated) : null;
+        $isStale = $lastGeneratedAt !== null && $lastGeneratedAt->diffInHours(now()) > 30;
+
         return [
             'regions' => ['type' => 'FeatureCollection', 'features' => $regionFeatures->all()],
             'reports' => ['type' => 'FeatureCollection', 'features' => $reportFeatures->all()],
@@ -132,6 +136,13 @@ final class PublicMapController
                 'evacuation_routes' => ['type' => 'FeatureCollection', 'features' => []],
             ],
             'active_warning' => $this->activeWarning($predictions),
+            'data_freshness' => [
+                'last_generated_at' => $lastGeneratedAt?->toIso8601String(),
+                'is_stale' => $isStale,
+                'notice' => $isStale
+                    ? 'Data prediksi belum diperbarui '.$lastGeneratedAt->timezone('Asia/Jakarta')->diffForHumans().'. Menampilkan pembaruan terakhir.'
+                    : null,
+            ],
         ];
     }
 
@@ -511,6 +522,10 @@ final class PublicMapController
                 'confidence_score' => $prediction?->confidence_score,
                 'data_source' => $prediction?->data_source,
                 'generated_at' => $prediction?->created_at?->toIso8601String(),
+                // Status kesegaran prediksi: fresh | stale | unavailable.
+                'prediction_status' => $predictionData['status'],
+                'last_generated_at' => $predictionData['last_generated_at'],
+                'prediction_notice' => $this->predictionNotice($predictionData['status'], $predictionData['last_generated_at']),
                 'forecast' => PredictionResource::collection($forecast),
                 'nearby_reports' => ReportResource::collection($nearby),
             ],
@@ -587,6 +602,22 @@ final class PublicMapController
             + cos(deg2rad($fromLat)) * cos(deg2rad($toLat)) * sin($deltaLon / 2) ** 2;
 
         return 2 * $earthRadius * atan2(sqrt($a), sqrt(1 - $a));
+    }
+
+    private function predictionNotice(string $status, ?string $lastGeneratedAt): ?string
+    {
+        if ($status === 'unavailable') {
+            return 'Prediksi untuk hari ini belum tersedia. Pipeline mungkin sedang diperbarui — tampilkan prakiraan terdekat yang ada sambil menunggu pembaruan.';
+        }
+        if ($status === 'stale') {
+            $when = $lastGeneratedAt
+                ? CarbonImmutable::parse($lastGeneratedAt)->timezone('Asia/Jakarta')->format('d M Y H:i')
+                : null;
+
+            return 'Prediksi belum diperbarui'.($when ? ' sejak '.$when.' WIB' : '').'. Angka di bawah adalah pembaruan terakhir, bukan hasil terbaru hari ini.';
+        }
+
+        return null;
     }
 
     private function modeAwamGuidanceMessage(bool $isMonitored, ?string $riskClass): string
