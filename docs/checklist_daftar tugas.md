@@ -165,6 +165,7 @@ Tulis test sambil/tepat setelah fitur terkait selesai — jangan ditumpuk di akh
 - [ ] **P2** Test notification settings & inbox.
 - [ ] **P2** Test import data BIG/tidal/prediksi + scheduler command (`ml:predict`).
 - [ ] **P2** Test migration fresh + seed + rollback (masuk CI di Tahap 7).
+- [ ] **P1** **Isolasi test Feature**: `ApiFoundationTest` pakai `DatabaseTransactions` di DB **dev** (`siperah_rob`) tanpa isolasi — membaca data existing sehingga hitungan (mis. `pending_reports`) bisa meleset. Siapkan DB test khusus (PostGIS) + `RefreshDatabase` agar suite andal. *(2026-07-18: 3 test yang gagal sudah ditambal ringan — per_page boundary diperbaiki ke 1001, test operator pakai regency unik `Uji Operator Selatan`; tapi akar isolasi belum tuntas.)*
 
 ### 6.2 E2E smoke test (per role)
 

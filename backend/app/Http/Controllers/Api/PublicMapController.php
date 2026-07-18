@@ -474,13 +474,19 @@ final class PublicMapController
 
         $isDummy = false;
         if (!$region) {
-            // Fallback ke data dummy agar fitur tetap bisa dites meski di luar Lampung
-            $region = \App\Models\Region::first();
-            $isDummy = true;
+            // HANYA di environment local kita tampilkan data dummy (Region::first)
+            // untuk pratinjau UI saat pengembang berada di luar Lampung. Di
+            // testing/staging/production kita JUJUR: titik di luar data administrasi
+            // Lampung tidak boleh disuguhi angka risiko yang dikarang.
+            if (app()->environment('local')) {
+                $region = \App\Models\Region::first();
+                $isDummy = $region !== null;
+            }
+
             if (!$region) {
                 return response()->json([
                     'data' => null,
-                    'message' => 'Data wilayah pantauan belum tersedia.',
+                    'message' => 'Lokasi yang dipilih belum ada di data administrasi Lampung. Coba geser pin ke daratan Lampung terdekat.',
                 ]);
             }
         }

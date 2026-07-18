@@ -44,7 +44,8 @@ final class ApiFoundationTest extends TestCase
 
     public function test_public_predictions_validates_filter_shape(): void
     {
-        $this->getJson('/api/public/predictions?date=12-07-2026&per_page=999')
+        // per_page dibatasi 1..1000 (dashboard provinsi butuh 1000); 1001 harus ditolak.
+        $this->getJson('/api/public/predictions?date=12-07-2026&per_page=1001')
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['date', 'per_page']);
     }
@@ -374,8 +375,12 @@ final class ApiFoundationTest extends TestCase
 
     public function test_operator_summary_kpi_export_and_report_list_share_access_scope(): void
     {
-        $operatorRegion = $this->insertRegionForPoint(-5.620, 105.320, true, 'Lampung Selatan');
-        $outsideMonitoring = $this->insertRegionForPoint(-5.820, 105.120, false, 'Lampung Selatan');
+        // Regency unik & tak lazim agar KPI tak tercampur laporan wilayah nyata
+        // yang sudah ada di DB dev (test pakai DatabaseTransactions, bukan DB test
+        // terisolasi — utang isolasi penuh dicatat untuk Tahap 6).
+        $uniqueRegency = 'Uji Operator Selatan';
+        $operatorRegion = $this->insertRegionForPoint(-5.620, 105.320, true, $uniqueRegency);
+        $outsideMonitoring = $this->insertRegionForPoint(-5.820, 105.120, false, $uniqueRegency);
         $citizen = $this->createUser('warga');
         $operator = $this->createUser('bpbd_operator', $operatorRegion->id);
 
@@ -396,7 +401,7 @@ final class ApiFoundationTest extends TestCase
         $this->getJson('/api/dashboard/operator/summary')
             ->assertOk()
             ->assertJsonPath('data.pending_reports', 1)
-            ->assertJsonPath('data.operator_regency', 'Lampung Selatan');
+            ->assertJsonPath('data.operator_regency', $uniqueRegency);
 
         $export = $this->get('/api/dashboard/operator/reports/export')
             ->assertOk()
