@@ -64,8 +64,8 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 
 ### 2.3 Portal peneliti & API (FR-PEN)
 
-- [ ] **P1** Jalankan & tes migrasi filter kabupaten dataset yang sudah ditulis tapi belum dijalankan.
-- [ ] **P1** Perbaiki timezone statistik "API calls today" dari UTC ke Asia/Jakarta.
+- [x] **P1** Migrasi filter kabupaten dataset (2026-07-18): kolom `coverage_regencies` (jsonb) **sudah dijalankan** di dev (batch 10) & filter teruji — operator `@>`/`jsonb_array_length` jalan; dataset tanpa cakupan (NULL/[]) diperlakukan provinsi-wide (cocok untuk semua filter). Production tinggal `php artisan migrate --force` di deploy berikutnya (belum tereksekusi ke Supabase).
+- [x] **P1** Timezone "API calls today" → Asia/Jakarta (2026-07-18): app tz = UTC (tak ada `config/app.php` / `APP_TIMEZONE`), jadi `whereDate('created_at', now())` menghitung hari-UTC — panggilan pagi WIB salah masuk hari sebelumnya. Diperbaiki di `ResearchController::stats`: batas hari & bulan dihitung `Carbon::now('Asia/Jakarta')` lalu `->utc()` (kolom created_at UTC), pakai `whereBetween`. Terverifikasi: WIB 18 Jul = UTC 17 Jul 17:00 → 18 Jul 16:59.
 - [ ] **P2** Increment penggunaan API key dibuat atomic + logging outcome mencakup exception.
 - [ ] **P2** Rate limit API v1 dibuat configurable via env (bukan hardcode 120/menit).
 - [ ] **P2** Lengkapi konten tab lisensi/perizinan data.

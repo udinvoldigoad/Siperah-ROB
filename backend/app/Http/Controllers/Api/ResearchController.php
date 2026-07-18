@@ -8,6 +8,7 @@ use App\Models\ApiKey;
 use App\Models\Dataset;
 use App\Services\AuditService;
 use App\Support\CsvWriter;
+use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -144,18 +145,27 @@ final class ResearchController
     {
         $user = $request->user();
 
+        // Batas "hari ini" & "bulan ini" mengikuti zona waktu Asia/Jakarta (WIB),
+        // lalu dikonversi ke UTC karena kolom created_at disimpan UTC (app tz = UTC).
+        // Tanpa ini, panggilan pagi WIB (mis. 06:00 = 23:00 UTC hari sebelumnya)
+        // salah terhitung ke hari yang keliru.
+        $tz = 'Asia/Jakarta';
+        $startOfTodayWib = Carbon::now($tz)->startOfDay()->utc();
+        $endOfTodayWib = Carbon::now($tz)->endOfDay()->utc();
+        $startOfMonthWib = Carbon::now($tz)->startOfMonth()->utc();
+
         return response()->json(['data' => [
             'dataset_count' => Dataset::count(),
             'total_records' => (int) Dataset::sum('record_count'),
             'downloads_this_month' => DB::table('audit_logs')
                 ->where('action', 'download_research_dataset')
                 ->where('outcome', 'success')
-                ->where('created_at', '>=', now()->startOfMonth())
+                ->where('created_at', '>=', $startOfMonthWib)
                 ->count(),
             'api_calls_today' => DB::table('audit_logs')
                 ->where('action', 'api_key_request')
                 ->where('actor_user_id', $user->id)
-                ->whereDate('created_at', now()->toDateString())
+                ->whereBetween('created_at', [$startOfTodayWib, $endOfTodayWib])
                 ->count(),
             'active_api_keys' => ApiKey::where('user_id', $user->id)->where('status', 'aktif')->count(),
         ]]);
