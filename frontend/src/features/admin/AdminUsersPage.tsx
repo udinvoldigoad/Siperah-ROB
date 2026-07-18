@@ -16,8 +16,24 @@ interface UserData {
   role: string;
   status: string;
   institution: string | null;
+  region_id: string | null;
   region_name: string | null;
 }
+
+const ROLE_OPTIONS = [
+  { v: "warga", l: "Warga" },
+  { v: "bpbd_operator", l: "BPBD Operator" },
+  { v: "bpbd_provinsi", l: "BPBD Provinsi" },
+  { v: "peneliti", l: "Peneliti" },
+  { v: "admin", l: "Admin" },
+] as const;
+
+const STATUS_OPTIONS = [
+  { v: "aktif", l: "Aktif" },
+  { v: "menunggu", l: "Menunggu" },
+  { v: "nonaktif", l: "Nonaktif" },
+  { v: "ditolak", l: "Ditolak" },
+] as const;
 
 interface UserMeta {
   current_page: number;
@@ -163,6 +179,39 @@ export function AdminUsersPage() {
         willDeactivate ? `Akun "${user.name}" dinonaktifkan.` : `Akun "${user.name}" diaktifkan.`,
       ),
     });
+  };
+
+  // ── Edit inline role/status/wilayah (via PATCH) ──────────────────
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<{ role: string; status: string; region_id: string }>({ role: "", status: "", region_id: "" });
+
+  const startEdit = (user: UserData) => {
+    setEditingId(user.id);
+    setEditDraft({ role: user.role, status: user.status, region_id: user.region_id ?? "" });
+  };
+  const cancelEdit = () => setEditingId(null);
+
+  const saveEdit = async (user: UserData) => {
+    const payload: Record<string, unknown> = {};
+    if (editDraft.role !== user.role) payload.role = editDraft.role;
+    if (editDraft.status !== user.status) payload.status = editDraft.status;
+    if (editDraft.region_id !== (user.region_id ?? "")) payload.region_id = editDraft.region_id || null;
+
+    if (Object.keys(payload).length === 0) { cancelEdit(); return; }
+
+    setActing(true);
+    try {
+      await api(`/admin/users/${user.id}`, { method: "PATCH", body: JSON.stringify(payload) });
+      toast.success(`Akun "${user.name}" berhasil diperbarui.`);
+      setEditingId(null);
+      await fetchUsers();
+    } catch (err: any) {
+      // Tetap di mode edit agar admin bisa memperbaiki — mis. mengubah role ke
+      // operator tanpa mengisi wilayah akan ditolak backend dengan pesan jelas.
+      toast.error(err.message || "Gagal memperbarui akun.");
+    } finally {
+      setActing(false);
+    }
   };
 
   const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
@@ -494,36 +543,68 @@ export function AdminUsersPage() {
                 </thead>
                 <tbody>
                   <AnimatePresence>
-                    {users.map((user, idx) => (
-                      <motion.tr 
+                    {users.map((user, idx) => {
+                      const isEditing = editingId === user.id;
+                      const editControlStyle = { padding: "6px 8px", borderRadius: 6, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 12, width: "100%" as const };
+                      return (
+                      <motion.tr
                         key={user.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.1 + (idx * 0.05) }}
-                        
-                        style={{ borderBottom: "1px solid var(--line)" }}
+                        style={{ borderBottom: "1px solid var(--line)", ...(isEditing ? { background: "var(--surface-soft)" } : {}) }}
                       >
                         <td style={{ padding: "16px 24px", fontWeight: 600, color: "var(--ink)", fontSize: 14 }}>{user.name}</td>
                         <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: 13 }}>{user.email}</td>
                         <td style={{ padding: "16px 24px" }}>
-                          <span className="badge" style={{ background: "var(--accent-soft)", color: "var(--accent)", fontSize: 11, padding: "4px 8px" }}>
-                            {roleLabel(user.role)}
-                          </span>
+                          {isEditing ? (
+                            <select aria-label="Ubah role" value={editDraft.role} onChange={(e) => setEditDraft((d) => ({ ...d, role: e.target.value }))} style={{ ...editControlStyle, minWidth: 140 }}>
+                              {ROLE_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+                            </select>
+                          ) : (
+                            <span className="badge" style={{ background: "var(--accent-soft)", color: "var(--accent)", fontSize: 11, padding: "4px 8px" }}>
+                              {roleLabel(user.role)}
+                            </span>
+                          )}
                         </td>
                         <td style={{ padding: "16px 24px" }}>
-                          <span className={`badge ${
-                            user.status === "aktif" ? "status-divalidasi" :
-                            user.status === "menunggu" ? "status-menunggu" : ""
-                          }`} style={{ fontSize: 11, padding: "4px 8px", background: user.status === "nonaktif" || user.status === "ditolak" ? "var(--surface-muted)" : undefined }}>
-                            {user.status}
-                          </span>
+                          {isEditing ? (
+                            <select aria-label="Ubah status" value={editDraft.status} onChange={(e) => setEditDraft((d) => ({ ...d, status: e.target.value }))} style={{ ...editControlStyle, minWidth: 120 }}>
+                              {STATUS_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+                            </select>
+                          ) : (
+                            <span className={`badge ${
+                              user.status === "aktif" ? "status-divalidasi" :
+                              user.status === "menunggu" ? "status-menunggu" : ""
+                            }`} style={{ fontSize: 11, padding: "4px 8px", background: user.status === "nonaktif" || user.status === "ditolak" ? "var(--surface-muted)" : undefined }}>
+                              {user.status}
+                            </span>
+                          )}
                         </td>
-                        <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: 13 }}>{user.institution || user.region_name || "-"}</td>
+                        <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: 13 }}>
+                          {isEditing ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 180 }}>
+                              <input aria-label="Region ID wilayah operator" value={editDraft.region_id} onChange={(e) => setEditDraft((d) => ({ ...d, region_id: e.target.value }))} placeholder="UUID region" style={editControlStyle} />
+                              {editDraft.role === "bpbd_operator" && <span style={{ fontSize: 11, color: "var(--medium)", fontWeight: 600 }}>Wajib untuk operator</span>}
+                            </div>
+                          ) : (
+                            user.institution || user.region_name || "-"
+                          )}
+                        </td>
                         <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                          <div style={{ display: "inline-flex", gap: 8, justifyContent: "flex-end" }}>
-                            {user.status === "menunggu" ? (
+                          <div style={{ display: "inline-flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                            {isEditing ? (
                               <>
-                                <motion.button 
+                                <button type="button" className="btn primary" disabled={isActing} style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => saveEdit(user)}>
+                                  <Icon name="save" style={{ fontSize: 16 }} /> Simpan
+                                </button>
+                                <button type="button" className="btn secondary" disabled={isActing} style={{ fontSize: 12, padding: "6px 12px" }} onClick={cancelEdit}>
+                                  Batal
+                                </button>
+                              </>
+                            ) : user.status === "menunggu" ? (
+                              <>
+                                <motion.button
                                   whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                   style={{ background: "var(--low)", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, padding: "6px 12px", cursor: "pointer", fontWeight: 600 }}
                                   onClick={() => handleApprove(user.id, user.name)}
@@ -537,22 +618,30 @@ export function AdminUsersPage() {
                                 >
                                   Tolak
                                 </motion.button>
+                                <button type="button" className="btn secondary" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => startEdit(user)} aria-label={`Kelola akun ${user.name}`}>
+                                  <Icon name="edit" style={{ fontSize: 16 }} /> Kelola
+                                </button>
                               </>
                             ) : (
-                              <motion.button
-                                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="btn secondary"
-                                style={{ fontSize: 12, padding: "6px 12px", color: user.status === "aktif" ? "var(--critical)" : "var(--low)" }}
-                                onClick={() => confirmToggleActive(user)}
-                              >
-                                <Icon name={user.status === "aktif" ? "block" : "check_circle"} style={{ fontSize: 16 }} />
-                                {user.status === "aktif" ? "Nonaktifkan" : "Aktifkan"}
-                              </motion.button>
+                              <>
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                  className="btn secondary"
+                                  style={{ fontSize: 12, padding: "6px 12px", color: user.status === "aktif" ? "var(--critical)" : "var(--low)" }}
+                                  onClick={() => confirmToggleActive(user)}
+                                >
+                                  <Icon name={user.status === "aktif" ? "block" : "check_circle"} style={{ fontSize: 16 }} />
+                                  {user.status === "aktif" ? "Nonaktifkan" : "Aktifkan"}
+                                </motion.button>
+                                <button type="button" className="btn secondary" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => startEdit(user)} aria-label={`Kelola akun ${user.name}`}>
+                                  <Icon name="edit" style={{ fontSize: 16 }} /> Kelola
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>
                       </motion.tr>
-                    ))}
+                    );})}
                   </AnimatePresence>
                 </tbody>
               </table>

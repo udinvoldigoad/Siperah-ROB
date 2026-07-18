@@ -512,6 +512,29 @@ final class ApiFoundationTest extends TestCase
         $this->assertDatabaseHas('ground_truth_reports', ['id' => $reportId, 'status' => 'divalidasi']);
     }
 
+    public function test_admin_edits_role_inline_and_operator_role_requires_region(): void
+    {
+        $admin = $this->createUser('admin');
+        $region = $this->insertRegionForPoint(-5.520, 105.330, true, 'Uji Admin Edit');
+        $target = $this->createUser('warga');
+
+        $this->actingAs($admin);
+
+        // Ubah role warga → peneliti (tak perlu wilayah) berhasil.
+        $this->patchJson("/api/admin/users/{$target->id}", ['role' => 'peneliti'])->assertOk();
+        $this->assertDatabaseHas('users', ['id' => $target->id, 'role' => 'peneliti']);
+
+        // Ubah role → operator TANPA wilayah ditolak (invariant wilayah kerja operator).
+        $this->patchJson("/api/admin/users/{$target->id}", ['role' => 'bpbd_operator'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['region_id']);
+
+        // Dengan wilayah → berhasil.
+        $this->patchJson("/api/admin/users/{$target->id}", ['role' => 'bpbd_operator', 'region_id' => $region->id])
+            ->assertOk();
+        $this->assertDatabaseHas('users', ['id' => $target->id, 'role' => 'bpbd_operator', 'region_id' => $region->id]);
+    }
+
     public function test_province_dashboard_filters_trend_top_impacted_and_export_share_scope(): void
     {
         $region = $this->insertRegionForPoint(-5.910, 105.410, true, 'Kabupaten Filter Test');
