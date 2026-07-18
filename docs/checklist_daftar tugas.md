@@ -111,9 +111,9 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 
 ### 3.4 Dashboard provinsi
 
-- [ ] **P2** Filter periode (bulan) dan kabupaten.
-- [ ] **P2** Sorting interaktif tabel risiko per kabupaten.
-- [ ] **P3** `(keputusan)` Print/export ringkasan — hanya jika SKPL mewajibkan.
+- [x] **P2** Filter periode & kabupaten (2026-07-18, terverifikasi sudah ada): `<input type="month">` + `<select>` kabupaten + tombol Reset Filter; refetch otomatis saat berubah & ikut diteruskan ke export CSV.
+- [x] **P2** Sorting interaktif tabel risiko (2026-07-18, terverifikasi sudah ada): dropdown 5 kunci (bahaya tertinggi / peluang / populasi / tren / nama) + toggle arah naik-turun, diterapkan via `useMemo`.
+- [x] **P3** `(keputusan)` Print/export ringkasan → **CSV cukup, print dilewati (keputusan 2026-07-18)**. Export CSV sudah ada (`handleProvinceExport`, menghormati filter). Tombol Print/PDF tidak diwajibkan SKPL → tidak ditambahkan.
 
 ### 3.5 Admin
 
