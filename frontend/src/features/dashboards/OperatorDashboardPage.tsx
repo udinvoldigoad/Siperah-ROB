@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { useToast } from "../../shared/components/Toast";
-import { fetchOperatorReports, severityLabels, updateOperatorReportStatus, type OperatorReport } from "../reports/reportData";
+import { fetchOperatorReports, severityLabels, updateOperatorReportStatus, type OperatorReport, type ReportSeverity } from "../reports/reportData";
 import { api, apiBase } from "../../shared/api/client";
 import { Icon } from "../../shared/components/Icon";
 import { motion, AnimatePresence } from "framer-motion";
@@ -50,15 +50,28 @@ export function OperatorDashboardPage() {
     region_statuses: [],
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [severityFilter, setSeverityFilter] = useState<ReportSeverity | "">("");
+  const [slaOverdue, setSlaOverdue] = useState(false);
+  // Untuk mendeteksi kedatangan laporan baru antar polling (null = belum ada baseline).
+  const prevPendingRef = useRef<number | null>(null);
   const toast = useToast();
 
   const loadReports = async (targetPage = page) => {
     setIsLoading(true);
     try {
       const [data, summaryRes] = await Promise.all([
-        fetchOperatorReports(targetPage),
+        fetchOperatorReports(targetPage, 20, { severity: severityFilter, slaOverdue }),
         api<OperatorSummaryResponse>("/dashboard/operator/summary"),
       ]);
+
+      // Alert laporan baru: bila jumlah antrean bertambah sejak polling terakhir
+      // (bukan pemuatan pertama), beri tahu operator tanpa refresh manual.
+      const newPending = summaryRes.data.pending_reports;
+      if (prevPendingRef.current !== null && newPending > prevPendingRef.current) {
+        const delta = newPending - prevPendingRef.current;
+        toast.info(`${delta} laporan baru masuk ke antrean.`);
+      }
+      prevPendingRef.current = newPending;
       // Kalau laporan di halaman ini habis tervalidasi/tolak dan halaman jadi kosong
       // (bukan halaman pertama), mundur satu halaman alih-alih menampilkan antrean kosong palsu.
       if (data.reports.length === 0 && data.currentPage > 1 && data.total > 0) {
@@ -75,11 +88,13 @@ export function OperatorDashboardPage() {
     }
   };
 
+  // Muat ulang & reset polling saat filter berubah; polling menyegarkan halaman 1
+  // (laporan terbaru tampil di atas berdasarkan created_at desc).
   useEffect(() => {
     loadReports(1);
-    const timer = window.setInterval(() => loadReports(), 30000);
+    const timer = window.setInterval(() => loadReports(1), 30000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [severityFilter, slaOverdue]);
 
   const changePage = (nextPage: number) => {
     if (nextPage < 1 || nextPage > pageMeta.lastPage || nextPage === page) return;
@@ -216,14 +231,36 @@ export function OperatorDashboardPage() {
               <div>
                 <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Antrean Laporan Masuk</h2>
                 <span style={{ color: "var(--ink-soft)", fontSize: 12 }}>
-                  {operatorArea} · {pendingCount === 0 ? "tidak ada laporan menunggu" : `menampilkan ${pageMeta.from}-${pageMeta.to} dari ${pendingCount} laporan`}
+                  {operatorArea} · {pageMeta.total === 0 ? "tidak ada laporan pada filter ini" : `menampilkan ${pageMeta.from}-${pageMeta.to} dari ${pageMeta.total} laporan`}
+                  {(severityFilter || slaOverdue) && <> · <button type="button" onClick={() => { setSeverityFilter(""); setSlaOverdue(false); }} style={{ background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontSize: 12, padding: 0, fontWeight: 600 }}>reset filter</button></>}
                 </span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <select
+                  value={severityFilter}
+                  onChange={(e) => setSeverityFilter(e.target.value as ReportSeverity | "")}
+                  aria-label="Filter keparahan laporan"
+                  style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 13 }}
+                >
+                  <option value="">Semua keparahan</option>
+                  <option value="sangat_parah">Sangat parah</option>
+                  <option value="parah">Parah</option>
+                  <option value="sedang">Sedang</option>
+                  <option value="ringan">Ringan</option>
+                </select>
+                <button
+                  type="button"
+                  className={`btn secondary ${slaOverdue ? "active" : ""}`}
+                  aria-pressed={slaOverdue}
+                  onClick={() => setSlaOverdue((v) => !v)}
+                  style={{ padding: "9px 14px", ...(slaOverdue ? { background: "var(--critical)", borderColor: "var(--critical)", color: "#fff" } : {}) }}
+                >
+                  <Icon name="schedule" /> SLA terlambat
+                </button>
                 <motion.button whileHover={{ y: -2 }} type="button" className="btn secondary" style={{ padding: "9px 14px" }} onClick={handleExport}>
                   <Icon name="download" /> Export CSV
                 </motion.button>
-                <motion.span 
+                <motion.span
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   className="badge severity-sangat_parah"
                 >
@@ -260,9 +297,16 @@ export function OperatorDashboardPage() {
                           <p>Dilaporkan: {report.submittedAt} &bull; oleh warga ({report.waterHeightCm ? `${report.waterHeightCm} cm` : "-"})</p>
                           {!report.isWithinMonitoringArea && <p style={{ color: "var(--medium)", fontWeight: 700 }}>Triase: lokasi di luar wilayah pantauan rob, tetapi masih dalam {report.regency}.</p>}
                         </div>
-                        <span className={`badge severity-${report.severity}`}>
-                          {severityLabels[report.severity]}
-                        </span>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                          <span className={`badge severity-${report.severity}`}>
+                            {severityLabels[report.severity]}
+                          </span>
+                          {report.slaStatus === "terlambat" && (
+                            <span className="badge" style={{ background: "var(--critical)", color: "#fff", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                              <Icon name="schedule" style={{ fontSize: 14 }} /> SLA terlambat
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div style={{ fontSize: "14px", color: "var(--ink)", marginBottom: "20px", padding: "16px", background: "var(--surface-soft)", borderRadius: "var(--radius)" }}>
                         "{report.description}"
