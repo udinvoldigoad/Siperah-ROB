@@ -51,10 +51,9 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 
 ### 2.1 Peta publik (FR-PUB)
 
-- [ ] **P1** Layer infrastruktur kritis (data + endpoint + geometri).
-- [ ] **P1** Layer jalur evakuasi (data + endpoint + geometri).
-  - Catatan: dua layer ini butuh **sumber data** dulu — pastikan datanya ada sebelum koding. `(keputusan sumber data)`
-- [ ] **P2** Rate limit endpoint publik disetel untuk trafik production (bukan default dev).
+- [~] **P1** Layer infrastruktur kritis — **DIBLOKIR menunggu data resmi BPBD (keputusan 2026-07-18)**. Investigasi: OSM punya ~400 fasilitas kesehatan pesisir Lampung (bisa dipakai), tetapi **user memilih menunggu data BPBD resmi** — OSM komunitas tidak otoritatif untuk sistem kebencanaan. Endpoint & shape response (`layers.critical_infrastructure`) sudah ada (FeatureCollection kosong); tinggal isi data + toggle frontend saat data BPBD tersedia.
+- [~] **P1** Layer jalur evakuasi — **DIBLOKIR menunggu data resmi BPBD (keputusan 2026-07-18)**. Investigasi: OSM **nihil** (0 titik/jalur evakuasi di pesisir Lampung) — jalur evakuasi resmi hanya ada dari BPBD. Tidak ada cara jujur menyediakan tanpa data itu. Endpoint & shape sudah ada (kosong).
+- [x] **P2** Rate limit endpoint publik disetel untuk production (2026-07-18): limiter `public` (default 180/mnt, env `PUBLIC_RATE_LIMIT`) & `public-export` (default 20/mnt, env `PUBLIC_EXPORT_RATE_LIMIT`) di `AppServiceProvider` (aman route:cache), configurable tanpa deploy ulang; default lebih longgar dari sebelumnya karena response ter-cache & banyak warga berbagi IP di balik NAT. Terverifikasi header `X-RateLimit-Limit: 180`.
 - [x] **P2** Pantau/cache ukuran response GeoJSON agar peta cepat: `ST_SimplifyPreserveTopology` ~22 m + presisi 5 desimal + cache payload 15 menit — terukur di production 13,5 MB/6,9 dtk → 535 KB/0,33 dtk (2026-07-17). Dev lokal tanpa PostGIS tetap fallback tanpa simplifikasi.
 
 ### 2.2 Dashboard operator & provinsi

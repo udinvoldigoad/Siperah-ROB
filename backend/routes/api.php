@@ -17,9 +17,9 @@ Route::post('/auth/login', [AuthController::class, 'login'])->middleware('thrott
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:registration');
 
 // ── Public (tanpa login) ─────────────────────────────────────────
-Route::prefix('public')->middleware('throttle:120,1')->group(function () {
+Route::prefix('public')->middleware('throttle:public')->group(function () {
     Route::get('/map', [PublicMapController::class, 'map']);
-    Route::get('/map/export', [PublicMapController::class, 'mapExport']);
+    Route::get('/map/export', [PublicMapController::class, 'mapExport'])->middleware('throttle:public-export');
     Route::get('/predictions', [PublicMapController::class, 'predictions']);
     Route::get('/province/forecast', [PublicMapController::class, 'provinceForecast']);
     Route::get('/regions/{region}', [PublicMapController::class, 'region']);
@@ -31,7 +31,7 @@ Route::prefix('public')->middleware('throttle:120,1')->group(function () {
 // Foto laporan disajikan lewat route (bukan symlink storage) agar tetap
 // tampil di `php artisan serve` maupun web server produksi.
 Route::get('/reports/photo/{photo}', [ReportController::class, 'photo'])
-    ->middleware('throttle:120,1')
+    ->middleware('throttle:public')
     ->name('reports.photo');
 
 // ── Authenticated ────────────────────────────────────────────────
