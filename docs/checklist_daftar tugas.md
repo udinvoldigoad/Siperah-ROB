@@ -117,7 +117,7 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 
 ### 3.5 Admin
 
-- [ ] **P3** Poles UX edit inline role/wilayah/status (fungsi sudah ada via PATCH).
+- [x] **P3** Edit inline role/wilayah/status (2026-07-18): ternyata **belum ada UI-nya sama sekali** — tabel admin cuma bisa Setujui/Tolak & Nonaktif/Aktif, tak bisa mengubah role user existing meski PATCH mendukung. Ditambah **mode edit inline per baris** (tombol "Kelola" → sel role/status jadi `<select>`, wilayah jadi input region_id, aksi jadi Simpan/Batal), kirim hanya field berubah via PATCH `/admin/users/{id}`. Error validasi (mis. operator wajib wilayah) di-toast & editor tetap terbuka agar bisa diperbaiki. Test backend `test_admin_edits_role_inline_and_operator_role_requires_region`. *(Catatan: wilayah masih input UUID region — picker region belum ada endpoint-nya; menyusul bila perlu.)*
 
 ---
 
