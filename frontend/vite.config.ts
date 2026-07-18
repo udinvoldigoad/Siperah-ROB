@@ -5,6 +5,14 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   return {
     plugins: [react()],
+    build: {
+      // Bundle awal sudah dipecah (lazy route). Chunk besar yang tersisa adalah
+      // vendor maplibre-gl (~800 KB) yang memang satu library & hanya dimuat saat
+      // halaman peta/laporan dibuka. Ambang dinaikkan sedikit di atasnya agar
+      // warning tidak muncul untuk kasus yang sudah disengaja & di-lazy-load;
+      // regresi ukuran di atas ini tetap akan memunculkan warning.
+      chunkSizeWarningLimit: 850,
+    },
     server: {
       port: 5173,
       proxy: {
