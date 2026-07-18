@@ -276,7 +276,7 @@ function CitizenModeDesktop({
       )}
 
       <motion.div className="detail-layout citizen-mode-layout" variants={containerVariants} initial="hidden" animate="show">
-        <div className="stack">
+        <div className="stack" style={{ minWidth: 0 }}>
           {/* Main Status Hero Card */}
           <motion.section
             variants={itemVariants}
@@ -432,7 +432,7 @@ function CitizenModeDesktop({
         </div>
 
         {/* Sidebar */}
-        <aside className="stack citizen-sidebar">
+        <aside className="stack citizen-sidebar" style={{ minWidth: 0 }}>
           {/* Tindakan Card */}
           <motion.section variants={itemVariants} className="panel flush" style={{ border: "none", boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}>
             <div style={{ padding: "32px 24px" }}>
