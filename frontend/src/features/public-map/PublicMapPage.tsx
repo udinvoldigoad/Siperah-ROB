@@ -288,42 +288,37 @@ function RiskMap({ regions, reports, layers, showReports, showTidal, showCoastli
         });
       }
 
-      // 3. LOGIC FILTER DROPDOWN
-      if (selectedRegency && selectedRegency !== "all") {
+      // 3. FRAMING PETA
+      // Selalu paskan viewport ke sebaran zona yang benar-benar ada. Backend
+      // sudah memfilter fitur ke kabupaten terpilih, jadi fitBounds menjamin
+      // seluruh kelurahan masuk layar — termasuk kabupaten yang lebar seperti
+      // Bandar Lampung yang sebelumnya terpotong karena flyTo ke titik tetap.
+      let bounds: maplibregl.LngLatBounds | null = null;
+      let pointsCount = 0;
+      regions.features.forEach((f) => {
+        const center = featureCenter(f);
+        if (center) {
+          pointsCount++;
+          if (!bounds) bounds = new maplibregl.LngLatBounds(center, center);
+          else bounds.extend(center);
+        }
+      });
+      const activeBounds = bounds as maplibregl.LngLatBounds | null;
+      if (activeBounds) {
+        if (pointsCount === 1) {
+          const sw = activeBounds.getSouthWest();
+          activeBounds.extend([sw.lng - 0.05, sw.lat - 0.05]);
+          activeBounds.extend([sw.lng + 0.05, sw.lat + 0.05]);
+        }
+        instance.fitBounds(activeBounds, { padding: 60, maxZoom: 13, duration: 1000 });
+      } else if (selectedRegency && selectedRegency !== "all") {
+        // Kabupaten terpilih tapi belum ada prediksi pada tanggal ini: arahkan
+        // ke perkiraan pusat wilayah agar pengguna tetap paham konteks lokasi.
         const config = regencyCoordinates[selectedRegency] || regencyCoordinates[`Kabupaten ${selectedRegency}`] || regencyCoordinates[`Kota ${selectedRegency}`];
-        if (config) {
-          instance.flyTo({
-            center: config.center,
-            zoom: config.zoom,
-            duration: 1200,
-          });
-        }
+        if (config) instance.flyTo({ center: config.center, zoom: config.zoom, duration: 1000 });
+        else instance.flyTo({ center: [105.26, -5.48], zoom: 9, duration: 1000 });
       } else {
-        let bounds: maplibregl.LngLatBounds | null = null;
-        let pointsCount = 0;
-        regions.features.forEach((f) => {
-          const center = featureCenter(f);
-          if (center) {
-            pointsCount++;
-            if (!bounds) bounds = new maplibregl.LngLatBounds(center, center);
-            else bounds.extend(center);
-          }
-        });
-        const activeBounds = bounds as maplibregl.LngLatBounds | null;
-        if (activeBounds) {
-          if (pointsCount === 1) {
-            const sw = activeBounds.getSouthWest();
-            activeBounds.extend([sw.lng - 0.05, sw.lat - 0.05]);
-            activeBounds.extend([sw.lng + 0.05, sw.lat + 0.05]);
-          }
-          instance.fitBounds(activeBounds, { padding: 50, maxZoom: 12, duration: 1000 });
-        } else {
-          instance.flyTo({
-            center: [105.26, -5.48],
-            zoom: 9,
-            duration: 1000,
-          });
-        }
+        instance.flyTo({ center: [105.26, -5.48], zoom: 9, duration: 1000 });
       }
     };
     if (instance.isStyleLoaded()) update(); else instance.once("load", update);
