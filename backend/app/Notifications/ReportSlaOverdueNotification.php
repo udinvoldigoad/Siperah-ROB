@@ -3,45 +3,21 @@
 namespace App\Notifications;
 
 use App\Models\GroundTruthReport;
-use App\Models\NotificationSetting;
-use App\Notifications\Channels\MockWhatsAppChannel;
+use App\Notifications\Concerns\RoutesViaPreferredChannels;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushMessage;
-use NotificationChannels\WebPush\WebPushChannel;
 
 class ReportSlaOverdueNotification extends Notification implements ShouldQueue
 {
     use Queueable;
+    use RoutesViaPreferredChannels;
 
     public function __construct(
         public GroundTruthReport $report
     ) {
         $this->tries = 3;
-    }
-
-    public function via(object $notifiable): array
-    {
-        $settings = NotificationSetting::where('user_id', $notifiable->id)->first();
-        if (!$settings) {
-            return [\App\Notifications\Channels\InboxChannel::class];
-        }
-
-        $channels = $settings->channels ?? [];
-        $delivery = [\App\Notifications\Channels\InboxChannel::class];
-
-        if (in_array('email', $channels, true)) {
-            $delivery[] = 'mail';
-        }
-        if (in_array('browser', $channels, true)) {
-            $delivery[] = WebPushChannel::class;
-        }
-        if (in_array('whatsapp', $channels, true)) {
-            $delivery[] = MockWhatsAppChannel::class;
-        }
-
-        return $delivery;
     }
 
     public function toDatabase(object $notifiable): array

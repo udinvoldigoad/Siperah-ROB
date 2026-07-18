@@ -45,6 +45,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('reports:notify-overdue-sla')
             ->hourly()
             ->withoutOverlapping();
+        // Setengah jam setelah prediksi harian masuk (ML 06:00 WIB).
+        $schedule->command('predictions:notify-high-risk')
+            ->dailyAt('06:30')
+            ->timezone('Asia/Jakarta')
+            ->withoutOverlapping();
+        // Hostinger tidak bisa menjalankan worker daemon; proses antrean lewat
+        // scheduler tiap menit. Hanya relevan saat QUEUE_CONNECTION=database
+        // (sync memproses inline dan tidak pernah mengisi tabel jobs).
+        $schedule->command('queue:work --stop-when-empty --tries=3 --max-time=50')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->when(fn (): bool => config('queue.default') === 'database');
         $schedule->command('audit:prune')
             ->dailyAt('03:30')
             ->timezone('Asia/Jakarta')
