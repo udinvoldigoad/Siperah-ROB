@@ -158,6 +158,7 @@ export function OperatorDashboardPage() {
         .operator-page-btn:hover:not(:disabled) { background: var(--surface-soft); border-color: var(--accent); }
         .operator-page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 800; }
         .operator-page-btn:disabled { cursor: not-allowed; opacity: .45; }
+        .dashboard-split-layout { display: grid; gap: 24px; }
       `}</style>
       <motion.div
         className="content"

@@ -5,7 +5,7 @@ import { motion, type Variants } from "framer-motion";
 import { api } from "../../shared/api/client";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
-import { riskColors as riskColor } from "../../shared/constants/risk";
+import { riskColors, riskLabels } from "../../shared/constants/risk";
 
 type GeoJsonFeature = { type: "Feature"; id: string; geometry: { type: string; coordinates: unknown }; properties: Record<string, unknown> };
 type FeatureCollection = { type: "FeatureCollection"; features: GeoJsonFeature[] };
@@ -20,7 +20,7 @@ type ActiveWarning = { title: string; message: string; affected_regencies?: stri
 type DataFreshness = { last_generated_at: string | null; is_stale: boolean; notice: string | null };
 type MapResponse = { data: { regions: FeatureCollection; reports: FeatureCollection; layers?: MapLayers; active_warning?: ActiveWarning | null; data_freshness?: DataFreshness } };
 type PredictionResponse = { data: Prediction[] };
-type LayerOption = "bahaya_rob" | "laporan" | "pasang_surut" | "garis_pantai";
+export type LayerKey = "bahaya_rob" | "laporan" | "pasang_surut" | "garis_pantai" | "infrastruktur_kritis" | "evakuasi";
 
 const riskDotClass: Record<string, string> = { sangat_tinggi: "critical", tinggi: "high", sedang: "medium", rendah: "low" };
 
@@ -41,13 +41,12 @@ const regencyCoordinates: Record<string, { center: [number, number]; zoom: numbe
   "Kabupaten Pringsewu": { center: [104.9800, -5.3500], zoom: 11 },
   "Kota Metro": { center: [105.3000, -5.1100], zoom: 12 },
 };
-const riskLabel: Record<string, string> = { sangat_tinggi: "Sangat Tinggi", tinggi: "Tinggi", sedang: "Sedang", rendah: "Rendah" };
 const containerVariants: Variants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } } };
 const itemVariants: Variants = { hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } } };
 const numberFormatter = new Intl.NumberFormat("id-ID");
 
 function riskText(value: unknown) {
-  return riskLabel[String(value)] ?? String(value ?? "Belum ada data");
+  return riskLabels[String(value)] ?? String(value ?? "Belum ada data");
 }
 
 function daysFromToday(dateStr: string): number {
@@ -121,12 +120,14 @@ function geographicCircle(center: [number, number], radiusKm: number): { type: "
   return { type: "Polygon", coordinates: [ring] };
 }
 
-function RiskMap({ regions, reports, layers, showReports, showTidal, showCoastline, selectedRegency, onSelectFeature }: { regions: FeatureCollection; reports: FeatureCollection; layers: MapLayers; showReports: boolean; showTidal: boolean; showCoastline: boolean; selectedRegency: string; onSelectFeature: (feature: GeoJsonFeature) => void }) {
+function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSelectFeature }: { regions: FeatureCollection; reports: FeatureCollection; layers: MapLayers; activeLayers: Record<LayerKey, boolean>; selectedRegency: string; onSelectFeature: (feature: GeoJsonFeature) => void }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const reportMarkers = useRef<maplibregl.Marker[]>([]);
   const predictionMarkers = useRef<maplibregl.Marker[]>([]);
   const tidalMarkers = useRef<maplibregl.Marker[]>([]);
+  const infraMarkers = useRef<maplibregl.Marker[]>([]);
+  const evacMarkers = useRef<maplibregl.Marker[]>([]);
   const onSelectFeatureRef = useRef(onSelectFeature);
   onSelectFeatureRef.current = onSelectFeature;
 
@@ -157,16 +158,21 @@ function RiskMap({ regions, reports, layers, showReports, showTidal, showCoastli
       reportMarkers.current = [];
       tidalMarkers.current.forEach(m => m.remove());
       tidalMarkers.current = [];
+      infraMarkers.current.forEach(m => m.remove());
+      infraMarkers.current = [];
+      evacMarkers.current.forEach(m => m.remove());
+      evacMarkers.current = [];
 
       const circleFeatures: any[] = [];
 
       // 1. TAMBAH TITIK BANJIR (PREDIKSI)
-      regions.features.forEach((feature) => {
+      if (activeLayers.bahaya_rob) {
+        regions.features.forEach((feature) => {
         const center = featureCenter(feature);
         if (!center) return;
 
         const risk = String(feature.properties.risk_class);
-        const color = riskColor[risk] ?? riskColor.rendah;
+        const color = riskColors[risk] ?? riskColors.rendah;
         const radius = zoneRadiusKm(risk);
 
         // A. Area Lingkaran
@@ -195,14 +201,15 @@ function RiskMap({ regions, reports, layers, showReports, showTidal, showCoastli
             .addTo(instance)
         );
       });
+      }
 
       // 2. TAMBAH TITIK LAPORAN (GROUND TRUTH)
-      if (showReports) {
+      if (activeLayers.laporan) {
         reports.features.forEach((report) => {
           const coordinates = report.geometry.coordinates;
           if (!Array.isArray(coordinates) || typeof coordinates[0] !== "number") return;
           const severity = String(report.properties.severity);
-          const color = severity === "sangat_parah" ? riskColor.sangat_tinggi : severity === "parah" ? riskColor.tinggi : severity === "sedang" ? riskColor.sedang : riskColor.rendah;
+          const color = severity === "sangat_parah" ? riskColors.sangat_tinggi : severity === "parah" ? riskColors.tinggi : severity === "sedang" ? riskColors.sedang : riskColors.rendah;
 
           // Radius area untuk laporan sedikit lebih kecil
           const radiusKm = severity === "sangat_parah" ? 0.6 : severity === "parah" ? 0.4 : severity === "sedang" ? 0.2 : 0.1;
@@ -223,7 +230,7 @@ function RiskMap({ regions, reports, layers, showReports, showTidal, showCoastli
         });
       }
 
-      if (showTidal) {
+      if (activeLayers.pasang_surut) {
         layers.tidal_stations.features.forEach((station) => {
           const coordinates = station.geometry.coordinates;
           if (!Array.isArray(coordinates) || typeof coordinates[0] !== "number" || typeof coordinates[1] !== "number") return;
@@ -237,8 +244,36 @@ function RiskMap({ regions, reports, layers, showReports, showTidal, showCoastli
         });
       }
 
+      if (activeLayers.infrastruktur_kritis) {
+        layers.critical_infrastructure.features.forEach((infra) => {
+          const coordinates = infra.geometry.coordinates;
+          if (!Array.isArray(coordinates) || typeof coordinates[0] !== "number" || typeof coordinates[1] !== "number") return;
+          const popup = new maplibregl.Popup({ offset: 20 }).setHTML(`<strong>Infrastruktur Kritis</strong><br>${infra.properties.name ?? "-"}<br>Tipe: ${infra.properties.type ?? "-"}`);
+          infraMarkers.current.push(
+            new maplibregl.Marker({ color: "#9333ea" })
+              .setLngLat([coordinates[0], coordinates[1]])
+              .setPopup(popup)
+              .addTo(instance)
+          );
+        });
+      }
+
+      if (activeLayers.evakuasi) {
+        layers.evacuation_routes.features.forEach((route) => {
+          const coordinates = route.geometry.coordinates;
+          if (!Array.isArray(coordinates) || typeof coordinates[0] !== "number" || typeof coordinates[1] !== "number") return;
+          const popup = new maplibregl.Popup({ offset: 20 }).setHTML(`<strong>Rute Evakuasi</strong><br>${route.properties.name ?? "-"}`);
+          evacMarkers.current.push(
+            new maplibregl.Marker({ color: "#16a34a" })
+              .setLngLat([coordinates[0], coordinates[1]])
+              .setPopup(popup)
+              .addTo(instance)
+          );
+        });
+      }
+
       const coastlineSourceId = "coastline-layer";
-      const coastlineData = showCoastline ? layers.coastlines : { type: "FeatureCollection", features: [] };
+      const coastlineData = activeLayers.garis_pantai ? layers.coastlines : { type: "FeatureCollection", features: [] };
       const coastlineSource = instance.getSource(coastlineSourceId);
       if (coastlineSource) {
         (coastlineSource as maplibregl.GeoJSONSource).setData(coastlineData as any);
@@ -327,7 +362,7 @@ function RiskMap({ regions, reports, layers, showReports, showTidal, showCoastli
       }
     };
     if (instance.isStyleLoaded()) update(); else instance.once("load", update);
-  }, [regions, reports, layers, showReports, showTidal, showCoastline, selectedRegency]);
+  }, [regions, reports, layers, activeLayers, selectedRegency]);
 
   return <div ref={mapContainer} style={{ minHeight: 560, width: "100%" }} aria-label="Peta interaktif risiko banjir rob" />;
 }
@@ -354,14 +389,17 @@ export function PublicMapPage() {
   const [catalog, setCatalog] = useState<Prediction[]>([]);
   const [selectedRegency, setSelectedRegency] = useState("all");
   const [selectedDate, setSelectedDate] = useState("all");
-  const [layer, setLayer] = useState<LayerOption>("bahaya_rob");
+  const [activeLayers, setActiveLayers] = useState<Record<LayerKey, boolean>>({
+    bahaya_rob: true,
+    laporan: false,
+    pasang_surut: false,
+    garis_pantai: false,
+    infrastruktur_kritis: false,
+    evakuasi: false,
+  });
   const [selectedFeature, setSelectedFeature] = useState<GeoJsonFeature | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const showReports = layer === "laporan";
-  const showTidal = layer === "pasang_surut";
-  const showCoastline = layer === "garis_pantai";
 
   useEffect(() => { void api<PredictionResponse>("/public/predictions").then((response) => setCatalog(response.data)).catch(() => undefined); }, []);
   useEffect(() => {
@@ -407,7 +445,7 @@ export function PublicMapPage() {
   const handleSelectFeature = useCallback((feature: GeoJsonFeature) => setSelectedFeature(feature), []);
 
   const selectedRiskClass = String(selectedFeature?.properties.risk_class ?? "");
-  const selectedColor = riskColor[selectedRiskClass] ?? "var(--accent)";
+  const selectedColor = riskColors[selectedRiskClass] ?? "var(--accent)";
   const selectedPopulation = selectedFeature?.properties.population;
   const toolbarHorizon = selectedDate === "all" ? "Prediksi terbaru" : `Prediksi ${horizonLabel(selectedDate)}`;
 
@@ -425,11 +463,12 @@ export function PublicMapPage() {
         row-gap: 16px;
         flex-wrap: wrap;
       }
-      .map-filter-bar label {
+      .map-filter-bar > label {
         display: grid;
         gap: 9px;
         flex: 1;
         min-width: 190px;
+        max-width: 320px;
         font-size: 11px;
         font-weight: 700;
         color: var(--ink-soft);
@@ -507,7 +546,7 @@ export function PublicMapPage() {
           </div>
         </motion.div>
       )}
-      <motion.div variants={itemVariants} className="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, borderLeftColor: riskColor[String(highestRisk?.properties.risk_class)] ?? "var(--accent)" }}><div style={{ display: "flex", alignItems: "center", gap: 14 }}><Icon name="warning" style={{ fontSize: 24, color: riskColor[String(highestRisk?.properties.risk_class)] ?? "var(--accent)" }} /><div><strong style={{ display: "block", marginBottom: 3, color: "var(--ink)" }}>{highestRisk ? `Risiko ${riskText(highestRisk.properties.risk_class)} terdeteksi` : "Memuat peringatan risiko"}</strong><span style={{ color: "var(--ink-soft)", fontSize: 13 }}>{highestRisk ? `${highestRisk.properties.village ?? "Wilayah pesisir"}, ${highestRisk.properties.regency ?? "Lampung"} · peluang rob ${Math.round(Number(highestRisk.properties.risk_probability ?? 0))}%` : "Mengambil data peta dari server."}</span></div></div>{(!userRole || userRole === "warga") && <a className="btn secondary" href="#/awam">Lihat mode awam</a>}</motion.div>
+      <motion.div variants={itemVariants} className="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, borderLeftColor: riskColors[String(highestRisk?.properties.risk_class)] ?? "var(--accent)" }}><div style={{ display: "flex", alignItems: "center", gap: 14 }}><Icon name="warning" style={{ fontSize: 24, color: riskColors[String(highestRisk?.properties.risk_class)] ?? "var(--accent)" }} /><div><strong style={{ display: "block", marginBottom: 3, color: "var(--ink)" }}>{highestRisk ? `Risiko ${riskText(highestRisk.properties.risk_class)} terdeteksi` : "Memuat peringatan risiko"}</strong><span style={{ color: "var(--ink-soft)", fontSize: 13 }}>{highestRisk ? `${highestRisk.properties.village ?? "Wilayah pesisir"}, ${highestRisk.properties.regency ?? "Lampung"} · peluang rob ${Math.round(Number(highestRisk.properties.risk_probability ?? 0))}%` : "Mengambil data peta dari server."}</span></div></div>{(!userRole || userRole === "warga") && <a className="btn secondary" href="#/awam">Lihat mode awam</a>}</motion.div>
       {error && <div className="alert" style={{ borderLeftColor: "var(--critical)" }}>{error}</div>}
       <motion.div variants={itemVariants} className="public-map-layout">
         <div className="panel flush" style={{ overflow: "hidden" }}>
@@ -524,14 +563,38 @@ export function PublicMapPage() {
                 {regencies.map((regency) => <option key={regency} value={regency}>{regency}</option>)}
               </select>
             </label>
-            <label>Layer
-              <select value={layer} onChange={(event) => setLayer(event.target.value as LayerOption)}>
-                <option value="bahaya_rob">Bahaya rob</option>
-                <option value="laporan">Laporan warga</option>
-                <option value="pasang_surut">Pasang surut</option>
-                <option value="garis_pantai">Garis pantai</option>
-              </select>
-            </label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 2, minWidth: 280 }}>
+              <strong style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: .5, color: "var(--ink-soft)" }}>Pilihan Layer</strong>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "10px 16px" }}>
+                {Object.entries({
+                  bahaya_rob: "Bahaya Rob",
+                  laporan: "Laporan Warga",
+                  pasang_surut: "Pasang Surut",
+                  garis_pantai: "Garis Pantai",
+                  infrastruktur_kritis: "Infrastruktur",
+                  evakuasi: "Jalur Evakuasi"
+                }).map(([key, label]) => (
+                  <label key={key} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", fontSize: 13, textTransform: "none", letterSpacing: "normal", minWidth: "auto", fontWeight: 500, color: "var(--ink)", margin: 0 }}>
+                    <input 
+                      type="checkbox" 
+                      style={{ marginTop: 2, width: 15, height: 15, cursor: "pointer" }}
+                      checked={activeLayers[key as LayerKey]} 
+                      onChange={(e) => setActiveLayers(prev => ({ ...prev, [key]: e.target.checked }))} 
+                    />
+                    <span style={{ lineHeight: 1.3 }}>{label}</span>
+                  </label>
+                ))}
+              </div>
+              <div style={{ marginTop: 4 }}>
+                <button 
+                  className="btn secondary" 
+                  onClick={() => window.location.href = `/api/map/export${selectedRegency !== 'all' || selectedDate !== 'all' ? '?' : ''}${selectedRegency !== 'all' ? 'regency=' + selectedRegency : ''}${selectedRegency !== 'all' && selectedDate !== 'all' ? '&' : ''}${selectedDate !== 'all' ? 'date=' + selectedDate : ''}`}
+                  style={{ padding: "8px 16px", minHeight: 36 }}
+                >
+                  <Icon name="download" style={{ fontSize: 16 }} /> Ekspor CSV
+                </button>
+              </div>
+            </div>
           </div>
           <div className="map-viewport">
             <div className="map-toolbar">
@@ -539,11 +602,11 @@ export function PublicMapPage() {
               <strong>{toolbarHorizon}</strong>
             </div>
             <div className="map-container" style={{ minHeight: 560 }}>
-              <RiskMap regions={regions} reports={reports} layers={layers} showReports={showReports} showTidal={showTidal} showCoastline={showCoastline} selectedRegency={selectedRegency} onSelectFeature={handleSelectFeature} />
+              <RiskMap regions={regions} reports={reports} layers={layers} activeLayers={activeLayers} selectedRegency={selectedRegency} onSelectFeature={handleSelectFeature} />
             </div>
             <div className="legend">
               <strong>Legenda risiko</strong>
-              {Object.entries(riskLabel).map(([risk, label]) => <span key={risk}><i className={`dot ${riskDotClass[risk]}`} />{label}</span>)}
+              {Object.entries(riskLabels).map(([risk, label]) => <span key={risk}><i className={`dot ${riskDotClass[risk]}`} />{label}</span>)}
             </div>
             {loading && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(255,255,255,.6)", fontWeight: 700 }}>Memuat peta.</div>}
           </div>
