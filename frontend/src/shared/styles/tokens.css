@@ -1861,3 +1861,161 @@ select:focus {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* --- ELITE UI UTILITIES (GSAP / BENTO) --- */
+.overflow-x-hidden-all {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+
+.mesh-gradient {
+  background: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+              radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+              radial-gradient(at 100% 100%, rgba(249, 115, 22, 0.1) 0px, transparent 50%),
+              radial-gradient(at 0% 100%, rgba(239, 68, 68, 0.1) 0px, transparent 50%);
+  background-color: var(--bg);
+}
+
+:root[data-theme="dark"] .mesh-gradient {
+  background-color: #0B0E14; /* Deep elite dark mode */
+}
+
+/* Gapless Bento Grid */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-flow: dense;
+  gap: 16px;
+}
+
+.bento-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Subtle hover physics */
+.hover-physics {
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+}
+.hover-physics:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+:root[data-theme="dark"] .hover-physics:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.cinematic-hero {
+  text-align: center;
+  padding: 6rem 2rem 4rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.editorial-title {
+  font-family: 'Satoshi', 'Geist', 'Inter', sans-serif;
+  font-size: clamp(3rem, 6vw, 5.5rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+  text-wrap: balance;
+}
+
+.inline-pill-image {
+  display: inline-block;
+  vertical-align: middle;
+  width: 2.2em;
+  height: 0.9em;
+  border-radius: 9999px;
+  background-size: cover;
+  background-position: center;
+  margin: 0 0.1em;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* --- ELITE MOBILE UX --- */
+@media (max-width: 768px) {
+  .app-shell {
+    padding-bottom: 80px; /* Space for bottom pill */
+  }
+  
+  .mobile-bottom-pill {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    transform: none;
+    width: 100%;
+    max-width: 100%;
+    height: 72px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 24px 24px 0 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.06);
+    z-index: 9999;
+    padding: 0 12px;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 8px;
+  }
+  
+  .mobile-bottom-pill::-webkit-scrollbar {
+    display: none;
+  }
+
+  :root[data-theme="dark"] .mobile-bottom-pill {
+    background: rgba(15, 23, 42, 0.75);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+
+  .pill-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: 600;
+    flex: 0 0 64px;
+    height: 50px;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    scroll-snap-align: start;
+  }
+  .pill-nav-item.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .snap-x-mandatory {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 16px;
+    padding-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .snap-x-mandatory > * {
+    scroll-snap-align: center;
+    flex: 0 0 85%;
+  }
+  
+  .snap-x-mandatory::-webkit-scrollbar {
+    display: none;
+  }
+}
+
