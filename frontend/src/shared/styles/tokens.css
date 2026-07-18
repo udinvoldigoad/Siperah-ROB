@@ -1946,6 +1946,11 @@ select:focus {
     padding-bottom: 80px; /* Space for bottom pill */
   }
   
+  /* Completely hide sidebar and hamburger menu on mobile */
+  .app-shell .sidebar, .mobile-sidebar-overlay, .mobile-menu-toggle {
+    display: none !important;
+  }
+  
   .mobile-bottom-pill {
     position: fixed;
     bottom: 0;
