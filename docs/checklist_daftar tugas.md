@@ -125,14 +125,14 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 
 Blok fitur utuh yang paling besar sisa pekerjaannya. Kerjakan sebagai satu paket setelah fungsi inti stabil.
 
-- [ ] **P1** Pilih & pasang queue driver production (database queue paling sederhana; Redis jika trafik tinggi). `(keputusan)`
+- [x] **P1** Pilih & pasang queue driver production (database queue paling sederhana; Redis jika trafik tinggi). `(keputusan)` *(2026-07-19: diputuskan **database queue** — Hostinger tak punya Redis/daemon. `queue:work --stop-when-empty` tiap menit via scheduler, aktif otomatis saat `QUEUE_CONNECTION=database`; `.env.example` diganti redis→database. **Aksi deploy: ubah `QUEUE_CONNECTION=database` di `.env` server + `config:cache`** — selama masih `sync`, delay() diabaikan dan kegagalan kanal bikin request 500.)*
 - [x] **P1** Browser push production: permission flow di frontend + pengiriman via service worker/FCM.
 - [ ] **P1** Email production: konfigurasi SMTP/provider + template pesan per event.
 - [ ] **P2** WhatsApp production (provider resmi WA Business API) — sudah ada kontak WA di mode awam, ini untuk pengiriman keluar.
-- [ ] **P1** Quiet hours benar-benar menahan notifikasi non-kritis, dan peringatan kritis bypass quiet hours.
-- [ ] **P1** Subscription wilayah difilter konsisten dengan region penerima.
-- [ ] **P2** Retry queue + failure logging untuk semua kanal eksternal.
-- [ ] **P2** Template pesan tiap event (laporan baru, validasi, peringatan risiko, SLA overdue).
+- [x] **P1** Quiet hours benar-benar menahan notifikasi non-kritis, dan peringatan kritis bypass quiet hours. *(2026-07-19: non-kritis (laporan baru/validasi/SLA) di-delay sampai quiet_end; kritis baru dibuat — `HighRiskWarningNotification` tanpa delay. Ditest keduanya. Efektif di production hanya setelah queue=database (lihat item driver).)*
+- [x] **P1** Subscription wilayah difilter konsisten dengan region penerima. *(2026-07-19: helper bersama `matchesMonitoredRegions` dipakai semua jalur; peringatan risiko: operator=kabupaten kerja, warga/peneliti=monitored_regions (kosong=semua), provinsi/admin=semua. SLA overdue sengaja tanpa filter preferensi (eskalasi tugas, didokumentasikan).)*
+- [x] **P2** Retry queue + failure logging untuk semua kanal eksternal. *(2026-07-19: tries=3 jadi efektif dengan database queue; tabel `failed_jobs` dibuat (sebelumnya tak ada — kegagalan job tak tercatat di mana pun). Worker via scheduler tiap menit.)*
+- [x] **P2** Template pesan tiap event (laporan baru, validasi, peringatan risiko, SLA overdue). *(2026-07-19: 3 sudah ada dari PR notif, "peringatan risiko" ditambahkan (inbox/webpush/WA/mail + command `predictions:notify-high-risk` terjadwal 06:30 WIB + dedup harian). via() duplikat diekstrak ke trait `RoutesViaPreferredChannels`.)*
 - [x] **P2** Frontend: mark read / read all di inbox notifikasi.
 - [x] **P2** Frontend: selector wilayah pantauan pakai autocomplete/dropdown (pola `WilayahPicker` mode awam bisa dipakai ulang).
 - [x] **P2** Frontend: quiet hours UI cocok dengan perilaku backend, status kanal Email/WA + fallback.
