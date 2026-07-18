@@ -463,11 +463,12 @@ export function PublicMapPage() {
         row-gap: 16px;
         flex-wrap: wrap;
       }
-      .map-filter-bar label {
+      .map-filter-bar > label {
         display: grid;
         gap: 9px;
         flex: 1;
         min-width: 190px;
+        max-width: 320px;
         font-size: 11px;
         font-weight: 700;
         color: var(--ink-soft);
@@ -562,37 +563,37 @@ export function PublicMapPage() {
                 {regencies.map((regency) => <option key={regency} value={regency}>{regency}</option>)}
               </select>
             </label>
-            <div style={{ display: "flex", gap: "20px", flex: 2, alignItems: "flex-end", flexWrap: "wrap" }}>
-              <div style={{ flex: 1, minWidth: "100%" }}>
-                <strong style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: .5, color: "var(--ink-soft)", display: "block", marginBottom: 8 }}>Pilihan Layer</strong>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                  {Object.entries({
-                    bahaya_rob: "Bahaya Rob",
-                    laporan: "Laporan Warga",
-                    pasang_surut: "Pasang Surut",
-                    garis_pantai: "Garis Pantai",
-                    infrastruktur_kritis: "Infrastruktur",
-                    evakuasi: "Jalur Evakuasi"
-                  }).map(([key, label]) => (
-                    <label key={key} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, textTransform: "none", letterSpacing: "normal", minWidth: "auto" }}>
-                      <input 
-                        type="checkbox" 
-                        checked={activeLayers[key as LayerKey]} 
-                        onChange={(e) => setActiveLayers(prev => ({ ...prev, [key]: e.target.checked }))} 
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 2, minWidth: 280 }}>
+              <strong style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: .5, color: "var(--ink-soft)" }}>Pilihan Layer</strong>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "10px 16px" }}>
+                {Object.entries({
+                  bahaya_rob: "Bahaya Rob",
+                  laporan: "Laporan Warga",
+                  pasang_surut: "Pasang Surut",
+                  garis_pantai: "Garis Pantai",
+                  infrastruktur_kritis: "Infrastruktur",
+                  evakuasi: "Jalur Evakuasi"
+                }).map(([key, label]) => (
+                  <label key={key} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", fontSize: 13, textTransform: "none", letterSpacing: "normal", minWidth: "auto", fontWeight: 500, color: "var(--ink)", margin: 0 }}>
+                    <input 
+                      type="checkbox" 
+                      style={{ marginTop: 2, width: 15, height: 15, cursor: "pointer" }}
+                      checked={activeLayers[key as LayerKey]} 
+                      onChange={(e) => setActiveLayers(prev => ({ ...prev, [key]: e.target.checked }))} 
+                    />
+                    <span style={{ lineHeight: 1.3 }}>{label}</span>
+                  </label>
+                ))}
               </div>
-              
-              <button 
-                className="btn secondary" 
-                onClick={() => window.location.href = `/api/map/export${selectedRegency !== 'all' || selectedDate !== 'all' ? '?' : ''}${selectedRegency !== 'all' ? 'regency=' + selectedRegency : ''}${selectedRegency !== 'all' && selectedDate !== 'all' ? '&' : ''}${selectedDate !== 'all' ? 'date=' + selectedDate : ''}`}
-                style={{ padding: "12px 16px", flexShrink: 0, marginTop: "12px" }}
-              >
-                <Icon name="download" style={{ fontSize: 18 }} /> Ekspor CSV
-              </button>
+              <div style={{ marginTop: 4 }}>
+                <button 
+                  className="btn secondary" 
+                  onClick={() => window.location.href = `/api/map/export${selectedRegency !== 'all' || selectedDate !== 'all' ? '?' : ''}${selectedRegency !== 'all' ? 'regency=' + selectedRegency : ''}${selectedRegency !== 'all' && selectedDate !== 'all' ? '&' : ''}${selectedDate !== 'all' ? 'date=' + selectedDate : ''}`}
+                  style={{ padding: "8px 16px", minHeight: 36 }}
+                >
+                  <Icon name="download" style={{ fontSize: 16 }} /> Ekspor CSV
+                </button>
+              </div>
             </div>
           </div>
           <div className="map-viewport">
