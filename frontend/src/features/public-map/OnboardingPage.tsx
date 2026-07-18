@@ -67,7 +67,14 @@ export function OnboardingPage() {
           .citizen-step-icon { align-items:center; background:var(--accent-soft); border-radius:9px; color:var(--accent); display:flex; height:38px; justify-content:center; margin:0 auto 14px; width:38px; }
           .citizen-report-step h3 { font-size:1.05rem; margin:0 0 9px; }
           .citizen-report-step p { font-size:.9rem; line-height:1.55; margin:0 auto; max-width:28ch; }
-          @media(max-width:768px){ .citizen-guide-grid,.citizen-report-flow,.citizen-faq-grid{grid-template-columns:1fr!important;gap:24px!important}.citizen-map-frame{min-height:300px}.citizen-hero-metrics{grid-template-columns:1fr!important} }
+          .citizen-feature-box { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:60px; margin-bottom:80px; text-align:center; }
+          @media(max-width:768px){ 
+            .citizen-guide-grid,.citizen-report-flow,.citizen-faq-grid{grid-template-columns:1fr!important;gap:24px!important}
+            .citizen-map-frame{min-height:300px}
+            .citizen-hero-metrics{grid-template-columns:1fr!important} 
+            .citizen-feature-box{padding:24px!important; margin-bottom:40px!important}
+            .citizen-report-step p { max-width:100%!important; }
+          }
         `}</style>
         
         {/* Modern Cinematic Hero */}
@@ -150,10 +157,10 @@ export function OnboardingPage() {
 
         {/* Feature 3: Full Width Interactive Style */}
         <motion.div 
+          className="citizen-feature-box"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", padding: "60px", marginBottom: "80px", textAlign: "center" }}
         >
           <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink)", marginBottom: "16px", letterSpacing: "-0.02em" }}>Cara Melaporkan Kejadian</h2>
           <p style={{ fontSize: "1.05rem", color: "var(--ink-soft)", lineHeight: 1.7, maxWidth: 700, margin: "0 auto 48px" }}>
