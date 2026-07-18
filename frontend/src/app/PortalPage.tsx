@@ -728,7 +728,7 @@ export function PortalPage() {
           .inline-pill-img { display: none; }
           .marquee-container { height: 160px; }
           .bento-card-el { padding: 24px; }
-          .landing-header-full { padding: 0 20px; background: rgba(255, 255, 255, 0.7) !important; backdrop-filter: blur(12px); }
+          .landing-header-full { padding: 0 20px; background: transparent !important; backdrop-filter: none; }
           .bento-header-wrap { flex-direction: column; align-items: center !important; text-align: center; gap: 16px; margin-bottom: 32px !important; }
           .bento-header-wrap h2 { font-size: 1.8rem !important; }
           .guide-section { margin: 72px auto !important; padding: 0 16px !important; }
