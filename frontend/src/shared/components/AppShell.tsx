@@ -216,6 +216,29 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
           {children}
         </motion.div>
       </div>
+      
+      {/* Mobile Bottom Pill Navigation */}
+      {!isMobileSidebarOpen && (
+        <nav className="mobile-bottom-pill">
+          {allowedNavItems.slice(0, 4).map((item) => (
+            <a
+              key={item.href}
+              className={`pill-nav-item ${item.href.includes(active) ? "active" : ""}`}
+              href={item.href}
+              title={item.label}
+            >
+              <Icon name={item.icon} style={{ fontSize: "24px", marginBottom: "4px" }} />
+              <span>{item.label}</span>
+            </a>
+          ))}
+          {allowedNavItems.length > 4 && (
+            <button type="button" className="pill-nav-item" onClick={() => setMobileSidebarOpen(true)} style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+              <Icon name="more_horiz" style={{ fontSize: "24px", marginBottom: "4px" }} />
+              <span>Lainnya</span>
+            </button>
+          )}
+        </nav>
+      )}
     </div>
   );
 }
