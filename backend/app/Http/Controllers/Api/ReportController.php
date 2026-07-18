@@ -180,15 +180,40 @@ final class ReportController
         return $code;
     }
 
-    public function photo(string $photo)
+    public function photo(Request $request, string $photo)
     {
-        $record = ReportPhoto::findOrFail($photo);
+        $record = ReportPhoto::with('report')->findOrFail($photo);
+        $report = $record->report;
+        abort_unless($report, 404);
+
+        // Foto laporan yang SUDAH divalidasi boleh diakses publik (ditampilkan di
+        // peta publik & Mode Awam). Foto laporan yang belum ditinjau bersifat
+        // sensitif — mungkin memuat rumah/wajah/properti dan bisa salah/menyesatkan
+        // sebelum divalidasi BPBD.
+        //
+        // Karena tag <img> tak bisa mengirim header Authorization, akses foto
+        // sensitif memakai SIGNED URL bertanda tangan sementara: URL itu hanya
+        // dibuat oleh ReportResource untuk pihak yang berwenang melihat laporan
+        // (pemilik / operator wilayahnya / BPBD provinsi / admin) saat mereka
+        // mengambil detail laporan. Tanda tangan relatif (absolute:false) agar
+        // tahan perbedaan domain/proxy di production.
+        $isPublic = $report->status === 'divalidasi';
+        if (!$isPublic) {
+            abort_unless(
+                $request->hasValidSignature(absolute: false),
+                403,
+                'Foto laporan ini belum tersedia untuk publik.',
+            );
+        }
+
         abort_unless(Storage::disk('public')->exists($record->file_url), 404);
 
         return Storage::disk('public')->response(
             $record->file_url,
             $record->file_name,
-            ['Cache-Control' => 'public, max-age=86400'],
+            // Foto tervalidasi boleh di-cache publik; foto sensitif tidak boleh
+            // singgah di cache bersama/CDN.
+            ['Cache-Control' => $isPublic ? 'public, max-age=86400' : 'private, no-store'],
         );
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Services\RegionMonitoringService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\URL;
 
 class ReportResource extends JsonResource
 {
@@ -44,9 +45,17 @@ class ReportResource extends JsonResource
             'reporter' => new UserResource($this->whenLoaded('reporter')),
             'validator' => new UserResource($this->whenLoaded('validator')),
             'photos' => $this->whenLoaded('photos', function() {
+                // Foto laporan tervalidasi = URL publik (bisa di-cache & tampil di
+                // peta publik). Foto laporan belum divalidasi = signed URL sementara
+                // (12 jam) agar hanya pihak berwenang yang menerima payload ini bisa
+                // membukanya lewat <img>, tanpa perlu header auth.
+                $isPublic = $this->status === 'divalidasi';
+
                 return $this->photos->map(fn($photo) => [
                     'id' => $photo->id,
-                    'url' => '/api/reports/photo/' . $photo->id,
+                    'url' => $isPublic
+                        ? '/api/reports/photo/' . $photo->id
+                        : URL::temporarySignedRoute('reports.photo', now()->addHours(12), ['photo' => $photo->id], false),
                     'name' => $photo->file_name
                 ]);
             }),

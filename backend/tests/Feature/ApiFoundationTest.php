@@ -7,12 +7,15 @@ use App\Models\AuditLog;
 use App\Models\GroundTruthReport;
 use App\Models\Prediction;
 use App\Models\Region;
+use App\Models\ReportPhoto;
 use App\Models\User;
 use App\Services\AuditService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -408,6 +411,53 @@ final class ApiFoundationTest extends TestCase
             ->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
         $this->assertStringContainsString($reportCode, $export->streamedContent());
+    }
+
+    public function test_report_photo_is_public_only_after_validation(): void
+    {
+        Storage::fake('public');
+        $region = $this->insertRegionForPoint(-5.710, 105.310, true, 'Uji Foto Selatan');
+        $owner = $this->createUser('warga');
+
+        $report = GroundTruthReport::create([
+            'id' => (string) Str::uuid(),
+            'report_code' => 'RB-FOTO-'.Str::upper(Str::random(5)),
+            'user_id' => $owner->id,
+            'region_id' => $region->id,
+            'latitude' => -5.710,
+            'longitude' => 105.310,
+            'severity' => 'sedang',
+            'water_height_cm' => 30,
+            'incident_time' => now(),
+            'description' => 'Uji gerbang akses foto laporan.',
+            'status' => 'menunggu',
+        ]);
+        Storage::disk('public')->put('reports/uji-foto.jpg', 'binary-content');
+        $photo = ReportPhoto::create([
+            'id' => (string) Str::uuid(),
+            'report_id' => $report->id,
+            'file_url' => 'reports/uji-foto.jpg',
+            'file_name' => 'uji-foto.jpg',
+            'file_size' => 14,
+            'mime_type' => 'image/jpeg',
+            'uploaded_at' => now(),
+        ]);
+        $plainUrl = '/api/reports/photo/'.$photo->id;
+
+        // Belum divalidasi + URL polos (tanpa tanda tangan) → ditolak.
+        $this->get($plainUrl)->assertStatus(403);
+
+        // Belum divalidasi + signed URL valid → boleh (mekanisme untuk pihak
+        // berwenang; dibuat ReportResource, bekerja dengan tag <img>).
+        $signedUrl = URL::temporarySignedRoute('reports.photo', now()->addHour(), ['photo' => $photo->id], false);
+        $this->get($signedUrl)->assertOk();
+
+        // Tanda tangan yang dirusak → ditolak.
+        $this->get($signedUrl.'tamper')->assertStatus(403);
+
+        // Setelah divalidasi → publik boleh tanpa tanda tangan (tampil di peta publik & Mode Awam).
+        $report->update(['status' => 'divalidasi', 'validated_at' => now()]);
+        $this->get($plainUrl)->assertOk();
     }
 
     public function test_province_dashboard_filters_trend_top_impacted_and_export_share_scope(): void

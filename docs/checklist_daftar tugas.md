@@ -74,8 +74,8 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 
 ### 2.4 Lain-lain backend
 
-- [ ] **P2** `(keputusan)` Storage foto: tetap public disk atau pindah cloud/signed URL (tergantung sensitivitas & trafik).
-- [ ] **P3** `(keputusan)` Kolom alasan akses naratif peneliti — hanya jika SKPL mewajibkan.
+- [x] **P2** `(keputusan)` Storage foto → **tetap disk lokal + perketat akses** (2026-07-18). Cloud ditolak (overkill untuk Hostinger shared + Supabase, trafik modest). **Temuan & fix**: route foto dulu publik terbuka-by-UUID untuk SEMUA foto — termasuk laporan belum divalidasi (sensitif/mungkin salah sebelum ditinjau BPBD). Kini: foto laporan `divalidasi` = URL publik (tampil di peta publik/Mode Awam); foto laporan belum divalidasi = **signed URL** sementara (12 jam, `ReportResource`) — mekanisme ini dipilih karena `<img>` tak bisa kirim header auth. Cache-Control `private, no-store` untuk foto sensitif. Test: `test_report_photo_is_public_only_after_validation` (URL polos→403, signed→200, tanda tangan dirusak→403, tervalidasi→publik).
+- [x] **P3** `(keputusan)` Kolom alasan akses naratif peneliti → **tidak diperlukan** (2026-07-18). SKPL tidak mewajibkan; akuntabilitas sudah lewat `institution` (wajib saat registrasi peneliti) + scope API key + audit log. Tidak menambah kolom free-text yang tak terpakai.
 
 ---
 
