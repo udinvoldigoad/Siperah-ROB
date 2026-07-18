@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { navItems } from "../../app/navigation";
 import { Icon } from "./Icon";
 import { Breadcrumbs, type BreadcrumbItem } from "./Breadcrumbs";
@@ -22,6 +22,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
   const toast = useToast();
   const [isSidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem(SIDEBAR_STORAGE_KEY) !== "closed");
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [isNotificationOpen, setNotificationOpen] = useState(false);
   const [isDarkMode, setDarkMode] = useState(() => localStorage.getItem("siperah-theme") === "dark");
   const [notifications, setNotifications] = useState<InboxItem[]>([]);
@@ -218,27 +219,76 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
       </div>
       
       {/* Mobile Bottom Pill Navigation */}
-      {!isMobileSidebarOpen && (
-        <nav className="mobile-bottom-pill">
-          {allowedNavItems.slice(0, 4).map((item) => (
-            <a
-              key={item.href}
-              className={`pill-nav-item ${item.href.includes(active) ? "active" : ""}`}
-              href={item.href}
-              title={item.label}
+      <nav className="mobile-bottom-pill">
+        {allowedNavItems.slice(0, 4).map((item) => (
+          <a
+            key={item.href}
+            className={`pill-nav-item ${item.href.includes(active) ? "active" : ""}`}
+            href={item.href}
+            title={item.label}
+          >
+            <Icon name={item.icon} style={{ fontSize: "24px", marginBottom: "4px" }} />
+            <span>{item.label}</span>
+          </a>
+        ))}
+        {allowedNavItems.length > 4 && (
+          <button type="button" className={`pill-nav-item ${isMoreMenuOpen ? "active" : ""}`} onClick={() => setIsMoreMenuOpen(true)} style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+            <Icon name="more_horiz" style={{ fontSize: "24px", marginBottom: "4px" }} />
+            <span>Lainnya</span>
+          </button>
+        )}
+      </nav>
+
+      <AnimatePresence>
+        {isMoreMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMoreMenuOpen(false)}
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9998 }}
+            />
+            {/* Action Sheet Menu */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              style={{
+                position: "fixed",
+                bottom: "80px",
+                left: "16px",
+                right: "16px",
+                background: "var(--surface)",
+                borderRadius: "24px",
+                padding: "24px 16px",
+                zIndex: 9999,
+                boxShadow: "0 -10px 40px rgba(0,0,0,0.1)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                maxHeight: "70vh",
+                overflowY: "auto"
+              }}
             >
-              <Icon name={item.icon} style={{ fontSize: "24px", marginBottom: "4px" }} />
-              <span>{item.label}</span>
-            </a>
-          ))}
-          {allowedNavItems.length > 4 && (
-            <button type="button" className="pill-nav-item" onClick={() => setMobileSidebarOpen(true)} style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
-              <Icon name="more_horiz" style={{ fontSize: "24px", marginBottom: "4px" }} />
-              <span>Lainnya</span>
-            </button>
-          )}
-        </nav>
-      )}
+              <div className="drag-handle" style={{ width: 40, height: 4, background: "var(--line)", borderRadius: 99, margin: "0 auto 16px" }} />
+              {allowedNavItems.slice(4).map(item => (
+                <a 
+                  key={item.href} 
+                  href={item.href} 
+                  onClick={() => setIsMoreMenuOpen(false)} 
+                  style={{ display: "flex", alignItems: "center", gap: 16, color: "var(--ink)", textDecoration: "none", fontSize: "15px", fontWeight: 600, padding: "12px", borderRadius: "12px", background: item.href.includes(active) ? "var(--accent-soft)" : "transparent" }}
+                >
+                  <Icon name={item.icon} style={{ fontSize: 24, color: item.href.includes(active) ? "var(--accent)" : "var(--ink-soft)" }} />
+                  {item.label}
+                </a>
+              ))}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
