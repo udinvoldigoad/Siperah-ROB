@@ -35,7 +35,20 @@ final class AuthController
                 'actor_role' => $user->role,
                 'user_status' => $user->status,
             ]);
-            return response()->json(['message' => 'Akun belum diaktifkan atau telah dinonaktifkan'], 403);
+
+            // Pesan spesifik per status agar UI bisa menampilkan panduan yang tepat,
+            // plus field account_status yang bisa dibaca frontend.
+            $message = match ($user->status) {
+                'menunggu' => 'Akun Anda masih menunggu persetujuan admin. Anda akan bisa masuk setelah disetujui.',
+                'nonaktif' => 'Akun Anda dinonaktifkan. Hubungi admin untuk mengaktifkannya kembali.',
+                'ditolak' => 'Pendaftaran akun Anda ditolak. Hubungi admin untuk informasi lebih lanjut.',
+                default => 'Akun Anda belum dapat digunakan. Hubungi admin.',
+            };
+
+            return response()->json([
+                'message' => $message,
+                'account_status' => $user->status,
+            ], 403);
         }
 
         $user->update(['last_login_at' => now()]);

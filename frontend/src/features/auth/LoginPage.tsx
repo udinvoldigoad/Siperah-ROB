@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Icon } from "../../shared/components/Icon";
-import { api } from "../../shared/api/client";
+import { api, ApiError } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -20,6 +20,8 @@ export function LoginPage() {
   const toast = useToast();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [isLoading, setIsLoading] = useState(false);
+  // Status akun (pending/nonaktif/ditolak) untuk panel penjelas saat login gagal.
+  const [loginNotice, setLoginNotice] = useState<{ message: string; status?: string } | null>(null);
 
   // Form Fields
   const [email, setEmail] = useState("andi.saputra@bpbd.lampung.go.id");
@@ -28,7 +30,6 @@ export function LoginPage() {
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
-  const [regRole, setRegRole] = useState("warga");
   const [regInstitution, setRegInstitution] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -39,6 +40,7 @@ export function LoginPage() {
     }
 
     setIsLoading(true);
+    setLoginNotice(null);
     try {
       const res = await api<LoginResponse>("/auth/login", {
         method: "POST",
@@ -66,7 +68,13 @@ export function LoginPage() {
       }, 500);
 
     } catch (err: any) {
-      toast.error(err.message || "Gagal masuk. Silakan cek kredensial Anda.");
+      // Akun belum aktif (menunggu/nonaktif/ditolak) → tampilkan panel status
+      // yang jelas & persisten, bukan sekadar toast sesaat.
+      if (err instanceof ApiError && err.status === 403 && err.body?.account_status) {
+        setLoginNotice({ message: err.message, status: err.body.account_status });
+      } else {
+        toast.error(err.message || "Gagal masuk. Silakan cek kredensial Anda.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -87,7 +95,6 @@ export function LoginPage() {
           name: regName,
           email: regEmail,
           password: regPassword,
-          role: regRole,
           institution: regInstitution,
         }),
       });
@@ -231,6 +238,23 @@ export function LoginPage() {
                   <p style={{ color: "var(--ink-soft)", fontSize: "0.95rem", margin: 0 }}>Silakan masukkan kredensial Anda untuk melanjutkan.</p>
                 </div>
 
+                {loginNotice && (() => {
+                  const isPending = loginNotice.status === "menunggu";
+                  const tone = isPending
+                    ? { bg: "#fffbeb", border: "#fcd34d", ink: "#92400e", icon: "hourglass_top", title: "Akun menunggu persetujuan" }
+                    : { bg: "#fef2f2", border: "#fca5a5", ink: "#991b1b", icon: "block",
+                        title: loginNotice.status === "ditolak" ? "Pendaftaran ditolak" : "Akun dinonaktifkan" };
+                  return (
+                    <div role="alert" style={{ marginBottom: "24px", padding: "14px 16px", borderRadius: 10, background: tone.bg, border: `1px solid ${tone.border}`, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                      <Icon name={tone.icon} style={{ fontSize: 20, color: tone.ink, flexShrink: 0, marginTop: 1 }} />
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "0.92rem", color: tone.ink, marginBottom: 2 }}>{tone.title}</div>
+                        <div style={{ fontSize: "0.85rem", color: tone.ink, lineHeight: 1.5, opacity: 0.9 }}>{loginNotice.message}</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div style={{ marginBottom: "20px" }}>
                   <label style={labelStyle}>Alamat Email</label>
                   <input 
@@ -292,46 +316,39 @@ export function LoginPage() {
                 exit={{ opacity: 0, y: -10 }}
                 onSubmit={handleRegister}
               >
-                <div style={{ marginBottom: "32px" }}>
+                <div style={{ marginBottom: "24px" }}>
                   <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 8px", color: "var(--ink)" }}>Buat Akun Baru</h2>
-                  <p style={{ color: "var(--ink-soft)", fontSize: "0.95rem", margin: 0 }}>Daftar untuk melaporkan ground truth atau akses dashboard instansi.</p>
+                  <p style={{ color: "var(--ink-soft)", fontSize: "0.95rem", margin: 0 }}>Daftar sebagai warga untuk melaporkan kejadian rob. Akun sesudah didaftar berstatus menunggu persetujuan admin.</p>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
-                  <div>
-                    <label style={labelStyle}>Nama Lengkap</label>
-                    <input 
-                      type="text" 
-                      placeholder="John Doe" 
-                      value={regName} 
-                      onChange={(e) => setRegName(e.target.value)} 
-                      style={inputStyle}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Role Akses</label>
-                    <select 
-                      value={regRole} 
-                      onChange={(e) => setRegRole(e.target.value)} 
-                      style={{ ...inputStyle, cursor: "pointer", appearance: "none" }}
-                      required
-                    >
-                      <option value="warga">Warga Biasa</option>
-                      <option value="bpbd_operator">Operator BPBD</option>
-                      <option value="bpbd_provinsi">BPBD Provinsi</option>
-                      <option value="peneliti">Peneliti (API)</option>
-                    </select>
-                  </div>
+                {/* Pendaftaran mandiri selalu menghasilkan akun WARGA (backend memaksa
+                    role=warga, status=menunggu). Akun instansi (Operator/Provinsi/
+                    Peneliti) dibuat oleh admin lewat menu Pengguna & Perizinan — jadi
+                    form ini tidak lagi menawarkan pilihan role yang tak akan diberikan. */}
+                <div style={{ marginBottom: "16px", padding: "10px 14px", borderRadius: 8, background: "var(--surface-soft)", border: "1px solid var(--line)", fontSize: "12.5px", color: "var(--ink-soft)", display: "flex", gap: 8, alignItems: "center" }}>
+                  <Icon name="info" style={{ fontSize: 16, flexShrink: 0 }} />
+                  <span>Butuh akun BPBD atau Peneliti? Hubungi admin — akun instansi dibuat & diverifikasi oleh admin.</span>
                 </div>
 
                 <div style={{ marginBottom: "16px" }}>
-                  <label style={labelStyle}>Instansi / Wilayah Kerja <span style={{ color: "var(--ink-soft)", fontWeight: 400 }}>(Opsional)</span></label>
-                  <input 
-                    type="text" 
-                    placeholder="Contoh: BPBD Provinsi Lampung / Desa X" 
-                    value={regInstitution} 
-                    onChange={(e) => setRegInstitution(e.target.value)} 
+                  <label style={labelStyle}>Nama Lengkap</label>
+                  <input
+                    type="text"
+                    placeholder="Nama sesuai identitas"
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={labelStyle}>Desa / Wilayah <span style={{ color: "var(--ink-soft)", fontWeight: 400 }}>(Opsional)</span></label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Desa Kangkung, Bumi Waras"
+                    value={regInstitution}
+                    onChange={(e) => setRegInstitution(e.target.value)}
                     style={inputStyle}
                   />
                 </div>

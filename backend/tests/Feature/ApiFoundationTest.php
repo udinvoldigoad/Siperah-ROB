@@ -38,6 +38,26 @@ final class ApiFoundationTest extends TestCase
             ->assertJsonValidationErrors(['email', 'password']);
     }
 
+    public function test_login_returns_status_specific_message_for_inactive_accounts(): void
+    {
+        foreach (['menunggu', 'nonaktif', 'ditolak'] as $status) {
+            $email = Str::uuid().'@example.test';
+            User::create([
+                'id' => (string) Str::uuid(),
+                'name' => 'Status Test',
+                'email' => $email,
+                'password_hash' => bcrypt('password123'),
+                'role' => 'warga',
+                'status' => $status,
+            ]);
+
+            $this->postJson('/api/auth/login', ['email' => $email, 'password' => 'password123'])
+                ->assertStatus(403)
+                ->assertJsonPath('account_status', $status)
+                ->assertJsonMissingPath('access_token');
+        }
+    }
+
     public function test_public_map_rejects_invalid_date_before_querying_database(): void
     {
         $this->getJson('/api/public/map?date=bukan-tanggal')

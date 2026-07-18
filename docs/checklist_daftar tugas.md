@@ -83,10 +83,10 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 
 ### 3.1 Fondasi frontend
 
-- [ ] **P1** Error boundary global (halaman error ramah, bukan blank putih saat komponen crash).
-- [ ] **P1** Guard route per role di frontend (warga tidak bisa buka URL admin, dst. — backend sudah menolak, UI harus redirect rapi).
-- [ ] **P1** UI status akun pending/nonaktif/ditolak yang jelas saat login.
-- [ ] **P2** Sinkronkan role saat register dengan backend (backend default warga — form register jangan menjanjikan role lain).
+- [x] **P1** Error boundary global (2026-07-18): komponen `ErrorBoundary` (class, `getDerivedStateFromError`+`componentDidCatch`) membungkus `<App>` di `main.tsx` (jaring global) & di dalam `App` dengan `key={route}` (error per-halaman otomatis pulih saat pindah rute). Halaman error ramah + tombol Muat ulang / Kembali ke beranda + log konsol. Tak ada lagi blank putih saat crash.
+- [x] **P1** Guard route per role (2026-07-18, terverifikasi berfungsi): `App.renderRoute` mencocokkan `navItems[].roles` — warga membuka `#/admin`/`#/audit`/`#/operator`/`#/province`/`#/research` → redirect `#/` (dan `#/login` bila belum login) **tanpa flash konten terproteksi** (return null saat redirect). Semua route sensitif terdaftar di navItems dengan roles. Keamanan tetap di backend; guard ini murni UX.
+- [x] **P1** UI status akun pending/nonaktif/ditolak (2026-07-18): backend `login` kini balas pesan **spesifik per status** + field `account_status` (bukan 1 pesan generik). Frontend `LoginPage` menampilkan **panel status persisten** (amber untuk menunggu, merah untuk nonaktif/ditolak) alih-alih toast sesaat. `ApiError` (client) kini membawa `status`+`body` agar bisa dibedakan. Test: `test_login_returns_status_specific_message_for_inactive_accounts`.
+- [x] **P2** Sinkronkan role register dengan backend (2026-07-18): form register dulu punya selektor "Role Akses" (operator/provinsi/peneliti) yang **menyesatkan** — `RegisterRequest` tak terima `role` & backend paksa `warga`. Selektor dihapus; pendaftaran mandiri selalu warga (status menunggu), dengan info "akun instansi dibuat admin". Copy & field disesuaikan ke konteks warga.
 - [ ] **P2** Hilangkan dev shortcuts dari build production. *(Keputusan 2026-07-17: DITUNDA — masih dipakai untuk pengujian; situs sudah live publik, jadi wajib dihapus sebelum dipublikasikan luas/UAT eksternal.)*
 - [ ] **P2** Code splitting (dynamic import) untuk map/dashboard/research — hilangkan warning chunk >500 kB.
 - [ ] **P2** Konsistenkan loading/skeleton state, empty state, dan toast di semua halaman.

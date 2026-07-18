@@ -15,6 +15,7 @@ import { ResearchPortalPage } from "../features/research/ResearchPortalPage";
 import { PortalPage } from "./PortalPage";
 import { navItems } from "./navigation";
 import { ToastProvider } from "../shared/components/Toast";
+import { ErrorBoundary } from "../shared/components/ErrorBoundary";
 import { motion, AnimatePresence } from "framer-motion";
 
 function currentRoute() {
@@ -75,7 +76,10 @@ export function App() {
 
   return (
     <ToastProvider>
-      {renderRoute()}
+      {/* key={route} agar error di satu halaman otomatis pulih saat pindah rute */}
+      <ErrorBoundary key={route}>
+        {renderRoute()}
+      </ErrorBoundary>
     </ToastProvider>
   );
 }
