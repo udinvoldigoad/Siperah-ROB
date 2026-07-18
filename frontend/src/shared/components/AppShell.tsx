@@ -85,6 +85,12 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
     }
   };
 
+  const markAllNotificationsRead = async () => {
+    await api("/notifications/read-all", { method: "PATCH" });
+    setNotifications((current) => current.map((entry) => ({ ...entry, read_at: entry.read_at || new Date().toISOString() })));
+    toast.success("Semua notifikasi ditandai sudah dibaca.");
+  };
+
   const allowedNavItems = navItems.filter((item) => {
     if (!item.roles) return true;
     if (!isUserLoggedIn || !user) return item.roles.includes("guest");
@@ -204,7 +210,10 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
                   <div className="notification-dropdown">
                     <div className="notification-dropdown-head">
                       <div><strong>Notifikasi</strong><span>{notifications.filter((item) => !item.read_at).length} belum dibaca</span></div>
-                      <a href="#/notifications" onClick={() => setNotificationOpen(false)}>Pengaturan</a>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button type="button" onClick={markAllNotificationsRead} style={{ fontSize: "12px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontWeight: 600 }}>Tandai Semua</button>
+                        <a href="#/notifications" onClick={() => setNotificationOpen(false)}>Pengaturan</a>
+                      </div>
                     </div>
                     <div className="notification-list">
                       {notifications.length === 0 ? <p className="notification-empty">Belum ada notifikasi.</p> : notifications.slice(0, 6).map((item) => (

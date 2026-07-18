@@ -83,7 +83,13 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/notifications/settings', [NotificationController::class, 'show']);
     Route::put('/notifications/settings', [NotificationController::class, 'update']);
     Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead']);
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
+    
+    // WebPush Subscriptions
+    Route::get('/webpush/vapid-public-key', [NotificationController::class, 'vapidPublicKey']);
+    Route::post('/webpush/subscribe', [NotificationController::class, 'subscribeWebPush']);
+    Route::post('/webpush/unsubscribe', [NotificationController::class, 'unsubscribeWebPush']);
 });
 
 Route::prefix('v1')->group(function () {

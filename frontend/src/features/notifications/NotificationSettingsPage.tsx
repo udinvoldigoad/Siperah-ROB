@@ -88,7 +88,55 @@ export function NotificationSettingsPage() {
     setInbox((current) => current.map((entry) => entry.id === item.id ? { ...entry, read_at: new Date().toISOString() } : entry));
   };
 
-  const toggleChannel = (channel: string) => {
+  const urlBase64ToUint8Array = (base64String: string) => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
+  const subscribeWebPush = async () => {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') throw new Error('Izin notifikasi ditolak.');
+      
+      const registration = await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+      
+      if (!subscription) {
+        const vapidRes = await api<{data: {public_key: string}}>('/webpush/vapid-public-key');
+        const publicKey = vapidRes.data.public_key;
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey)
+        });
+      }
+      
+      const subJSON = subscription.toJSON();
+      await api('/webpush/subscribe', {
+        method: 'POST',
+        body: JSON.stringify({
+          endpoint: subJSON.endpoint,
+          keys: subJSON.keys
+        })
+      });
+      return true;
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal mengaktifkan push notifikasi browser.');
+      return false;
+    }
+  };
+
+  const toggleChannel = async (channel: string) => {
+    if (channel === 'browser' && !channels.includes('browser')) {
+      const success = await subscribeWebPush();
+      if (!success) return;
+    }
+    
     setChannels((prev) =>
       prev.includes(channel) ? prev.filter((c) => c !== channel) : [...prev, channel]
     );
@@ -211,8 +259,7 @@ export function NotificationSettingsPage() {
                 {[
                   { id: "browser", icon: "notifications", title: "Push Notifikasi Browser", desc: "Notifikasi real-time di desktop/mobile" },
                   { id: "email", icon: "mail", title: "Email Instansi", desc: "Pesan dikirim ke email Anda" },
-                  { id: "whatsapp", icon: "chat", title: "WhatsApp Peringatan", desc: "Pesan instan via WhatsApp bot" },
-                  { id: "sms", icon: "smartphone", title: "SMS Darurat", desc: "Hanya untuk peringatan kritis" }
+                  { id: "whatsapp", icon: "chat", title: "WhatsApp Peringatan", desc: "Pesan instan via WhatsApp bot (Segera hadir)" }
                 ].map((ch) => (
                   <div key={ch.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -308,9 +355,12 @@ export function NotificationSettingsPage() {
                           style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--line)", borderRadius: "var(--radius)", fontSize: "14px", color: "var(--ink)", background: "var(--surface)" }}
                         />
                       </div>
-                    </div>
-                  </motion.div>
-                )}
+                      </div>
+                      <p style={{ marginTop: "12px", fontSize: "12px", color: "var(--ink-soft)", lineHeight: 1.5 }}>
+                        <strong>Catatan:</strong> Peringatan kritis (seperti bencana sangat tinggi atau mendesak) akan tetap dikirimkan dan mengabaikan pengaturan jam sunyi ini.
+                      </p>
+                    </motion.div>
+                  )}
               </AnimatePresence>
               
               <div style={{ background: "var(--warning-soft)", border: "1px solid #fde68a", borderRadius: "var(--radius)", padding: "12px 16px", fontSize: "12px", color: "#92400e", display: "flex", gap: "12px", alignItems: "start", marginTop: "8px" }}>
@@ -372,40 +422,37 @@ export function NotificationSettingsPage() {
               
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
                 <AnimatePresence>
-                  {monitoredRegions.map((region) => (
-                    <motion.span 
-                      key={region} 
-                      initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-                      style={{ background: "var(--brand-soft)", border: "1px solid var(--brand)", borderRadius: 8, padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: "var(--brand)", display: "flex", alignItems: "center", gap: "6px" }}
-                    >
-                      {region} 
-                      <button 
-                        onClick={() => handleRemoveRegion(region)}
-                        style={{ border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--brand)", padding: 0 }}
-                        title="Hapus wilayah"
+                    {monitoredRegions.map((region) => (
+                      <motion.span 
+                        key={region} 
+                        initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
+                        style={{ background: "var(--brand-soft)", border: "1px solid var(--brand)", borderRadius: 8, padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: "var(--brand)", display: "flex", alignItems: "center", gap: "6px" }}
                       >
-                        <Icon name="close" style={{ fontSize: "14px" }} />
-                      </button>
-                    </motion.span>
-                  ))}
-                </AnimatePresence>
-
-                {showAddForm ? (
-                  <form onSubmit={handleAddRegion} style={{ display: "inline-flex", gap: "8px", alignItems: "center" }}>
-                    <select
-                      aria-label="Pilih wilayah pantau"
-                      value={newRegion}
-                      onChange={(e) => setNewRegion(e.target.value)}
-                      autoFocus
-                      style={{ padding: "8px 12px", border: "1px solid var(--accent)", borderRadius: "var(--radius)", fontSize: "12px", outline: "none" }}
-                    >
-                      <option value="">Pilih kabupaten/kota</option>
-                      {lampungRegionOptions.filter((region) => !monitoredRegions.includes(region)).map((region) => <option key={region} value={region}>{region}</option>)}
-                    </select>
-                    <button type="submit" className="btn primary" disabled={!newRegion} style={{ padding: "6px 12px", fontSize: "12px", minHeight: "32px" }}>Tambah</button>
-                    <button type="button" onClick={() => setShowAddForm(false)} className="btn secondary" style={{ padding: "6px 12px", fontSize: "12px", minHeight: "32px" }}>Batal</button>
-                  </form>
-                ) : (
+                        {region}
+                        <button type="button" onClick={() => handleRemoveRegion(region)} aria-label={`Hapus ${region}`} style={{ background: "transparent", border: "none", color: "var(--brand)", cursor: "pointer", display: "flex", padding: 0 }}>
+                          <Icon name="close" style={{ fontSize: "14px" }} />
+                        </button>
+                      </motion.span>
+                    ))}
+                  </AnimatePresence>
+                  
+                  {showAddForm ? (
+                    <form onSubmit={handleAddRegion} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <input 
+                        list="lampung-regions-list"
+                        value={newRegion} 
+                        onChange={(e) => setNewRegion(e.target.value)}
+                        placeholder="Ketik nama kabupaten/kota..."
+                        style={{ padding: "8px 12px", border: "1px solid var(--accent)", borderRadius: "var(--radius)", fontSize: "12px", outline: "none", minWidth: "200px" }}
+                        autoFocus
+                      />
+                      <datalist id="lampung-regions-list">
+                        {lampungRegionOptions.filter((region) => !monitoredRegions.includes(region)).map((region) => <option key={region} value={region} />)}
+                      </datalist>
+                      <button type="submit" className="btn primary" disabled={!newRegion} style={{ padding: "6px 12px", fontSize: "12px", minHeight: "32px" }}>Tambah</button>
+                      <button type="button" onClick={() => setShowAddForm(false)} className="btn secondary" style={{ padding: "6px 12px", fontSize: "12px", minHeight: "32px" }}>Batal</button>
+                    </form>
+                  ) : (
                   <button 
                     onClick={() => setShowAddForm(true)}
                     style={{ background: "none", border: "1px dashed var(--line)", borderRadius: 8, padding: "6px 12px", fontSize: "12px", fontWeight: 500, color: "var(--ink-soft)", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}
