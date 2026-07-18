@@ -869,6 +869,12 @@ export function CitizenModePage() {
         if (alive) {
           setData(response.data ?? undefined);
           setDataLoaded(true);
+          
+          // Haptic Feedback for Mobile Elite UX
+          if (response.data && response.data.risk_class === "sangat_tinggi" && typeof navigator !== "undefined" && navigator.vibrate) {
+            navigator.vibrate([200, 100, 200]);
+          }
+          
           if (!response.data && response.message) {
             setError(response.message);
           } else {
