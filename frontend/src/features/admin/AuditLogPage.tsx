@@ -3,6 +3,8 @@ import { AppShell } from "../../shared/components/AppShell";
 import { api, apiUrl } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
+import { LoadingBlock } from "../../shared/components/LoadingBlock";
+import { EmptyState } from "../../shared/components/EmptyState";
 import { roleLabel } from "../../shared/constants/roles";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -301,7 +303,7 @@ export function AuditLogPage() {
           {/* Audit Logs Table */}
           <div>
             {isLoading ? (
-              <div style={{ padding: "40px", textAlign: "center", color: "var(--ink-soft)" }}>Memuat log audit...</div>
+              <div style={{ padding: "16px 24px" }}><LoadingBlock rows={6} label="Memuat log audit…" /></div>
             ) : error ? (
               <div style={{ padding: "56px 20px", textAlign: "center", color: "var(--ink-soft)", display: "grid", justifyItems: "center", gap: 4 }}>
                 <Icon name="error" style={{ fontSize: 48, color: "var(--critical)", opacity: 0.85, marginBottom: 8 }} />
@@ -310,11 +312,11 @@ export function AuditLogPage() {
                 <button type="button" className="btn secondary" onClick={fetchLogs}><Icon name="refresh" /> Coba lagi</button>
               </div>
             ) : logs.length === 0 ? (
-              <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--ink-soft)" }}>
-                <Icon name="history_toggle_off" style={{ fontSize: 48, color: "var(--line)", marginBottom: 16 }} />
-                <div style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)" }}>Log Kosong</div>
-                <div style={{ fontSize: 13, marginTop: 4 }}>Tidak ada log aktivitas yang cocok dengan filter pencarian.</div>
-              </div>
+              <EmptyState
+                icon="history_toggle_off"
+                title="Log kosong"
+                description="Tidak ada log aktivitas yang cocok dengan filter pencarian."
+              />
             ) : (
             <div className="table-responsive">
               <table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>

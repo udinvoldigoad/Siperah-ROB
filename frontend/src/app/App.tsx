@@ -1,22 +1,26 @@
-import { useEffect, useState } from "react";
-import { AuditLogPage } from "../features/admin/AuditLogPage";
-import { AdminUsersPage } from "../features/admin/AdminUsersPage";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { LoginPage } from "../features/auth/LoginPage";
-import { OperatorDashboardPage } from "../features/dashboards/OperatorDashboardPage";
-import { ProvinceDashboardPage } from "../features/dashboards/ProvinceDashboardPage";
-import { NotificationSettingsPage } from "../features/notifications/NotificationSettingsPage";
-import { PublicMapPage } from "../features/public-map/PublicMapPage";
-import { OnboardingPage } from "../features/public-map/OnboardingPage";
-import { ReportDetailPage } from "../features/reports/ReportDetailPage";
-import { CitizenModePage } from "../features/public-map/CitizenModePage";
-import { ReportWizardPage } from "../features/reports/ReportWizardPage";
-import { ReportHistoryPage } from "../features/reports/ReportHistoryPage";
-import { ResearchPortalPage } from "../features/research/ResearchPortalPage";
 import { PortalPage } from "./PortalPage";
 import { navItems } from "./navigation";
 import { ToastProvider } from "../shared/components/Toast";
 import { ErrorBoundary } from "../shared/components/ErrorBoundary";
-import { motion, AnimatePresence } from "framer-motion";
+import { PageFallback } from "../shared/components/PageFallback";
+
+// Halaman fitur di-lazy-load agar bundle awal ringan: library berat (maplibre-gl
+// pada peta/laporan) & kode tiap rute hanya diunduh saat halamannya dibuka.
+// LoginPage & PortalPage tetap eager karena jadi titik masuk paling umum.
+const AuditLogPage = lazy(() => import("../features/admin/AuditLogPage").then(m => ({ default: m.AuditLogPage })));
+const AdminUsersPage = lazy(() => import("../features/admin/AdminUsersPage").then(m => ({ default: m.AdminUsersPage })));
+const OperatorDashboardPage = lazy(() => import("../features/dashboards/OperatorDashboardPage").then(m => ({ default: m.OperatorDashboardPage })));
+const ProvinceDashboardPage = lazy(() => import("../features/dashboards/ProvinceDashboardPage").then(m => ({ default: m.ProvinceDashboardPage })));
+const NotificationSettingsPage = lazy(() => import("../features/notifications/NotificationSettingsPage").then(m => ({ default: m.NotificationSettingsPage })));
+const PublicMapPage = lazy(() => import("../features/public-map/PublicMapPage").then(m => ({ default: m.PublicMapPage })));
+const OnboardingPage = lazy(() => import("../features/public-map/OnboardingPage").then(m => ({ default: m.OnboardingPage })));
+const ReportDetailPage = lazy(() => import("../features/reports/ReportDetailPage").then(m => ({ default: m.ReportDetailPage })));
+const CitizenModePage = lazy(() => import("../features/public-map/CitizenModePage").then(m => ({ default: m.CitizenModePage })));
+const ReportWizardPage = lazy(() => import("../features/reports/ReportWizardPage").then(m => ({ default: m.ReportWizardPage })));
+const ReportHistoryPage = lazy(() => import("../features/reports/ReportHistoryPage").then(m => ({ default: m.ReportHistoryPage })));
+const ResearchPortalPage = lazy(() => import("../features/research/ResearchPortalPage").then(m => ({ default: m.ResearchPortalPage })));
 
 function currentRoute() {
   return window.location.hash.replace("#/", "") || "";
@@ -78,7 +82,9 @@ export function App() {
     <ToastProvider>
       {/* key={route} agar error di satu halaman otomatis pulih saat pindah rute */}
       <ErrorBoundary key={route}>
-        {renderRoute()}
+        <Suspense fallback={<PageFallback />}>
+          {renderRoute()}
+        </Suspense>
       </ErrorBoundary>
     </ToastProvider>
   );

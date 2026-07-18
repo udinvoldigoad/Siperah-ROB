@@ -97,6 +97,26 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline-offset: 3px;
 }
 
+/* Skip-link a11y: tersembunyi sampai difokuskan lewat keyboard (Tab). */
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 1000;
+  padding: 10px 16px;
+  background: var(--accent, #1e40af);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  transition: top 0.15s ease;
+}
+.skip-link:focus {
+  top: 12px;
+  outline: 3px solid rgba(255, 255, 255, 0.6);
+}
+
 .material-symbols-outlined {
   direction: ltr;
   display: inline-block;
