@@ -155,6 +155,7 @@ final class ApiFoundationTest extends TestCase
         $this->withHeader('X-API-Key', $rawKey)
             ->getJson('/api/v1/predictions/daily?per_page=1')
             ->assertOk()
+            ->assertHeader('X-Api-Version', 'v1')
             ->assertJsonStructure(['data', 'meta']);
     }
 

@@ -237,7 +237,21 @@ final class ResearchController
         $apiRateLimit = (int) env('API_RATE_LIMIT', 120);
 
         return response()->json(['data' => [
-            'base_path' => '/api',
+            'base_path' => '/api/v1',
+            'version' => 'v1',
+            'stability' => [
+                'status' => 'stable',
+                'contract' => 'Field yang terdokumentasi di bawah dijamin stabil dalam v1: nama & tipe tidak dihapus/diubah maknanya. Penambahan field baru bersifat non-breaking — klien wajib mengabaikan field yang tidak dikenal.',
+                'response_header' => 'Setiap response v1 menyertakan header X-Api-Version.',
+            ],
+            'deprecation_policy' => [
+                'summary' => 'Perubahan yang membongkar kontrak (breaking) tidak dilakukan di v1 — dirilis sebagai versi baru (mis. /api/v2). v1 tetap dilayani minimal 6 bulan setelah pengumuman penggantian.',
+                'signals' => [
+                    'Header Deprecation: true dan Sunset: <tanggal RFC 8594> dikirim pada endpoint yang akan dihentikan.',
+                    'Pengumuman juga tampil di portal peneliti sebelum tanggal sunset.',
+                ],
+                'min_support_after_announcement' => '180 hari',
+            ],
             'authentication' => [
                 'header' => 'X-API-Key: spr_xxx',
                 'alternative' => 'Authorization: ApiKey spr_xxx',
@@ -264,7 +278,7 @@ final class ResearchController
                     'scope' => 'predictions:read',
                     'query' => ['from' => 'YYYY-MM-DD', 'to' => 'YYYY-MM-DD', 'region' => 'uuid', 'format' => 'json|csv', 'per_page' => '1-200'],
                     'description' => 'Prediksi risiko harian per wilayah.',
-                    'example_request' => "curl -H \"X-API-Key: spr_xxx\" \\\n  \"/api/predictions/daily?from=2026-05-01&to=2026-05-07&format=json\"",
+                    'example_request' => "curl -H \"X-API-Key: spr_xxx\" \\\n  \"/api/v1/predictions/daily?from=2026-05-01&to=2026-05-07&format=json\"",
                     'example_response' => [
                         'data' => [[
                             'id' => 'a1b2c3d4-...',
@@ -289,7 +303,7 @@ final class ResearchController
                     'scope' => 'reports:read',
                     'query' => ['from' => 'YYYY-MM-DD', 'to' => 'YYYY-MM-DD', 'region' => 'uuid', 'format' => 'json|csv', 'per_page' => '1-200'],
                     'description' => 'Laporan ground truth yang telah divalidasi. Koordinat dibulatkan 3 desimal demi privasi pelapor.',
-                    'example_request' => "curl -H \"X-API-Key: spr_xxx\" \\\n  \"/api/reports?from=2026-05-01&to=2026-05-31&format=json\"",
+                    'example_request' => "curl -H \"X-API-Key: spr_xxx\" \\\n  \"/api/v1/reports?from=2026-05-01&to=2026-05-31&format=json\"",
                     'example_response' => [
                         'data' => [[
                             'id' => 'e5f6a7b8-...',
@@ -314,7 +328,7 @@ final class ResearchController
                     'scope' => 'tidal:read',
                     'query' => ['station' => 'kode_stasiun', 'from' => 'YYYY-MM-DD', 'to' => 'YYYY-MM-DD', 'format' => 'json|csv', 'per_page' => '1-200'],
                     'description' => 'Data pasang surut yang tersedia di sistem.',
-                    'example_request' => "curl -H \"X-API-Key: spr_xxx\" \\\n  \"/api/tidal?station=PANJANG&from=2026-05-01&to=2026-05-02&format=json\"",
+                    'example_request' => "curl -H \"X-API-Key: spr_xxx\" \\\n  \"/api/v1/tidal?station=PANJANG&from=2026-05-01&to=2026-05-02&format=json\"",
                     'example_response' => [
                         'data' => [[
                             'id' => 'c9d0e1f2-...',

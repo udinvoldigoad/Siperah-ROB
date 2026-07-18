@@ -76,6 +76,11 @@ final class AuthenticateApiKey
             'status' => $response->getStatusCode(),
         ]);
 
+        // Sinyal kontrak: setiap response v1 menyatakan versinya. Klien bisa
+        // memantau header ini; header Deprecation/Sunset ditambahkan di sini pula
+        // bila suatu endpoint dijadwalkan dihentikan (RFC 8594).
+        $response->headers->set('X-Api-Version', 'v1');
+
         return $response;
     }
 

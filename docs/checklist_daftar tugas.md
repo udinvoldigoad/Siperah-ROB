@@ -70,7 +70,7 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 - [x] **P2** Rate limit API v1 configurable via env (2026-07-18): limiter `api-key` di `AppServiceProvider` kini `env('API_RATE_LIMIT', 120)`; pesan 429 & dokumentasi `apiReference` ikut nilai env. Bisa disetel tanpa deploy ulang.
 - [x] **P2** Konten tab lisensi/perizinan data (2026-07-18, terverifikasi sudah lengkap): `ResearchPortalPage` mengelompokkan dataset per lisensi, menampilkan cakupan per dataset, instruksi atribusi, & catatan data mentah mengikuti BIG/BMKG. Tak perlu perubahan.
 - [x] **P2** Sanitasi CSV/XLSX injection + test (2026-07-18): cabang export **XLSX** dulu `addRow` tanpa netralisasi (tembus formula injection seperti CSV) → kini `array_map(CsvWriter::sanitize(...))`. `CsvWriter::sanitize` diperbaiki: angka valid (termasuk negatif spt latitude `-5.451`) di-skip agar tak salah jadi teks `'-5.451`, sambil tetap menetralkan payload `=/+/@/-` non-numerik. Ditambah `tests/Unit/CsvWriterTest.php` (13 test, hijau).
-- [ ] **P3** Finalkan kontrak/stabilitas API `/api/v1/*` (versi, deprecation policy).
+- [x] **P3** Finalkan kontrak/stabilitas API `/api/v1/*` (2026-07-18): **bug kontrak diperbaiki** — `apiReference` dulu menyebut `base_path: /api` & contoh `/api/predictions/daily` padahal route nyata `/api/v1/predictions/daily` (peneliti akan kena 404). Kini base path & semua contoh diseragamkan ke `/api/v1`. Ditambah deklarasi `version: v1`, janji stabilitas (field non-breaking, klien abaikan field asing) & kebijakan deprecation (header `Deprecation`/`Sunset` RFC 8594, min 180 hari support). Header **`X-Api-Version: v1`** dikirim di tiap response v1 (via middleware `api.key`) + di-test. Dokumen: `docs/api-contract.md`.
 
 ### 2.4 Lain-lain backend
 
