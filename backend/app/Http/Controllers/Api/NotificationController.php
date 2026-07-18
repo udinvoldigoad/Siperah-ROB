@@ -46,6 +46,16 @@ final class NotificationController
         return response()->json(['data' => null, 'message' => 'Notifikasi ditandai sudah dibaca.']);
     }
 
+    public function markAllRead(Request $request): JsonResponse
+    {
+        DB::table('notification_inbox')
+            ->where('user_id', $request->user()->id)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return response()->json(['data' => null, 'message' => 'Semua notifikasi ditandai sudah dibaca.']);
+    }
+
     public function update(NotificationSettingsRequest $request): JsonResponse
     {
         $settings = $this->notifications->updateSettings($request->user()->id, $request->validated());
@@ -55,5 +65,37 @@ final class NotificationController
             'monitored_regions' => $settings->monitored_regions,
         ]);
         return response()->json(['data' => $settings, 'message' => 'Pengaturan notifikasi diperbarui.']);
+    }
+
+    public function vapidPublicKey(): JsonResponse
+    {
+        return response()->json([
+            'data' => ['public_key' => config('webpush.vapid.public_key')]
+        ]);
+    }
+
+    public function subscribeWebPush(Request $request): JsonResponse
+    {
+        $request->validate([
+            'endpoint' => 'required',
+            'keys.auth' => 'required',
+            'keys.p256dh' => 'required'
+        ]);
+
+        $request->user()->updatePushSubscription(
+            $request->endpoint,
+            $request->keys['p256dh'],
+            $request->keys['auth']
+        );
+
+        return response()->json(['message' => 'Berhasil mendaftar push notifikasi browser.']);
+    }
+
+    public function unsubscribeWebPush(Request $request): JsonResponse
+    {
+        $request->validate(['endpoint' => 'required']);
+        $request->user()->deletePushSubscription($request->endpoint);
+        
+        return response()->json(['message' => 'Berhasil menghapus push notifikasi browser.']);
     }
 }

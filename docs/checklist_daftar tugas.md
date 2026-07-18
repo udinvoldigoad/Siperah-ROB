@@ -126,17 +126,16 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 Blok fitur utuh yang paling besar sisa pekerjaannya. Kerjakan sebagai satu paket setelah fungsi inti stabil.
 
 - [ ] **P1** Pilih & pasang queue driver production (database queue paling sederhana; Redis jika trafik tinggi). `(keputusan)`
-- [ ] **P1** Browser push production: permission flow di frontend + pengiriman via service worker/FCM.
+- [x] **P1** Browser push production: permission flow di frontend + pengiriman via service worker/FCM.
 - [ ] **P1** Email production: konfigurasi SMTP/provider + template pesan per event.
 - [ ] **P2** WhatsApp production (provider resmi WA Business API) — sudah ada kontak WA di mode awam, ini untuk pengiriman keluar.
-- [ ] **P2** SMS khusus operator (provider lokal).
 - [ ] **P1** Quiet hours benar-benar menahan notifikasi non-kritis, dan peringatan kritis bypass quiet hours.
 - [ ] **P1** Subscription wilayah difilter konsisten dengan region penerima.
 - [ ] **P2** Retry queue + failure logging untuk semua kanal eksternal.
 - [ ] **P2** Template pesan tiap event (laporan baru, validasi, peringatan risiko, SLA overdue).
-- [ ] **P2** Frontend: mark read / read all di inbox notifikasi.
-- [ ] **P2** Frontend: selector wilayah pantauan pakai autocomplete/dropdown (pola `WilayahPicker` mode awam bisa dipakai ulang).
-- [ ] **P2** Frontend: quiet hours UI cocok dengan perilaku backend, status kanal Email/WA/SMS + fallback.
+- [x] **P2** Frontend: mark read / read all di inbox notifikasi.
+- [x] **P2** Frontend: selector wilayah pantauan pakai autocomplete/dropdown (pola `WilayahPicker` mode awam bisa dipakai ulang).
+- [x] **P2** Frontend: quiet hours UI cocok dengan perilaku backend, status kanal Email/WA + fallback.
 
 ---
 
