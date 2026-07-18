@@ -41,27 +41,17 @@ final class NotificationService
             return;
         }
 
-        $labels = [
-            'divalidasi' => 'Laporan divalidasi',
-            'ditolak' => 'Laporan ditolak',
-            'perlu_review' => 'Laporan perlu ditinjau',
-            'duplikat' => 'Laporan ditandai duplikat',
-        ];
-        $title = $labels[$report->status] ?? 'Status laporan diperbarui';
-        $body = "Laporan {$report->report_code} sekarang berstatus {$title}.";
-        if ($report->status === 'ditolak' && $report->rejection_reason) {
-            $body .= " Alasan: {$report->rejection_reason}";
+        $user = User::find($report->user_id);
+        if (!$user) return;
+
+        $notification = new \App\Notifications\ReportStatusUpdatedNotification($report);
+        
+        $delay = $this->calculateQuietHoursDelay($user);
+        if ($delay > 0) {
+            $notification->delay(now()->addMinutes($delay));
         }
 
-        DB::table('notification_inbox')->insert([
-            'id' => (string) Str::uuid(),
-            'user_id' => $report->user_id,
-            'type' => 'report_status',
-            'title' => $title,
-            'body' => $body,
-            'data' => json_encode(['report_id' => $report->id, 'report_code' => $report->report_code, 'status' => $report->status]),
-            'created_at' => now(),
-        ]);
+        $user->notify($notification);
     }
 
     public function notifyNewReportForReview(GroundTruthReport $report): void
@@ -109,15 +99,15 @@ final class NotificationService
                 }
             }
 
-            DB::table('notification_inbox')->insert([
-                'id' => (string) Str::uuid(),
-                'user_id' => $recipient->id,
-                'type' => 'report_review',
-                'title' => $isWithinMonitoringArea ? 'Laporan baru perlu validasi' : 'Laporan luar pantauan perlu triase',
-                'body' => "Laporan {$report->report_code} masuk di ".trim(implode(', ', array_filter([$region?->village, $region?->district, $region?->regency]))).'.',
-                'data' => json_encode(['report_id' => $report->id, 'report_code' => $report->report_code, 'status' => $report->status]),
-                'created_at' => now(),
-            ]);
+            $notification = new \App\Notifications\NewReportReviewNotification($report, $isWithinMonitoringArea);
+            
+            // Laporan baru tidak sepenting bahaya tinggi, tahan kalau sedang quiet hours
+            $delay = $this->calculateQuietHoursDelay($recipient);
+            if ($delay > 0) {
+                $notification->delay(now()->addMinutes($delay));
+            }
+
+            $recipient->notify($notification);
         }
     }
 
@@ -149,21 +139,55 @@ final class NotificationService
             $alreadySent = DB::table('notification_inbox')
                 ->where('user_id', $recipient->id)
                 ->where('type', 'report_sla_overdue')
-                ->where('body', 'like', "%{$report->report_code}%")
+                ->where('data', 'like', "%{$report->report_code}%")
                 ->exists();
+                
             if ($alreadySent) {
                 continue;
             }
 
-            DB::table('notification_inbox')->insert([
-                'id' => (string) Str::uuid(),
-                'user_id' => $recipient->id,
-                'type' => 'report_sla_overdue',
-                'title' => 'SLA validasi laporan terlewati',
-                'body' => "Laporan {$report->report_code} belum selesai diverifikasi lebih dari 1x24 jam.",
-                'data' => json_encode(['report_id' => $report->id, 'report_code' => $report->report_code, 'status' => $report->status]),
-                'created_at' => now(),
-            ]);
+            $notification = new \App\Notifications\ReportSlaOverdueNotification($report);
+            
+            // SLA Overdue adalah peringatan penting, tapi tidak darurat. Kita taati quiet hours.
+            $delay = $this->calculateQuietHoursDelay($recipient);
+            if ($delay > 0) {
+                $notification->delay(now()->addMinutes($delay));
+            }
+
+            $recipient->notify($notification);
         }
+    }
+    
+    private function calculateQuietHoursDelay(User $user): int
+    {
+        $settings = $this->settings($user->id);
+        if (!$settings->quiet_start || !$settings->quiet_end) {
+            return 0;
+        }
+
+        $now = now();
+        // Assuming time strings like "22:00:00" or "22:00"
+        $start = \Carbon\Carbon::createFromFormat('H:i:s', strlen($settings->quiet_start) === 5 ? $settings->quiet_start.':00' : $settings->quiet_start);
+        $end = \Carbon\Carbon::createFromFormat('H:i:s', strlen($settings->quiet_end) === 5 ? $settings->quiet_end.':00' : $settings->quiet_end);
+
+        // If end time is less than start time, it means it crosses midnight
+        $isOvernight = $end->lessThan($start);
+
+        $isQuietTime = false;
+        if ($isOvernight) {
+            $isQuietTime = $now->greaterThanOrEqualTo($start) || $now->lessThanOrEqualTo($end);
+        } else {
+            $isQuietTime = $now->between($start, $end);
+        }
+
+        if ($isQuietTime) {
+            $target = $now->copy()->setTimeFrom($end);
+            if ($now->greaterThanOrEqualTo($start) && $isOvernight) {
+                $target->addDay();
+            }
+            return $now->diffInMinutes($target);
+        }
+
+        return 0;
     }
 }

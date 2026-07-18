@@ -38,9 +38,29 @@
   border-color: rgba(239, 68, 68, 0.2);
   color: #fca5a5;
 }
-:root[data-theme="dark"] .maplibregl-map {
-  filter: brightness(0.8) contrast(1.1);
-}
+  :root[data-theme="dark"] .maplibregl-map {
+    filter: brightness(0.8) contrast(1.1);
+  }
+
+  :root[data-theme="dark"] .maplibregl-popup-content {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  }
+  :root[data-theme="dark"] .maplibregl-popup-tip {
+    border-top-color: var(--surface);
+    border-bottom-color: var(--surface);
+  }
+  :root[data-theme="dark"] .maplibregl-popup-close-button {
+    color: var(--ink-soft);
+  }
+  :root[data-theme="dark"] .map-toolbar {
+    background: rgba(15, 23, 42, 0.92);
+    border-color: var(--line);
+  }
+  :root[data-theme="dark"] .map-risk-badge {
+    background: var(--surface);
+  }
 
 :root[data-theme="dark"] .report-row,
 :root[data-theme="dark"] .data-table tbody tr,
@@ -88,8 +108,8 @@
 * { box-sizing: border-box; }
 html { background: var(--bg); }
 body { margin: 0; min-width: 320px; background: var(--bg); color: var(--ink); }
-html, body, * { scrollbar-width: none; }
-html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+html, body { scrollbar-width: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
@@ -1966,6 +1986,15 @@ select:focus {
 
 /* --- ELITE MOBILE UX --- */
 @media (max-width: 768px) {
+  /* Touch-friendly MapLibre controls */
+  .maplibregl-ctrl-group > button {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  .maplibregl-ctrl-bottom-right {
+    bottom: 80px !important; /* Avoid bottom sheet overlap */
+  }
+
   .app-shell {
     padding-bottom: 80px; /* Space for bottom pill */
   }
