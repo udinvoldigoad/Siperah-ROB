@@ -1,3 +1,26 @@
+# SPA (index.html hasil build Vite) dan API Laravel disajikan dari docroot
+# yang sama di Hostinger; index.html didahulukan, /api jatuh ke index.php.
+DirectoryIndex index.html index.php
+
+# Security headers untuk file statis (SPA). Respons API/PHP juga mendapat
+# header dari middleware App\Http\Middleware\SecurityHeaders.
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(self), camera=(), microphone=(), payment=()"
+    # Browser mengabaikan HSTS di koneksi HTTP biasa, aman dipasang global.
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+    # CSP hanya untuk dokumen HTML (SPA). Origin eksternal yang dipakai:
+    # Google Fonts (style+font), tile OSM (peta), Nominatim (geocoding),
+    # Open-Meteo (cuaca), picsum.photos (placeholder portal), blob: (worker
+    # maplibre-gl), data: (ikon inline).
+    <FilesMatch "\.html$">
+        Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org https://picsum.photos; connect-src 'self' https://tile.openstreetmap.org https://nominatim.openstreetmap.org https://marine-api.open-meteo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+    </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
