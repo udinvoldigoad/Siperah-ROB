@@ -94,12 +94,12 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 
 ### 3.2 Peta publik & mode awam
 
-- [ ] **P1** Toggle layer lengkap sesuai PRD: zona bahaya, laporan, infrastruktur kritis, evakuasi, pasang surut (menyusul layer backend Tahap 2.1).
-- [ ] **P2** Export data peta dari UI (backend sudah ada — pastikan tombol & format benar).
-- [ ] **P2** QA regression pin/zona saat filter kabupaten aktif.
-- [ ] **P2** Uji geolokasi mode awam di perangkat mobile nyata (izin lokasi, akurasi, fallback manual).
-- [ ] **P2** QA mobile map UX (gesture, ukuran kontrol, panel detail).
-- [ ] **P3** Cek final konsistensi legend & warna vs risk class (sudah satu sumber `shared/constants/risk` — tinggal QA visual).
+- [x] **P1** Toggle layer lengkap sesuai PRD: zona bahaya, laporan, infrastruktur kritis, evakuasi, pasang surut (menyusul layer backend Tahap 2.1).
+- [x] **P2** Export data peta dari UI (backend sudah ada — pastikan tombol & format benar).
+- [x] **P2** QA regression pin/zona saat filter kabupaten aktif.
+- [x] **P2** Uji geolokasi mode awam di perangkat mobile nyata (izin lokasi, akurasi, fallback manual).
+- [x] **P2** QA mobile map UX (gesture, ukuran kontrol, panel detail).
+- [x] **P3** Cek final konsistensi legend & warna vs risk class (sudah satu sumber `shared/constants/risk` — tinggal QA visual).
 
 ### 3.3 Dashboard operator
 
@@ -141,11 +141,11 @@ Blok fitur utuh yang paling besar sisa pekerjaannya. Kerjakan sebagai satu paket
 
 ## Tahap 5 — Keamanan & RBAC final
 
-- [ ] **P1** Hapus `backend/check_prob.php` sebelum production (sudah ditandai wajib). *(Catatan 2026-07-17: file ikut ke server via git clone; tidak bisa diakses web karena docroot = `backend/public`, tapi tetap hapus dari repo.)*
-- [ ] **P1** Test authorization/policy per endpoint: RBAC negative path semua role (warga → admin = 403, dst.).
-- [ ] **P1** Security headers di reverse proxy (nginx/Caddy): CSP, HSTS, X-Frame-Options, X-Content-Type-Options.
-- [ ] **P2** Rencana rotasi secret: `APP_KEY`, token API, kredensial DB/email/WA/SMS — tulis prosedurnya.
-- [ ] **P2** Dependency audit npm (`npm audit`) — composer sudah bersih, npm belum dicek.
+- [x] **P1** Hapus `backend/check_prob.php` sebelum production (sudah ditandai wajib). *(2026-07-18: dihapus dari repo; hilang dari server pada pull berikutnya.)*
+- [x] **P1** Test authorization/policy per endpoint: RBAC negative path semua role (warga → admin = 403, dst.). *(2026-07-18: `RbacNegativePathTest` — matriks 9 endpoint × 5 role, tamu=401, akun nonaktif=403 walau role cocok, warga/peneliti tak bisa ubah status laporan, akses ditolak masuk audit log. Bonus: menemukan & memperbaiki bug fitur WebPush (PR #15) — `subscribable_id` BIGINT vs users.id UUID membuat semua POST /reports yang memicu notifikasi jadi 500; fix via migration `2026_07_18_170000`.)*
+- [x] **P1** Security headers: CSP, HSTS, X-Frame-Options, X-Content-Type-Options. *(2026-07-18: tidak ada reverse proxy di Hostinger shared — dipasang via middleware `SecurityHeaders` (respons API, CSP default-src 'none') + `public/.htaccess` (file statis SPA, CSP whitelist origin yang benar-benar dipakai: Google Fonts, tile OSM, Nominatim, Open-Meteo, picsum, blob: worker maplibre). `DirectoryIndex` ikut dimasukkan repo. Setelah deploy, verifikasi header di production & pantau pelanggaran CSP di console browser.)*
+- [x] **P2** Rencana rotasi secret: `APP_KEY`, token API, kredensial DB/email/WA/SMS — tulis prosedurnya. *(2026-07-18: `docs/rotasi-secret.md` — inventaris + langkah + efek samping per secret. Kredensial email/WA/SMS belum ada (mail=log, WA/SMS=mock). ⚠️ Password DB Supabase pernah terpapar 2026-07-16 — rotasi masih harus dieksekusi user.)*
+- [x] **P2** Dependency audit npm (`npm audit`) — composer sudah bersih, npm belum dicek. *(2026-07-18: 3 temuan → 0. echarts dihapus (dependency mati, advisory XSS), vite 5→8 + plugin-react 4→6 (advisory esbuild/vite dev-server). tsc + build + smoke dev server hijau.)*
 
 ---
 
