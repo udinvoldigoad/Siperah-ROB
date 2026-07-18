@@ -1966,6 +1966,15 @@ select:focus {
 
 /* --- ELITE MOBILE UX --- */
 @media (max-width: 768px) {
+  /* Touch-friendly MapLibre controls */
+  .maplibregl-ctrl-group > button {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  .maplibregl-ctrl-bottom-right {
+    bottom: 80px !important; /* Avoid bottom sheet overlap */
+  }
+
   .app-shell {
     padding-bottom: 80px; /* Space for bottom pill */
   }

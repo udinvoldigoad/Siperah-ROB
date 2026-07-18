@@ -851,11 +851,19 @@ export function CitizenModePage() {
           setLocationNote("Lokasi perangkat");
         }
       },
-      () => {
-        setError("Izin lokasi tidak tersedia. Menampilkan wilayah pesisir terdekat; Anda tetap bisa memilih wilayah manual.");
-        setLocationNote("Wilayah pesisir terdekat");
+      (error) => {
+        let errorMessage = "Gagal mendapatkan lokasi Anda.";
+        if (error.code === error.PERMISSION_DENIED) {
+          errorMessage = "Izin lokasi ditolak. Silakan izinkan akses GPS di browser Anda atau pilih wilayah secara manual.";
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          errorMessage = "Informasi lokasi GPS tidak tersedia saat ini. Silakan coba lagi nanti.";
+        } else if (error.code === error.TIMEOUT) {
+          errorMessage = "Waktu pencarian lokasi habis (timeout). Silakan pastikan sinyal GPS stabil.";
+        }
+        setError(errorMessage);
+        setLocationNote("Pilih wilayah manual");
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   };
 
