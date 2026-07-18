@@ -92,6 +92,19 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
 
   return (
     <div className={`app-shell ${isSidebarOpen ? "" : "sidebar-collapsed"}`}>
+      {/* Skip-link a11y: onClick + focus (bukan hash-anchor) agar tak bentrok
+          dengan hash routing aplikasi. */}
+      <a
+        href="#main-content"
+        className="skip-link"
+        onClick={(e) => {
+          e.preventDefault();
+          const el = document.getElementById("main-content");
+          if (el) { el.focus(); el.scrollIntoView(); }
+        }}
+      >
+        Lewati ke konten utama
+      </a>
       {isMobileSidebarOpen && (
         <div 
           className="mobile-sidebar-overlay" 
@@ -207,8 +220,10 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
             )}
           </div>
         </div>
-        <motion.div 
+        <motion.div
           className="app-content"
+          id="main-content"
+          tabIndex={-1}
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, ease: "easeOut" }}

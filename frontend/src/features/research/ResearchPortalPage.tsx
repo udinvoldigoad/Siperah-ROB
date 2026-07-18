@@ -3,6 +3,8 @@ import { AppShell } from "../../shared/components/AppShell";
 import { api, apiUrl } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
+import { LoadingBlock } from "../../shared/components/LoadingBlock";
+import { EmptyState } from "../../shared/components/EmptyState";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface DatasetData {
@@ -399,9 +401,16 @@ export function ResearchPortalPage() {
                         </td>
                       </tr>
                     ))}
+                    {isLoading && (
+                      <tr>
+                        <td colSpan={6} style={{ padding: "8px 24px" }}><LoadingBlock rows={4} label="Memuat dataset…" /></td>
+                      </tr>
+                    )}
                     {datasets.length === 0 && !isLoading && (
                       <tr>
-                        <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "var(--ink-soft)" }}>Tidak ada dataset ditemukan.</td>
+                        <td colSpan={6}>
+                          <EmptyState compact icon="database" title="Tidak ada dataset" description="Tidak ada dataset yang cocok dengan filter pencarian." />
+                        </td>
                       </tr>
                     )}
                   </tbody>

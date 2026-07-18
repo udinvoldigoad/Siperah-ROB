@@ -4,6 +4,8 @@ import { AppShell } from "../../shared/components/AppShell";
 import { api, apiUrl } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
+import { LoadingBlock } from "../../shared/components/LoadingBlock";
+import { EmptyState } from "../../shared/components/EmptyState";
 import { roleLabel } from "../../shared/constants/roles";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -463,7 +465,7 @@ export function AdminUsersPage() {
           {/* Table container */}
           <div>
             {isLoading ? (
-              <div style={{ padding: "40px", textAlign: "center", color: "var(--ink-soft)" }}>Memuat daftar pengguna...</div>
+              <div style={{ padding: "16px 24px" }}><LoadingBlock rows={6} label="Memuat daftar pengguna…" /></div>
             ) : error ? (
               <div style={{ padding: "56px 20px", textAlign: "center", color: "var(--ink-soft)", display: "grid", justifyItems: "center", gap: 4 }}>
                 <Icon name="error" style={{ fontSize: 48, color: "var(--critical)", opacity: 0.85, marginBottom: 8 }} />
@@ -472,11 +474,11 @@ export function AdminUsersPage() {
                 <button type="button" className="btn secondary" onClick={() => fetchUsers()}><Icon name="refresh" /> Coba lagi</button>
               </div>
             ) : users.length === 0 ? (
-              <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--ink-soft)" }}>
-                <Icon name="person_off" style={{ fontSize: 48, color: "var(--line)", marginBottom: 16 }} />
-                <div style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)" }}>Tidak Ditemukan</div>
-                <div style={{ fontSize: 13, marginTop: 4 }}>Tidak ada pengguna yang cocok dengan filter pencarian Anda.</div>
-              </div>
+              <EmptyState
+                icon="person_off"
+                title="Tidak ditemukan"
+                description="Tidak ada pengguna yang cocok dengan filter pencarian Anda."
+              />
             ) : (
             <div className="table-responsive">
               <table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>

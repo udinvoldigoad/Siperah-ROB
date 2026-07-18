@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { fetchUserHistoryReports, OperatorReport, severityLabels, statusLabels } from "./reportData";
 import { Icon } from "../../shared/components/Icon";
+import { LoadingBlock } from "../../shared/components/LoadingBlock";
+import { EmptyState } from "../../shared/components/EmptyState";
 
 function HistoryPhoto({ url, name }: { url?: string; name: string }) {
   const [broken, setBroken] = useState(false);
@@ -75,10 +77,7 @@ export function ReportHistoryPage() {
       <div className="panel history-page" style={{ padding: 24 }}>
         {!isLoading && reports.length > 0 && <div className="history-toolbar"><div><strong>{pagination.total} laporan tersimpan</strong><span>Menampilkan {pagination.from}-{pagination.to} dari {pagination.total} laporan</span></div><span>15 laporan per halaman</span></div>}
         {isLoading ? (
-          <div className="loading-state" style={{ padding: "40px 0", textAlign: "center", color: "var(--tx3)" }}>
-            <Icon name="sync" className="spin" />
-            <p style={{ marginTop: 8 }}>Memuat riwayat laporan...</p>
-          </div>
+          <LoadingBlock rows={4} rowHeight={150} label="Memuat riwayat laporan…" />
         ) : error ? (
           <div className="empty-state" style={{ padding: "40px 0", textAlign: "center", color: "var(--ink-soft)", display: "grid", justifyItems: "center", gap: 4 }}>
             <Icon name="error" style={{ fontSize: 48, color: "var(--critical)", opacity: 0.85, marginBottom: 8 }} />
@@ -89,10 +88,11 @@ export function ReportHistoryPage() {
             </button>
           </div>
         ) : reports.length === 0 ? (
-          <div className="empty-state" style={{ padding: "40px 0", textAlign: "center", color: "var(--tx3)" }}>
-            <Icon name="history" style={{ fontSize: 48, opacity: 0.5, marginBottom: 12 }} />
-            <p>Belum ada riwayat laporan.</p>
-          </div>
+          <EmptyState
+            icon="history"
+            title="Belum ada riwayat laporan"
+            description="Laporan kejadian rob yang Anda kirim akan muncul di sini beserta status verifikasinya."
+          />
         ) : (
           <div className="report-history-list" style={{ display: "grid", gap: 16 }}>
             {reports.map((report) => (

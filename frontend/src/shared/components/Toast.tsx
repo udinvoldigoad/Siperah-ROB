@@ -51,12 +51,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ toasts, addToast, success, error, info, removeToast }}>
       {children}
-      <div className="toast-container">
+      <div className="toast-container" aria-live="polite" aria-atomic="false">
         {toasts.map((toast) => (
-          <div key={toast.id} className={`toast toast-${toast.type}`}>
+          // Error diumumkan segera (alert/assertive), sukses & info secara sopan (status/polite).
+          <div key={toast.id} className={`toast toast-${toast.type}`} role={toast.type === "error" ? "alert" : "status"}>
             <Icon name={toast.type === "success" ? "check_circle" : toast.type === "error" ? "error" : "info"} />
             <span>{toast.message}</span>
-            <button type="button" className="toast-close" onClick={() => removeToast(toast.id)}>
+            <button type="button" className="toast-close" onClick={() => removeToast(toast.id)} aria-label="Tutup notifikasi">
               <Icon name="close" />
             </button>
           </div>
