@@ -7,6 +7,7 @@ use App\Services\AuditService;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 final class AuthenticateApiKey
@@ -41,20 +42,37 @@ final class AuthenticateApiKey
             return new JsonResponse(['data' => null, 'message' => "API key tidak memiliki scope {$requiredScope}."], 403);
         }
 
-        $apiKey->forceFill([
+        // Increment ATOMIK di database agar tidak terjadi lost update saat
+        // beberapa request paralel memakai API key yang sama. Pola lama
+        // (read `use_count` lalu tulis +1) bisa menghitung kurang.
+        ApiKey::whereKey($apiKey->id)->update([
             'last_used_at' => now(),
-            'use_count' => $apiKey->use_count + 1,
-        ])->save();
+            'use_count' => DB::raw('use_count + 1'),
+        ]);
 
         $request->attributes->set('api_key_id', $apiKey->id);
 
-        $response = $next($request);
-
-        $this->audit($request, 'api_key_request', $response->getStatusCode() < 400 ? 'success' : 'fail', $request->path(), [
+        $auditContext = [
             'api_key_id' => $apiKey->id,
             'user_id' => $apiKey->user_id,
             'method' => $request->method(),
             'endpoint' => '/'.ltrim($request->path(), '/'),
+        ];
+
+        // Outcome WAJIB tercatat meski handler downstream melempar exception
+        // (mis. 500). Tanpa try/catch, audit sukses/gagal di bawah terlewat
+        // sehingga statistik penggunaan API kehilangan panggilan yang error.
+        try {
+            $response = $next($request);
+        } catch (\Throwable $e) {
+            $this->audit($request, 'api_key_request', 'fail', $request->path(), $auditContext + [
+                'status' => 500,
+                'exception' => class_basename($e),
+            ]);
+            throw $e;
+        }
+
+        $this->audit($request, 'api_key_request', $response->getStatusCode() < 400 ? 'success' : 'fail', $request->path(), $auditContext + [
             'status' => $response->getStatusCode(),
         ]);
 

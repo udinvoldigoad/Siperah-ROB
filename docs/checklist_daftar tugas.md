@@ -66,10 +66,10 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 
 - [x] **P1** Migrasi filter kabupaten dataset (2026-07-18): kolom `coverage_regencies` (jsonb) **sudah dijalankan** di dev (batch 10) & filter teruji — operator `@>`/`jsonb_array_length` jalan; dataset tanpa cakupan (NULL/[]) diperlakukan provinsi-wide (cocok untuk semua filter). Production tinggal `php artisan migrate --force` di deploy berikutnya (belum tereksekusi ke Supabase).
 - [x] **P1** Timezone "API calls today" → Asia/Jakarta (2026-07-18): app tz = UTC (tak ada `config/app.php` / `APP_TIMEZONE`), jadi `whereDate('created_at', now())` menghitung hari-UTC — panggilan pagi WIB salah masuk hari sebelumnya. Diperbaiki di `ResearchController::stats`: batas hari & bulan dihitung `Carbon::now('Asia/Jakarta')` lalu `->utc()` (kolom created_at UTC), pakai `whereBetween`. Terverifikasi: WIB 18 Jul = UTC 17 Jul 17:00 → 18 Jul 16:59.
-- [ ] **P2** Increment penggunaan API key dibuat atomic + logging outcome mencakup exception.
-- [ ] **P2** Rate limit API v1 dibuat configurable via env (bukan hardcode 120/menit).
-- [ ] **P2** Lengkapi konten tab lisensi/perizinan data.
-- [ ] **P2** Perluas sanitasi CSV injection & penyaringan data sensitif ke semua dataset + test.
+- [x] **P2** Increment API key atomic + logging exception (2026-07-18): `AuthenticateApiKey` dulu `use_count = use_count + 1` read-modify-write (lost update saat paralel) → diganti `ApiKey::whereKey()->update(['use_count' => DB::raw('use_count + 1')])` (atomik di DB). `$next()` kini dibungkus try/catch: outcome `fail` + nama exception tetap tercatat ke audit meski handler 500 (sebelumnya audit terlewat sepenuhnya saat exception).
+- [x] **P2** Rate limit API v1 configurable via env (2026-07-18): limiter `api-key` di `AppServiceProvider` kini `env('API_RATE_LIMIT', 120)`; pesan 429 & dokumentasi `apiReference` ikut nilai env. Bisa disetel tanpa deploy ulang.
+- [x] **P2** Konten tab lisensi/perizinan data (2026-07-18, terverifikasi sudah lengkap): `ResearchPortalPage` mengelompokkan dataset per lisensi, menampilkan cakupan per dataset, instruksi atribusi, & catatan data mentah mengikuti BIG/BMKG. Tak perlu perubahan.
+- [x] **P2** Sanitasi CSV/XLSX injection + test (2026-07-18): cabang export **XLSX** dulu `addRow` tanpa netralisasi (tembus formula injection seperti CSV) → kini `array_map(CsvWriter::sanitize(...))`. `CsvWriter::sanitize` diperbaiki: angka valid (termasuk negatif spt latitude `-5.451`) di-skip agar tak salah jadi teks `'-5.451`, sambil tetap menetralkan payload `=/+/@/-` non-numerik. Ditambah `tests/Unit/CsvWriterTest.php` (13 test, hijau).
 - [ ] **P3** Finalkan kontrak/stabilitas API `/api/v1/*` (versi, deprecation policy).
 
 ### 2.4 Lain-lain backend

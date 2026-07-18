@@ -234,6 +234,8 @@ final class ResearchController
 
     public function apiReference(): JsonResponse
     {
+        $apiRateLimit = (int) env('API_RATE_LIMIT', 120);
+
         return response()->json(['data' => [
             'base_path' => '/api',
             'authentication' => [
@@ -241,10 +243,10 @@ final class ResearchController
                 'alternative' => 'Authorization: ApiKey spr_xxx',
             ],
             'rate_limit' => [
-                'per_minute' => 120,
+                'per_minute' => $apiRateLimit,
                 'scope' => 'per API key',
                 'headers' => ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'Retry-After'],
-                'note' => 'Batas 120 permintaan/menit per API key. Lewat batas mengembalikan HTTP 429.',
+                'note' => "Batas {$apiRateLimit} permintaan/menit per API key. Lewat batas mengembalikan HTTP 429.",
             ],
             'error_format' => [
                 'shape' => ['data' => null, 'message' => 'string penjelasan error'],
@@ -443,7 +445,8 @@ final class ResearchController
             return response()->streamDownload(function () use ($query): void {
                 $writer = \Spatie\SimpleExcel\SimpleExcelWriter::stream('php://output', 'xlsx');
                 foreach ($query->cursor() as $row) {
-                    $writer->addRow((array) $row);
+                    // Netralkan formula injection juga di XLSX (rentan seperti CSV).
+                    $writer->addRow(array_map(CsvWriter::sanitize(...), (array) $row));
                 }
                 $writer->close();
             }, $xlsxFilename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);

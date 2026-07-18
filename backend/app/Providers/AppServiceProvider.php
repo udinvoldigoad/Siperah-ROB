@@ -51,12 +51,14 @@ class AppServiceProvider extends ServiceProvider
                 'retry_after' => (int) ($headers['Retry-After'] ?? 60),
             ], 429, $headers)));
 
-        // API key: 120 req/menit per kunci (fallback ke IP bila belum terautentikasi).
-        RateLimiter::for('api-key', fn (Request $request) => Limit::perMinute(120)
+        // API key v1: configurable via env (default 120/menit) per kunci
+        // (fallback ke IP bila belum terautentikasi). Bisa disetel tanpa deploy ulang.
+        $apiRateLimit = (int) env('API_RATE_LIMIT', 120);
+        RateLimiter::for('api-key', fn (Request $request) => Limit::perMinute($apiRateLimit)
             ->by((string) ($request->attributes->get('api_key_id') ?? $request->ip()))
             ->response(fn (Request $request, array $headers) => response()->json([
                 'data' => null,
-                'message' => 'Batas permintaan API tercapai (120/menit). Coba lagi sebentar.',
+                'message' => "Batas permintaan API tercapai ({$apiRateLimit}/menit). Coba lagi sebentar.",
                 'retry_after' => (int) ($headers['Retry-After'] ?? 60),
             ], 429, $headers)));
     }

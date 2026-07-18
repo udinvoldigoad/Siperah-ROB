@@ -38,6 +38,13 @@ final class CsvWriter
             return '';
         }
 
+        // Angka valid (termasuk negatif, desimal, eksponen) bukan formula —
+        // jangan diprefiks agar nilai seperti latitude -5.451 atau tinggi pasang
+        // -0.12 tetap numerik dan tidak berubah jadi teks "'-5.451".
+        if (is_numeric($string)) {
+            return $string;
+        }
+
         // Karakter pemicu formula di awal sel (termasuk setelah spasi/tab/CR).
         if (preg_match('/^[\s]*[=+\-@\t\r]/', $string)) {
             return "'".$string;
