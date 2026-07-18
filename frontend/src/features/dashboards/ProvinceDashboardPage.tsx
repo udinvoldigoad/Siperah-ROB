@@ -13,7 +13,7 @@ interface SummaryData {
   validated_reports_this_month: number;
   latest_prediction_date?: string | null;
   regencies?: RegencySummary[];
-  trend_30_days?: { prediction_date: string; high_risk_count: number }[];
+  trend_30_days?: { prediction_date: string; critical_count: number; high_count: number; high_risk_count: number }[];
   filters?: { month?: string | null; regency?: string | null };
   available_regencies?: string[];
   top_impacted?: TopImpactedPrediction[];
@@ -113,7 +113,6 @@ export function ProvinceDashboardPage() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [trendHoverIdx, setTrendHoverIdx] = useState<number | null>(null);
   const trendSvgRef = useRef<SVGSVGElement>(null);
-  const [chartRegency, setChartRegency] = useState("all");
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -125,7 +124,8 @@ export function ProvinceDashboardPage() {
       const summaryRes = await api<SummaryResponse>(`/dashboard/province/summary${query}`);
       setSummary(summaryRes.data);
 
-      // Fetch all predictions (no regency filter here — chart needs all data for client-side filtering)
+      // Prediksi terbaru untuk fallback tabel "10 kelurahan terdampak" bila
+      // top_impacted kosong. Grafik tren TIDAK lagi pakai ini (lihat trendData).
       const predRes = await api<PredictionListResponse>(`/public/predictions?per_page=1000`);
       setPredictions(predRes.data);
 
@@ -235,52 +235,35 @@ export function ProvinceDashboardPage() {
     });
   }, [summary.regencies, predictions, sortKey, sortDirection]);
 
+  // FR-PROV-3: grafik prediksi 30 hari KE DEPAN — jumlah kelurahan kelas
+  // Sangat Tinggi (utama) & Tinggi (sekunder). Sumbernya summary.trend_30_days
+  // yang diagregasi server (mengikuti filter kabupaten halaman), BUKAN rata-rata
+  // dari /public/predictions — endpoint itu terurut DESC & terbatas 1000 baris
+  // sehingga hanya memuat ~3 hari terjauh, bukan 30 hari penuh.
   const trendData = useMemo(() => {
-    // Filter predictions by chart-specific regency filter
-    const filteredPreds = chartRegency === "all"
-      ? predictions
-      : predictions.filter((p) => p.region?.regency === chartRegency);
-
-    const stats = filteredPreds.reduce<Record<string, { sum: number; count: number }>>((acc, prediction) => {
-      const dateKey = prediction.prediction_date.substring(0, 10);
-      if (!acc[dateKey]) acc[dateKey] = { sum: 0, count: 0 };
-      acc[dateKey].sum += Number(prediction.risk_probability);
-      acc[dateKey].count += 1;
-      return acc;
-    }, {});
-
-    // For the percentage chart, we do NOT use summary.trend_30_days 
-    // because that contains high-risk counts, not probabilities.
-    // Since we fetch 1000 predictions, we have all the data needed here.
-
-    const endDateKey = summary.latest_prediction_date
-      ?? Object.keys(stats).sort((a, b) => a.localeCompare(b)).at(-1)
-      ?? toDateKey(new Date());
-    const endDate = new Date(`${endDateKey}T00:00:00`);
-    const startDate = new Date(endDate);
-    startDate.setDate(endDate.getDate() - 29);
-
-    const actualToday = toDateKey(new Date());
-
-    if (Number.isNaN(endDate.getTime())) {
-      const today = new Date();
-      return Array.from({ length: 30 }, (_, index) => {
-        const date = new Date(today);
-        date.setDate(today.getDate() - 29 + index);
-        const key = toDateKey(date);
-        return { percent: 0, date, isToday: key === actualToday };
-      });
+    const byDate = new Map<string, { critical: number; high: number }>();
+    for (const row of summary.trend_30_days ?? []) {
+      const key = row.prediction_date.substring(0, 10);
+      byDate.set(key, { critical: toNumber(row.critical_count), high: toNumber(row.high_count) });
     }
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const actualToday = toDateKey(today);
+
     return Array.from({ length: 30 }, (_, index) => {
-      const d = new Date(startDate);
-      d.setDate(startDate.getDate() + index);
+      const d = new Date(today);
+      d.setDate(today.getDate() + index);
       const key = toDateKey(d);
-      const stat = stats[key];
-      const avg = stat ? (stat.sum / stat.count) : 0;
-      return { percent: avg, date: d, isToday: key === actualToday };
+      const stat = byDate.get(key);
+      return {
+        date: d,
+        criticalCount: stat?.critical ?? 0,
+        highCount: stat?.high ?? 0,
+        isToday: key === actualToday,
+      };
     });
-  }, [predictions, summary.latest_prediction_date, chartRegency]);
+  }, [summary.trend_30_days]);
 
   return (
     <AppShell active="province" title="Dashboard BPBD Provinsi Lampung">
@@ -424,32 +407,19 @@ export function ProvinceDashboardPage() {
             <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)" }}>
-                  Tren Statistik Prediksi Rob
-                  {chartRegency !== "all" && (
-                    <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "var(--ink-soft)", marginLeft: 10 }}>({chartRegency})</span>
+                  Prediksi Rob 30 Hari ke Depan
+                  {selectedRegency !== "all" && (
+                    <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "var(--ink-soft)", marginLeft: 10 }}>({selectedRegency})</span>
                   )}
                 </h2>
-                <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--ink-soft)" }}>Rata-rata persentase peluang rob per hari. Arahkan kursor pada garis untuk melihat detail tanggal & nilai.</p>
+                <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--ink-soft)" }}>Jumlah kelurahan kelas Sangat Tinggi &amp; Tinggi per hari (FR-PROV-3). Mengikuti filter kabupaten di atas. Arahkan kursor untuk detail tanggal.</p>
               </div>
-              <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-                <select
-                  value={chartRegency}
-                  onChange={(e) => setChartRegency(e.target.value)}
-                  style={{ minWidth: 180, fontSize: "13px", padding: "6px 10px", borderRadius: 6, border: "1px solid var(--line)", background: "var(--surface, #fff)", color: "var(--ink)" }}
-                >
-                  <option value="all">Semua Kabupaten/Kota</option>
-                  {(summary.available_regencies ?? []).map((r) => <option key={r} value={r}>{r}</option>)}
-                </select>
-                <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--ink-soft)" }}>
-                    <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--critical)" }} /> Kritis (≥70%)
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--ink-soft)" }}>
-                    <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--high)" }} /> Waspada (≥40%)
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--ink-soft)" }}>
-                    <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--low)" }} /> Aman
-                  </div>
+              <div style={{ display: "flex", gap: "14px", alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--ink-soft)" }}>
+                  <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--critical)" }} /> Sangat Tinggi
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--ink-soft)" }}>
+                  <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--high)" }} /> Tinggi
                 </div>
               </div>
             </div>
@@ -460,18 +430,22 @@ export function ProvinceDashboardPage() {
               const chartW = svgW - pad.left - pad.right;
               const chartH = svgH - pad.top - pad.bottom;
               const data = trendData;
-              // Persentase selalu max 100
-              const max = 100;
+
+              // Sumbu Y integer dinamis: skala mengikuti jumlah kelurahan tertinggi
+              // (Sangat Tinggi / Tinggi) dalam jendela, minimal 4 agar tak gepeng.
+              const rawMax = Math.max(1, ...data.map((d) => Math.max(d.criticalCount, d.highCount)));
+              const step = rawMax <= 4 ? 1 : Math.ceil(rawMax / 4);
+              const max = step * 4;
+              const uniqueYTicks = [0, step, step * 2, step * 3, step * 4];
 
               const xOf = (i: number) => pad.left + (i / Math.max(1, data.length - 1)) * chartW;
               const yOf = (v: number) => pad.top + chartH - (v / max) * chartH;
 
-              const linePath = data.map((d, i) => `${i === 0 ? "M" : "L"}${xOf(i).toFixed(1)},${yOf(d.percent).toFixed(1)}`).join(" ");
-              const areaPath = `${linePath} L${xOf(data.length - 1).toFixed(1)},${yOf(0).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(0).toFixed(1)} Z`;
-
-              // Y ticks — nice round steps
-              const yTicks = [0, Math.ceil(max / 4), Math.ceil(max / 2), Math.ceil((max * 3) / 4), max];
-              const uniqueYTicks = [...new Set(yTicks)];
+              const buildLine = (get: (d: typeof data[number]) => number) =>
+                data.map((d, i) => `${i === 0 ? "M" : "L"}${xOf(i).toFixed(1)},${yOf(get(d)).toFixed(1)}`).join(" ");
+              const criticalLine = buildLine((d) => d.criticalCount);
+              const criticalArea = `${criticalLine} L${xOf(data.length - 1).toFixed(1)},${yOf(0).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(0).toFixed(1)} Z`;
+              const highLine = buildLine((d) => d.highCount);
 
               // X ticks — show ~6 date labels
               const xTickStep = Math.max(1, Math.floor(data.length / 5));
@@ -480,39 +454,31 @@ export function ProvinceDashboardPage() {
               // Today index
               const todayIdx = data.findIndex((d) => d.isToday);
 
-              // Hover point
+              // Hover point — jangkar ke garis Sangat Tinggi (seri utama)
               const hovered = trendHoverIdx !== null ? data[trendHoverIdx] : null;
               const hoverX = trendHoverIdx !== null ? xOf(trendHoverIdx) : 0;
-              const hoverY = hovered ? yOf(hovered.percent) : 0;
-              const hoverColor = hovered ? (hovered.percent >= 70 ? "var(--critical)" : hovered.percent >= 40 ? "var(--high)" : "var(--low)") : "var(--high)";
+              const hoverY = hovered ? yOf(hovered.criticalCount) : 0;
+              const hoverColor = "var(--critical)";
 
               const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
                 const svg = trendSvgRef.current;
                 if (!svg) return;
-                
+
                 // Gunakan CTM untuk mengkonversi titik layar (mouse) secara akurat ke koordinat internal SVG
                 const pt = svg.createSVGPoint();
                 pt.x = e.clientX;
                 pt.y = e.clientY;
                 const ctm = svg.getScreenCTM();
                 if (!ctm) return;
-                
+
                 const svgP = pt.matrixTransform(ctm.inverse());
                 const mouseX = svgP.x;
-                
+
                 const relX = mouseX - pad.left;
                 if (relX < -10 || relX > chartW + 10) { setTrendHoverIdx(null); return; }
                 const idx = Math.round((relX / chartW) * (data.length - 1));
                 setTrendHoverIdx(Math.max(0, Math.min(data.length - 1, idx)));
               };
-
-              // Zone boundaries — clamped to max so rects never get negative height
-              const zoneKritisTop = yOf(100);
-              const zoneKritisBottom = yOf(70);
-              const zoneWaspadaTop = yOf(70);
-              const zoneWaspadaBottom = yOf(40);
-              const zoneAmanTop = yOf(40);
-              const zoneAmanBottom = yOf(0);
 
               return (
                 <svg
@@ -524,56 +490,41 @@ export function ProvinceDashboardPage() {
                 >
                   <defs>
                     <linearGradient id="trendAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.02" />
-                    </linearGradient>
-                    <linearGradient id="trendLineGrad" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="var(--accent)" />
-                      <stop offset="100%" stopColor="var(--accent-dark)" />
+                      <stop offset="0%" stopColor="var(--critical)" stopOpacity="0.22" />
+                      <stop offset="100%" stopColor="var(--critical)" stopOpacity="0.02" />
                     </linearGradient>
                   </defs>
 
-                  {/* Zone backgrounds */}
-                  <rect x={pad.left} y={zoneKritisTop} width={chartW} height={zoneKritisBottom - zoneKritisTop} fill="var(--critical)" opacity="0.04" rx="2" />
-                  <rect x={pad.left} y={zoneWaspadaTop} width={chartW} height={zoneWaspadaBottom - zoneWaspadaTop} fill="var(--high)" opacity="0.04" rx="2" />
-                  <rect x={pad.left} y={zoneAmanTop} width={chartW} height={zoneAmanBottom - zoneAmanTop} fill="var(--low)" opacity="0.04" rx="2" />
-
-                  {/* Zone threshold lines */}
-                  <line x1={pad.left} y1={yOf(70)} x2={pad.left + chartW} y2={yOf(70)} stroke="var(--critical)" strokeWidth="1" strokeDasharray="6 4" opacity="0.35" />
-                  <line x1={pad.left} y1={yOf(40)} x2={pad.left + chartW} y2={yOf(40)} stroke="var(--high)" strokeWidth="1" strokeDasharray="6 4" opacity="0.35" />
-
-                  {/* Y Grid lines */}
+                  {/* Y Grid lines (jumlah kelurahan — integer) */}
                   {uniqueYTicks.map((t) => (
                     <g key={`y-${t}`}>
                       <line x1={pad.left} y1={yOf(t)} x2={pad.left + chartW} y2={yOf(t)} stroke="var(--line, #e5e7eb)" strokeWidth="0.8" opacity="0.5" />
                       <text x={pad.left - 8} y={yOf(t) + 4} textAnchor="end" fontSize="11" fill="var(--ink-soft, #94a3b8)" fontWeight="500">
-                        {t}%
+                        {t}
                       </text>
                     </g>
                   ))}
 
-                  {/* Area fill */}
-                  <path d={areaPath} fill="url(#trendAreaGrad)" />
+                  {/* Area + garis Sangat Tinggi (seri utama) */}
+                  <path d={criticalArea} fill="url(#trendAreaGrad)" />
+                  <path d={criticalLine} fill="none" stroke="var(--critical)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
-                  {/* Line */}
-                  <path d={linePath} fill="none" stroke="url(#trendLineGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  {/* Garis Tinggi (seri sekunder) */}
+                  <path d={highLine} fill="none" stroke="var(--high)" strokeWidth="2" strokeDasharray="5 3" strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
 
-                  {/* Data dots (small) */}
-                  {data.map((d, i) => {
-                    const dotColor = d.percent >= 70 ? "var(--critical)" : d.percent >= 40 ? "var(--high)" : "var(--low)";
-                    return (
-                      <circle
-                        key={i}
-                        cx={xOf(i)}
-                        cy={yOf(d.percent)}
-                        r={d.isToday ? 4.5 : 2.5}
-                        fill={d.isToday ? "var(--critical)" : dotColor}
-                        stroke={d.isToday ? "var(--surface)" : "none"}
-                        strokeWidth={d.isToday ? 2 : 0}
-                        opacity={trendHoverIdx === i ? 0 : 1}
-                      />
-                    );
-                  })}
+                  {/* Data dots — seri Sangat Tinggi */}
+                  {data.map((d, i) => (
+                    <circle
+                      key={i}
+                      cx={xOf(i)}
+                      cy={yOf(d.criticalCount)}
+                      r={d.isToday ? 4.5 : 2.5}
+                      fill="var(--critical)"
+                      stroke={d.isToday ? "var(--surface)" : "none"}
+                      strokeWidth={d.isToday ? 2 : 0}
+                      opacity={trendHoverIdx === i ? 0 : 1}
+                    />
+                  ))}
 
                   {/* Today vertical marker */}
                   {todayIdx >= 0 && (
@@ -594,30 +545,27 @@ export function ProvinceDashboardPage() {
                   {/* Hover crosshair & tooltip */}
                   {trendHoverIdx !== null && hovered && (
                     <g>
-                      {/* Vertical line */}
                       <line x1={hoverX} y1={pad.top} x2={hoverX} y2={yOf(0)} stroke={hoverColor} strokeWidth="1" opacity="0.45" strokeDasharray="3 2" />
-                      {/* Horizontal line */}
-                      <line x1={pad.left} y1={hoverY} x2={pad.left + chartW} y2={hoverY} stroke={hoverColor} strokeWidth="0.8" opacity="0.25" strokeDasharray="3 2" />
-                      {/* Active dot */}
                       <circle cx={hoverX} cy={hoverY} r="6" fill={hoverColor} stroke="var(--surface)" strokeWidth="2.5" />
                       <circle cx={hoverX} cy={hoverY} r="10" fill={hoverColor} opacity="0.15" />
 
                       {/* Tooltip */}
                       {(() => {
-                        const tooltipW = 160, tooltipH = 56;
+                        const tooltipW = 178, tooltipH = 58;
                         let tx = hoverX - tooltipW / 2;
                         if (tx < pad.left) tx = pad.left;
                         if (tx + tooltipW > pad.left + chartW) tx = pad.left + chartW - tooltipW;
-                        const ty = hoverY - tooltipH - 14;
-                        const label = hovered.percent >= 70 ? "Kritis" : hovered.percent >= 40 ? "Waspada" : "Aman";
+                        const ty = Math.max(pad.top - 6, hoverY - tooltipH - 14);
                         return (
                           <g>
                             <rect x={tx} y={ty} width={tooltipW} height={tooltipH} rx="8" fill="var(--surface, #fff)" stroke="var(--line, #e2e8f0)" strokeWidth="1" filter="drop-shadow(0 4px 12px rgba(0,0,0,0.12))" />
                             <text x={tx + tooltipW / 2} y={ty + 20} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--ink, #1e293b)">
                               {hovered.date.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "long" })}
                             </text>
-                            <text x={tx + tooltipW / 2} y={ty + 40} textAnchor="middle" fontSize="12" fontWeight="600" fill={hoverColor}>
-                              {hovered.percent.toFixed(1)}% Peluang Rob · {label}
+                            <text x={tx + tooltipW / 2} y={ty + 40} textAnchor="middle" fontSize="11.5" fontWeight="600">
+                              <tspan fill="var(--critical)">{hovered.criticalCount} Sangat Tinggi</tspan>
+                              <tspan fill="var(--ink-soft)"> · </tspan>
+                              <tspan fill="var(--high)">{hovered.highCount} Tinggi</tspan>
                             </text>
                           </g>
                         );

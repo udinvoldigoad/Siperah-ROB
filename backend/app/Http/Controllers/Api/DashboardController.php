@@ -159,14 +159,24 @@ final class DashboardController
             ->count();
 
         $regencyRows = $this->regencyRiskRows($latestPredictionDate, $selectedRegency);
-        $trendStart = $latestPredictionDate ? Carbon::parse($latestPredictionDate)->subDays(29)->toDateString() : null;
+
+        // FR-PROV-3: grafik prediksi 30 hari KE DEPAN, jumlah kelurahan kelas
+        // Sangat Tinggi (utama) + Tinggi (sekunder). Anchor ke hari ini karena
+        // ini forecast — bukan mundur dari tanggal prediksi terjauh.
+        $trendStart = Carbon::now()->toDateString();
+        $trendEnd = Carbon::now()->addDays(29)->toDateString();
         $trend = DB::table('predictions')
             ->join('regions', 'predictions.region_id', '=', 'regions.id')
-            ->selectRaw("prediction_date, COUNT(DISTINCT CASE WHEN risk_class IN ('tinggi', 'sangat_tinggi') THEN region_id END) AS high_risk_count")
+            ->selectRaw("
+                prediction_date,
+                COUNT(DISTINCT CASE WHEN risk_class = 'sangat_tinggi' THEN region_id END) AS critical_count,
+                COUNT(DISTINCT CASE WHEN risk_class = 'tinggi' THEN region_id END) AS high_count,
+                COUNT(DISTINCT CASE WHEN risk_class IN ('tinggi', 'sangat_tinggi') THEN region_id END) AS high_risk_count
+            ")
             ->where(function ($query): void {
                 $this->applyMonitoredRegionFilter($query, 'regions');
             })
-            ->when($latestPredictionDate, fn ($query) => $query->whereBetween('prediction_date', [$trendStart, Carbon::parse($latestPredictionDate)->toDateString()]))
+            ->whereBetween('prediction_date', [$trendStart, $trendEnd])
             ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
             ->groupBy('prediction_date')
             ->orderBy('prediction_date')

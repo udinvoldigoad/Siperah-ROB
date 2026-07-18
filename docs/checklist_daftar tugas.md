@@ -58,9 +58,9 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 
 ### 2.2 Dashboard operator & provinsi
 
-- [ ] **P1** Audit data wilayah kerja operator: setiap operator punya `region_id` valid dan filter antrean sesuai wilayahnya.
-- [ ] **P2** Definisi matematis grafik tren provinsi 30 hari sesuai PRD (bukan sekadar ada/tidak risiko).
-- [ ] **P2** Populasi berisiko berbasis data BPS/region valid (kolom `population` sudah ada — pastikan terisi resmi).
+- [x] **P1** Audit data wilayah kerja operator (2026-07-18): mekanisme sudah benar — create (`StoreAdminUserRequest`) mewajibkan `region_id` valid untuk operator; antrean & status difilter per kabupaten operator (`ReportAccessService`/`operatorSummary`). **Celah ditutup**: `UpdateAdminUserRequest` dulu hanya `required_if:role,bpbd_operator` sehingga partial-update `region_id: null` tanpa `role` bisa mengosongkan wilayah kerja operator (lalu operator kena 403 di semua endpoint). Kini `withValidator` menghitung role & region *efektif* (payload ⊕ kondisi user) dan menolak operator tanpa region_id.
+- [x] **P2** Definisi matematis grafik tren provinsi sesuai PRD FR-PROV-3 (2026-07-18): grafik kini **jumlah kelurahan kelas Sangat Tinggi (utama) + Tinggi (sekunder), 30 hari KE DEPAN** (hari ini→+29), bersumber `trend_30_days` agregasi server. Sebelumnya: (a) frontend merender rata-rata probabilitas mundur dari tanggal-max — bukan definisi PRD, dan (b) datanya diambil dari `/public/predictions` yang terurut DESC + batas 1000 baris → hanya ~3 hari terjauh, bukan 30 hari penuh. Sumbu Y kini integer dinamis (jumlah kelurahan), selektor kabupaten ganda dihapus (ikut filter halaman). Backend `trend_30_days` diperbaiki: window forward `CURRENT_DATE..+29`, tambah `critical_count`/`high_count`.
+- [~] **P2** Populasi berisiko berbasis BPS — **DIBLOKIR menunggu data BPS resmi (keputusan 2026-07-18)**. Audit: 0/311 wilayah pesisir punya populasi bersumber BPS (309 dari BIG tanpa populasi, 297 `population` NULL, 2 demo). `populationAudit` sudah jujur melaporkan status `incomplete` & UI menampilkan "Data populasi belum lengkap". Butuh CSV populasi desa BPS (SP2020) + crosswalk kode. Tidak dibangun importer sekarang atas pilihan user (tunda).
 
 ### 2.3 Portal peneliti & API (FR-PEN)
 
