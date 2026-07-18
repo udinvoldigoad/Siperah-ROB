@@ -103,11 +103,11 @@ Kerjakan setelah Tahap 1 karena banyak yang bergantung pada data yang benar.
 
 ### 3.3 Dashboard operator
 
-- [ ] **P1** Alert laporan baru realtime/polling (badge antrean bertambah tanpa refresh manual).
-- [ ] **P2** Export laporan operator dari UI (backend sudah ada endpoint-nya).
-- [ ] **P2** Status kelurahan memakai data real & lengkap (bergantung audit wilayah Tahap 1.1).
-- [ ] **P2** QA alur laporan `perlu_review` end-to-end.
-- [ ] **P3** UX antrean lanjutan: badge SLA overdue & filter cepat severity (backend sudah siap: `sla=overdue`, `severity`).
+- [x] **P1** Alert laporan baru realtime/polling (2026-07-18): sudah ada polling 30 detik (badge "X baru" & KPI ter-update tanpa refresh). **Diperkuat**: deteksi kenaikan jumlah antrean antar-polling → toast "N laporan baru masuk ke antrean" (via `prevPendingRef`), jadi operator benar-benar mendapat *alert*, bukan hanya angka berubah diam-diam.
+- [x] **P2** Export laporan operator dari UI (2026-07-18, terverifikasi sudah ada): tombol "Export CSV" di header antrean → `handleExport` mengunduh `/dashboard/operator/reports/export` dengan token. Tak perlu perubahan.
+- [x] **P2** Status kelurahan pakai data real (2026-07-18, terverifikasi): tabel "Status Kelurahan" memakai `summary.region_statuses` (data prediksi + region nyata: kelas bahaya, populasi). **Kelengkapan populasi terblokir data BPS** (lihat 2.2) — bukan mock, tapi banyak `population` NULL sampai CSV BPS tersedia.
+- [x] **P2** QA alur `perlu_review` end-to-end (2026-07-18): diverifikasi lewat test E2E `test_perlu_review_report_flows_from_submission_to_validation` — warga lapor di titik luar pantauan → status `perlu_review` → muncul di antrean operator → operator validasi → `divalidasi` & keluar antrean. Alur utuh & benar.
+- [x] **P3** UX antrean lanjutan (2026-07-18): ditambah **filter cepat keparahan** (dropdown, param `severity`) + **toggle "SLA terlambat"** (param `sla=overdue`) di header antrean + **badge "SLA terlambat"** per baris (dari `sla_status` backend) + tautan reset filter. `fetchOperatorReports` kini terima filter; teks jumlah antrean mengikuti hasil terfilter.
 
 ### 3.4 Dashboard provinsi
 

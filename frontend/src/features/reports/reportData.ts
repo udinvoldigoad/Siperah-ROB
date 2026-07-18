@@ -19,6 +19,7 @@ export type OperatorReport = {
   description: string;
   photos: { name: string; url?: string }[];
   isWithinMonitoringArea: boolean;
+  slaStatus: "berjalan" | "terlambat" | "selesai";
 };
 
 type BackendReport = {
@@ -30,6 +31,7 @@ type BackendReport = {
   status: ReportStatus;
   incident_time: string;
   created_at: string;
+  sla_status?: "berjalan" | "terlambat" | "selesai";
   is_within_monitoring_area?: boolean;
   water_height_cm: number | null;
   description: string;
@@ -86,6 +88,7 @@ export const operatorReports: OperatorReport[] = [
     description: "Genangan masuk ke akses pasar dan menutup sebagian jalan warga. Arus lambat, kendaraan roda dua mulai dialihkan.",
     photos: [{ name: "Akses pasar" }, { name: "Jalan lingkungan" }],
     isWithinMonitoringArea: true,
+    slaStatus: "berjalan",
   },
   {
     id: "gt-lpg-881",
@@ -103,6 +106,7 @@ export const operatorReports: OperatorReport[] = [
     description: "Air menutup bahu jalan dekat drainase utama. Perlu cek ulang karena lokasi cukup jauh dari pesisir.",
     photos: [{ name: "Drainase" }, { name: "Bahu jalan" }],
     isWithinMonitoringArea: false,
+    slaStatus: "berjalan",
   },
   {
     id: "gt-lpg-879",
@@ -120,6 +124,7 @@ export const operatorReports: OperatorReport[] = [
     description: "Air masuk ke rumah warga di gang rendah. Beberapa kepala keluarga memindahkan barang ke lantai atas.",
     photos: [{ name: "Gang rendah" }, { name: "Rumah warga" }],
     isWithinMonitoringArea: true,
+    slaStatus: "berjalan",
   },
 ];
 
@@ -159,6 +164,7 @@ function mapReport(report: BackendReport): OperatorReport {
       url: photo.url ? apiUrl(photo.url) : undefined,
     })),
     isWithinMonitoringArea: Boolean(report.is_within_monitoring_area ?? report.region?.is_monitored ?? report.region?.coastal_flag),
+    slaStatus: report.sla_status ?? "berjalan",
   };
 }
 
@@ -172,8 +178,13 @@ export type OperatorReportsPageData = {
   to: number;
 };
 
-export async function fetchOperatorReports(page = 1, perPage = 20): Promise<OperatorReportsPageData> {
-  const response = await api<ReportHistoryResponse>(`/reports?status=menunggu,perlu_review&per_page=${perPage}&page=${page}`);
+export type OperatorReportFilters = { severity?: ReportSeverity | ""; slaOverdue?: boolean };
+
+export async function fetchOperatorReports(page = 1, perPage = 20, filters: OperatorReportFilters = {}): Promise<OperatorReportsPageData> {
+  const params = new URLSearchParams({ status: "menunggu,perlu_review", per_page: String(perPage), page: String(page) });
+  if (filters.severity) params.set("severity", filters.severity);
+  if (filters.slaOverdue) params.set("sla", "overdue");
+  const response = await api<ReportHistoryResponse>(`/reports?${params.toString()}`);
   return {
     reports: response.data.map(mapReport),
     currentPage: response.meta.current_page,

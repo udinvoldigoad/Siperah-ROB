@@ -480,6 +480,38 @@ final class ApiFoundationTest extends TestCase
         $this->get($plainUrl)->assertOk();
     }
 
+    public function test_perlu_review_report_flows_from_submission_to_validation(): void
+    {
+        // Region NON-pantau: laporan di sini otomatis berstatus perlu_review (triase).
+        $region = $this->insertRegionForPoint(-5.905, 105.405, false, 'Uji Perlu Review');
+        $citizen = $this->createUser('warga');
+        $operator = $this->createUser('bpbd_operator', $region->id);
+
+        // 1) Warga mengirim laporan di titik luar pantauan → status perlu_review.
+        $created = $this->actingAs($citizen)->postJson('/api/reports', [
+            'latitude' => -5.905,
+            'longitude' => 105.405,
+            'water_height_cm' => 25,
+            'incident_time' => now()->toIso8601String(),
+            'description' => 'Genangan di luar wilayah pantauan, perlu ditinjau operator.',
+        ])->assertCreated()->assertJsonPath('data.status', 'perlu_review');
+        $reportId = $created->json('data.id');
+        $reportCode = $created->json('data.report_code');
+
+        // 2) Muncul di antrean operator (perlu_review termasuk yang bisa diakses).
+        $this->actingAs($operator)
+            ->getJson('/api/reports?status=menunggu,perlu_review&per_page=50')
+            ->assertOk()
+            ->assertJsonFragment(['report_code' => $reportCode, 'status' => 'perlu_review']);
+
+        // 3) Operator memvalidasi → status divalidasi & keluar dari antrean.
+        $this->postJson("/api/reports/{$reportId}/validate")->assertOk();
+        $this->getJson('/api/reports?status=menunggu,perlu_review&per_page=50')
+            ->assertOk()
+            ->assertJsonMissing(['report_code' => $reportCode]);
+        $this->assertDatabaseHas('ground_truth_reports', ['id' => $reportId, 'status' => 'divalidasi']);
+    }
+
     public function test_province_dashboard_filters_trend_top_impacted_and_export_share_scope(): void
     {
         $region = $this->insertRegionForPoint(-5.910, 105.410, true, 'Kabupaten Filter Test');
