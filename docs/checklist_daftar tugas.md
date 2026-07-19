@@ -168,12 +168,14 @@ Tulis test sambil/tepat setelah fitur terkait selesai — jangan ditumpuk di akh
 
 ### 6.2 E2E smoke test (per role)
 
-- [ ] **P1** Login semua role → redirect dashboard benar.
-- [ ] **P1** Warga: submit laporan → muncul di riwayat → operator validasi → muncul di peta publik.
-- [ ] **P2** Peta publik: filter, horizon, klik wilayah, layer.
-- [ ] **P2** Provinsi: lihat summary + export CSV.
-- [ ] **P2** Peneliti: download dataset + regenerate API key.
-- [ ] **P2** Admin: approve/reject/nonaktifkan user.
+Infrastruktur (2026-07-19): **Playwright** di `frontend/e2e/` (`npm run e2e`). Dua server otomatis di port khusus E2E (backend `artisan serve --env=testing` :8123 → DB `siperah_rob_test`, vite :5273 proxy ke situ — tidak pernah menyentuh DB dev); `global-setup` reset DB via `migrate:fresh --seed` tiap run; login via user seed `*@siperah.local`. Total 15 test, ~1,5 menit, semua hijau.
+
+- [x] **P1** Login semua role → redirect dashboard benar. *(2026-07-19: `login.spec` — 5 role via UI → hash tujuan benar; password salah → 401, tetap di login.)*
+- [x] **P1** Warga: submit laporan → muncul di riwayat → operator validasi → muncul di peta publik. *(2026-07-19: `report-flow.spec` — wizard lengkap (foto WebP terkompresi, checkbox pernyataan, tinggi air), kode verifikasi dari modal dipakai menelusuri riwayat → antrean operator (kartu via deskripsi unik) → validasi → kode muncul di respons `/public/map`.)*
+- [x] **P2** Peta publik: filter, horizon, klik wilayah, layer. *(2026-07-19: `map.spec` — 4 test. Sekalian fix bug frontend: fallback update peta pakai event `load` yang cuma fire sekali → toggle layer bisa jadi no-op; diganti `once("idle")`.)*
+- [x] **P2** Provinsi: lihat summary + export CSV. *(2026-07-19: `province.spec` — summary 200 + download CSV terverifikasi nama file.)*
+- [x] **P2** Peneliti: download dataset + regenerate API key. *(2026-07-19: `research.spec` — unduh dataset CSV + buat kunci baru, raw key `spr_…` tampil sekali dengan tombol salin.)*
+- [x] **P2** Admin: approve/reject/nonaktifkan user. *(2026-07-19: `admin.spec` — pakai user registrasi baru (bukan seed) agar spec lain aman; approve → `aktif`, reject via modal → `ditolak`, nonaktifkan → `nonaktif` + login user tsb ditolak 403.)*
 
 ---
 
