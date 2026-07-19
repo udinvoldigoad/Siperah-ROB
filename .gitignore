@@ -43,6 +43,8 @@ pg_server.log
 scratch.json
 backend/test-db.php
 backend/storage/framework/testing/
+frontend/test-results/
+frontend/playwright-report/
 
 # === Misc ===
 .env
