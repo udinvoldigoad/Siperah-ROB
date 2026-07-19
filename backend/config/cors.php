@@ -19,7 +19,14 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', '*')),
+    // Default mengikuti APP_URL (bukan '*'): deployment satu-origin, jadi
+    // origin resmi cukup — dev via proxy vite juga same-origin sehingga tidak
+    // butuh CORS. Override lewat CORS_ALLOWED_ORIGINS (pisahkan dengan koma)
+    // hanya bila frontend dilayani dari origin lain.
+    'allowed_origins' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('CORS_ALLOWED_ORIGINS', env('APP_URL', 'http://localhost:5173'))),
+    ))),
 
     'allowed_origins_patterns' => [],
 
