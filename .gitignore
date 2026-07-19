@@ -42,10 +42,12 @@ database/local-data/
 pg_server.log
 scratch.json
 backend/test-db.php
+backend/storage/framework/testing/
 
 # === Misc ===
 .env
 .env.local
 .env.*.local
+.env.testing
 scripts/deploy.env
 scratch/
