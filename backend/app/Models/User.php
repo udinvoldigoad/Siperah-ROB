@@ -26,7 +26,8 @@ class User extends Authenticatable
         'role',
         'institution',
         'region_id',
-        'status'
+        'status',
+        'last_login_at'
     ];
 
     protected $hidden = ['password_hash'];
