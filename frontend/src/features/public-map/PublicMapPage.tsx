@@ -356,7 +356,10 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
         instance.flyTo({ center: [105.26, -5.48], zoom: 9, duration: 1000 });
       }
     };
-    if (instance.isStyleLoaded()) update(); else instance.once("load", update);
+    // "idle" (bukan "load") sebagai fallback: event load hanya fire sekali
+    // seumur peta, sehingga toggle layer setelahnya bisa jadi no-op bila
+    // isStyleLoaded() kebetulan false sesaat (mis. saat tile masih dimuat).
+    if (instance.isStyleLoaded()) update(); else instance.once("idle", update);
   }, [regions, reports, layers, activeLayers, selectedRegency]);
 
   return <div ref={mapContainer} style={{ minHeight: 560, width: "100%" }} aria-label="Peta interaktif risiko banjir rob" />;
