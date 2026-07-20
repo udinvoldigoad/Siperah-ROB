@@ -44,8 +44,21 @@ jobs:
       - name: Samakan versi npm dengan lockfile
         run: npm install -g npm@11
 
+      # DIAGNOSTIK SEMENTARA: npm ci sudah gagal 2x tanpa pesan error yang
+      # terbaca (GitHub tidak menampilkan stdout/stderr publik tanpa token).
+      # Tangkap output & cetak sebagai annotation agar bisa dibaca via API
+      # publik. Kembalikan ke `run: npm ci` polos setelah akar masalah jelas.
       - name: npm ci
-        run: npm ci
+        run: |
+          set +e
+          npm ci > npm-ci-output.log 2>&1
+          status=$?
+          cat npm-ci-output.log
+          if [ $status -ne 0 ]; then
+            ESCAPED=$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' npm-ci-output.log)
+            echo "::error::$ESCAPED"
+          fi
+          exit $status
 
       - name: Type-check (tsc)
         run: npx tsc -b --noEmit
