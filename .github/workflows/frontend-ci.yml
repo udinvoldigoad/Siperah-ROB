@@ -37,28 +37,8 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      # package-lock.json ditulis npm 11.x (dev lokal) — npm bundel Node 22
-      # LTS di runner umumnya masih 10.x dan bisa gagal validasi ketat
-      # terhadap lockfile berisi banyak optionalDependencies platform
-      # (Rolldown, ~15 varian). Samakan versi npm dulu sebelum `ci`.
-      - name: Samakan versi npm dengan lockfile
-        run: npm install -g npm@11
-
-      # DIAGNOSTIK SEMENTARA: npm ci sudah gagal 2x tanpa pesan error yang
-      # terbaca (GitHub tidak menampilkan stdout/stderr publik tanpa token).
-      # Tangkap output & cetak sebagai annotation agar bisa dibaca via API
-      # publik. Kembalikan ke `run: npm ci` polos setelah akar masalah jelas.
       - name: npm ci
-        run: |
-          set +e
-          npm ci > npm-ci-output.log 2>&1
-          status=$?
-          cat npm-ci-output.log
-          if [ $status -ne 0 ]; then
-            ESCAPED=$(sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g' npm-ci-output.log)
-            echo "::error::$ESCAPED"
-          fi
-          exit $status
+        run: npm ci
 
       - name: Type-check (tsc)
         run: npx tsc -b --noEmit
