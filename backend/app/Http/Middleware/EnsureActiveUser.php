@@ -21,6 +21,7 @@ final class EnsureActiveUser
             ]);
             return new JsonResponse([
                 'message' => 'Akun tidak aktif atau belum disetujui.',
+                'account_status' => $user?->status,
             ], 403);
         }
 
