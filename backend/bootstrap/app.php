@@ -61,6 +61,13 @@ return Application::configure(basePath: dirname(__DIR__))
             ->dailyAt('03:30')
             ->timezone('Asia/Jakarta')
             ->withoutOverlapping();
+        // Observability minimal: agregasi kegagalan pipeline/job/log jadi satu
+        // ringkasan tiap jam. Belum ada kanal alert aktif (production tanpa
+        // MAIL_*) — temuan masuk log warning agar terlihat saat log dicek.
+        $schedule->command('system:health-check --hours=1')
+            ->hourly()
+            ->timezone('Asia/Jakarta')
+            ->withoutOverlapping();
         $backupEnabled = fn (): bool => (bool) config('services.backup.schedule_enabled');
         $schedule->command('backup:clean')
             ->dailyAt('01:00')
