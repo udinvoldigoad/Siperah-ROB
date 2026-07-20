@@ -32,10 +32,11 @@ memalukan/berisiko saat demo di depan dosen.
 
 ## BLOK B — Bug yang sudah diperbaiki di kode tapi belum sampai ke server
 
-- [ ] **B1 · 🐞 perf · ~30 mnt (butuh tethering)** — Deploy fix N+1 `is_within_monitoring_area` ke production.
+- [x] **B1 · 🐞 perf · ~30 mnt** — Deploy fix N+1 `is_within_monitoring_area` ke production. ✅ 2026-07-20
   - Alasan: fix sudah di-commit & push ke GitHub, tapi **belum di-deploy ke Hostinger** (checklist Tahap 7 baris ini eksplisit "Belum di-deploy ke production"). Kalau dosen membuka `/api/reports` di server nyata, masih kena versi lambat (~870 ms/baris).
   - Langkah: `bash scripts/deploy-hostinger.sh` + `php artisan migrate --force` (migrasi `2026_07_20_..._add_is_within_monitoring_area`) + `config:cache`. Ingat firewall Hostinger → butuh tethering.
   - Selesai bila: `GET /api/reports` di production < ~0,5 dtk & kolom `is_within_monitoring_area` terisi untuk baris lama (backfill migrasi).
+  - **Terbukti**: SSH terjangkau tanpa tethering. Server ternyata masih di `cf68d9e` (tanpa fix N+1) → deploy fast-forward ke `ba68979` (ikut terbawa: pembersihan A2/A3/A4 + command `system:health-check`). Migrasi + backfill sukses; verifikasi read-only production: 3/3 laporan kolom terisi (2 `false`, 1 `true`) → fast-path `isset()` aktif, tak recompute `ST_DWithin`. Smoke test frontend 200 / API 200. (Angka 6-7x sudah tervalidasi benchmark lokal sesi lalu.)
 
 ---
 
