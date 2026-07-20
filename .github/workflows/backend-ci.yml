@@ -1,0 +1,89 @@
+name: CI Backend
+
+# Sanity check tiap perubahan backend: dependensi terpasang bersih, tidak ada
+# error sintaks PHP, dan seluruh suite PHPUnit hijau di DB Postgres+PostGIS
+# yang meniru siperah_rob_test lokal (lihat backend/.env.testing.example).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgis/postgis:17-3.4-alpine
+        env:
+          POSTGRES_DB: siperah_rob_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:8Z1n3Q5m9qk1E1f4y2r6t8u0v3w5x7y9A1b3c5d7e9f=
+      APP_DEBUG: "true"
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: siperah_rob_test
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      FILESYSTEM_DISK: local
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, pgsql, mbstring, bcmath, gd, zip, intl, exif
+          coverage: none
+
+      - name: Cache dependensi Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-
+
+      - name: composer install
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      # Lint sintaks murni (tanpa dependensi linter tambahan) — menangkap
+      # typo/error parse sebelum PHPUnit dijalankan.
+      - name: PHP lint (syntax check)
+        run: find app bootstrap config database routes tests -name "*.php" -print0 | xargs -0 -n1 -P4 php -l
+
+      - name: Pastikan ekstensi PostGIS aktif
+        run: PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d siperah_rob_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+
+      - name: Migrasi + seed database uji
+        run: php artisan migrate:fresh --seed --force
+
+      - name: PHPUnit
+        run: vendor/bin/phpunit
