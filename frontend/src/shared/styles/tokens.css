@@ -2029,8 +2029,17 @@ select:focus {
     width: 44px !important;
     height: 44px !important;
   }
-  .maplibregl-ctrl-bottom-right {
-    bottom: 80px !important; /* Avoid bottom sheet overlap */
+  /* Atribusi & skala menempel di dasar kotak peta. Dulu diangkat 80px untuk
+     menghindari .mobile-bottom-pill, padahal pill itu fixed ke viewport
+     sedangkan peta hanya blok setinggi 46vh — offset besar cuma menyisakan
+     celah kosong di dalam peta. */
+  .maplibregl-ctrl-bottom-right,
+  .maplibregl-ctrl-bottom-left {
+    bottom: 0 !important;
+  }
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl,
+  .maplibregl-ctrl-bottom-left .maplibregl-ctrl {
+    margin: 0 6px 6px !important;
   }
 
   .app-shell {

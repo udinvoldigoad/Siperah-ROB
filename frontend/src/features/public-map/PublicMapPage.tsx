@@ -362,7 +362,7 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
     if (instance.isStyleLoaded()) update(); else instance.once("idle", update);
   }, [regions, reports, layers, activeLayers, selectedRegency]);
 
-  return <div ref={mapContainer} style={{ minHeight: 560, width: "100%" }} aria-label="Peta interaktif risiko banjir rob" />;
+  return <div ref={mapContainer} className="map-canvas" style={{ minHeight: 560, width: "100%" }} aria-label="Peta interaktif risiko banjir rob" />;
 }
 
 export function PublicMapPage() {
@@ -464,6 +464,33 @@ export function PublicMapPage() {
   const selectedPopulation = selectedFeature?.properties.population;
   const toolbarHorizon = selectedDate === "all" ? "Prediksi terbaru" : `Prediksi ${horizonLabel(selectedDate)}`;
 
+  // Dua panel peringatan dipakai di dua posisi berbeda: di ATAS peta saat mobile,
+  // dan di kolom kanan saat desktop. Didefinisikan sekali di sini lalu dirender
+  // pada dua wadah yang saling eksklusif lewat media query (lihat .map-warnings-*).
+  const warningPanels = (
+    <>
+      <motion.div variants={itemVariants} className="panel" style={{ padding: 16, borderLeft: `3px solid ${riskColors[String(highestRisk?.properties.risk_class)] ?? "var(--accent)"}` }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <Icon name="warning" style={{ fontSize: 20, color: riskColors[String(highestRisk?.properties.risk_class)] ?? "var(--accent)", flexShrink: 0 }} />
+          <div>
+            <strong style={{ display: "block", marginBottom: 3, color: "var(--ink)", fontSize: 13 }}>{highestRisk ? `Risiko ${riskText(highestRisk.properties.risk_class)} terdeteksi` : "Memuat peringatan risiko"}</strong>
+            <span style={{ color: "var(--ink-soft)", fontSize: 12, lineHeight: 1.5 }}>{highestRisk ? `${highestRisk.properties.village ?? "Wilayah pesisir"}, ${highestRisk.properties.regency ?? "Lampung"} · peluang rob ${Math.round(Number(highestRisk.properties.risk_probability ?? 0))}%` : "Mengambil data peta dari server."}</span>
+          </div>
+        </div>
+        {(!userRole || userRole === "warga") && <a className="btn secondary" href="#/awam" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>Lihat mode awam</a>}
+      </motion.div>
+      {isStaleData && <motion.div variants={itemVariants} className="panel" style={{ padding: 16, borderLeft: "3px solid #d97706", background: "#fef3c7" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <Icon name="history" style={{ fontSize: 20, color: "#b45309", flexShrink: 0 }} />
+          <div>
+            <strong style={{ display: "block", marginBottom: 3, color: "#78350f", fontSize: 13 }}>Menampilkan Prediksi Historis</strong>
+            <span style={{ color: "#92400e", fontSize: 12, lineHeight: 1.5 }}>Data peringatan cuaca hari ini gagal dimuat atau tertunda. Anda sedang melihat prediksi historis dari {regions.features[0]?.properties?.generated_at ? String(regions.features[0].properties.generated_at).substring(0, 10) : "sebelumnya"}.</span>
+          </div>
+        </div>
+      </motion.div>}
+    </>
+  );
+
   return <AppShell active="map" title="Peta Bahaya Rob" subtitle="Pantau prediksi risiko banjir rob per wilayah pesisir Provinsi Lampung.">
     <style>{`
       .public-map-layout {
@@ -472,6 +499,10 @@ export function PublicMapPage() {
         gap: 24px;
         align-items: start;
       }
+      /* Desktop: peringatan tampil di kolom kanan. Wadah mobile di-display:none
+         sehingga tidak ikut menempati sel grid (grid tetap 2 kolom). */
+      .map-warnings-desktop { display: grid; gap: 14px; }
+      .map-warnings-mobile { display: none; }
       .map-filter-bar {
         display: flex;
         align-items: flex-start;
@@ -554,6 +585,11 @@ export function PublicMapPage() {
           gap: 16px;
         }
 
+        /* Mobile: peringatan naik ke atas peta (elemen pertama di grid 1 kolom),
+           salinan di kolom kanan disembunyikan agar tidak dobel. */
+        .map-warnings-mobile { display: grid; gap: 12px; }
+        .map-warnings-desktop { display: none; }
+
         .map-filter-toggle { display: flex; }
 
         .map-filter-bar {
@@ -567,8 +603,13 @@ export function PublicMapPage() {
           width: 100%;
         }
 
-        .map-container {
-          min-height: 65vh !important;
+        /* Dua lapis harus dibatasi: .map-container DAN div maplibre di dalamnya
+           (.map-canvas) yang punya minHeight 560 inline — kalau hanya luarnya,
+           konten dalam yang lebih tinggi tetap memaksa peta jadi 560px. */
+        .map-container,
+        .map-canvas {
+          min-height: 46vh !important;
+          height: 46vh !important;
         }
 
         .map-viewport .map-toolbar span { display: none; }
@@ -598,6 +639,7 @@ export function PublicMapPage() {
       <motion.p variants={itemVariants} style={{ margin: 0, color: "var(--ink-soft)", fontSize: 14 }}>Pantau prediksi risiko banjir rob per wilayah pesisir Provinsi Lampung.</motion.p>
       {error && <div className="alert" style={{ borderLeftColor: "var(--critical)" }}>{error}</div>}
       <motion.div variants={itemVariants} className="public-map-layout">
+        <div className="map-warnings-mobile">{warningPanels}</div>
         <div className="panel flush" style={{ overflow: "hidden" }}>
           <button
             type="button"
@@ -694,25 +736,7 @@ export function PublicMapPage() {
             </div>
             <p style={{ margin: 0, fontSize: 13 }}>{activeWarning.message}</p>
           </motion.div>}
-          <motion.div variants={itemVariants} className="panel" style={{ padding: 16, borderLeft: `3px solid ${riskColors[String(highestRisk?.properties.risk_class)] ?? "var(--accent)"}` }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-              <Icon name="warning" style={{ fontSize: 20, color: riskColors[String(highestRisk?.properties.risk_class)] ?? "var(--accent)", flexShrink: 0 }} />
-              <div>
-                <strong style={{ display: "block", marginBottom: 3, color: "var(--ink)", fontSize: 13 }}>{highestRisk ? `Risiko ${riskText(highestRisk.properties.risk_class)} terdeteksi` : "Memuat peringatan risiko"}</strong>
-                <span style={{ color: "var(--ink-soft)", fontSize: 12, lineHeight: 1.5 }}>{highestRisk ? `${highestRisk.properties.village ?? "Wilayah pesisir"}, ${highestRisk.properties.regency ?? "Lampung"} · peluang rob ${Math.round(Number(highestRisk.properties.risk_probability ?? 0))}%` : "Mengambil data peta dari server."}</span>
-              </div>
-            </div>
-            {(!userRole || userRole === "warga") && <a className="btn secondary" href="#/awam" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>Lihat mode awam</a>}
-          </motion.div>
-          {isStaleData && <motion.div variants={itemVariants} className="panel" style={{ padding: 16, borderLeft: "3px solid #d97706", background: "#fef3c7" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-              <Icon name="history" style={{ fontSize: 20, color: "#b45309", flexShrink: 0 }} />
-              <div>
-                <strong style={{ display: "block", marginBottom: 3, color: "#78350f", fontSize: 13 }}>Menampilkan Prediksi Historis</strong>
-                <span style={{ color: "#92400e", fontSize: 12, lineHeight: 1.5 }}>Data peringatan cuaca hari ini gagal dimuat atau tertunda. Anda sedang melihat prediksi historis dari {regions.features[0]?.properties?.generated_at ? String(regions.features[0].properties.generated_at).substring(0, 10) : "sebelumnya"}.</span>
-              </div>
-            </div>
-          </motion.div>}
+          <div className="map-warnings-desktop">{warningPanels}</div>
           <motion.div variants={itemVariants} className="panel flush">
             <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
               <strong style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: .5, color: "var(--ink-soft)" }}>Wilayah terpilih</strong>
