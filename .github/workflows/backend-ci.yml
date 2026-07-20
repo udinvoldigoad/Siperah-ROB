@@ -58,9 +58,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 8.4, bukan 8.3 dari composer.json ("^8.3") — composer.lock ter-commit
+      # dikunci di mesin dev ber-PHP 8.4.20, dan beberapa paket transitif
+      # (symfony/clock dkk v8.1) mensyaratkan php>=8.4.1. Selaras dengan
+      # production Hostinger yang juga PHP84 (lihat memori proyek deployment).
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
+          php-version: "8.4"
           extensions: pdo_pgsql, pgsql, mbstring, bcmath, gd, zip, intl, exif
           coverage: none
 
