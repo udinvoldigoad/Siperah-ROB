@@ -28,6 +28,7 @@ class GroundTruthReport extends Model
         'validated_by',
         'validated_at',
         'rejection_reason',
+        'is_within_monitoring_area',
     ];
 
     protected $casts = [
@@ -36,6 +37,7 @@ class GroundTruthReport extends Model
         'water_height_cm' => 'integer',
         'incident_time' => 'datetime',
         'validated_at' => 'datetime',
+        'is_within_monitoring_area' => 'boolean',
     ];
 
     public function region(): BelongsTo

@@ -138,6 +138,43 @@ final class OperatorQueueTest extends TestCase
         $this->assertSame('menunggu', $report->fresh()->status);
     }
 
+    /**
+     * Regresi performa: ReportResource dulu menghitung ulang status
+     * "dalam wilayah pantauan" per baris (query ST_DWithin, ~870ms/baris
+     * untuk laporan non-pesisir di DB besar) alih-alih membaca kolom
+     * is_within_monitoring_area yang sudah dihitung saat submit. Pastikan
+     * menampilkan banyak laporan non-pesisir sekaligus TIDAK memicu query
+     * geospasial per baris.
+     */
+    public function test_listing_many_non_coastal_reports_does_not_run_geometry_query_per_row(): void
+    {
+        $region = $this->insertRegion('Kabupaten Non Pesisir Regresi', coastal: false);
+        $operator = $this->makeUser('bpbd_operator', $region->id);
+        for ($i = 0; $i < 8; $i++) {
+            $this->makeReport($region, 'menunggu', isWithinMonitoringArea: false);
+        }
+
+        DB::enableQueryLog();
+        $this->actingAs($operator)
+            ->getJson('/api/reports?status=menunggu,perlu_review&per_page=50')
+            ->assertOk()
+            ->assertJsonCount(8, 'data');
+        $log = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $geometryQueries = array_filter($log, fn ($entry) => str_contains(strtoupper($entry['query']), 'ST_DWITHIN'));
+        $this->assertCount(
+            0,
+            $geometryQueries,
+            'Menampilkan daftar laporan seharusnya tidak menjalankan query geospasial ST_DWithin per baris.',
+        );
+        $this->assertLessThan(
+            15,
+            count($log),
+            'Jumlah query untuk menampilkan 8 laporan seharusnya tetap kecil, bukan proporsional dengan jumlah baris (N+1).',
+        );
+    }
+
     /** @return array{0: Region, 1: User} */
     private function makeRegionWithOperator(string $regency): array
     {
@@ -167,7 +204,7 @@ final class OperatorQueueTest extends TestCase
         ]);
     }
 
-    private function makeReport(Region $region, string $status): GroundTruthReport
+    private function makeReport(Region $region, string $status, ?bool $isWithinMonitoringArea = null): GroundTruthReport
     {
         $reporter = $this->makeUser('warga', null);
 
@@ -185,19 +222,21 @@ final class OperatorQueueTest extends TestCase
             'status' => $status,
             'validated_by' => $status === 'divalidasi' ? $reporter->id : null,
             'validated_at' => $status === 'divalidasi' ? now() : null,
+            'is_within_monitoring_area' => $isWithinMonitoringArea ?? ($status !== 'perlu_review'),
         ]);
     }
 
-    private function insertRegion(string $regency): Region
+    private function insertRegion(string $regency, bool $coastal = true): Region
     {
         $id = (string) Str::uuid();
         $geometry = 'MULTIPOLYGON(((105.25 -5.455,105.27 -5.455,105.27 -5.435,105.25 -5.435,105.25 -5.455)))';
         $postgisInstalled = (bool) DB::table('pg_extension')->where('extname', 'postgis')->exists();
         $geometrySql = $postgisInstalled ? 'ST_SetSRID(ST_GeomFromText(?), 4326)' : '?';
+        $coastalFlag = $coastal ? 'true' : 'false';
 
         DB::statement(
             "INSERT INTO regions (id, province, regency, district, village, geometry, population, coastal_flag, data_source, source_reference, provenance_status, created_at, updated_at)
-             VALUES (?, 'Lampung', ?, 'Kecamatan Antrean', 'Kelurahan Antrean', {$geometrySql}, 1000, true, 'FeatureTest', 'operator-queue-test', 'demo', now(), now())",
+             VALUES (?, 'Lampung', ?, 'Kecamatan Antrean', 'Kelurahan Antrean', {$geometrySql}, 1000, {$coastalFlag}, 'FeatureTest', 'operator-queue-test', 'demo', now(), now())",
             [$id, $regency, $geometry],
         );
 

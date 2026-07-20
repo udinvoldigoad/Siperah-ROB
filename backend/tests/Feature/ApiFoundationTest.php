@@ -225,9 +225,14 @@ final class ApiFoundationTest extends TestCase
             'description' => 'Genangan test di luar wilayah pantauan.',
         ])->assertCreated()
             ->assertJsonPath('data.status', 'perlu_review')
+            ->assertJsonPath('data.is_within_monitoring_area', false)
             ->assertJsonPath('data.region.id', $outsideRegion->id);
 
         $reportCode = $response->json('data.report_code');
+        $this->assertDatabaseHas('ground_truth_reports', [
+            'report_code' => $reportCode,
+            'is_within_monitoring_area' => false,
+        ]);
 
         $this->actingAs($operator);
         $this->getJson('/api/reports?status=menunggu,perlu_review')

@@ -16,12 +16,15 @@ class ReportResource extends JsonResource
         $slaStatus = $isResolved
             ? 'selesai'
             : ($slaDueAt && now()->greaterThan($slaDueAt) ? 'terlambat' : 'berjalan');
+        // is_within_monitoring_area sudah dihitung & disimpan saat submit
+        // (ReportController::store); baca lewat isReportWithinMonitoringArea
+        // (isset() fast-path) alih-alih menghitung ulang ST_DWithin per baris
+        // tiap kali laporan ditampilkan — bisa >800ms/baris untuk laporan
+        // non-pesisir dengan ribuan wilayah di DB. loadMissing hanya jaring
+        // pengaman untuk baris lawas yang somehow belum ter-backfill; semua
+        // caller sudah eager-load 'region' sehingga ini normalnya no-op.
         $this->resource->loadMissing('region');
-        $isWithinMonitoringArea = app(RegionMonitoringService::class)->isPointMonitored(
-            $this->region,
-            (float) $this->latitude,
-            (float) $this->longitude,
-        );
+        $isWithinMonitoringArea = app(RegionMonitoringService::class)->isReportWithinMonitoringArea($this->resource);
 
         return [
             'id' => $this->id,

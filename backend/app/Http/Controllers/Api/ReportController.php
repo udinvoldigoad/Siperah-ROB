@@ -125,6 +125,7 @@ final class ReportController
                     'incident_time' => $data['incident_time'],
                     'description' => $data['description'],
                     'status' => $isPointMonitored ? 'menunggu' : 'perlu_review',
+                    'is_within_monitoring_area' => $isPointMonitored,
                 ]);
 
                 foreach ($request->file('photos', []) as $photo) {
