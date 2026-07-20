@@ -278,15 +278,8 @@ export function LoginPage() {
                     required
                   />
                 </div>
-                
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#475569", cursor: "pointer" }}>
-                      <input type="checkbox" style={{ accentColor: "#1e40af", width: "16px", height: "16px", borderRadius: "4px" }} />
-                      Ingat saya
-                    </label>
-                  </div>
 
-                <button 
+                <button
                   className="btn solid" 
                   type="submit" 
                   style={{ width: "100%", background: "#1e40af", color: "#fff", padding: "16px", borderRadius: 8, fontSize: "15px", fontWeight: 700, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(2, 132, 199, 0.25)", cursor: "pointer" }} 

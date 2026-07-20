@@ -24,8 +24,9 @@ memalukan/berisiko saat demo di depan dosen.
   - Alasan: nol import di `src` (pola sama seperti `echarts` yang sudah dibersihkan). Mengurangi `node_modules` & permukaan audit.
   - Selesai bila: `npm remove gsap @gsap/react` → `npm ci` bersih → `tsc`+`build`+E2E hijau; commit lockfile regenerasi (ingat pelajaran lockfile Rolldown/Vite 8 — regenerasi, jangan inkremental).
   - **Terbukti**: satu-satunya sisa referensi = komentar CSS `tokens.css:1905` (bukan import). `npm remove` awalnya bikin `npm ci` gagal (`Missing: @emnapi/core/runtime` — persis pelajaran lockfile WASM Rolldown), diperbaiki dengan **regenerasi total** (`rm -rf node_modules package-lock.json && npm install`) → `npm ci` bersih (0 vuln) → `tsc`+`build` hijau (1.44s), tanpa gsap di bundle. E2E dijadwalkan di Blok E (nol import → tak terpengaruh).
-- [ ] **A4 · ✨ · ~10 mnt** — Perbaiki/hapus checkbox "Ingat saya" non-fungsional di `LoginPage.tsx:283-286`.
+- [x] **A4 · ✨ · ~10 mnt** — Perbaiki/hapus checkbox "Ingat saya" non-fungsional di `LoginPage.tsx:283-286`. ✅ 2026-07-20
   - Alasan: kontrol tanpa `checked`/`onChange` = kontrol palsu. Pilihan jujur: (a) hilangkan, atau (b) sambungkan ke perilaku token nyata. Untuk serah-terima, opsi (a) paling cepat & jujur.
+  - **Diambil opsi (a) hapus** — token sudah persist di `localStorage` (`siperah-token`), jadi user selalu "diingat"; checkbox mustahil bermakna tanpa mengubah strategi penyimpanan token (session vs local), perubahan auth yang tak sepadan untuk kontrol dekoratif. Blok checkbox dihapus; spacing tetap wajar (password field sudah `marginBottom:24px`). Build hijau (818ms).
 
 ---
 
