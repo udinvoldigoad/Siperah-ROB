@@ -6,6 +6,8 @@ import { ToastProvider } from "../shared/components/Toast";
 import { ErrorBoundary } from "../shared/components/ErrorBoundary";
 import { PageFallback } from "../shared/components/PageFallback";
 
+import { OAuthCallbackPage } from "../features/auth/OAuthCallbackPage";
+
 // Halaman fitur di-lazy-load agar bundle awal ringan: library berat (maplibre-gl
 // pada peta/laporan) & kode tiap rute hanya diunduh saat halamannya dibuka.
 // LoginPage & PortalPage tetap eager karena jadi titik masuk paling umum.
@@ -23,6 +25,9 @@ const ReportHistoryPage = lazy(() => import("../features/reports/ReportHistoryPa
 const ResearchPortalPage = lazy(() => import("../features/research/ResearchPortalPage").then(m => ({ default: m.ResearchPortalPage })));
 
 function currentRoute() {
+  if (window.location.pathname.startsWith('/oauth-callback')) {
+    return "oauth-callback";
+  }
   return window.location.hash.replace("#/", "") || "";
 }
 
@@ -61,6 +66,7 @@ export function App() {
 
     let Component;
     if (route === "login") Component = <LoginPage />;
+    else if (route === "oauth-callback") Component = <OAuthCallbackPage />;
     else if (route === "map") Component = <PublicMapPage />;
     else if (route === "awam") Component = <CitizenModePage />;
     else if (route === "onboarding") Component = <OnboardingPage />;

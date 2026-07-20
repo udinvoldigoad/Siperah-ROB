@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "../../shared/components/Icon";
 import { api, ApiError } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
@@ -20,16 +20,31 @@ export function LoginPage() {
   const toast = useToast();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [isLoading, setIsLoading] = useState(false);
-  // Status akun (pending/nonaktif/ditolak) untuk panel penjelas saat login gagal.
   const [loginNotice, setLoginNotice] = useState<{ message: string; status?: string } | null>(null);
 
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes("error=menunggu")) {
+      setLoginNotice({ message: "Pendaftaran lewat Google berhasil, namun akun Anda masih menunggu persetujuan admin.", status: "menunggu" });
+    } else if (hash.includes("error=nonaktif")) {
+      setLoginNotice({ message: "Akun Anda telah dinonaktifkan.", status: "nonaktif" });
+    } else if (hash.includes("error=ditolak")) {
+      setLoginNotice({ message: "Pendaftaran Anda ditolak oleh admin.", status: "ditolak" });
+    } else if (hash.includes("error=google_auth_failed")) {
+      toast.error("Gagal masuk dengan Google.");
+      window.location.hash = "#/login";
+    }
+  }, [toast]);
+
   // Form Fields
-  const [email, setEmail] = useState("andi.saputra@bpbd.lampung.go.id");
-  const [password, setPassword] = useState("password");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [regInstitution, setRegInstitution] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -113,21 +128,21 @@ export function LoginPage() {
   const inputStyle = {
     width: "100%",
     padding: "14px 16px",
-    borderRadius: 8,
+    borderRadius: "10px",
     border: "1px solid var(--line)",
-    background: "var(--bg)",
-    fontSize: "14px",
+    background: "var(--surface-soft)",
+    fontSize: "15px",
     color: "var(--ink)",
     outline: "none",
-    transition: "border-color 0.2s, box-shadow 0.2s",
+    transition: "all 0.2s",
     boxSizing: "border-box" as const,
   };
 
   const labelStyle = {
     display: "block",
-    fontSize: "13px",
+    fontSize: "14px",
     fontWeight: 600,
-    color: "var(--ink-soft)",
+    color: "var(--ink)",
     marginBottom: "8px"
   };
 
@@ -197,32 +212,6 @@ export function LoginPage() {
             <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 800 }}>SIPERAH-RoB</h2>
           </div>
 
-          <div style={{ display: "flex", gap: "24px", marginBottom: "40px", borderBottom: "2px solid var(--line)" }}>
-            {[
-              ["login", "Masuk Akun"],
-              ["register", "Daftar Baru"],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setMode(value as "login" | "register")}
-                style={{
-                  padding: "0 0 16px",
-                  fontSize: "15px",
-                  fontWeight: 700,
-                  color: mode === value ? "var(--ocean-dark)" : "var(--ink-soft)",
-                  background: "none",
-                  border: "none",
-                  borderBottom: `2px solid ${mode === value ? "var(--ocean-dark)" : "transparent"}`,
-                  marginBottom: "-2px",
-                  cursor: "pointer",
-                  transition: "all 0.2s"
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
 
           <AnimatePresence mode="wait">
             {mode === "login" ? (
@@ -254,50 +243,78 @@ export function LoginPage() {
                     </div>
                   );
                 })()}
-
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={labelStyle}>Alamat Email</label>
-                  <input 
-                    type="email" 
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)} 
-                    placeholder="email@instansi.go.id" 
-                    style={inputStyle}
-                    required
-                  />
-                </div>
-
-                <div style={{ marginBottom: "24px" }}>
-                  <label style={labelStyle}>Kata Sandi</label>
-                  <input 
-                    type="password" 
-                    value={password} 
-                    onChange={(e) => setPassword(e.target.value)} 
-                    placeholder="••••••••"
-                    style={inputStyle}
-                    required
-                  />
-                </div>
-                
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#475569", cursor: "pointer" }}>
-                      <input type="checkbox" style={{ accentColor: "#1e40af", width: "16px", height: "16px", borderRadius: "4px" }} />
-                      Ingat saya
-                    </label>
+                  <div style={{ marginBottom: "24px" }}>
+                    <label style={labelStyle}>Alamat Email</label>
+                    <input 
+                      type="email" 
+                      value={email} 
+                      onChange={(e) => setEmail(e.target.value)} 
+                      style={inputStyle}
+                      required
+                    />
                   </div>
+  
+                  <div style={{ marginBottom: "24px" }}>
+                    <label style={labelStyle}>Kata Sandi</label>
+                    <div style={{ position: "relative" }}>
+                      <input 
+                        type={showPassword ? "text" : "password"} 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)} 
+                        style={{ ...inputStyle, paddingRight: "48px" }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)", padding: "4px", display: "flex" }}
+                        title={showPassword ? "Sembunyikan sandi" : "Tampilkan sandi"}
+                      >
+                        <Icon name={showPassword ? "visibility_off" : "visibility"} style={{ fontSize: "20px" }} />
+                      </button>
+                    </div>
+                  </div>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "var(--ink-soft)", cursor: "pointer" }}>
+                        <input type="checkbox" style={{ accentColor: "#1e40af", width: "16px", height: "16px", borderRadius: "4px" }} />
+                        Ingat saya
+                      </label>
+                      <a href="#/" style={{ fontSize: "14px", color: "#1e40af", textDecoration: "none", fontWeight: 600 }}>Lupa sandi?</a>
+                    </div>
+              <button 
+                className="btn solid" 
+                type="submit" 
+                style={{ width: "100%", background: "#0f172a", color: "#fff", padding: "14px", borderRadius: 8, fontSize: "15px", fontWeight: 600, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", cursor: "pointer", transition: "background 0.2s" }} 
+                disabled={isLoading}
+              >
+                {isLoading ? "Memproses..." : "Masuk"}
+              </button>
 
-                <button 
-                  className="btn solid" 
-                  type="submit" 
-                  style={{ width: "100%", background: "#1e40af", color: "#fff", padding: "16px", borderRadius: 8, fontSize: "15px", fontWeight: 700, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(2, 132, 199, 0.25)", cursor: "pointer" }} 
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Memproses..." : "Masuk ke Dashboard"}
-                </button>
+              <div style={{ display: "flex", alignItems: "center", margin: "24px 0" }}>
+                <div style={{ flex: 1, height: "1px", background: "var(--line)" }}></div>
+                <span style={{ padding: "0 16px", color: "var(--ink-soft)", fontSize: "13px" }}>atau</span>
+                <div style={{ flex: 1, height: "1px", background: "var(--line)" }}></div>
+              </div>
 
-                {/* DEV ONLY: Quick Login Shortcuts */}
-                <div style={{ marginTop: "32px", padding: "16px", background: "var(--surface-soft)", borderRadius: "12px", border: "1px dashed var(--line)" }}>
-                  <p style={{ margin: "0 0 12px", fontSize: "12px", color: "var(--ink-soft)", fontWeight: 600, textAlign: "center" }}>⚡ DEV SHORTCUTS (Hapus saat Production)</p>
+              <a 
+                href="/api/auth/google/redirect"
+                style={{ width: "100%", background: "#fff", color: "#334155", padding: "14px", borderRadius: 8, fontSize: "15px", fontWeight: 600, border: "1px solid #cbd5e1", display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", cursor: "pointer", textDecoration: "none", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", transition: "all 0.2s" }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Masuk dengan Google
+              </a>
+
+              {/* DEV ONLY: Quick Login Shortcuts */}
+              <details style={{ marginTop: "32px" }}>
+                <summary style={{ fontSize: "12px", color: "var(--ink-soft)", fontWeight: 600, textAlign: "center", cursor: "pointer", padding: "8px" }}>
+                  ⚡ DEV SHORTCUTS
+                </summary>
+                <div style={{ marginTop: "12px", padding: "16px", background: "var(--surface-soft)", borderRadius: "12px", border: "1px dashed var(--line)" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                     <button type="button" onClick={() => { setEmail("warga@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600 }}>👤 Warga</button>
                     <button type="button" onClick={() => { setEmail("operator@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600 }}>🛡️ Operator BPBD</button>
@@ -307,7 +324,19 @@ export function LoginPage() {
                     <button type="button" onClick={() => { setEmail("demo@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600 }}>⭐ Super Demo</button>
                   </div>
                 </div>
-              </motion.form>
+              </details>
+
+              <div style={{ marginTop: "40px", textAlign: "center", fontSize: "14px", color: "var(--ink-soft)" }}>
+                Belum punya akun?{" "}
+                <button 
+                  type="button" 
+                  onClick={() => setMode("register")}
+                  style={{ background: "none", border: "none", color: "#1e40af", fontWeight: 600, cursor: "pointer", padding: 0 }}
+                >
+                  Buat akun baru
+                </button>
+              </div>
+            </motion.form>
             ) : (
               <motion.form 
                 key="register"
@@ -316,25 +345,20 @@ export function LoginPage() {
                 exit={{ opacity: 0, y: -10 }}
                 onSubmit={handleRegister}
               >
-                <div style={{ marginBottom: "24px" }}>
-                  <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 8px", color: "var(--ink)" }}>Buat Akun Baru</h2>
-                  <p style={{ color: "var(--ink-soft)", fontSize: "0.95rem", margin: 0 }}>Daftar sebagai warga untuk melaporkan kejadian rob. Akun sesudah didaftar berstatus menunggu persetujuan admin.</p>
+                <div style={{ marginBottom: "32px" }}>
+                  <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 12px", color: "var(--ink)" }}>Buat Akun Baru</h2>
+                  <p style={{ color: "var(--ink-soft)", fontSize: "1rem", lineHeight: "1.6", margin: 0 }}>Daftar sebagai warga untuk berpartisipasi melaporkan kejadian rob. Akun Anda akan direview oleh admin setelah mendaftar.</p>
                 </div>
 
-                {/* Pendaftaran mandiri selalu menghasilkan akun WARGA (backend memaksa
-                    role=warga, status=menunggu). Akun instansi (Operator/Provinsi/
-                    Peneliti) dibuat oleh admin lewat menu Pengguna & Perizinan — jadi
-                    form ini tidak lagi menawarkan pilihan role yang tak akan diberikan. */}
-                <div style={{ marginBottom: "16px", padding: "10px 14px", borderRadius: 8, background: "var(--surface-soft)", border: "1px solid var(--line)", fontSize: "12.5px", color: "var(--ink-soft)", display: "flex", gap: 8, alignItems: "center" }}>
-                  <Icon name="info" style={{ fontSize: 16, flexShrink: 0 }} />
-                  <span>Butuh akun BPBD atau Peneliti? Hubungi admin — akun instansi dibuat & diverifikasi oleh admin.</span>
+                <div style={{ marginBottom: "24px", padding: "12px 16px", borderRadius: "10px", background: "var(--surface-soft)", border: "1px solid var(--line)", fontSize: "13px", color: "var(--ink-soft)", display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                  <Icon name="info" style={{ fontSize: "18px", color: "#3b82f6", flexShrink: 0, marginTop: "2px" }} />
+                  <span style={{ lineHeight: "1.5" }}>Butuh akun BPBD atau Peneliti? Hubungi admin — akun instansi dibuat & diverifikasi langsung oleh admin.</span>
                 </div>
 
-                <div style={{ marginBottom: "16px" }}>
+                <div style={{ marginBottom: "20px" }}>
                   <label style={labelStyle}>Nama Lengkap</label>
                   <input
                     type="text"
-                    placeholder="Nama sesuai identitas"
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     style={inputStyle}
@@ -342,22 +366,20 @@ export function LoginPage() {
                   />
                 </div>
 
-                <div style={{ marginBottom: "16px" }}>
+                <div style={{ marginBottom: "20px" }}>
                   <label style={labelStyle}>Desa / Wilayah <span style={{ color: "var(--ink-soft)", fontWeight: 400 }}>(Opsional)</span></label>
                   <input
                     type="text"
-                    placeholder="Contoh: Desa Kangkung, Bumi Waras"
                     value={regInstitution}
                     onChange={(e) => setRegInstitution(e.target.value)}
                     style={inputStyle}
                   />
                 </div>
 
-                <div style={{ marginBottom: "16px" }}>
+                <div style={{ marginBottom: "20px" }}>
                   <label style={labelStyle}>Alamat Email</label>
                   <input 
                     type="email" 
-                    placeholder="email@instansi.go.id" 
                     value={regEmail} 
                     onChange={(e) => setRegEmail(e.target.value)} 
                     style={inputStyle}
@@ -367,24 +389,44 @@ export function LoginPage() {
 
                 <div style={{ marginBottom: "32px" }}>
                   <label style={labelStyle}>Kata Sandi</label>
-                  <input 
-                    type="password" 
-                    placeholder="Minimal 6 karakter" 
-                    value={regPassword} 
-                    onChange={(e) => setRegPassword(e.target.value)} 
-                    style={inputStyle}
-                    required
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input 
+                      type={showRegPassword ? "text" : "password"} 
+                      value={regPassword} 
+                      onChange={(e) => setRegPassword(e.target.value)} 
+                      style={{ ...inputStyle, paddingRight: "48px" }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegPassword(!showRegPassword)}
+                      style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)", padding: "4px", display: "flex" }}
+                      title={showRegPassword ? "Sembunyikan sandi" : "Tampilkan sandi"}
+                    >
+                      <Icon name={showRegPassword ? "visibility_off" : "visibility"} style={{ fontSize: "20px" }} />
+                    </button>
+                  </div>
                 </div>
 
                 <button 
                   className="btn solid" 
                   type="submit" 
-                  style={{ width: "100%", background: "#1e40af", color: "#fff", padding: "16px", borderRadius: 8, fontSize: "15px", fontWeight: 700, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 8px 24px rgba(2, 132, 199, 0.25)", cursor: "pointer" }} 
+                  style={{ width: "100%", background: "#0f172a", color: "#fff", padding: "14px", borderRadius: "10px", fontSize: "15px", fontWeight: 600, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", cursor: "pointer", transition: "background 0.2s" }} 
                   disabled={isLoading}
                 >
                   {isLoading ? "Memproses..." : "Daftar Akun"}
                 </button>
+
+                <div style={{ marginTop: "40px", textAlign: "center", fontSize: "14px", color: "var(--ink-soft)" }}>
+                  Sudah punya akun?{" "}
+                  <button 
+                    type="button" 
+                    onClick={() => setMode("login")}
+                    style={{ background: "none", border: "none", color: "#1e40af", fontWeight: 600, cursor: "pointer", padding: 0 }}
+                  >
+                    Masuk ke Dashboard
+                  </button>
+                </div>
               </motion.form>
             )}
           </AnimatePresence>
