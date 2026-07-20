@@ -229,10 +229,10 @@ export function LoginPage() {
 
                 {loginNotice && (() => {
                   const isPending = loginNotice.status === "menunggu";
-                  const tone = isPending
-                    ? { bg: "#fffbeb", border: "#fcd34d", ink: "#92400e", icon: "hourglass_top", title: "Akun menunggu persetujuan" }
-                    : { bg: "#fef2f2", border: "#fca5a5", ink: "#991b1b", icon: "block",
-                        title: loginNotice.status === "ditolak" ? "Pendaftaran ditolak" : "Akun dinonaktifkan" };
+                    const tone = isPending
+                      ? { bg: "var(--surface-soft)", border: "var(--line)", ink: "var(--ink)", icon: "hourglass_top", title: "Akun menunggu persetujuan" }
+                      : { bg: "var(--surface-soft)", border: "var(--line)", ink: "var(--ink)", icon: "block",
+                          title: loginNotice.status === "ditolak" ? "Pendaftaran ditolak" : "Akun dinonaktifkan" };
                   return (
                     <div role="alert" style={{ marginBottom: "24px", padding: "14px 16px", borderRadius: 10, background: tone.bg, border: `1px solid ${tone.border}`, display: "flex", gap: 12, alignItems: "flex-start" }}>
                       <Icon name={tone.icon} style={{ fontSize: 20, color: tone.ink, flexShrink: 0, marginTop: 1 }} />
@@ -274,19 +274,18 @@ export function LoginPage() {
                       </button>
                     </div>
                   </div>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-                      <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "var(--ink-soft)", cursor: "pointer" }}>
-                        <input type="checkbox" style={{ accentColor: "#1e40af", width: "16px", height: "16px", borderRadius: "4px" }} />
-                        Ingat saya
-                      </label>
-                      <a href="#/" style={{ fontSize: "14px", color: "#1e40af", textDecoration: "none", fontWeight: 600 }}>Lupa sandi?</a>
-                    </div>
-              <button 
-                className="btn solid" 
-                type="submit" 
-                style={{ width: "100%", background: "#0f172a", color: "#fff", padding: "14px", borderRadius: 8, fontSize: "15px", fontWeight: 600, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", cursor: "pointer", transition: "background 0.2s" }} 
-                disabled={isLoading}
-              >
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>                        <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "var(--ink-soft)", cursor: "pointer" }}>
+                          <input type="checkbox" style={{ accentColor: "var(--accent)", width: "16px", height: "16px", borderRadius: "4px" }} />
+                          Ingat saya
+                        </label>
+                        <a href="#/" style={{ fontSize: "14px", color: "var(--accent)", textDecoration: "none", fontWeight: 600 }}>Lupa sandi?</a>
+                      </div>
+                <button 
+                  className="btn solid" 
+                  type="submit" 
+                  style={{ width: "100%", background: "var(--accent)", color: "#fff", padding: "14px", borderRadius: 8, fontSize: "15px", fontWeight: 600, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", cursor: "pointer", transition: "background 0.2s" }} 
+                  disabled={isLoading}
+                >
                 {isLoading ? "Memproses..." : "Masuk"}
               </button>
 
@@ -296,10 +295,10 @@ export function LoginPage() {
                 <div style={{ flex: 1, height: "1px", background: "var(--line)" }}></div>
               </div>
 
-              <a 
-                href="/api/auth/google/redirect"
-                style={{ width: "100%", background: "#fff", color: "#334155", padding: "14px", borderRadius: 8, fontSize: "15px", fontWeight: 600, border: "1px solid #cbd5e1", display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", cursor: "pointer", textDecoration: "none", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", transition: "all 0.2s" }}
-              >
+                <a 
+                  href="/api/auth/google/redirect"
+                  style={{ width: "100%", background: "var(--surface)", color: "var(--ink)", padding: "14px", borderRadius: 8, fontSize: "15px", fontWeight: 600, border: "1px solid var(--line)", display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", cursor: "pointer", textDecoration: "none", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", transition: "all 0.2s" }}
+                >
                 <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -316,23 +315,23 @@ export function LoginPage() {
                 </summary>
                 <div style={{ marginTop: "12px", padding: "16px", background: "var(--surface-soft)", borderRadius: "12px", border: "1px dashed var(--line)" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                    <button type="button" onClick={() => { setEmail("warga@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600 }}>👤 Warga</button>
-                    <button type="button" onClick={() => { setEmail("operator@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600 }}>🛡️ Operator BPBD</button>
-                    <button type="button" onClick={() => { setEmail("provinsi@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600 }}>🏢 Provinsi</button>
-                    <button type="button" onClick={() => { setEmail("admin@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600 }}>⚙️ Admin</button>
-                    <button type="button" onClick={() => { setEmail("peneliti@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600 }}>🔬 Peneliti</button>
-                    <button type="button" onClick={() => { setEmail("demo@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "#fff", cursor: "pointer", fontWeight: 600 }}>⭐ Super Demo</button>
+                    <button type="button" onClick={() => { setEmail("warga@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>👤 Warga</button>
+                    <button type="button" onClick={() => { setEmail("operator@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>🛡️ Operator BPBD</button>
+                    <button type="button" onClick={() => { setEmail("provinsi@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>🏢 Provinsi</button>
+                    <button type="button" onClick={() => { setEmail("admin@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>⚙️ Admin</button>
+                    <button type="button" onClick={() => { setEmail("peneliti@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>🔬 Peneliti</button>
+                    <button type="button" onClick={() => { setEmail("demo@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>⭐ Super Demo</button>
                   </div>
                 </div>
               </details>
 
-              <div style={{ marginTop: "40px", textAlign: "center", fontSize: "14px", color: "var(--ink-soft)" }}>
-                Belum punya akun?{" "}
-                <button 
-                  type="button" 
-                  onClick={() => setMode("register")}
-                  style={{ background: "none", border: "none", color: "#1e40af", fontWeight: 600, cursor: "pointer", padding: 0 }}
-                >
+                <div style={{ marginTop: "40px", textAlign: "center", fontSize: "14px", color: "var(--ink-soft)" }}>
+                  Belum punya akun?{" "}
+                  <button 
+                    type="button" 
+                    onClick={() => setMode("register")}
+                    style={{ background: "none", border: "none", color: "var(--accent)", fontWeight: 600, cursor: "pointer", padding: 0 }}
+                  >
                   Buat akun baru
                 </button>
               </div>
@@ -408,12 +407,12 @@ export function LoginPage() {
                   </div>
                 </div>
 
-                <button 
-                  className="btn solid" 
-                  type="submit" 
-                  style={{ width: "100%", background: "#0f172a", color: "#fff", padding: "14px", borderRadius: "10px", fontSize: "15px", fontWeight: 600, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", cursor: "pointer", transition: "background 0.2s" }} 
-                  disabled={isLoading}
-                >
+                  <button 
+                    className="btn solid" 
+                    type="submit" 
+                    style={{ width: "100%", background: "var(--accent)", color: "#fff", padding: "14px", borderRadius: "10px", fontSize: "15px", fontWeight: 600, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", cursor: "pointer", transition: "background 0.2s" }} 
+                    disabled={isLoading}
+                  >
                   {isLoading ? "Memproses..." : "Daftar Akun"}
                 </button>
 
@@ -422,7 +421,7 @@ export function LoginPage() {
                   <button 
                     type="button" 
                     onClick={() => setMode("login")}
-                    style={{ background: "none", border: "none", color: "#1e40af", fontWeight: 600, cursor: "pointer", padding: 0 }}
+                    style={{ background: "none", border: "none", color: "var(--accent)", fontWeight: 600, cursor: "pointer", padding: 0 }}
                   >
                     Masuk ke Dashboard
                   </button>
