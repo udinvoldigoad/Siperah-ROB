@@ -151,13 +151,16 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
           ))}
         </nav>
         {isUserLoggedIn && user && (
-          <div style={{ marginTop: "auto", background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: 8, padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <div className="sidebar-user-card" style={{ marginTop: "auto", borderRadius: 8, padding: "16px", display: "flex", flexDirection: "column", gap: "12px", overflow: "hidden" }}>
+            <div className="sidebar-user-meta" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               <strong style={{ fontSize: "14px", color: "var(--ink-primary)", lineHeight: 1.2 }}>{user.name}</strong>
               <span style={{ fontSize: "12px", color: "var(--ink-soft)" }}>{roleLabels[user.role] || user.role}</span>
             </div>
-              <a 
-                href="#/" 
+              <a
+                className="sidebar-user-logout"
+                title="Logout"
+                aria-label="Logout"
+                href="#/"
                 onClick={() => {
                   localStorage.removeItem("siperah-token");
                   localStorage.removeItem("siperah-user");

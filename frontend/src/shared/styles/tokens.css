@@ -58,8 +58,33 @@
     background: rgba(15, 23, 42, 0.92);
     border-color: var(--line);
   }
-  :root[data-theme="dark"] .map-risk-badge {
-    background: var(--surface);
+  /* Gambar laut di kaki sidebar (di belakang konten), memudar ke atas dengan
+     opasitas proporsional agar nav & teks tetap terbaca. */
+  .sidebar > * { position: relative; z-index: 1; }
+  .sidebar::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 260px;
+    background: url('/bg-laut.jpg') center bottom / cover no-repeat;
+    -webkit-mask-image: linear-gradient(to top, #000 8%, transparent);
+    mask-image: linear-gradient(to top, #000 8%, transparent);
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+  }
+  /* Kartu profil jadi panel kaca transparan agar gambar laut tembus di belakangnya. */
+  .sidebar-user-card {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+  :root[data-theme="dark"] .sidebar-user-card {
+    background: rgba(15, 23, 42, 0.5);
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
 :root[data-theme="dark"] .report-row,
@@ -592,6 +617,19 @@ textarea { min-height: 100px; resize: vertical; }
   padding-left: 10px;
   padding-right: 10px;
 }
+/* Kartu profil saat sidebar diperkecil: sembunyikan teks, sisakan ikon logout
+   di tengah (inline style di-override dengan !important). */
+.app-shell.sidebar-collapsed .sidebar-user-card {
+  padding: 12px 6px !important;
+  align-items: center;
+}
+.app-shell.sidebar-collapsed .sidebar-user-meta { display: none !important; }
+.app-shell.sidebar-collapsed .sidebar-user-logout {
+  justify-content: center;
+  gap: 0 !important;
+  margin-top: 0 !important;
+}
+.app-shell.sidebar-collapsed .sidebar-user-logout span:not(.material-symbols-outlined) { display: none; }
 .app-main {
   display: flex;
   flex-direction: column;

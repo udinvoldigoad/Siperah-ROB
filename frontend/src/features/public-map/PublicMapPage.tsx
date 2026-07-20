@@ -383,7 +383,6 @@ export function PublicMapPage() {
     evacuation_routes: { type: "FeatureCollection", features: [] },
   });
   const [activeWarning, setActiveWarning] = useState<ActiveWarning | null>(null);
-  const [staleNotice, setStaleNotice] = useState<string | null>(null);
   const [catalog, setCatalog] = useState<Prediction[]>([]);
   const [selectedRegency, setSelectedRegency] = useState("all");
   const [selectedDate, setSelectedDate] = useState("all");
@@ -398,6 +397,25 @@ export function PublicMapPage() {
   const [selectedFeature, setSelectedFeature] = useState<GeoJsonFeature | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [layerMenuOpen, setLayerMenuOpen] = useState(false);
+  const layerMenuRef = useRef<HTMLDivElement>(null);
+  // Di mobile filter diringkas jadi satu tombol agar peta langsung terlihat.
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  // Tutup dropdown layer saat klik di luar atau tekan Escape.
+  useEffect(() => {
+    if (!layerMenuOpen) return;
+    const onClick = (event: MouseEvent) => {
+      if (layerMenuRef.current && !layerMenuRef.current.contains(event.target as Node)) setLayerMenuOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setLayerMenuOpen(false); };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [layerMenuOpen]);
 
   useEffect(() => { void api<PredictionResponse>("/public/predictions").then((response) => setCatalog(response.data)).catch(() => undefined); }, []);
   useEffect(() => {
@@ -411,7 +429,6 @@ export function PublicMapPage() {
       setRegions(response.data.regions); setReports(response.data.reports);
       if (response.data.layers) setLayers(response.data.layers);
       setActiveWarning(response.data.active_warning ?? null);
-      setStaleNotice(response.data.data_freshness?.notice ?? null);
     }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Data peta belum bisa dimuat."); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [selectedDate, selectedRegency]);
@@ -457,6 +474,7 @@ export function PublicMapPage() {
       }
       .map-filter-bar {
         display: flex;
+        align-items: flex-start;
         gap: 28px;
         row-gap: 16px;
         flex-wrap: wrap;
@@ -474,6 +492,27 @@ export function PublicMapPage() {
         letter-spacing: .5px;
       }
       .map-filter-bar select { min-height: 44px; }
+      .layer-menu-btn { transition: border-color .15s, box-shadow .15s; }
+      .layer-menu-btn:hover, .layer-menu-btn[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 1px 6px rgba(2, 132, 199, .12); }
+      .layer-option { transition: background .12s; }
+      .layer-option:hover { background: var(--surface-soft); }
+      /* Tombol ringkas filter — hanya tampil di mobile (lihat media query). */
+      .map-filter-toggle {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 14px 18px;
+        background: var(--surface);
+        border: none;
+        border-bottom: 1px solid var(--line);
+        color: var(--ink);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+      }
       .map-viewport { position: relative; }
       .map-viewport .map-toolbar {
         right: auto;
@@ -515,9 +554,14 @@ export function PublicMapPage() {
           gap: 16px;
         }
 
+        .map-filter-toggle { display: flex; }
+
         .map-filter-bar {
+          display: none;
           flex-direction: column;
         }
+
+        .map-filter-bar.is-open { display: flex; }
 
         .map-filter-bar select {
           width: 100%;
@@ -529,26 +573,45 @@ export function PublicMapPage() {
 
         .map-viewport .map-toolbar span { display: none; }
         .map-viewport .map-toolbar strong { border-left: 0; padding-left: 0; }
+
+        /* Legenda dikeluarkan dari overlay peta: jadi strip mendatar di bawah
+           peta agar tidak menimpa atribusi OSM & skala, dan area peta tetap utuh.
+           (.legend sudah berada setelah .map-container di DOM.) */
+        .legend {
+          position: static;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 8px 14px;
+          max-width: none;
+          padding: 12px 16px;
+          border: 0;
+          border-top: 1px solid var(--line);
+          border-radius: 0;
+          background: var(--surface);
+        }
+        .legend strong { width: 100%; font-size: 0.78rem; }
+        .legend span { font-size: 0.8rem; }
       }
     `}</style>
     <motion.div variants={containerVariants} initial="hidden" animate="show" className="stack" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
       <motion.p variants={itemVariants} style={{ margin: 0, color: "var(--ink-soft)", fontSize: 14 }}>Pantau prediksi risiko banjir rob per wilayah pesisir Provinsi Lampung.</motion.p>
-      {isStaleData && (
-        <motion.div variants={itemVariants} className="alert" style={{ borderLeftColor: "var(--warning)", backgroundColor: "#fef3c7" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <Icon name="history" style={{ fontSize: 24, color: "var(--warning)" }} />
-            <div>
-              <strong style={{ display: "block", marginBottom: 3, color: "var(--ink)" }}>Menampilkan Prediksi Historis</strong>
-              <span style={{ color: "var(--ink-soft)", fontSize: 13 }}>Data peringatan cuaca hari ini gagal dimuat atau tertunda. Anda sedang melihat prediksi historis dari {regions.features[0]?.properties?.generated_at ? String(regions.features[0].properties.generated_at).substring(0, 10) : "sebelumnya"}.</span>
-            </div>
-          </div>
-        </motion.div>
-      )}
-      <motion.div variants={itemVariants} className="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, borderLeftColor: riskColors[String(highestRisk?.properties.risk_class)] ?? "var(--accent)" }}><div style={{ display: "flex", alignItems: "center", gap: 14 }}><Icon name="warning" style={{ fontSize: 24, color: riskColors[String(highestRisk?.properties.risk_class)] ?? "var(--accent)" }} /><div><strong style={{ display: "block", marginBottom: 3, color: "var(--ink)" }}>{highestRisk ? `Risiko ${riskText(highestRisk.properties.risk_class)} terdeteksi` : "Memuat peringatan risiko"}</strong><span style={{ color: "var(--ink-soft)", fontSize: 13 }}>{highestRisk ? `${highestRisk.properties.village ?? "Wilayah pesisir"}, ${highestRisk.properties.regency ?? "Lampung"} · peluang rob ${Math.round(Number(highestRisk.properties.risk_probability ?? 0))}%` : "Mengambil data peta dari server."}</span></div></div>{(!userRole || userRole === "warga") && <a className="btn secondary" href="#/awam">Lihat mode awam</a>}</motion.div>
       {error && <div className="alert" style={{ borderLeftColor: "var(--critical)" }}>{error}</div>}
       <motion.div variants={itemVariants} className="public-map-layout">
         <div className="panel flush" style={{ overflow: "hidden" }}>
-          <div className="map-filter-bar" style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", background: "var(--surface-soft)" }}>
+          <button
+            type="button"
+            className="map-filter-toggle"
+            onClick={() => setMobileFilterOpen((open) => !open)}
+            aria-expanded={mobileFilterOpen}
+          >
+            <Icon name="tune" style={{ fontSize: 18, color: "var(--accent)" }} />
+            <span style={{ flex: 1 }}>
+              Filter{(selectedDate !== "all" ? 1 : 0) + (selectedRegency !== "all" ? 1 : 0) > 0 ? ` · ${(selectedDate !== "all" ? 1 : 0) + (selectedRegency !== "all" ? 1 : 0)} aktif` : ""}
+            </span>
+            <Icon name="expand_more" style={{ fontSize: 18, color: "var(--ink-soft)", transform: mobileFilterOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+          </button>
+          <div className={`map-filter-bar${mobileFilterOpen ? " is-open" : ""}`} style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
             <label>Horizon prediksi
               <select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)}>
                 <option value="all">Prediksi terbaru</option>
@@ -561,37 +624,48 @@ export function PublicMapPage() {
                 {regencies.map((regency) => <option key={regency} value={regency}>{regency}</option>)}
               </select>
             </label>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 2, minWidth: 280 }}>
+            <div ref={layerMenuRef} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 9, flex: 1, minWidth: 190, maxWidth: 320 }}>
               <strong style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: .5, color: "var(--ink-soft)" }}>Pilihan Layer</strong>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "10px 16px" }}>
-                {Object.entries({
-                  bahaya_rob: "Bahaya Rob",
-                  laporan: "Laporan Warga",
-                  pasang_surut: "Pasang Surut",
-                  garis_pantai: "Garis Pantai",
-                  infrastruktur_kritis: "Infrastruktur",
-                  evakuasi: "Jalur Evakuasi"
-                }).map(([key, label]) => (
-                  <label key={key} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", fontSize: 13, textTransform: "none", letterSpacing: "normal", minWidth: "auto", fontWeight: 500, color: "var(--ink)", margin: 0 }}>
-                    <input 
-                      type="checkbox" 
-                      style={{ marginTop: 2, width: 15, height: 15, cursor: "pointer" }}
-                      checked={activeLayers[key as LayerKey]} 
-                      onChange={(e) => setActiveLayers(prev => ({ ...prev, [key]: e.target.checked }))} 
-                    />
-                    <span style={{ lineHeight: 1.3 }}>{label}</span>
-                  </label>
-                ))}
-              </div>
-              <div style={{ marginTop: 4 }}>
-                <button 
-                  className="btn secondary" 
-                  onClick={() => window.location.href = `/api/map/export${selectedRegency !== 'all' || selectedDate !== 'all' ? '?' : ''}${selectedRegency !== 'all' ? 'regency=' + selectedRegency : ''}${selectedRegency !== 'all' && selectedDate !== 'all' ? '&' : ''}${selectedDate !== 'all' ? 'date=' + selectedDate : ''}`}
-                  style={{ padding: "8px 16px", minHeight: 36 }}
+              <button
+                type="button"
+                onClick={() => setLayerMenuOpen((open) => !open)}
+                aria-expanded={layerMenuOpen}
+                aria-haspopup="true"
+                className="layer-menu-btn"
+                style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 14px", borderRadius: 10, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontSize: 14, fontWeight: 500, width: "100%", textAlign: "left" }}
+              >
+                <Icon name="layers" style={{ fontSize: 18, color: "var(--accent)" }} />
+                <span style={{ flex: 1 }}>{Object.values(activeLayers).filter(Boolean).length} dari 6 layer aktif</span>
+                <Icon name="expand_more" style={{ fontSize: 18, color: "var(--ink-soft)", transform: layerMenuOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+              </button>
+              {layerMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: .15 }}
+                  className="layer-dropdown"
+                  style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 6, zIndex: 20, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, boxShadow: "0 12px 32px rgba(15, 23, 42, .16)", padding: 6, display: "grid", gridTemplateColumns: "1fr", gap: 1 }}
                 >
-                  <Icon name="download" style={{ fontSize: 16 }} /> Ekspor CSV
-                </button>
-              </div>
+                  {Object.entries({
+                    bahaya_rob: "Bahaya Rob",
+                    laporan: "Laporan Warga",
+                    pasang_surut: "Pasang Surut",
+                    garis_pantai: "Garis Pantai",
+                    infrastruktur_kritis: "Infrastruktur",
+                    evakuasi: "Jalur Evakuasi"
+                  }).map(([key, label]) => (
+                    <label key={key} className="layer-option" style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", fontSize: 13, textTransform: "none", letterSpacing: "normal", minWidth: "auto", fontWeight: 500, color: "var(--ink)", margin: 0, padding: "8px 10px", borderRadius: 8 }}>
+                      <input
+                        type="checkbox"
+                        style={{ width: 15, height: 15, cursor: "pointer", flexShrink: 0, accentColor: "var(--accent)" }}
+                        checked={activeLayers[key as LayerKey]}
+                        onChange={(e) => setActiveLayers(prev => ({ ...prev, [key]: e.target.checked }))}
+                      />
+                      <span style={{ lineHeight: 1.2, whiteSpace: "nowrap" }}>{label}</span>
+                    </label>
+                  ))}
+                </motion.div>
+              )}
             </div>
           </div>
           <div className="map-viewport">
@@ -609,28 +683,10 @@ export function PublicMapPage() {
             {loading && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(255,255,255,.6)", fontWeight: 700 }}>Memuat peta.</div>}
           </div>
         </div>
-        <aside className="stack" style={{ gap: 24 }}>
+        <aside className="stack" style={{ gap: 14 }}>
           <motion.div variants={itemVariants} className="panel flush">
-            <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
-              <strong style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: .5, color: "var(--ink-soft)" }}>Wilayah terpilih</strong>
-              {selectedFeature ? <>
-                <div style={{ marginTop: 10, fontWeight: 700, color: "var(--ink)" }}>{String(selectedFeature.properties.village ?? "Wilayah pesisir")}</div>
-                <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 2 }}>{[selectedFeature.properties.district, selectedFeature.properties.regency].filter(Boolean).join(", ")}</div>
-                <span className="badge" style={{ marginTop: 10, background: `${selectedColor}1a`, color: selectedColor, borderColor: `${selectedColor}33` }}>{riskText(selectedRiskClass)}</span>
-              </> : <p style={{ margin: "10px 0 0", fontSize: 13 }}>Klik salah satu titik di peta untuk melihat detail wilayah.</p>}
-            </div>
-            {selectedFeature && <div style={{ padding: "16px 20px", display: "grid", gap: 12 }}>
-              <div className="info-item"><Icon name="insights" /><div><strong>Probabilitas</strong><p>{Math.round(Number(selectedFeature.properties.risk_probability ?? 0))}%</p></div></div>
-              <div className="info-item"><Icon name="groups" /><div><strong>Populasi risiko</strong><p>{typeof selectedPopulation === "number" && selectedPopulation > 0 ? `${numberFormatter.format(selectedPopulation)} jiwa` : "Data belum tersedia"}</p></div></div>
-              <a className="btn primary" href="#/reports" style={{ justifyContent: "center" }}><Icon name="add_location_alt" /> Lapor Kejadian di Sini</a>
-            </div>}
+            <div className="map-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", background: "var(--surface)" }}>{[[regions.features.length, "Zona dipantau", "var(--ink)"], [reports.features.length, "Laporan valid", "var(--low)"], [regions.features.filter((item) => ["tinggi", "sangat_tinggi"].includes(String(item.properties.risk_class))).length, "Risiko tinggi+", "var(--critical)"]].map(([value, label, color]) => <div key={String(label)} style={{ padding: "16px 8px", textAlign: "center" }}><strong style={{ display: "block", fontSize: 21, color: String(color) }}>{value}</strong><span style={{ fontSize: 11, color: "var(--ink-soft)" }}>{label}</span></div>)}</div>
           </motion.div>
-          {staleNotice && <motion.div variants={itemVariants} className="panel" style={{ padding: 16, borderLeft: "3px solid var(--medium)" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-              <Icon name="update" style={{ color: "var(--medium)", fontSize: 18 }} />
-              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{staleNotice}</p>
-            </div>
-          </motion.div>}
           {activeWarning && <motion.div variants={itemVariants} className="panel" style={{ padding: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <Icon name="campaign" style={{ color: "var(--critical)" }} />
@@ -638,8 +694,41 @@ export function PublicMapPage() {
             </div>
             <p style={{ margin: 0, fontSize: 13 }}>{activeWarning.message}</p>
           </motion.div>}
+          <motion.div variants={itemVariants} className="panel" style={{ padding: 16, borderLeft: `3px solid ${riskColors[String(highestRisk?.properties.risk_class)] ?? "var(--accent)"}` }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <Icon name="warning" style={{ fontSize: 20, color: riskColors[String(highestRisk?.properties.risk_class)] ?? "var(--accent)", flexShrink: 0 }} />
+              <div>
+                <strong style={{ display: "block", marginBottom: 3, color: "var(--ink)", fontSize: 13 }}>{highestRisk ? `Risiko ${riskText(highestRisk.properties.risk_class)} terdeteksi` : "Memuat peringatan risiko"}</strong>
+                <span style={{ color: "var(--ink-soft)", fontSize: 12, lineHeight: 1.5 }}>{highestRisk ? `${highestRisk.properties.village ?? "Wilayah pesisir"}, ${highestRisk.properties.regency ?? "Lampung"} · peluang rob ${Math.round(Number(highestRisk.properties.risk_probability ?? 0))}%` : "Mengambil data peta dari server."}</span>
+              </div>
+            </div>
+            {(!userRole || userRole === "warga") && <a className="btn secondary" href="#/awam" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>Lihat mode awam</a>}
+          </motion.div>
+          {isStaleData && <motion.div variants={itemVariants} className="panel" style={{ padding: 16, borderLeft: "3px solid #d97706", background: "#fef3c7" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <Icon name="history" style={{ fontSize: 20, color: "#b45309", flexShrink: 0 }} />
+              <div>
+                <strong style={{ display: "block", marginBottom: 3, color: "#78350f", fontSize: 13 }}>Menampilkan Prediksi Historis</strong>
+                <span style={{ color: "#92400e", fontSize: 12, lineHeight: 1.5 }}>Data peringatan cuaca hari ini gagal dimuat atau tertunda. Anda sedang melihat prediksi historis dari {regions.features[0]?.properties?.generated_at ? String(regions.features[0].properties.generated_at).substring(0, 10) : "sebelumnya"}.</span>
+              </div>
+            </div>
+          </motion.div>}
           <motion.div variants={itemVariants} className="panel flush">
-            <div className="map-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", background: "var(--surface-soft)" }}>{[[regions.features.length, "Zona dipantau", "var(--ink)"], [reports.features.length, "Laporan valid", "var(--low)"], [regions.features.filter((item) => ["tinggi", "sangat_tinggi"].includes(String(item.properties.risk_class))).length, "Risiko tinggi+", "var(--critical)"]].map(([value, label, color]) => <div key={String(label)} style={{ padding: "16px 8px", textAlign: "center" }}><strong style={{ display: "block", fontSize: 21, color: String(color) }}>{value}</strong><span style={{ fontSize: 11, color: "var(--ink-soft)" }}>{label}</span></div>)}</div>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
+              <strong style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: .5, color: "var(--ink-soft)" }}>Wilayah terpilih</strong>
+              {selectedFeature ? <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, color: "var(--ink)" }}>{String(selectedFeature.properties.village ?? "Wilayah pesisir")}</div>
+                  <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 2 }}>{[selectedFeature.properties.district, selectedFeature.properties.regency].filter(Boolean).join(", ")}</div>
+                </div>
+                <span className="badge" style={{ flexShrink: 0, background: `${selectedColor}1a`, color: selectedColor, borderColor: `${selectedColor}33` }}>{riskText(selectedRiskClass)}</span>
+              </div> : <p style={{ margin: "10px 0 0", fontSize: 13 }}>Klik salah satu titik di peta untuk melihat detail wilayah.</p>}
+            </div>
+            {selectedFeature && <div style={{ padding: "16px 20px", display: "grid", gap: 12 }}>
+              <div className="info-item"><Icon name="insights" /><div><strong>Probabilitas</strong><p>{Math.round(Number(selectedFeature.properties.risk_probability ?? 0))}%</p></div></div>
+              <div className="info-item"><Icon name="groups" /><div><strong>Populasi risiko</strong><p>{typeof selectedPopulation === "number" && selectedPopulation > 0 ? `${numberFormatter.format(selectedPopulation)} jiwa` : "Data belum tersedia"}</p></div></div>
+              <a className="btn primary" href="#/reports" style={{ justifyContent: "center" }}><Icon name="add_location_alt" /> Lapor Kejadian di Sini</a>
+            </div>}
           </motion.div>
         </aside>
       </motion.div>
