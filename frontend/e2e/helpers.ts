@@ -14,7 +14,9 @@ export async function loginViaUi(page: Page, email: string): Promise<void> {
   await page.goto("/#/login");
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(SEED_PASSWORD);
-  await page.getByRole("button", { name: "Masuk ke Dashboard" }).click();
+  // exact: true wajib — tanpa itu "Masuk" juga cocok dengan "Masuk dengan
+  // Google" dan tombol "Masuk ke Dashboard" di form register.
+  await page.getByRole("button", { name: "Masuk", exact: true }).click();
 }
 
 /**

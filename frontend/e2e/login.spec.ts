@@ -25,7 +25,7 @@ test("password salah tetap di halaman login", async ({ page }) => {
   await page.locator('input[type="password"]').fill("password-salah");
 
   const loginResponse = page.waitForResponse((response) => response.url().includes("/api/auth/login"));
-  await page.getByRole("button", { name: "Masuk ke Dashboard" }).click();
+  await page.getByRole("button", { name: "Masuk", exact: true }).click();
   expect((await loginResponse).status()).toBe(401);
 
   // Tetap di halaman login, tidak ada redirect, form masih tampil.
