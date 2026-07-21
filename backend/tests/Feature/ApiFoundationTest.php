@@ -298,12 +298,12 @@ final class ApiFoundationTest extends TestCase
                 UploadedFile::fake()->image('5.jpg'),
                 UploadedFile::fake()->image('6.jpg'),
             ],
-        ])->assertSessionHasErrors('photos');
+        ])->assertJsonValidationErrors('photos');
 
         $this->post('/api/reports', [
             ...$basePayload,
             'photos' => [UploadedFile::fake()->create('document.pdf', 100, 'application/pdf')],
-        ])->assertSessionHasErrors('photos.0');
+        ])->assertJsonValidationErrors('photos.0');
     }
 
     public function test_validated_report_is_visible_on_public_map_and_research_dataset(): void
