@@ -13,7 +13,7 @@ interface SummaryData {
   validated_reports_this_month: number;
   latest_prediction_date?: string | null;
   regencies?: RegencySummary[];
-  trend_30_days?: { prediction_date: string; critical_count: number; high_count: number; high_risk_count: number }[];
+  trend_30_days?: { prediction_date: string; avg_probability: number | string; max_probability: number | string; }[];
   filters?: { month?: string | null; regency?: string | null };
   available_regencies?: string[];
   top_impacted?: TopImpactedPrediction[];
