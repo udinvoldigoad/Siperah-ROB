@@ -171,7 +171,9 @@ final class DashboardController
                 prediction_date,
                 COUNT(DISTINCT CASE WHEN risk_class = 'sangat_tinggi' THEN region_id END) AS critical_count,
                 COUNT(DISTINCT CASE WHEN risk_class = 'tinggi' THEN region_id END) AS high_count,
-                COUNT(DISTINCT CASE WHEN risk_class IN ('tinggi', 'sangat_tinggi') THEN region_id END) AS high_risk_count
+                COUNT(DISTINCT CASE WHEN risk_class IN ('tinggi', 'sangat_tinggi') THEN region_id END) AS high_risk_count,
+                AVG(risk_probability) AS avg_probability,
+                MAX(risk_probability) AS max_probability
             ")
             ->where(function ($query): void {
                 $this->applyMonitoredRegionFilter($query, 'regions');

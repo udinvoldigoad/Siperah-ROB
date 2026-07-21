@@ -241,10 +241,10 @@ export function ProvinceDashboardPage() {
   // dari /public/predictions — endpoint itu terurut DESC & terbatas 1000 baris
   // sehingga hanya memuat ~3 hari terjauh, bukan 30 hari penuh.
   const trendData = useMemo(() => {
-    const byDate = new Map<string, { critical: number; high: number }>();
+    const byDate = new Map<string, { avgProb: number; maxProb: number }>();
     for (const row of summary.trend_30_days ?? []) {
       const key = row.prediction_date.substring(0, 10);
-      byDate.set(key, { critical: toNumber(row.critical_count), high: toNumber(row.high_count) });
+      byDate.set(key, { avgProb: toNumber(row.avg_probability), maxProb: toNumber(row.max_probability) });
     }
 
     const today = new Date();
@@ -258,8 +258,8 @@ export function ProvinceDashboardPage() {
       const stat = byDate.get(key);
       return {
         date: d,
-        criticalCount: stat?.critical ?? 0,
-        highCount: stat?.high ?? 0,
+        avgProb: stat?.avgProb ?? 0,
+        maxProb: stat?.maxProb ?? 0,
         isToday: key === actualToday,
       };
     });
@@ -405,24 +405,23 @@ export function ProvinceDashboardPage() {
           {/* ML Prediction Timeline — Line Chart */}
           <motion.div variants={itemVariants} className="panel" style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)" }}>
-                  Prediksi Rob 30 Hari ke Depan
-                  {selectedRegency !== "all" && (
-                    <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "var(--ink-soft)", marginLeft: 10 }}>({selectedRegency})</span>
-                  )}
-                </h2>
-                <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--ink-soft)" }}>Jumlah kelurahan kelas Sangat Tinggi &amp; Tinggi per hari (FR-PROV-3). Mengikuti filter kabupaten di atas. Arahkan kursor untuk detail tanggal.</p>
-              </div>
-              <div style={{ display: "flex", gap: "14px", alignItems: "center", flexWrap: "wrap" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--ink-soft)" }}>
-                  <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--critical)" }} /> Sangat Tinggi
+                <div>
+                  <h2 style={{ margin: "0 0 8px", fontSize: "1.25rem", color: "var(--ink)" }}>Prediksi Peluang Rob 30 Hari ke Depan</h2>
+                  <p style={{ margin: 0, fontSize: "13px", color: "var(--ink-soft)", lineHeight: 1.5, maxWidth: "500px" }}>
+                    Rata-rata persentase peluang terjadinya banjir rob harian berdasarkan model prediktif (FR-PROV-3).
+                  </p>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--ink-soft)" }}>
-                  <div style={{ width: 10, height: 10, borderRadius: 2, background: "var(--high)" }} /> Tinggi
+                <div style={{ display: "flex", gap: "16px", fontSize: "11px", fontWeight: 600 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <div style={{ width: "10px", height: "10px", background: "var(--accent)", borderRadius: "2px" }}></div>
+                    <span style={{ color: "var(--ink-soft)" }}>Rata-rata Peluang</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <div style={{ width: "10px", height: "10px", background: "var(--high)", borderRadius: "2px" }}></div>
+                    <span style={{ color: "var(--ink-soft)" }}>Peluang Maksimum</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
             {(() => {
               const svgW = 800, svgH = 260;
@@ -431,21 +430,18 @@ export function ProvinceDashboardPage() {
               const chartH = svgH - pad.top - pad.bottom;
               const data = trendData;
 
-              // Sumbu Y integer dinamis: skala mengikuti jumlah kelurahan tertinggi
-              // (Sangat Tinggi / Tinggi) dalam jendela, minimal 4 agar tak gepeng.
-              const rawMax = Math.max(1, ...data.map((d) => Math.max(d.criticalCount, d.highCount)));
-              const step = rawMax <= 4 ? 1 : Math.ceil(rawMax / 4);
-              const max = step * 4;
-              const uniqueYTicks = [0, step, step * 2, step * 3, step * 4];
+              // Sumbu Y persentase dinamis: 0 - 100%
+              const max = 100;
+              const uniqueYTicks = [0, 25, 50, 75, 100];
 
               const xOf = (i: number) => pad.left + (i / Math.max(1, data.length - 1)) * chartW;
               const yOf = (v: number) => pad.top + chartH - (v / max) * chartH;
 
               const buildLine = (get: (d: typeof data[number]) => number) =>
                 data.map((d, i) => `${i === 0 ? "M" : "L"}${xOf(i).toFixed(1)},${yOf(get(d)).toFixed(1)}`).join(" ");
-              const criticalLine = buildLine((d) => d.criticalCount);
+              const criticalLine = buildLine((d) => d.avgProb);
               const criticalArea = `${criticalLine} L${xOf(data.length - 1).toFixed(1)},${yOf(0).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(0).toFixed(1)} Z`;
-              const highLine = buildLine((d) => d.highCount);
+              const highLine = buildLine((d) => d.maxProb);
 
               // X ticks — show ~6 date labels
               const xTickStep = Math.max(1, Math.floor(data.length / 5));
@@ -454,11 +450,11 @@ export function ProvinceDashboardPage() {
               // Today index
               const todayIdx = data.findIndex((d) => d.isToday);
 
-              // Hover point — jangkar ke garis Sangat Tinggi (seri utama)
+              // Hover point
               const hovered = trendHoverIdx !== null ? data[trendHoverIdx] : null;
               const hoverX = trendHoverIdx !== null ? xOf(trendHoverIdx) : 0;
-              const hoverY = hovered ? yOf(hovered.criticalCount) : 0;
-              const hoverColor = "var(--critical)";
+              const hoverY = hovered ? yOf(hovered.avgProb) : 0;
+              const hoverColor = "var(--accent)";
 
               const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
                 const svg = trendSvgRef.current;
@@ -490,39 +486,36 @@ export function ProvinceDashboardPage() {
                 >
                   <defs>
                     <linearGradient id="trendAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--critical)" stopOpacity="0.22" />
-                      <stop offset="100%" stopColor="var(--critical)" stopOpacity="0.02" />
+                      <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
+                      <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.02" />
                     </linearGradient>
                   </defs>
 
-                  {/* Y Grid lines (jumlah kelurahan — integer) */}
+                  {/* Y Grid lines (Persentase) */}
                   {uniqueYTicks.map((t) => (
                     <g key={`y-${t}`}>
                       <line x1={pad.left} y1={yOf(t)} x2={pad.left + chartW} y2={yOf(t)} stroke="var(--line, #e5e7eb)" strokeWidth="0.8" opacity="0.5" />
                       <text x={pad.left - 8} y={yOf(t) + 4} textAnchor="end" fontSize="11" fill="var(--ink-soft, #94a3b8)" fontWeight="500">
-                        {t}
+                        {t}%
                       </text>
                     </g>
                   ))}
 
-                  {/* Area + garis Sangat Tinggi (seri utama) */}
+                  {/* Area under critical line */}
                   <path d={criticalArea} fill="url(#trendAreaGrad)" />
-                  <path d={criticalLine} fill="none" stroke="var(--critical)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  {/* High line */}
+                  <path d={highLine} fill="none" stroke="var(--high)" strokeWidth="2.5" />
+                  {/* Critical line */}
+                  <path d={criticalLine} fill="none" stroke="var(--accent)" strokeWidth="2.5" />
 
-                  {/* Garis Tinggi (seri sekunder) */}
-                  <path d={highLine} fill="none" stroke="var(--high)" strokeWidth="2" strokeDasharray="5 3" strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
-
-                  {/* Data dots — seri Sangat Tinggi */}
+                  {/* Dots for Critical line */}
                   {data.map((d, i) => (
-                    <circle
-                      key={i}
-                      cx={xOf(i)}
-                      cy={yOf(d.criticalCount)}
-                      r={d.isToday ? 4.5 : 2.5}
-                      fill="var(--critical)"
-                      stroke={d.isToday ? "var(--surface)" : "none"}
-                      strokeWidth={d.isToday ? 2 : 0}
-                      opacity={trendHoverIdx === i ? 0 : 1}
+                    <circle 
+                      key={`dot-${i}`} 
+                      cx={xOf(i)} cy={yOf(d.avgProb)} r="3.5" 
+                      fill="var(--accent)" 
+                      strokeWidth={d.isToday ? 2 : 0} 
+                      opacity={trendHoverIdx === i ? 0 : 1} 
                     />
                   ))}
 
@@ -537,7 +530,7 @@ export function ProvinceDashboardPage() {
 
                   {/* X-Axis labels */}
                   {xTicks.map((i) => (
-                    <text key={`x-${i}`} x={xOf(i)} y={svgH - 6} textAnchor="middle" fontSize="10.5" fill={data[i]?.isToday ? "var(--critical)" : "var(--ink-soft)"} fontWeight={data[i]?.isToday ? 700 : 500}>
+                    <text key={`x-${i}`} x={xOf(i)} y={svgH - 6} textAnchor="middle" fontSize="10.5" fill={data[i]?.isToday ? "var(--accent)" : "var(--ink-soft)"} fontWeight={data[i]?.isToday ? 700 : 500}>
                       {data[i]?.date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
                     </text>
                   ))}
@@ -563,9 +556,9 @@ export function ProvinceDashboardPage() {
                               {hovered.date.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "long" })}
                             </text>
                             <text x={tx + tooltipW / 2} y={ty + 40} textAnchor="middle" fontSize="11.5" fontWeight="600">
-                              <tspan fill="var(--critical)">{hovered.criticalCount} Sangat Tinggi</tspan>
+                              <tspan fill="var(--accent)">{hovered.avgProb.toFixed(1)}% Rata-rata</tspan>
                               <tspan fill="var(--ink-soft)"> · </tspan>
-                              <tspan fill="var(--high)">{hovered.highCount} Tinggi</tspan>
+                              <tspan fill="var(--high)">{hovered.maxProb.toFixed(1)}% Maksimal</tspan>
                             </text>
                           </g>
                         );
@@ -598,7 +591,6 @@ export function ProvinceDashboardPage() {
                 <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)" }}>Wilayah Kota</th>
                 <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)" }}>Kategori Bahaya</th>
                 <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)", textAlign: "right" }}>Tinggi Pasang Prediksi</th>
-                <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)", textAlign: "center" }}>Tingkat Akurasi ML</th>
               </tr>
             </thead>
             <tbody>
@@ -637,11 +629,6 @@ export function ProvinceDashboardPage() {
                   </td>
                   <td style={{ padding: "16px 24px", textAlign: "right", fontWeight: 700 }}>
                     {p.max_tidal_height ? `${toNumber(p.max_tidal_height).toLocaleString("id-ID", { maximumFractionDigits: 2 })} Meter` : "-"}
-                  </td>
-                  <td style={{ padding: "16px 24px", textAlign: "center" }}>
-                    <span style={{ display: "inline-block", background: "rgba(16, 185, 129, 0.1)", color: "var(--low)", padding: "4px 8px", borderRadius: "6px", fontSize: "12px", fontWeight: 700 }}>
-                      {p.confidence_score ? `${toNumber(p.confidence_score).toFixed(2)}%` : "-"}
-                    </span>
                   </td>
                 </motion.tr>
               ))}
