@@ -530,7 +530,7 @@ export function AdminUsersPage() {
               />
             ) : (
             <div className="table-responsive">
-              <table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+              <table className="data-table" style={{ width: "100%", minWidth: 900, textAlign: "left", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "var(--surface-soft)", borderBottom: "1px solid var(--line)" }}>
                     <th style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: 13, fontWeight: 600 }}>Nama Lengkap</th>
@@ -591,8 +591,8 @@ export function AdminUsersPage() {
                             user.institution || user.region_name || "-"
                           )}
                         </td>
-                        <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                          <div style={{ display: "inline-flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                        <td style={{ padding: "16px 24px", textAlign: "right", whiteSpace: "nowrap" }}>
+                          <div style={{ display: "inline-flex", gap: 8, justifyContent: "flex-end" }}>
                             {isEditing ? (
                               <>
                                 <button type="button" className="btn primary" disabled={isActing} style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => saveEdit(user)}>
