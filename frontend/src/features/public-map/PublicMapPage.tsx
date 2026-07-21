@@ -151,6 +151,7 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
       zoom: 9,
       style: {
         version: 8,
+        glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
         sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap contributors" } },
         layers: [{ id: "osm", type: "raster", source: "osm" }],
       },
@@ -204,7 +205,12 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
         riskPointFeatures.push({
           type: "Feature",
           geometry: { type: "Point", coordinates: center },
-          properties: { regionId: String(feature.id ?? ""), color, riskRank: RISK_RANK[risk] ?? 1 },
+          properties: { 
+            regionId: String(feature.id ?? ""), 
+            color, 
+            riskRank: RISK_RANK[risk] ?? 1,
+            probability: Number(feature.properties.risk_probability) || 0
+          },
         });
 
         if (!showBadges || !viewBounds.contains(center)) return;
@@ -371,7 +377,10 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
           cluster: true,
           clusterRadius: 48,
           clusterMaxZoom: CLUSTER_MAX_ZOOM,
-          clusterProperties: { maxRank: ["max", ["get", "riskRank"]] },
+          clusterProperties: { 
+            maxRank: ["max", ["get", "riskRank"]],
+            sumProb: ["+", ["get", "probability"]]
+          },
         });
         instance.addLayer({
           id: "risk-clusters",
@@ -392,6 +401,26 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
             "circle-stroke-width": 3,
             "circle-stroke-color": "#fff",
           },
+        });
+        instance.addLayer({
+          id: "risk-cluster-labels",
+          type: "symbol",
+          source: pointSourceId,
+          filter: ["has", "point_count"],
+          maxzoom: CLUSTER_MAX_ZOOM,
+          layout: {
+            "text-field": [
+              "concat",
+              ["to-string", ["round", ["/", ["get", "sumProb"], ["get", "point_count"]]]],
+              "%"
+            ],
+            "text-font": ["Open Sans Regular"],
+            "text-size": 12,
+            "text-allow-overlap": true
+          },
+          paint: {
+            "text-color": "#ffffff"
+          }
         });
         instance.addLayer({
           id: "risk-unclustered",
