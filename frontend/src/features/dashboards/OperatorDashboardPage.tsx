@@ -52,6 +52,7 @@ export function OperatorDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [severityFilter, setSeverityFilter] = useState<ReportSeverity | "">("");
   const [slaOverdue, setSlaOverdue] = useState(false);
+  const [activeTab, setActiveTab] = useState<"antrean" | "riwayat">("antrean");
   // Untuk mendeteksi kedatangan laporan baru antar polling (null = belum ada baseline).
   const prevPendingRef = useRef<number | null>(null);
   const toast = useToast();
@@ -59,8 +60,9 @@ export function OperatorDashboardPage() {
   const loadReports = async (targetPage = page) => {
     setIsLoading(true);
     try {
+      const statusFilter = activeTab === "riwayat" ? "divalidasi,ditolak" : "menunggu,perlu_review";
       const [data, summaryRes] = await Promise.all([
-        fetchOperatorReports(targetPage, 20, { severity: severityFilter, slaOverdue }),
+        fetchOperatorReports(targetPage, 20, { severity: severityFilter, slaOverdue, status: statusFilter }),
         api<OperatorSummaryResponse>("/dashboard/operator/summary"),
       ]);
 
@@ -94,7 +96,7 @@ export function OperatorDashboardPage() {
     loadReports(1);
     const timer = window.setInterval(() => loadReports(1), 30000);
     return () => window.clearInterval(timer);
-  }, [severityFilter, slaOverdue]);
+  }, [severityFilter, slaOverdue, activeTab]);
 
   const changePage = (nextPage: number) => {
     if (nextPage < 1 || nextPage > pageMeta.lastPage || nextPage === page) return;
@@ -230,7 +232,20 @@ export function OperatorDashboardPage() {
           <div className="panel flush">
             <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Antrean Laporan Masuk</h2>
+                <div style={{ display: "flex", gap: 24, alignItems: "center", marginBottom: 6 }}>
+                  <h2 
+                    style={{ margin: 0, fontSize: "1.1rem", cursor: "pointer", color: activeTab === "antrean" ? "var(--ink)" : "var(--ink-soft)", borderBottom: activeTab === "antrean" ? "2px solid var(--accent)" : "2px solid transparent", paddingBottom: 4 }}
+                    onClick={() => setActiveTab("antrean")}
+                  >
+                    Antrean Laporan Masuk
+                  </h2>
+                  <h2 
+                    style={{ margin: 0, fontSize: "1.1rem", cursor: "pointer", color: activeTab === "riwayat" ? "var(--ink)" : "var(--ink-soft)", borderBottom: activeTab === "riwayat" ? "2px solid var(--accent)" : "2px solid transparent", paddingBottom: 4 }}
+                    onClick={() => setActiveTab("riwayat")}
+                  >
+                    Riwayat Validasi
+                  </h2>
+                </div>
                 <span style={{ color: "var(--ink-soft)", fontSize: 12 }}>
                   {operatorArea} · {pageMeta.total === 0 ? "tidak ada laporan pada filter ini" : `menampilkan ${pageMeta.from}-${pageMeta.to} dari ${pageMeta.total} laporan`}
                   {(severityFilter || slaOverdue) && <> · <button type="button" onClick={() => { setSeverityFilter(""); setSlaOverdue(false); }} style={{ background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontSize: 12, padding: 0, fontWeight: 600 }}>reset filter</button></>}
@@ -312,13 +327,17 @@ export function OperatorDashboardPage() {
                       <div style={{ fontSize: "14px", color: "var(--ink)", marginBottom: "20px", padding: "16px", background: "var(--surface-soft)", borderRadius: "var(--radius)" }}>
                         "{report.description}"
                       </div>
-                      <div className="report-actions" style={{ justifyContent: "flex-start" }}>
-                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn primary" style={{ background: "var(--low)", borderColor: "var(--low)", padding: "10px 20px" }} onClick={() => handleValidate(report)}>
-                          <Icon name="check" /> Validasi
-                        </motion.button>
-                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn secondary" style={{ color: "var(--critical)", padding: "10px 20px" }} onClick={() => handleReject(report)}>
-                          <Icon name="close" /> Tolak
-                        </motion.button>
+                      <div style={{ display: "flex", gap: 10, marginTop: "16px", justifyContent: "flex-end" }}>
+                        {activeTab === "antrean" && (
+                          <>
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn primary" style={{ background: "var(--low)", padding: "10px 20px", color: "#fff", border: "none" }} onClick={() => handleValidate(report)}>
+                              <Icon name="check_circle" /> Validasi Laporan
+                            </motion.button>
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn secondary" style={{ color: "var(--critical)", padding: "10px 20px" }} onClick={() => handleReject(report)}>
+                              <Icon name="close" /> Tolak
+                            </motion.button>
+                          </>
+                        )}
                         <motion.a whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} href={`#/operator/reports/${report.id}`} className="btn secondary" style={{ padding: "10px 20px" }}>
                           <Icon name="visibility" /> Detail
                         </motion.a>

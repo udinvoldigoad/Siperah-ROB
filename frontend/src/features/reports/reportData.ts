@@ -178,10 +178,11 @@ export type OperatorReportsPageData = {
   to: number;
 };
 
-export type OperatorReportFilters = { severity?: ReportSeverity | ""; slaOverdue?: boolean };
+export type OperatorReportFilters = { severity?: ReportSeverity | ""; slaOverdue?: boolean; status?: string };
 
 export async function fetchOperatorReports(page = 1, perPage = 20, filters: OperatorReportFilters = {}): Promise<OperatorReportsPageData> {
-  const params = new URLSearchParams({ status: "menunggu,perlu_review", per_page: String(perPage), page: String(page) });
+  const statusParam = filters.status || "menunggu,perlu_review";
+  const params = new URLSearchParams({ status: statusParam, per_page: String(perPage), page: String(page) });
   if (filters.severity) params.set("severity", filters.severity);
   if (filters.slaOverdue) params.set("sla", "overdue");
   const response = await api<ReportHistoryResponse>(`/reports?${params.toString()}`);
