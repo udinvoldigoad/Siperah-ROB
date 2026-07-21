@@ -120,13 +120,6 @@ function geographicCircle(center: [number, number], radiusKm: number): { type: "
   return { type: "Polygon", coordinates: [ring] };
 }
 
-// Ambang peralihan tampilan: di bawah zoom ini ratusan kelurahan digabung jadi
-// gelembung cluster; pada/di atasnya kembali ke badge angka per wilayah.
-const CLUSTER_MAX_ZOOM = 10;
-// Peringkat untuk menentukan risiko TERTINGGI dalam satu cluster (agregasi
-// dilakukan MapLibre lewat clusterProperties).
-const RISK_RANK: Record<string, number> = { rendah: 1, sedang: 2, tinggi: 3, sangat_tinggi: 4 };
-
 function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSelectFeature }: { regions: FeatureCollection; reports: FeatureCollection; layers: MapLayers; activeLayers: Record<LayerKey, boolean>; selectedRegency: string; onSelectFeature: (feature: GeoJsonFeature) => void }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
@@ -137,11 +130,6 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
   const evacMarkers = useRef<maplibregl.Marker[]>([]);
   const onSelectFeatureRef = useRef(onSelectFeature);
   onSelectFeatureRef.current = onSelectFeature;
-  // Dipakai handler klik cluster yang hanya didaftarkan sekali, sehingga tidak
-  // boleh menutup (closure) nilai `regions` dari render pertama.
-  const regionsRef = useRef(regions);
-  regionsRef.current = regions;
-  const clusterHandlersBound = useRef(false);
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -163,7 +151,7 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
   useEffect(() => {
     const instance = map.current;
     if (!instance) return;
-    const update = (shouldFrame = true) => {
+    const update = () => {
       predictionMarkers.current.forEach(m => m.remove());
       predictionMarkers.current = [];
       reportMarkers.current.forEach(m => m.remove());
@@ -176,12 +164,6 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
       evacMarkers.current = [];
 
       const circleFeatures: any[] = [];
-      const riskPointFeatures: any[] = [];
-      // Di zoom jauh badge angka diwakili gelembung cluster; pada zoom dekat
-      // badge dikembalikan, dan hanya dibuat untuk wilayah yang benar-benar
-      // terlihat (viewport culling) agar jumlah node DOM tetap kecil.
-      const showBadges = instance.getZoom() >= CLUSTER_MAX_ZOOM;
-      const viewBounds = instance.getBounds();
 
       // 1. TAMBAH TITIK BANJIR (PREDIKSI)
       if (activeLayers.bahaya_rob) {
@@ -199,15 +181,6 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
           geometry: geographicCircle(center, radius),
           properties: { color, risk_class: risk }
         });
-
-        // Titik untuk sumber ber-cluster (agregasi ditangani MapLibre).
-        riskPointFeatures.push({
-          type: "Feature",
-          geometry: { type: "Point", coordinates: center },
-          properties: { regionId: String(feature.id ?? ""), color, riskRank: RISK_RANK[risk] ?? 1 },
-        });
-
-        if (!showBadges || !viewBounds.contains(center)) return;
 
         // B. Badge titik, klik untuk memilih wilayah di panel samping
         const el = document.createElement("div");
@@ -330,13 +303,10 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
             features: circleFeatures,
           },
         });
-        // minzoom: area zona baru digambar saat sudah cukup dekat. Di zoom jauh
-        // ratusan lingkaran ini saling tindih dan justru membuat peta berantakan.
         instance.addLayer({
           id: "risk-circles-fill",
           type: "fill",
           source: circleSourceId,
-          minzoom: CLUSTER_MAX_ZOOM,
           paint: {
             "fill-color": ["get", "color"],
             "fill-opacity": 0.4,
@@ -346,100 +316,12 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
           id: "risk-circles-line",
           type: "line",
           source: circleSourceId,
-          minzoom: CLUSTER_MAX_ZOOM,
           paint: {
             "line-color": ["get", "color"],
             "line-width": 2,
           },
         });
       }
-
-      // Sumber titik risiko dengan clustering bawaan MapLibre. Ukuran gelembung
-      // = banyaknya wilayah di dalamnya, warna = risiko TERTINGGI di dalamnya
-      // (bukan rata-rata, supaya area berbahaya tidak tersamarkan tetangganya).
-      // Tidak memakai layer `symbol`/teks karena style peta ini raster tanpa
-      // glyphs — angka pasti tidak akan ter-render.
-      const pointSourceId = "risk-points";
-      const pointData = { type: "FeatureCollection", features: riskPointFeatures } as any;
-      const pointSource = instance.getSource(pointSourceId);
-      if (pointSource) {
-        (pointSource as maplibregl.GeoJSONSource).setData(pointData);
-      } else {
-        instance.addSource(pointSourceId, {
-          type: "geojson",
-          data: pointData,
-          cluster: true,
-          clusterRadius: 48,
-          clusterMaxZoom: CLUSTER_MAX_ZOOM,
-          clusterProperties: { maxRank: ["max", ["get", "riskRank"]] },
-        });
-        instance.addLayer({
-          id: "risk-clusters",
-          type: "circle",
-          source: pointSourceId,
-          filter: ["has", "point_count"],
-          maxzoom: CLUSTER_MAX_ZOOM,
-          paint: {
-            "circle-color": [
-              "case",
-              [">=", ["get", "maxRank"], 4], riskColors.sangat_tinggi,
-              [">=", ["get", "maxRank"], 3], riskColors.tinggi,
-              [">=", ["get", "maxRank"], 2], riskColors.sedang,
-              riskColors.rendah,
-            ],
-            "circle-radius": ["step", ["get", "point_count"], 15, 5, 19, 15, 25, 40, 31],
-            "circle-opacity": 0.9,
-            "circle-stroke-width": 3,
-            "circle-stroke-color": "#fff",
-          },
-        });
-        instance.addLayer({
-          id: "risk-unclustered",
-          type: "circle",
-          source: pointSourceId,
-          filter: ["!", ["has", "point_count"]],
-          maxzoom: CLUSTER_MAX_ZOOM,
-          paint: {
-            "circle-color": ["get", "color"],
-            "circle-radius": 7,
-            "circle-stroke-width": 2,
-            "circle-stroke-color": "#fff",
-          },
-        });
-      }
-
-      // Handler klik didaftarkan sekali saja agar tidak menumpuk tiap update.
-      if (!clusterHandlersBound.current) {
-        clusterHandlersBound.current = true;
-        instance.on("click", "risk-clusters", (event) => {
-          const feature = event.features?.[0];
-          if (!feature) return;
-          // Zoom bertahap agar cluster memecah — lebih tahan versi API daripada
-          // getClusterExpansionZoom yang bentuknya berbeda antar rilis MapLibre.
-          instance.easeTo({
-            center: (feature.geometry as any).coordinates,
-            zoom: Math.min(instance.getZoom() + 2, CLUSTER_MAX_ZOOM + 2),
-          });
-        });
-        instance.on("click", "risk-unclustered", (event) => {
-          const regionId = event.features?.[0]?.properties?.regionId;
-          if (!regionId) return;
-          const region = regionsRef.current.features.find((item) => String(item.id) === String(regionId));
-          if (region) onSelectFeatureRef.current(region);
-        });
-        (["risk-clusters", "risk-unclustered"] as const).forEach((layerId) => {
-          instance.on("mouseenter", layerId, () => { instance.getCanvas().style.cursor = "pointer"; });
-          instance.on("mouseleave", layerId, () => { instance.getCanvas().style.cursor = ""; });
-        });
-      }
-
-      // Saat dipicu pan/zoom, berhenti di sini: menjalankan framing di bawah
-      // akan memindahkan peta lagi → memicu moveend lagi → loop tak berujung.
-      if (!shouldFrame) return;
-
-      // Kontainer peta berubah tinggi antar breakpoint (46vh di mobile). Tanpa
-      // resize(), MapLibre memakai ukuran lama sehingga fitBounds meleset.
-      instance.resize();
 
       // 3. FRAMING PETA
       // Selalu paskan viewport ke sebaran zona yang benar-benar ada. Backend
@@ -478,12 +360,6 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
     // seumur peta, sehingga toggle layer setelahnya bisa jadi no-op bila
     // isStyleLoaded() kebetulan false sesaat (mis. saat tile masih dimuat).
     if (instance.isStyleLoaded()) update(); else instance.once("idle", update);
-
-    // Badge dibuat per-viewport & bergantung zoom, jadi perlu digambar ulang
-    // setiap peta selesai digeser/di-zoom — tanpa framing ulang.
-    const handleMoveEnd = () => update(false);
-    instance.on("moveend", handleMoveEnd);
-    return () => { instance.off("moveend", handleMoveEnd); };
   }, [regions, reports, layers, activeLayers, selectedRegency]);
 
   return <div ref={mapContainer} className="map-canvas" style={{ minHeight: 560, width: "100%" }} aria-label="Peta interaktif risiko banjir rob" />;
