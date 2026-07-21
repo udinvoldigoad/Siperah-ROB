@@ -305,7 +305,7 @@ def climatology_from_history(weather: pd.DataFrame | None, marine: pd.DataFrame 
 def run_predict(conn, simulate: bool = False):
     cursor = conn.cursor()
     print("[INFO] Mengambil wilayah pesisir...")
-    cursor.execute("SELECT id, regency, district, village FROM regions WHERE coastal_flag = true")
+    cursor.execute("SELECT id, regency, district, village, distance_to_coast_m, avg_elevation_m FROM regions WHERE coastal_flag = true")
     regions = cursor.fetchall()
     print(f"[INFO] {len(regions)} wilayah pesisir ditemukan.")
     if not regions:

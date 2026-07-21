@@ -46,6 +46,7 @@ final class RefreshOperationalData extends Command
 
             if (!$dryRun) {
                 Artisan::call('data:classify-coastal-regions', [], $this->output);
+                Artisan::call('data:calculate-coast-distance', [], $this->output);
             }
         }
 

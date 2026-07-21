@@ -31,6 +31,8 @@ create table regions (
   geometry geometry(MultiPolygon, 4326) not null,
   population integer,
   coastal_flag boolean not null default false,
+  distance_to_coast_m numeric(10, 2),
+  avg_elevation_m numeric(8, 2),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
