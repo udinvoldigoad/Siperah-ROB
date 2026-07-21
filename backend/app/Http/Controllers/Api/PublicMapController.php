@@ -68,7 +68,7 @@ final class PublicMapController
             }
         }
 
-        $predictions = $query->limit(200)->get();
+        $predictions = $query->get();
         $regionIds = $predictions->pluck('region_id')->filter()->unique()->values();
         $geometries = $this->regionGeometries($regionIds->all());
 

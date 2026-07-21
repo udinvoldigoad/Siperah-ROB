@@ -21,18 +21,25 @@ final class CalculateCoastDistance extends Command
             return self::FAILURE;
         }
 
-        // We use geography for accurate distance in meters over the earth's surface.
-        // We find the minimum distance to ANY coastline geometry.
-        // To make it fast, we can use a lateral join or a subquery.
+        // To make it fast, we use the PostGIS spatial index operator (<->) in a CROSS JOIN LATERAL
+        // which guarantees a K-Nearest Neighbor (KNN) index scan in O(log N).
         $sql = "
             UPDATE regions r
             SET 
-                distance_to_coast_m = (
-                    SELECT MIN(ST_Distance(r.geometry::geography, c.geometry::geography))
-                    FROM coastlines c
-                ),
+                distance_to_coast_m = subquery.dist,
                 updated_at = now()
-            WHERE coastal_flag = true
+            FROM (
+                SELECT r2.id, c_closest.dist
+                FROM regions r2
+                CROSS JOIN LATERAL (
+                    SELECT ST_Distance(r2.geometry::geography, c.geometry::geography) as dist
+                    FROM coastlines c
+                    ORDER BY c.geometry <-> r2.geometry
+                    LIMIT 1
+                ) AS c_closest
+                WHERE r2.coastal_flag = true
+            ) AS subquery
+            WHERE r.id = subquery.id
         ";
 
         try {
