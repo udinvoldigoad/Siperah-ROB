@@ -108,24 +108,11 @@ def generate_forecast(
 
         month_avg_tide = float(monthly_tide_avg.get(month, tide_forecast_df["max_tide_height_cm"].mean()))
         features = {
-            "max_tide_height_cm": max_tide,
-            "tide_anomaly_cm": max_tide - month_avg_tide,
-            "is_king_tide": int(max_tide >= tide_p95),
-            "rainfall_mm": rainfall,
-            "rainfall_3d_avg": rainfall_3d,
-            "rainfall_7d_avg": rainfall_7d,
-            "rainfall_14d_avg": rainfall_7d,  # aproksimasi: tidak ada data 14 hari ke depan
-            "consecutive_rain_days": int(rainfall >= 1.0),
-            "wind_speed_ms": wind,
-            "pressure_hpa": pressure,
-            "wave_height_max_m": wave,
-            "swell_wave_height_max_m": swell,
-            "tide_x_rainfall": max_tide * rainfall,
-            "tide_x_wave": max_tide * wave,
-            "rain_x_wind": rainfall * wind,
-            "month": month,
-            "is_wet_season": int(month in (11, 12, 1, 2, 3)),
-            "is_full_moon_period": int(is_full_moon_period(pd.Series([date])).iloc[0]),
+            "Prediksi Tinggi Muka Laut": max_tide / 100.0,
+            "Kecepatan Angin": wind * 3.6,
+            "Gangguan Cuaca": int(rainfall > 10.0),
+            "Gelombang": wave,
+            "Peristiwa Astronomi": int(is_full_moon_period(pd.Series([date])).iloc[0]),
         }
         X = pd.DataFrame([features])[FEATURE_COLS]
         prob_rob = float(model.predict_proba(X)[0, 1])

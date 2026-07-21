@@ -232,17 +232,42 @@ def build_training_frame(conn, simulate: bool = False):
 
 
 def run_train(conn, simulate: bool = False, tune: bool = False):
-    df, _, data_source, _ = build_training_frame(conn, simulate)
-    if df["label_rob"].nunique() < 2:
-        print("[ERROR] Semua label satu kelas -- model tidak bisa dilatih. "
-              "Periksa ambang labeler (ML_TIDE_THRESHOLD_CM / ML_RAINFALL_THRESHOLD_MM) "
-              "atau offset datum pasut (ML_TIDE_DATUM_OFFSET_CM).")
+    print("[INFO] Membaca dataset nyata dari Excel...")
+    excel_path = r"C:\Users\Vivo7\Downloads\Dataset banjir rob (1).xlsx"
+    df = pd.read_excel(excel_path, skiprows=1)
+    
+    # Mapping nama kolom Tanggal ke date untuk time_based_split
+    df = df.rename(columns={"Tanggal ": "date"})
+    
+    # Convert 'date' from Indonesian format to datetime for sorting
+    id_months = {
+        "Januari": "01", "Februari": "02", "Maret": "03", "April": "04", 
+        "Mei": "05", "Juni": "06", "Juli": "07", "Agustus": "08", 
+        "September": "09", "Oktober": "10", "November": "11", "Desember": "12"
+    }
+    
+    def parse_id_date(d_str):
+        if not isinstance(d_str, str):
+            return pd.NaT
+        parts = d_str.strip().split()
+        if len(parts) == 3:
+            day, month, year = parts
+            month_num = id_months.get(month, "01")
+            return pd.to_datetime(f"{year}-{month_num}-{day.zfill(2)}")
+        return pd.NaT
+
+    df["date"] = df["date"].apply(parse_id_date)
+    df = df.dropna(subset=["date"])
+    
+    if df["Rob"].nunique() < 2:
+        print("[ERROR] Semua label satu kelas -- model tidak bisa dilatih.")
         sys.exit(1)
+        
     train_df, _val_df, test_df = train_model.time_based_split(df)
     print(f"[INFO] Split: train={len(train_df)} val={len(_val_df)} test={len(test_df)}")
     model = train_model.train_random_forest(train_df, tune=tune)
     metrics = train_model.evaluate_model(model, test_df)
-    metrics["data_source"] = data_source
+    metrics["data_source"] = "Excel (Real Dataset)"
     metrics["trained_rows"] = int(len(train_df))
     train_model.save_model(model, metrics)
     return model

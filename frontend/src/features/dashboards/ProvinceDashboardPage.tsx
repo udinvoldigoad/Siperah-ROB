@@ -423,151 +423,156 @@ export function ProvinceDashboardPage() {
                 </div>
               </div>
 
-            {(() => {
-              const svgW = 800, svgH = 260;
-              const pad = { top: 30, right: 20, bottom: 40, left: 44 };
-              const chartW = svgW - pad.left - pad.right;
-              const chartH = svgH - pad.top - pad.bottom;
-              const data = trendData;
-
-              // Sumbu Y persentase dinamis: 0 - 100%
-              const max = 100;
-              const uniqueYTicks = [0, 25, 50, 75, 100];
-
-              const xOf = (i: number) => pad.left + (i / Math.max(1, data.length - 1)) * chartW;
-              const yOf = (v: number) => pad.top + chartH - (v / max) * chartH;
-
-              const buildLine = (get: (d: typeof data[number]) => number) =>
-                data.map((d, i) => `${i === 0 ? "M" : "L"}${xOf(i).toFixed(1)},${yOf(get(d)).toFixed(1)}`).join(" ");
-              const criticalLine = buildLine((d) => d.avgProb);
-              const criticalArea = `${criticalLine} L${xOf(data.length - 1).toFixed(1)},${yOf(0).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(0).toFixed(1)} Z`;
-              const highLine = buildLine((d) => d.maxProb);
-
-              // X ticks — show ~6 date labels
-              const xTickStep = Math.max(1, Math.floor(data.length / 5));
-              const xTicks = data.map((_, i) => i).filter((i) => i % xTickStep === 0 || i === data.length - 1);
-
-              // Today index
-              const todayIdx = data.findIndex((d) => d.isToday);
-
-              // Hover point
-              const hovered = trendHoverIdx !== null ? data[trendHoverIdx] : null;
-              const hoverX = trendHoverIdx !== null ? xOf(trendHoverIdx) : 0;
-              const hoverY = hovered ? yOf(hovered.avgProb) : 0;
-              const hoverColor = "var(--accent)";
-
-              const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-                const svg = trendSvgRef.current;
-                if (!svg) return;
-
-                // Gunakan CTM untuk mengkonversi titik layar (mouse) secara akurat ke koordinat internal SVG
-                const pt = svg.createSVGPoint();
-                pt.x = e.clientX;
-                pt.y = e.clientY;
-                const ctm = svg.getScreenCTM();
-                if (!ctm) return;
-
-                const svgP = pt.matrixTransform(ctm.inverse());
-                const mouseX = svgP.x;
-
-                const relX = mouseX - pad.left;
-                if (relX < -10 || relX > chartW + 10) { setTrendHoverIdx(null); return; }
-                const idx = Math.round((relX / chartW) * (data.length - 1));
-                setTrendHoverIdx(Math.max(0, Math.min(data.length - 1, idx)));
-              };
-
-              return (
-                <svg
-                  ref={trendSvgRef}
-                  viewBox={`0 0 ${svgW} ${svgH}`}
-                  style={{ width: "100%", height: "auto", maxHeight: 320, cursor: "crosshair", overflow: "visible" }}
-                  onMouseMove={handleMouseMove}
-                  onMouseLeave={() => setTrendHoverIdx(null)}
-                >
-                  <defs>
-                    <linearGradient id="trendAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
-                      <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.02" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Y Grid lines (Persentase) */}
-                  {uniqueYTicks.map((t) => (
-                    <g key={`y-${t}`}>
-                      <line x1={pad.left} y1={yOf(t)} x2={pad.left + chartW} y2={yOf(t)} stroke="var(--line, #e5e7eb)" strokeWidth="0.8" opacity="0.5" />
-                      <text x={pad.left - 8} y={yOf(t) + 4} textAnchor="end" fontSize="11" fill="var(--ink-soft, #94a3b8)" fontWeight="500">
-                        {t}%
+              {(() => {
+                const svgW = 800, svgH = 260;
+                const pad = { top: 30, right: 20, bottom: 40, left: 44 };
+                const chartW = svgW - pad.left - pad.right;
+                const chartH = svgH - pad.top - pad.bottom;
+                const data = trendData;
+  
+                // Sumbu Y persentase dinamis: 0 - 100%
+                const max = 100;
+                const uniqueYTicks = [0, 25, 50, 75, 100];
+  
+                const xOf = (i: number) => pad.left + (i / Math.max(1, data.length - 1)) * chartW;
+                const yOf = (v: number) => pad.top + chartH - (v / max) * chartH;
+  
+                const buildLine = (get: (d: typeof data[number]) => number) =>
+                  data.map((d, i) => `${i === 0 ? "M" : "L"}${xOf(i).toFixed(1)},${yOf(get(d)).toFixed(1)}`).join(" ");
+                const criticalLine = buildLine((d) => d.avgProb);
+                const criticalArea = `${criticalLine} L${xOf(data.length - 1).toFixed(1)},${yOf(0).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(0).toFixed(1)} Z`;
+                const highLine = buildLine((d) => d.maxProb);
+  
+                // X ticks — show ~6 date labels
+                const xTickStep = Math.max(1, Math.floor(data.length / 5));
+                const xTicks = data.map((_, i) => i).filter((i) => i % xTickStep === 0 || i === data.length - 1);
+  
+                // Today index
+                const todayIdx = data.findIndex((d) => d.isToday);
+  
+                const hovered = trendHoverIdx !== null ? data[trendHoverIdx] : null;
+                const hoverX = trendHoverIdx !== null ? xOf(trendHoverIdx) : 0;
+                const hoverY = hovered ? yOf(hovered.avgProb) : 0;
+                const hoverColor = "#2563eb"; // Solid Blue
+  
+                const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+                  const svg = trendSvgRef.current;
+                  if (!svg) return;
+                  const pt = svg.createSVGPoint();
+                  pt.x = e.clientX;
+                  pt.y = e.clientY;
+                  const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+                  let closestI = 0;
+                  let minD = Infinity;
+                  data.forEach((_, i) => {
+                    const dx = xOf(i) - svgP.x;
+                    const d = Math.abs(dx);
+                    if (d < minD) {
+                      minD = d;
+                      closestI = i;
+                    }
+                  });
+                  if (minD < 30) setTrendHoverIdx(closestI);
+                  else setTrendHoverIdx(null);
+                };
+  
+                return (
+                  <svg
+                    ref={trendSvgRef}
+                    viewBox={`0 0 ${svgW} ${svgH}`}
+                    style={{ width: "100%", height: "auto", maxHeight: 320, cursor: "crosshair", overflow: "visible" }}
+                    onMouseMove={handleMouseMove}
+                    onMouseLeave={() => setTrendHoverIdx(null)}
+                  >
+                    <defs>
+                      <linearGradient id="trendAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#2563eb" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#2563eb" stopOpacity="0.02" />
+                      </linearGradient>
+                    </defs>
+  
+                    {/* Y Grid lines (Persentase) */}
+                    {uniqueYTicks.map((t) => (
+                      <g key={`y-${t}`}>
+                        <line x1={pad.left} y1={yOf(t)} x2={pad.left + chartW} y2={yOf(t)} stroke="var(--line, #e5e7eb)" strokeWidth="0.8" opacity="0.5" />
+                        <text x={pad.left - 8} y={yOf(t) + 4} textAnchor="end" fontSize="11" fill="var(--ink-soft, #94a3b8)" fontWeight="500">
+                          {t}%
+                        </text>
+                      </g>
+                    ))}
+  
+                    {/* Area under critical line */}
+                    <path d={criticalArea} fill="url(#trendAreaGrad)" />
+                    
+                    {/* High line (Maksimal) - Dashed so it's clearly distinct from the solid average */}
+                    <path d={highLine} fill="none" stroke="var(--high)" strokeWidth="2" strokeDasharray="5 5" opacity="0.8" />
+                    
+                    {/* Average line */}
+                    <path d={criticalLine} fill="none" stroke="#2563eb" strokeWidth="3" />
+  
+                    {/* Dots for Average line */}
+                    {data.map((d, i) => (
+                      <circle 
+                        key={`dot-${i}`} 
+                        cx={xOf(i)} cy={yOf(d.avgProb)} r="4" 
+                        fill="#2563eb" 
+                        strokeWidth={d.isToday ? 2 : 0} 
+                        opacity={trendHoverIdx === i ? 0 : 1} 
+                      />
+                    ))}
+  
+                    {/* Today vertical marker */}
+                    {todayIdx >= 0 && (
+                      <g>
+                        <line x1={xOf(todayIdx)} y1={pad.top - 14} x2={xOf(todayIdx)} y2={yOf(0)} stroke="var(--critical)" strokeWidth="1.2" strokeDasharray="4 3" opacity="0.6" />
+                        <rect x={xOf(todayIdx) - 24} y={pad.top - 26} width="48" height="18" rx="4" fill="var(--critical)" />
+                        <text x={xOf(todayIdx)} y={pad.top - 13.5} textAnchor="middle" fontSize="10" fill="var(--surface)" fontWeight="700">Hari ini</text>
+                      </g>
+                    )}
+  
+                    {/* X-Axis labels */}
+                    {xTicks.map((i) => (
+                      <text key={`x-${i}`} x={xOf(i)} y={svgH - 6} textAnchor="middle" fontSize="10.5" fill={data[i]?.isToday ? "#2563eb" : "var(--ink-soft)"} fontWeight={data[i]?.isToday ? 700 : 500}>
+                        {data[i]?.date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
                       </text>
-                    </g>
-                  ))}
-
-                  {/* Area under critical line */}
-                  <path d={criticalArea} fill="url(#trendAreaGrad)" />
-                  {/* High line */}
-                  <path d={highLine} fill="none" stroke="var(--high)" strokeWidth="2.5" />
-                  {/* Critical line */}
-                  <path d={criticalLine} fill="none" stroke="var(--accent)" strokeWidth="2.5" />
-
-                  {/* Dots for Critical line */}
-                  {data.map((d, i) => (
-                    <circle 
-                      key={`dot-${i}`} 
-                      cx={xOf(i)} cy={yOf(d.avgProb)} r="3.5" 
-                      fill="var(--accent)" 
-                      strokeWidth={d.isToday ? 2 : 0} 
-                      opacity={trendHoverIdx === i ? 0 : 1} 
-                    />
-                  ))}
-
-                  {/* Today vertical marker */}
-                  {todayIdx >= 0 && (
-                    <g>
-                      <line x1={xOf(todayIdx)} y1={pad.top - 14} x2={xOf(todayIdx)} y2={yOf(0)} stroke="var(--critical)" strokeWidth="1.2" strokeDasharray="4 3" opacity="0.6" />
-                      <rect x={xOf(todayIdx) - 24} y={pad.top - 26} width="48" height="18" rx="4" fill="var(--critical)" />
-                      <text x={xOf(todayIdx)} y={pad.top - 13.5} textAnchor="middle" fontSize="10" fill="var(--surface)" fontWeight="700">Hari ini</text>
-                    </g>
-                  )}
-
-                  {/* X-Axis labels */}
-                  {xTicks.map((i) => (
-                    <text key={`x-${i}`} x={xOf(i)} y={svgH - 6} textAnchor="middle" fontSize="10.5" fill={data[i]?.isToday ? "var(--accent)" : "var(--ink-soft)"} fontWeight={data[i]?.isToday ? 700 : 500}>
-                      {data[i]?.date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
-                    </text>
-                  ))}
-
-                  {/* Hover crosshair & tooltip */}
-                  {trendHoverIdx !== null && hovered && (
-                    <g>
-                      <line x1={hoverX} y1={pad.top} x2={hoverX} y2={yOf(0)} stroke={hoverColor} strokeWidth="1" opacity="0.45" strokeDasharray="3 2" />
-                      <circle cx={hoverX} cy={hoverY} r="6" fill={hoverColor} stroke="var(--surface)" strokeWidth="2.5" />
-                      <circle cx={hoverX} cy={hoverY} r="10" fill={hoverColor} opacity="0.15" />
-
-                      {/* Tooltip */}
-                      {(() => {
-                        const tooltipW = 178, tooltipH = 58;
-                        let tx = hoverX - tooltipW / 2;
-                        if (tx < pad.left) tx = pad.left;
-                        if (tx + tooltipW > pad.left + chartW) tx = pad.left + chartW - tooltipW;
-                        const ty = Math.max(pad.top - 6, hoverY - tooltipH - 14);
-                        return (
-                          <g>
-                            <rect x={tx} y={ty} width={tooltipW} height={tooltipH} rx="8" fill="var(--surface, #fff)" stroke="var(--line, #e2e8f0)" strokeWidth="1" filter="drop-shadow(0 4px 12px rgba(0,0,0,0.12))" />
-                            <text x={tx + tooltipW / 2} y={ty + 20} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--ink, #1e293b)">
-                              {hovered.date.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "long" })}
-                            </text>
-                            <text x={tx + tooltipW / 2} y={ty + 40} textAnchor="middle" fontSize="11.5" fontWeight="600">
-                              <tspan fill="var(--accent)">{hovered.avgProb.toFixed(1)}% Rata-rata</tspan>
-                              <tspan fill="var(--ink-soft)"> · </tspan>
-                              <tspan fill="var(--high)">{hovered.maxProb.toFixed(1)}% Maksimal</tspan>
-                            </text>
-                          </g>
-                        );
-                      })()}
-                    </g>
-                  )}
-                </svg>
-              );
-            })()}
+                    ))}
+  
+                    {/* Hover crosshair & tooltip */}
+                    {trendHoverIdx !== null && hovered && (
+                      <g style={{ pointerEvents: "none" }}>
+                        <line x1={hoverX} y1={pad.top} x2={hoverX} y2={yOf(0)} stroke={hoverColor} strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
+                        <circle cx={hoverX} cy={hoverY} r="6" fill={hoverColor} stroke="var(--surface)" strokeWidth="2.5" />
+                        <circle cx={hoverX} cy={hoverY} r="10" fill={hoverColor} opacity="0.15" />
+                        
+                        {/* Dot for Max Prob */}
+                        <circle cx={hoverX} cy={yOf(hovered.maxProb)} r="4" fill="var(--high)" stroke="var(--surface)" strokeWidth="1.5" />
+  
+                        {/* Tooltip */}
+                        {(() => {
+                          const tooltipW = 190, tooltipH = 58;
+                          let tx = hoverX - tooltipW / 2;
+                          if (tx < pad.left) tx = pad.left;
+                          if (tx + tooltipW > pad.left + chartW) tx = pad.left + chartW - tooltipW;
+                          const ty = Math.max(pad.top - 6, hoverY - tooltipH - 20);
+                          return (
+                            <g>
+                              <rect x={tx} y={ty} width={tooltipW} height={tooltipH} rx="8" fill="var(--surface, #fff)" stroke="var(--line, #e2e8f0)" strokeWidth="1" filter="drop-shadow(0 4px 12px rgba(0,0,0,0.12))" />
+                              <text x={tx + tooltipW / 2} y={ty + 20} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--ink, #1e293b)">
+                                {hovered.date.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "long" })}
+                              </text>
+                              <text x={tx + tooltipW / 2} y={ty + 40} textAnchor="middle" fontSize="11.5" fontWeight="600">
+                                <tspan fill="#2563eb">{hovered.avgProb.toFixed(1)}% Rata-rata</tspan>
+                                <tspan fill="var(--ink-soft)"> | </tspan>
+                                <tspan fill="var(--high)">{hovered.maxProb.toFixed(1)}% Max</tspan>
+                              </text>
+                            </g>
+                          );
+                        })()}
+                      </g>
+                    )}
+                  </svg>
+                );
+              })()}
           </motion.div>
         </div>
 

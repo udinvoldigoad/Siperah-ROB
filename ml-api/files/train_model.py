@@ -34,7 +34,7 @@ from sklearn.model_selection import RandomizedSearchCV, TimeSeriesSplit
 
 from .feature_engineering import FEATURE_COLS
 
-TARGET_COL = "label_rob"
+TARGET_COL = "Rob"
 MODEL_VERSION = "flood_classifier_v1"
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 MODEL_PATH = MODELS_DIR / f"{MODEL_VERSION}.joblib"
