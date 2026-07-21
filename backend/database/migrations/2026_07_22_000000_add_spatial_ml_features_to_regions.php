@@ -9,8 +9,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('regions', function (Blueprint $table): void {
-            $table->decimal('distance_to_coast_m', 10, 2)->nullable();
-            $table->decimal('avg_elevation_m', 8, 2)->nullable();
+            if (!Schema::hasColumn('regions', 'distance_to_coast_m')) {
+                $table->decimal('distance_to_coast_m', 10, 2)->nullable();
+            }
+            if (!Schema::hasColumn('regions', 'avg_elevation_m')) {
+                $table->decimal('avg_elevation_m', 8, 2)->nullable();
+            }
         });
     }
 
