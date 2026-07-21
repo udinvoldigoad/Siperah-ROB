@@ -38,8 +38,10 @@ final class PublicMapController
 
         // Payload berat (GeoJSON banyak wilayah + garis pantai); prediksi hanya
         // berubah sekali sehari, jadi cache singkat aman dan memangkas beban DB.
+        $latestReportUpdate = GroundTruthReport::where('status', 'divalidasi')->max('updated_at');
+
         $payload = Cache::remember(
-            'public-map:'.md5(json_encode($filters)),
+            'public-map:'.md5(json_encode($filters) . $latestReportUpdate),
             now()->addMinutes(15),
             fn (): array => $this->buildMapPayload($filters),
         );
