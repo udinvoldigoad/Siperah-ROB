@@ -42,7 +42,7 @@ jobs:
           DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: php artisan migrate --force
 
-      - name: Debug Production Tidal Data
+      - name: Debug Production Predictions
         working-directory: backend
         env:
           DB_CONNECTION: pgsql
@@ -51,4 +51,5 @@ jobs:
           DB_DATABASE: ${{ secrets.SUPABASE_DB_DATABASE }}
           DB_USERNAME: ${{ secrets.SUPABASE_DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: php -r "require 'vendor/autoload.php'; \$app = require_once 'bootstrap/app.php'; \$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap(); print_r(Illuminate\Support\Facades\DB::table('tidal_data')->selectRaw('MIN(tidal_height) as min_h, MAX(tidal_height) as max_h, COUNT(*) as count')->first());"
+        run: |
+          php -r "require 'vendor/autoload.php'; \$app = require_once 'bootstrap/app.php'; \$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap(); \$res = Illuminate\Support\Facades\DB::table('predictions')->selectRaw('prediction_date, AVG(risk_probability) as avg_p, MAX(risk_probability) as max_p, AVG(max_tidal_height) as avg_tide, COUNT(*) as count')->groupBy('prediction_date')->orderBy('prediction_date')->limit(35)->get(); foreach(\$res as \$r) { echo \"Date: \$r->prediction_date, Avg Prob: \$r->avg_p%, Max Prob: \$r->max_p%, Avg Tide: \$r->avg_tide m, Count: \$r->count\n\"; }"
