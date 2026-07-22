@@ -41,3 +41,14 @@ jobs:
           DB_USERNAME: ${{ secrets.SUPABASE_DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: php artisan migrate --force
+
+      - name: Seed Historical Tidal Data
+        working-directory: backend
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: ${{ secrets.SUPABASE_DB_HOST }}
+          DB_PORT: ${{ secrets.SUPABASE_DB_PORT }}
+          DB_DATABASE: ${{ secrets.SUPABASE_DB_DATABASE }}
+          DB_USERNAME: ${{ secrets.SUPABASE_DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: php artisan data:fetch-tidal-sealevel --days-back=730
