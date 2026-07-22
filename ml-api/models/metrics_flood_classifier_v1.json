@@ -1,19 +1,19 @@
 {
-  "recall_rob": 1.0,
+  "recall_rob": 0.973,
   "precision_rob": 1.0,
-  "f1_rob": 1.0,
-  "test_rows": 4,
-  "test_positives": 2,
-  "roc_auc": 1.0,
-  "pr_auc": 1.0,
+  "f1_rob": 0.9863,
+  "test_rows": 876,
+  "test_positives": 148,
+  "roc_auc": 0.9937,
+  "pr_auc": 0.9858,
   "feature_importance": {
-    "Prediksi Tinggi Muka Laut": 0.5867,
-    "Gelombang": 0.1324,
-    "Gangguan Cuaca": 0.1037,
-    "Peristiwa Astronomi": 0.0963,
-    "Kecepatan Angin": 0.081
+    "Gangguan Cuaca": 0.7318,
+    "Prediksi Tinggi Muka Laut": 0.1878,
+    "Peristiwa Astronomi": 0.0742,
+    "Gelombang": 0.0037,
+    "Kecepatan Angin": 0.0024
   },
   "targets_met": true,
-  "data_source": "Excel (Real Dataset)",
-  "trained_rows": 17
+  "data_source": "simulated",
+  "trained_rows": 4087
 }

@@ -231,33 +231,12 @@ def build_training_frame(conn, simulate: bool = False):
     return df, tide_stats, data_source, (t0, beta, tide_simulated)
 
 
-def run_train(conn, simulate: bool = False, tune: bool = False):
-    print("[INFO] Membaca dataset nyata dari Excel...")
-    excel_path = r"C:\Users\Vivo7\Downloads\Dataset banjir rob (1).xlsx"
-    df = pd.read_excel(excel_path, skiprows=1)
+def run_train(conn, simulate: bool = False, tune: bool = True):
+    print("[INFO] Menyusun dataset training dari database & API historis...")
+    df, tide_stats, data_source, tide_params = build_training_frame(conn, simulate=simulate)
     
-    # Mapping nama kolom Tanggal ke date untuk time_based_split
-    df = df.rename(columns={"Tanggal ": "date"})
-    
-    # Convert 'date' from Indonesian format to datetime for sorting
-    id_months = {
-        "Januari": "01", "Februari": "02", "Maret": "03", "April": "04", 
-        "Mei": "05", "Juni": "06", "Juli": "07", "Agustus": "08", 
-        "September": "09", "Oktober": "10", "November": "11", "Desember": "12"
-    }
-    
-    def parse_id_date(d_str):
-        if not isinstance(d_str, str):
-            return pd.NaT
-        parts = d_str.strip().split()
-        if len(parts) == 3:
-            day, month, year = parts
-            month_num = id_months.get(month, "01")
-            return pd.to_datetime(f"{year}-{month_num}-{day.zfill(2)}")
-        return pd.NaT
-
-    df["date"] = df["date"].apply(parse_id_date)
-    df = df.dropna(subset=["date"])
+    # Menyelaraskan nama kolom target dengan target yang diharapkan train_model (Rob)
+    df = df.rename(columns={"label_rob": "Rob"})
     
     if df["Rob"].nunique() < 2:
         print("[ERROR] Semua label satu kelas -- model tidak bisa dilatih.")
@@ -265,9 +244,14 @@ def run_train(conn, simulate: bool = False, tune: bool = False):
         
     train_df, _val_df, test_df = train_model.time_based_split(df)
     print(f"[INFO] Split: train={len(train_df)} val={len(_val_df)} test={len(test_df)}")
+    
+    if train_df["Rob"].nunique() < 2:
+        print("[ERROR] Data latih (train_df) setelah split hanya memiliki satu kelas. Silakan turunkan ambang batas pasut/cuaca.")
+        sys.exit(1)
+        
     model = train_model.train_random_forest(train_df, tune=tune)
     metrics = train_model.evaluate_model(model, test_df)
-    metrics["data_source"] = "Excel (Real Dataset)"
+    metrics["data_source"] = data_source
     metrics["trained_rows"] = int(len(train_df))
     train_model.save_model(model, metrics)
     return model
