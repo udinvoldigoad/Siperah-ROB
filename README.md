@@ -107,7 +107,7 @@ Seluruh modul dan dokumentasi resmi tugas akhir dikompilasi secara rapi di dalam
 
 ## 4. Fitur Utama Sistem
 
-* **🗺️ Visualisasi WebGIS Interaktif**: Zonasi bahaya rob 4 kelas per kelurahan dengan clustering titik laporan berbasis MapLibre GL.
+* **🗺️ Visualisasi WebGIS Interaktif**: Zonasi bahaya rob 4 kelas per kelurahan dengan clustering berbasis MapLibre GL. Menerapkan standar keselamatan *Early Warning System* (EWS): lingkaran klaster menampilkan **rata-rata persentase probabilitas** wilayah, namun diwarnai berdasarkan **risiko tertinggi** (`maxRank`) desa di dalamnya. Hal ini memicu kewaspadaan dini bagi pimpinan/warga sebelum melakukan *zoom-in* ke tingkat kelurahan individual.
 * **📱 Mode Awam (Geolocated EWS)**: Deteksi titik koordinat otomatis menggunakan sensor GPS perangkat pengguna untuk menyajikan ringkasan risiko non-teknis secara instan.
 * **📸 Pelaporan Ground Truth Warga**: Pengiriman laporan kejadian banjir rob terintegrasi dengan penentuan koordinat peta dan kompresi WebP gambar otomatis di sisi klien.
 * **🔔 Notifikasi Multi-Kanal dengan Quiet Hours**: Pengiriman alert via Email dan Push Browser dengan opsi penahanan pengiriman di jam sunyi personal.
