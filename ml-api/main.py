@@ -53,7 +53,7 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 
 # Offset datum pasut (cm). tidal_data internal memakai meter relatif MSL sensor;
 # kalibrasikan terhadap datum ambang rob BIG bila sudah ada data resmi.
-TIDE_DATUM_OFFSET_CM = float(os.getenv("ML_TIDE_DATUM_OFFSET_CM", 100))
+TIDE_DATUM_OFFSET_CM = float(os.getenv("ML_TIDE_DATUM_OFFSET_CM", 0))
 WEATHER_SOURCE = os.getenv("ML_WEATHER_SOURCE", "openmeteo")  # openmeteo | bmkg
 
 
