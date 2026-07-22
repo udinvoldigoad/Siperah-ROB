@@ -105,20 +105,7 @@ Seluruh modul dan dokumentasi resmi tugas akhir dikompilasi secara rapi di dalam
 
 ---
 
-## 4. Performa Model Machine Learning (Model Performance)
-
-Diperbarui menggunakan model **Random Forest Classifier v1.2.0** yang dilatih menggunakan dataset gabungan historis:
-
-* **Ukuran Dataset**: 4.087 baris fitur harian.
-* **Metrik Pengujian (Test Set Evaluation)**:
-  * **Akurasi Klasifikasi**: `100%` pada hari normal (Tidak Rob)
-  * **Sensitivitas / Recall Rob**: `97.3%`
-  * **F1-Score**: `98.6%`
-  * **ROC-AUC / PR-AUC**: `0.993` / `0.985`
-
----
-
-## 5. Fitur Utama Sistem
+## 4. Fitur Utama Sistem
 
 * **🗺️ Visualisasi WebGIS Interaktif**: Zonasi bahaya rob 4 kelas per kelurahan dengan clustering titik laporan berbasis MapLibre GL.
 * **📱 Mode Awam (Geolocated EWS)**: Deteksi titik koordinat otomatis menggunakan sensor GPS perangkat pengguna untuk menyajikan ringkasan risiko non-teknis secara instan.
@@ -128,7 +115,7 @@ Diperbarui menggunakan model **Random Forest Classifier v1.2.0** yang dilatih me
 
 ---
 
-## 6. Panduan Memulai Cepat (Quick Start)
+## 5. Panduan Memulai Cepat (Quick Start)
 
 ### A. Prasyarat Sistem
 * Node.js >= 20
