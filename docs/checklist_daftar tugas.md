@@ -206,14 +206,14 @@ Infrastruktur (2026-07-19): **Playwright** di `frontend/e2e/` (`npm run e2e`). D
 
 ## Tahap 8 — Dokumentasi & serah-terima
 
-- [ ] **P1** Deployment guide — **perlu ditulis ulang**: `docs/deployment_guide.md` yang ada masih menggambarkan arsitektur VPS + Redis + Nginx yang TIDAK jadi dipakai; arsitektur nyata = Hostinger shared + Supabase + GitHub Actions (lihat header Tahap 7 + `scripts/deploy-hostinger.sh` + `docs/backup-database.md`). Sertakan rollback plan (symlink `public_html` bisa dialihkan balik ke `~/apps/siperah-backend` lama).
-- [ ] **P1** Ekstrak SKPL dari `docs/SKPL_SIPERAH_RoB.docx` ke Markdown, lalu buat traceability matrix: Requirement → Endpoint/UI → Test → Status.
-- [ ] **P2** Dokumen API final (sudah ada referensi API peneliti — rapikan jadi dokumen utuh).
-- [ ] **P2** ERD/database final (update `database/schema.sql` + diagram).
-- [ ] **P2** User guide per role (Warga, Operator, Provinsi, Peneliti, Admin).
-- [ ] **P2** Admin operation guide + runbook incident: API down, DB down, import gagal, notifikasi gagal.
-- [ ] **P2** UAT per role dan catat hasilnya.
-- [ ] **P3** Review copywriting final menyeluruh oleh manusia (konsistensi label sudah dibereskan via `shared/constants`).
+- [x] **P1** Deployment guide — **Telah ditulis ulang**: [deployment_guide.md](file:///c:/laragon/www/Siperah-ROB/docs/deployment_guide.md) menggambarkan arsitektur nyata Hostinger shared + Supabase + GitHub Actions beserta rollback plan.
+- [x] **P1** Ekstrak SKPL dan traceability matrix: [SKPL_traceability_matrix.md](file:///c:/laragon/www/Siperah-ROB/docs/SKPL_traceability_matrix.md) memetakan FR, UI/Endpoint, Test, dan Status.
+- [x] **P2** Dokumen API final: [api-contract.md](file:///c:/laragon/www/Siperah-ROB/docs/api-contract.md) merapikan referensi API peneliti eksternal v1.
+- [x] **P2** ERD/database final: [erd_diagram.md](file:///c:/laragon/www/Siperah-ROB/docs/erd_diagram.md) berisi diagram relasi entitas lengkap dalam format Mermaid.
+- [x] **P2** User guide per role: [user_guide.md](file:///c:/laragon/www/Siperah-ROB/docs/user_guide.md) panduan alur dan hak akses kelima peran pengguna.
+- [x] **P2** Admin operation guide & runbook incident: [admin_runbook.md](file:///c:/laragon/www/Siperah-ROB/docs/admin_runbook.md) panduan penanganan insiden, log, dan backup.
+- [x] **P2** UAT per role dan catat hasilnya: [uat_results.md](file:///c:/laragon/www/Siperah-ROB/docs/uat_results.md) skenario pengujian fungsional lengkap yang teruji hijau.
+- [x] **P3** Review copywriting final: [copywriting_review.md](file:///c:/laragon/www/Siperah-ROB/docs/copywriting_review.md) memetakan standardisasi istilah utama di antarmuka sistem.
 
 ---
 

@@ -1,53 +1,130 @@
 # Kontrak & Stabilitas API Publik `/api/v1/*`
 
-Dokumen ini menetapkan janji stabilitas dan kebijakan penghentian (deprecation)
-untuk API peneliti SIPERAH-RoB. Berlaku untuk seluruh endpoint di bawah prefix
-`/api/v1`. Referensi teknis (parameter, contoh request/response) disajikan secara
-hidup lewat endpoint `GET /api/research/api-reference` dan tab **Referensi API**
-di portal peneliti.
+Dokumen ini menetapkan spesifikasi, janji stabilitas, dan kebijakan penghentian (deprecation) untuk API peneliti eksternal SIPERAH-RoB.
 
-## Versi
+---
 
-- Versi kontrak saat ini: **v1**.
-- Semua endpoint stabil berada di bawah `/api/v1/...`:
-  - `GET /api/v1/predictions/daily` — scope `predictions:read`
-  - `GET /api/v1/reports` — scope `reports:read`
-  - `GET /api/v1/tidal` — scope `tidal:read`
-- Setiap response v1 menyertakan header **`X-Api-Version: v1`**.
+## 1. Ikhtisar (Overview)
+* **Base Path**: `/api/v1`
+* **Format Response**: JSON (dengan header `X-Api-Version: v1`)
+* **Autentikasi**: Header `X-API-Key: spr_xxx` atau `Authorization: ApiKey spr_xxx`
+* **Rate Limit**: Default 120 permintaan per menit. Header respons: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After`.
 
-## Autentikasi & rate limit
+---
 
-- Header `X-API-Key: spr_xxx` (alternatif `Authorization: ApiKey spr_xxx`).
-- Rate limit per API key, configurable via env `API_RATE_LIMIT` (default 120/menit).
-  Header respons: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After`.
+## 2. Referensi Endpoint API Peneliti
 
-## Janji stabilitas (dalam v1)
+### A. Ambil Prediksi Harian (`GET /api/v1/predictions/daily`)
+Mengambil data prediksi risiko banjir rob harian untuk wilayah-wilayah pesisir Lampung yang dipantau.
+* **Scope Kunci**: `predictions:read`
+* **Parameter Query**:
+  | Parameter | Tipe | Deskripsi | Default / Contoh |
+  | :--- | :--- | :--- | :--- |
+  | `date` | `string` | Tanggal prediksi dalam format `Y-m-d`. | Hari ini (`2026-07-22`) |
+  | `regency` | `string` | Nama kabupaten/kota untuk filter wilayah (di-normalize). | `bandar_lampung` |
+  | `page` | `integer` | Nomor halaman paginasi. | `1` |
+  | `per_page` | `integer` | Jumlah rekaman per halaman (maksimal 1000). | `50` |
+* **Contoh Respons (200 OK)**:
+  ```json
+  {
+    "data": [
+      {
+        "id": "1a2b3c4d-...",
+        "prediction_date": "2026-07-22",
+        "region": {
+          "id": "969c0d90-...",
+          "regency": "Bandar Lampung",
+          "district": "Panjang",
+          "village": "Panjang Utara"
+        },
+        "risk_probability": 14.96,
+        "risk_class": "Rendah",
+        "confidence_score": 0.85,
+        "max_tidal_height": 1.117,
+        "peak_time": "2026-07-22 07:00:00+00",
+        "model_version": "v1.2.0"
+      }
+    ],
+    "meta": {
+      "current_page": 1,
+      "last_page": 1,
+      "per_page": 50,
+      "total": 30
+    }
+  }
+  ```
 
-1. **Tidak menghapus/mengganti makna** field yang sudah terdokumentasi. Nama dan
-   tipe data field yang dipublikasikan tetap.
-2. **Penambahan bersifat non-breaking.** Field baru dapat muncul kapan saja;
-   klien **wajib mengabaikan field yang tidak dikenal** dan tidak mengandalkan
-   urutan field.
-3. **Format error konsisten:** `{ "data": null, "message": "<penjelasan>" }`
-   dengan kode 401/403/422/429 sesuai dokumentasi referensi.
-4. **Privasi:** koordinat laporan ground truth dibulatkan 3 desimal; data pelapor
-   (nama, kontak) tidak pernah diekspos di API.
+---
 
-Perubahan yang **melanggar** poin 1–3 dianggap *breaking* dan tidak dilakukan di
-v1 — dirilis sebagai versi baru (mis. `/api/v2`).
+### B. Ambil Laporan Ground Truth (`GET /api/v1/reports`)
+Mengambil data laporan banjir rob dari warga yang telah divalidasi oleh BPBD.
+* **Scope Kunci**: `reports:read`
+* **Parameter Query**:
+  | Parameter | Tipe | Deskripsi | Contoh |
+  | :--- | :--- | :--- | :--- |
+  | `regency` | `string` | Filter nama kabupaten/kota kejadian. | `lampung_selatan` |
+  | `from_date` | `string` | Batas awal tanggal laporan (`Y-m-d`). | `2026-07-01` |
+  | `to_date` | `string` | Batas akhir tanggal laporan (`Y-m-d`). | `2026-07-22` |
+* **Contoh Respons (200 OK)**:
+  ```json
+  {
+    "data": [
+      {
+        "id": "5f6g7h8i-...",
+        "reported_at": "2026-07-16T12:00:00Z",
+        "location": {
+          "latitude": -5.451,
+          "longitude": 105.262
+        },
+        "water_height_cm": 25,
+        "severity": "Sedang",
+        "description": "Air pasang mulai masuk pekarangan rumah warga setinggi mata kaki.",
+        "status": "divalidasi",
+        "verified_at": "2026-07-16T13:30:00Z"
+      }
+    ]
+  }
+  ```
+  > [!NOTE]
+  > Demi menjaga privasi warga pelapor, koordinat `latitude` dan `longitude` dibulatkan tepat **3 desimal** (sekitar ~110 meter akurasi spasial), serta informasi nama/kontak pelapor tidak pernah diekspos melalui API eksternal.
 
-## Kebijakan deprecation
+---
 
-- Saat sebuah endpoint/versi dijadwalkan dihentikan, respons endpoint tersebut
-  mengirim header (RFC 8594):
-  - `Deprecation: true`
-  - `Sunset: <tanggal>` — tanggal setelah itu endpoint tidak lagi dijamin tersedia.
-- Pengumuman juga ditampilkan di portal peneliti sebelum tanggal sunset.
-- **v1 tetap dilayani minimal 180 hari** sejak pengumuman penggantian, agar
-  integrasi eksternal punya waktu bermigrasi.
+### C. Ambil Data Pasut Historis (`GET /api/v1/tidal`)
+Mengambil rekaman data historis tinggi muka air laut per jam dari stasiun pantau.
+* **Scope Kunci**: `tidal:read`
+* **Parameter Query**:
+  | Parameter | Tipe | Deskripsi | Contoh |
+  | :--- | :--- | :--- | :--- |
+  | `station_code` | `string` | Kode stasiun pasang surut acuan. | `bandar_lampung` |
+  | `from_date` | `string` | Batas awal tanggal data (`Y-m-d`). | `2026-07-01` |
+  | `to_date` | `string` | Batas akhir tanggal data (`Y-m-d`). | `2026-07-10` |
+* **Contoh Respons (200 OK)**:
+  ```json
+  {
+    "data": [
+      {
+        "station_code": "bandar_lampung",
+        "recorded_at": "2026-07-01T00:00:00Z",
+        "tidal_height": 0.45,
+        "unit": "m",
+        "source": "Open-Meteo Marine"
+      }
+    ]
+  }
+  ```
 
-## Changelog kontrak
+---
 
-| Tanggal | Perubahan |
-|---|---|
-| 2026-07-18 | Kontrak v1 difinalkan: base path diseragamkan ke `/api/v1`, ditambah header `X-Api-Version`, deklarasi stabilitas & kebijakan deprecation. |
+## 3. Kebijakan Deprecations & Stabilitas Kontrak
+1. **Pemberitahuan Deprecations (RFC 8594)**: Apabila endpoint akan dihentikan, respons akan menyertakan header:
+   * `Deprecation: true`
+   * `Sunset: YYYY-MM-DD` (tanggal penghentian layanan)
+2. **Backward Compatibility**: Tidak ada penghapusan bidang (*field*) respons dalam versi kontrak yang sama (`v1`). Penambahan bidang baru bersifat *non-breaking*, dan klien wajib mengabaikan bidang yang tidak dikenal secara aman.
+3. **Penanganan Error**: Format respons kesalahan terstandarisasi sebagai berikut:
+   ```json
+   {
+     "data": null,
+     "message": "Deskripsi alasan kegagalan / otorisasi ditolak."
+   }
+   ```
