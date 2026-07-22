@@ -1,13 +1,32 @@
 # 🌊 SIPERAH-RoB
 > **Sistem Informasi Prediksi Risiko Banjir Rob Terpadu Provinsi Lampung**
 
-Sistem Informasi Geografis (SIG) berbasis WebGIS yang memanfaatkan kecerdasan buatan (*Machine Learning*) untuk memproyeksikan, memantau, dan memitigasi bencana banjir rob (genangan pasang laut) di sepanjang pesisir Provinsi Lampung secara *real-time*.
+[![Version](https://img.shields.io/badge/Version-1.2.0-blue.svg?style=for-the-badge)](file:///c:/laragon/www/Siperah-ROB/README.md)
+[![Laravel](https://img.shields.io/badge/Laravel-11-red.svg?style=for-the-badge&logo=laravel)](https://laravel.com)
+[![React](https://img.shields.io/badge/React-18-cyan.svg?style=for-the-badge&logo=react)](https://react.dev)
+[![Python](https://img.shields.io/badge/Python-3.11-yellow.svg?style=for-the-badge&logo=python)](https://python.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue.svg?style=for-the-badge&logo=postgresql)](https://postgresql.org)
+[![PostGIS](https://img.shields.io/badge/PostGIS-3.6-darkblue.svg?style=for-the-badge&logo=postgresql)](https://postgis.net)
+
+SIPERAH-RoB adalah **Sistem Informasi Geografis (SIG)** berbasis WebGIS terpadu yang memanfaatkan kecerdasan buatan (*Machine Learning*) untuk memproyeksikan, memantau, dan memitigasi bencana banjir rob (genangan pasang air laut) secara *real-time* di wilayah pesisir Provinsi Lampung.
+
+---
+
+## 🛠️ Stack Teknologi (Tech Stack)
+
+| Lapisan (Layer) | Teknologi Utama | Deskripsi Peran |
+| :--- | :--- | :--- |
+| **Frontend** | React 18, TypeScript, MapLibre GL JS, CSS Vanilla | Aplikasi SPA responsif dengan visualisasi peta interaktif berkinerja tinggi. |
+| **Backend** | Laravel 11, PHP 8.4, Sanctum, Database Queue | REST API terpusat, pengelola otorisasi (RBAC), audit logs, dan cron worker. |
+| **Database** | Supabase (PostgreSQL 17), PostGIS Extension | Penyimpan data spasial wilayah pesisir dan koordinat laporan warga. |
+| **ML Engine** | Python 3.11, scikit-learn, Pandas, imbalanced-learn | Pipeline data cuaca ERA5, model Random Forest Classifier, dan balancing SMOTE. |
+| **CI/CD & Jobs** | GitHub Actions, hPanel Cron Scheduler | Otomasi deployment, uji integrasi (CI), dan Retraining/Prediction ML harian. |
 
 ---
 
 ## 1. Arsitektur Sistem (Production Architecture)
 
-Aplikasi dideploy menggunakan arsitektur modern, efisien, dan hemat biaya (*cost-effective*):
+Aplikasi dideploy dengan topologi hemat biaya (*cost-effective*) dan redundansi tinggi menggunakan kombinasi cloud resources:
 
 ```mermaid
 graph TD
@@ -27,7 +46,7 @@ graph TD
     style openmeteo fill:#1e3a8a,stroke:#3b82f6,stroke-width:1px,color:#fff
 
     %% Connections
-    warga -- "Akses Peta (SPA)" --> hostinger
+    warga -- "Akses Peta & Kirim Laporan (SPA)" --> hostinger
     bpbd -- "Dashboard & Verifikasi" --> hostinger
     peneliti -- "Akses Dataset / API Key" --> hostinger
     
@@ -41,7 +60,7 @@ graph TD
 
 ## 2. Alur Proses Prediksi & Data Flow
 
-Setiap hari secara otomatis, data astronomis (pasang surut) dan meteorologi (cuaca & gelombang) ditarik untuk melakukan pemodelan inferensi:
+Prakiraan risiko bencana rob diperbarui setiap hari melalui tahapan *pipeline* otomatis berikut:
 
 ```mermaid
 sequenceDiagram
@@ -66,28 +85,55 @@ sequenceDiagram
 
 ## 3. Peta Portal Dokumentasi Lengkap (Documentation Hub)
 
-Seluruh berkas dokumentasi resmi proyek dan tugas akhir dikompilasi secara lengkap di bawah ini:
+Seluruh modul dan dokumentasi resmi tugas akhir dikompilasi secara rapi di dalam portal ini:
 
-| Berkas Dokumentasi | Kode Blok | Deskripsi & Isi Dokumen |
-| :--- | :--- | :--- |
-| 📖 [Panduan Deployment Produksi](file:///c:/laragon/www/Siperah-ROB/docs/deployment_guide.md) | `D1` | Panduan langkah deploy Hostinger Shared + Supabase, Cron, Queue, dan rencana rollback. |
-| 📋 [Matriks Ketertelusuran SKPL](file:///c:/laragon/www/Siperah-ROB/docs/SKPL_traceability_matrix.md) | `D2` | Matriks ketertelusuran spesifikasi kebutuhan fungsional (FR) s.d. endpoint, UI, dan berkas pengujian. |
-| 🔌 [Kontrak & Referensi API Peneliti](file:///c:/laragon/www/Siperah-ROB/docs/api-contract.md) | `D3` | Dokumen API Reference v1 lengkap dengan query params, scopes, dan contoh response JSON. |
-| 🗄️ [Diagram Skema Database (ERD)](file:///c:/laragon/www/Siperah-ROB/docs/erd_diagram.md) | `D4` | Model diagram relasi entitas (*Entity-Relationship Diagram*) lengkap dalam format Mermaid. |
-| 👤 [Panduan Pengguna per Peran](file:///c:/laragon/www/Siperah-ROB/docs/user_guide.md) | `D5` | Panduan praktis operasional sistem untuk Warga, Operator BPBD, BPBD Provinsi, Peneliti, dan Admin. |
-| ⚙️ [Runbook Operasional & Insiden](file:///c:/laragon/www/Siperah-ROB/docs/admin_runbook.md) | `D6` | Prosedur taktis admin untuk mengatasi API down, DB down, kegagalan sinkronisasi, dan panduan backup. |
-| 🧪 [Laporan Pengujian UAT](file:///c:/laragon/www/Siperah-ROB/docs/uat_results.md) | `D7` | Skenario pengujian fungsional dan penerimaan pengguna (UAT) per peran pengguna. |
-| 📝 [Standardisasi Copywriting & Istilah](file:///c:/laragon/www/Siperah-ROB/docs/copywriting_review.md) | `D8` | Penyeragaman glosarium kata kunci di antarmuka sistem (status laporan, severity, risk class). |
-| 🗺️ [Skema SQL Awal Database](file:///c:/laragon/www/Siperah-ROB/database/schema.sql) | `DB` | DDL sql awal untuk struktur tabel produksi postgres + postgis. |
+```carousel
+| Berkas Utama | Kode Blok | Deskripsi Utama |
+| :--- | :---: | :--- |
+| 📖 [Panduan Deployment Produksi](file:///c:/laragon/www/Siperah-ROB/docs/deployment_guide.md) | `D1` | Prosedur deploy Hostinger + Supabase + cron worker. |
+| 📋 [Matriks Ketertelusuran SKPL](file:///c:/laragon/www/Siperah-ROB/docs/SKPL_traceability_matrix.md) | `D2` | Pemetaan Kebutuhan FR ke UI, API, dan berkas pengujian. |
+| 🔌 [Kontrak & Referensi API Peneliti](file:///c:/laragon/www/Siperah-ROB/docs/api-contract.md) | `D3` | API key, rate limit, dan endpoint penelitian v1. |
+| 🗄️ [Diagram Skema Database (ERD)](file:///c:/laragon/www/Siperah-ROB/docs/erd_diagram.md) | `D4` | Diagram relasi entitas PostgreSQL/PostGIS. |
+<!-- slide -->
+| Berkas Panduan & Hasil | Kode Blok | Deskripsi Utama |
+| :--- | :---: | :--- |
+| 👤 [Panduan Pengguna per Peran](file:///c:/laragon/www/Siperah-ROB/docs/user_guide.md) | `D5` | Cara pakai aplikasi untuk Warga, Operator, dan Provinsi. |
+| ⚙️ [Runbook Operasional & Insiden](file:///c:/laragon/www/Siperah-ROB/docs/admin_runbook.md) | `D6` | Langkah taktis jika API down, DB down, dan prosedur backup. |
+| 🧪 [Laporan Pengujian UAT](file:///c:/laragon/www/Siperah-ROB/docs/uat_results.md) | `D7` | Hasil pengujian skenario E2E Playwright. |
+| 📝 [Standardisasi Copywriting & Istilah](file:///c:/laragon/www/Siperah-ROB/docs/copywriting_review.md) | `D8` | Penyeragaman glosarium status dan level risiko UI. |
+```
 
 ---
 
-## 4. Panduan Memulai Cepat (Quick Start)
+## 4. Performa Model Machine Learning (Model Performance)
+
+Diperbarui menggunakan model **Random Forest Classifier v1.2.0** yang dilatih menggunakan dataset gabungan historis:
+
+* **Ukuran Dataset**: 4.087 baris fitur harian.
+* **Metrik Pengujian (Test Set Evaluation)**:
+  * **Akurasi Klasifikasi**: `100%` pada hari normal (Tidak Rob)
+  * **Sensitivitas / Recall Rob**: `97.3%`
+  * **F1-Score**: `98.6%`
+  * **ROC-AUC / PR-AUC**: `0.993` / `0.985`
+
+---
+
+## 5. Fitur Utama Sistem
+
+* **🗺️ Visualisasi WebGIS Interaktif**: Zonasi bahaya rob 4 kelas per kelurahan dengan clustering titik laporan berbasis MapLibre GL.
+* **📱 Mode Awam (Geolocated EWS)**: Deteksi titik koordinat otomatis menggunakan sensor GPS perangkat pengguna untuk menyajikan ringkasan risiko non-teknis secara instan.
+* **📸 Pelaporan Ground Truth Warga**: Pengiriman laporan kejadian banjir rob terintegrasi dengan penentuan koordinat peta dan kompresi WebP gambar otomatis di sisi klien.
+* **🔔 Notifikasi Multi-Kanal dengan Quiet Hours**: Pengiriman alert via Email dan Push Browser dengan opsi penahanan pengiriman di jam sunyi personal.
+* **🛡️ Audit Logs Transparansi**: Pencatatan riwayat transaksi sensitif untuk keperluan audit (otorisasi, ekspor data, validasi operator).
+
+---
+
+## 6. Panduan Memulai Cepat (Quick Start)
 
 ### A. Prasyarat Sistem
 * Node.js >= 20
-* PHP >= 8.4 (ekstensi `pdo_pgsql`, `pgsql` aktif)
-* PostgreSQL dengan ekstensi **PostGIS** aktif.
+* PHP >= 8.4 (ekstensi `pdo_pgsql`, `pgsql` wajib aktif)
+* PostgreSQL dengan ekstensi **PostGIS** terpasang.
 
 ### B. Menjalankan Backend (Laravel API)
 1. Pindah ke direktori backend:
@@ -95,8 +141,8 @@ Seluruh berkas dokumentasi resmi proyek dan tugas akhir dikompilasi secara lengk
    cd backend
    composer install
    ```
-2. Buat file `.env` dari `.env.example`, sesuaikan kredensial database PostgreSQL Anda.
-3. Jalankan migrasi dan seeder database:
+2. Salin `.env.example` ke `.env` dan masukkan kredensial database Supabase/PostgreSQL Anda.
+3. Jalankan migrasi database:
    ```bash
    php artisan migrate --seed
    ```
@@ -110,19 +156,6 @@ Seluruh berkas dokumentasi resmi proyek dan tugas akhir dikompilasi secara lengk
    ```bash
    cd ../frontend
    npm ci
-   ```
-2. Jalankan server pembangunan lokal:
-   ```bash
    npm run dev
    ```
-3. Buka browser pada alamat `http://localhost:5173`.
-
----
-
-## 5. Fitur Utama Sistem
-* **Peta Interaktif WebGIS**: Zonasi risiko banjir rob 4 level dengan visualisasi map layer dinamis (MapLibre GL JS).
-* **Mode Awam Geospasial**: Informasi risiko banjir rob instan berbasis lokasi GPS/pencarian warga.
-* **Crowdsourced Ground Truth**: Pengiriman laporan genangan rob secara *mobile-first* lengkap dengan kompresi WebP gambar di sisi klien.
-* **Audit Log Komprehensif**: Pencatatan riwayat transaksi sensitif untuk transparansi operasional sistem.
-* **Notifikasi Multi-Kanal**: Dukungan notifikasi in-app, push browser, dan email dengan konfigurasi jam sunyi (*quiet hours*).
-* **Researcher Portal**: Unduhan dataset historis (CSV/JSON) dan manajemen otorisasi API key peneliti.
+2. Buka browser pada alamat `http://localhost:5173`.
