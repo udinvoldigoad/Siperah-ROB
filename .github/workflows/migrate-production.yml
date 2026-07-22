@@ -42,7 +42,7 @@ jobs:
           DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: php artisan migrate --force
 
-      - name: Seed Historical Tidal Data
+      - name: Debug Production Tidal Data
         working-directory: backend
         env:
           DB_CONNECTION: pgsql
@@ -51,4 +51,4 @@ jobs:
           DB_DATABASE: ${{ secrets.SUPABASE_DB_DATABASE }}
           DB_USERNAME: ${{ secrets.SUPABASE_DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: php artisan data:fetch-tidal-sealevel --days-back=730
+        run: php -r "require 'vendor/autoload.php'; \$app = require_once 'bootstrap/app.php'; \$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap(); print_r(Illuminate\Support\Facades\DB::table('tidal_data')->selectRaw('MIN(tidal_height) as min_h, MAX(tidal_height) as max_h, COUNT(*) as count')->first());"
