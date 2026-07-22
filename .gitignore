@@ -37,6 +37,9 @@ desktop.ini
 npm-debug.log*
 
 # === Database ===
+*.sqlite
+backend/database/*.sqlite
+backend/siperah_rob
 database/*.sqlite
 database/local-data/
 pg_server.log
