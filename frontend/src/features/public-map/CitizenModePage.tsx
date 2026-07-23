@@ -395,7 +395,13 @@ function CitizenModeDesktop({
                 <h2 style={{ fontSize: "1.25rem", margin: 0, marginBottom: 4 }}>Laporan Warga di Sekitar Anda</h2>
                 <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Informasi lapangan dari masyarakat untuk meningkatkan kewaspadaan.</p>
               </div>
-              <a className="btn secondary" href="#/reports" style={{ whiteSpace: "nowrap" }}>Laporkan Genangan</a>
+              {(() => {
+                let user: { role?: string } | null = null;
+                try { user = JSON.parse(localStorage.getItem("siperah-user") || "null"); } catch {}
+                return user?.role !== "admin" ? (
+                  <a className="btn secondary" href="#/reports" style={{ whiteSpace: "nowrap" }}>Laporkan Genangan</a>
+                ) : null;
+              })()}
             </div>
             <div className="table-responsive"><table className="data-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
               <thead>
@@ -953,11 +959,14 @@ export function CitizenModePage() {
     });
   }
 
+  let user: { role?: string } | null = null;
+  try { user = JSON.parse(localStorage.getItem("siperah-user") || "null"); } catch {}
+
   const actionCards = [
     ["Jauhi area rendah", "Hindari jalan pesisir dan area yang mudah tergenang.", "priority_high"],
     ["Siapkan barang penting", "Amankan dokumen dan barang elektronik sebelum puncak pasang.", "inventory_2"],
     ["Ikuti arahan BPBD", "Jika kondisi memburuk, ikuti informasi resmi dari petugas.", "campaign"],
-    ["Laporkan kejadian", "Tambahkan foto dan lokasi bila melihat genangan di sekitar Anda.", "add_location_alt"],
+    ...(user?.role !== "admin" ? [["Laporkan kejadian", "Tambahkan foto dan lokasi bila melihat genangan di sekitar Anda.", "add_location_alt"]] : []),
   ];
 
   const shareText = [
