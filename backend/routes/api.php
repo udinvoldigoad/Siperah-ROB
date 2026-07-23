@@ -75,7 +75,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/admin/audit-logs', [AuditController::class, 'index']);
     });
 
-    Route::middleware('role:peneliti,admin')->group(function () {
+    Route::middleware('role:peneliti,bpbd_provinsi,admin')->group(function () {
         Route::get('/research/datasets', [ResearchController::class, 'datasets']);
         Route::get('/research/datasets/{dataset}/download', [ResearchController::class, 'downloadDataset']);
         Route::get('/research/stats', [ResearchController::class, 'stats']);
