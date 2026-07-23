@@ -736,7 +736,13 @@ export function PortalPage() {
           .hero-actions { flex-direction: column; gap: 12px !important; margin-bottom: 24px !important; }
           .hero-actions > a { width: 100%; box-sizing: border-box; text-align: center; }
           .inline-pill-img { display: none; }
-          .marquee-container { height: 160px; }
+          /* Pita marquee dipadatkan (tinggi 160px sebelumnya menyisakan band
+             kosong ~96px) + margin bawah dipangkas, dan header "Portal Sistem
+             Terpadu" disembunyikan, agar kartu Public Access naik mengisi
+             kekosongan di bawah hero. Hanya header Portal (anak langsung
+             .bento-section) yang disembunyikan, bukan header "Panduan". */
+          .marquee-container { height: auto; padding: 12px 0; margin-bottom: 22px; }
+          .bento-section > .bento-header-wrap { display: none !important; }
           .bento-card-el { padding: 24px; }
           .landing-header-full {
             padding: 0 16px;
