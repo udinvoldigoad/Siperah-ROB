@@ -267,7 +267,41 @@ export function ProvinceDashboardPage() {
 
   return (
     <AppShell active="province" title="Dashboard BPBD Provinsi Lampung">
-      <motion.div 
+      <style>{`
+        /* Filter banner provinsi: kontrol modern seragam + 3 kolom di mobile. */
+        .prov-filter { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+        .prov-control, .prov-reset {
+          height: 42px; border-radius: 10px; border: 1px solid var(--line);
+          background: var(--surface); color: var(--ink);
+          font: inherit; font-size: 13px; font-weight: 500; padding: 0 12px;
+          box-sizing: border-box;
+        }
+        .prov-control:focus, .prov-reset:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, .15); }
+        input[type="month"].prov-control { min-width: 160px; }
+        input[type="month"].prov-control::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .55; }
+        select.prov-control { min-width: 210px; cursor: pointer; }
+        .prov-reset {
+          display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+          border-color: var(--critical); color: var(--critical); background: transparent;
+          font-weight: 600; cursor: pointer; white-space: nowrap; padding: 0 16px;
+        }
+        .prov-reset:hover { background: rgba(220, 38, 38, .08); }
+
+        @media (max-width: 768px) {
+          .prov-filter { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; }
+          .prov-control, .prov-reset { width: 100%; min-width: 0 !important; padding: 0 8px; font-size: 12.5px; }
+          .prov-reset-suffix { display: none; }
+
+          /* KPI jadi 2 kolom di mobile (override aturan global 1fr !important),
+             padding & angka diringkas agar proporsional. */
+          .metric-grid.province-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px !important; }
+          .metric-grid.province-kpis .metric-card { padding: 18px !important; }
+          .metric-grid.province-kpis .metric-card span { font-size: 12px !important; }
+          .metric-grid.province-kpis .metric-card strong { font-size: 28px !important; }
+          .metric-grid.province-kpis .metric-card small { font-size: 11px !important; }
+        }
+      `}</style>
+      <motion.div
         className="content"
         variants={containerVariants}
         initial="hidden"
@@ -292,20 +326,20 @@ export function ProvinceDashboardPage() {
               </div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
-            <input type="month" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} style={{ minWidth: 150 }} />
-            <select value={selectedRegency} onChange={(event) => setSelectedRegency(event.target.value)} style={{ minWidth: 220 }}>
+          <div className="prov-filter">
+            <input type="month" className="prov-control" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} aria-label="Filter bulan prediksi" />
+            <select className="prov-control" value={selectedRegency} onChange={(event) => setSelectedRegency(event.target.value)} aria-label="Filter kabupaten/kota">
               <option value="all">Semua kabupaten/kota</option>
               {(summary.available_regencies ?? []).map((regency) => <option key={regency} value={regency}>{regency}</option>)}
             </select>
-            <button className="btn secondary" style={{ background: "transparent", color: "var(--critical)", borderColor: "var(--critical)" }} onClick={() => { setSelectedMonth(""); setSelectedRegency("all"); }}>
-              Reset Filter
+            <button type="button" className="prov-reset" onClick={() => { setSelectedMonth(""); setSelectedRegency("all"); }}>
+              <Icon name="restart_alt" style={{ fontSize: 17 }} /> <span>Reset<span className="prov-reset-suffix"> Filter</span></span>
             </button>
           </div>
         </motion.div>
 
         {/* KPI Grid */}
-        <motion.div variants={containerVariants} className="metric-grid" style={{ marginBottom: "32px", gap: "24px" }}>
+        <motion.div variants={containerVariants} className="metric-grid province-kpis" style={{ marginBottom: "32px", gap: "24px" }}>
           <motion.div variants={itemVariants} className="metric-card" style={{ padding: "28px", borderRadius: 8 }}>
             <span style={{ fontSize: "14px", color: "var(--ink-soft)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Wilayah Pantau Aktif</span>
             <strong style={{ color: "var(--accent)", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.monitored_regencies}</strong>

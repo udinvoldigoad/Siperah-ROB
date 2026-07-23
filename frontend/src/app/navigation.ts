@@ -13,7 +13,7 @@ export const navItems: NavItem[] = [
   { href: "#/history", icon: "history", label: "Riwayat Laporan", roles: ["warga", "admin"] },
   { href: "#/operator", icon: "assignment_turned_in", label: "Operator", roles: ["bpbd_operator", "admin"] },
   { href: "#/province", icon: "monitoring", label: "Provinsi", roles: ["bpbd_provinsi", "admin"] },
-  { href: "#/research", icon: "database", label: "Arsip Data", roles: ["peneliti", "bpbd_provinsi", "admin"] },
+  { href: "#/research", icon: "database", label: "Arsip Data", roles: ["peneliti", "admin"] },
   { href: "#/admin", icon: "manage_accounts", label: "Pengguna & Perizinan", roles: ["admin"] },
   { href: "#/audit", icon: "policy", label: "Audit", roles: ["admin"] }
 ];

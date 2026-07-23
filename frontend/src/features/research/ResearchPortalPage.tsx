@@ -105,6 +105,14 @@ interface ApiReferenceResponse {
   };
 }
 
+// Periode dataset disimpan sebagai ISO UTC (mis. 2020-01-01T00:00:00Z). Ditampilkan
+// ringkas "1 Jan 2020 – 31 Des 2025"; timeZone UTC agar tanggal tak bergeser.
+const periodDateFormatter = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+function formatPeriodDate(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : periodDateFormatter.format(date);
+}
+
 export function ResearchPortalPage() {
   const toast = useToast();
   const currentUser = (() => { try { return JSON.parse(localStorage.getItem("siperah-user") || "null") as { role?: string } | null; } catch { return null; } })();
@@ -152,14 +160,14 @@ export function ResearchPortalPage() {
     }
   };
 
-  const loadResearchData = async (page = datasetPage) => {
+  const loadResearchData = async (page = datasetPage, overrideFilters = datasetFilters) => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams({ per_page: "10", page: String(page) });
-      if (datasetFilters.year) params.set("year", datasetFilters.year);
-      if (datasetFilters.type) params.set("type", datasetFilters.type);
-      if (datasetFilters.regency) params.set("regency", datasetFilters.regency);
-      if (datasetFilters.search.trim()) params.set("search", datasetFilters.search.trim());
+      if (overrideFilters.year) params.set("year", overrideFilters.year);
+      if (overrideFilters.type) params.set("type", overrideFilters.type);
+      if (overrideFilters.regency) params.set("regency", overrideFilters.regency);
+      if (overrideFilters.search.trim()) params.set("search", overrideFilters.search.trim());
 
       const dsRes = await api<DatasetResponse>(`/research/datasets?${params.toString()}`);
       setDatasets(dsRes.data);
@@ -242,6 +250,20 @@ export function ResearchPortalPage() {
     setDatasetPage(1);
     loadResearchData(1);
   };
+  // Ubah satu filter select lalu langsung terapkan (pakai nilai baru, bukan state basi).
+  const changeDatasetFilter = (patch: Partial<typeof datasetFilters>) => {
+    const next = { ...datasetFilters, ...patch };
+    setDatasetFilters(next);
+    setDatasetPage(1);
+    loadResearchData(1, next);
+  };
+  const resetDatasetFilters = () => {
+    const cleared = { year: "", type: "", search: "", regency: "" };
+    setDatasetFilters(cleared);
+    setDatasetPage(1);
+    loadResearchData(1, cleared);
+  };
+  const hasDatasetFilters = Boolean(datasetFilters.year || datasetFilters.type || datasetFilters.regency || datasetFilters.search.trim());
   const changeDatasetPage = (nextPage: number) => {
     if (datasetMeta && (nextPage < 1 || nextPage > datasetMeta.last_page)) return;
     setDatasetPage(nextPage);
@@ -289,7 +311,42 @@ export function ResearchPortalPage() {
         </div>}
 
         {/* KPI Grid */}
-        <div className="metric-grid" style={{ marginBottom: "32px", gap: "20px" }}>
+        <style>{`
+          /* KPI peneliti jadi 2 kolom di mobile (override global 1fr !important). */
+          @media (max-width: 768px) {
+            .metric-grid.research-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px !important; }
+            .metric-grid.research-kpis > div { padding: 16px !important; }
+            .metric-grid.research-kpis > div > div:nth-child(2) { font-size: 1.6rem !important; margin: 6px 0 !important; }
+          }
+
+          /* --- Filter Arsip Data --- */
+          .rp-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 24px; }
+          .rp-search { display: flex; gap: 8px; flex: 1 1 300px; min-width: 0; }
+          .rp-search-field { position: relative; flex: 1; min-width: 0; }
+          .rp-search-ic { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--ink-soft); pointer-events: none; }
+          .rp-search-field input { width: 100%; height: 44px; box-sizing: border-box; padding: 0 40px 0 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; }
+          .rp-search-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, .15); }
+          .rp-search-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 0; border-radius: 8px; background: var(--surface-soft); color: var(--ink-soft); cursor: pointer; }
+          .rp-search-clear:hover { background: var(--line); color: var(--ink); }
+          .rp-search-go { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 44px; padding: 0 18px; border-radius: 12px; border: 1px solid var(--accent); background: var(--accent); color: #fff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+          .rp-search-go:hover { filter: brightness(0.96); }
+          .rp-selects { display: flex; gap: 8px; flex-wrap: wrap; }
+          .rp-select { height: 44px; min-width: 150px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; padding: 0 12px; cursor: pointer; }
+          .rp-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, .15); }
+          .rp-reset { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+          .rp-reset:hover { border-color: var(--critical); color: var(--critical); }
+
+          @media (max-width: 768px) {
+            .rp-filter { display: grid; grid-template-columns: 1fr; gap: 10px; }
+            .rp-search { flex: none; }
+            .rp-go-label { display: none; }
+            .rp-search-go { padding: 0 14px; }
+            .rp-selects { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+            .rp-select { min-width: 0; width: 100%; padding: 0 8px; font-size: 12px; }
+            .rp-reset { width: 100%; }
+          }
+        `}</style>
+        <div className="metric-grid research-kpis" style={{ marginBottom: "32px", gap: "20px" }}>
           {[
             { title: "Dataset Tersedia", val: stats.dataset_count || datasets.length, sub: "set data tervalidasi" },
             { title: "Total Rekaman", val: stats.total_records.toLocaleString("id-ID"), sub: "baris data terdokumentasi" },
@@ -335,24 +392,47 @@ export function ResearchPortalPage() {
           {activeTab === 0 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               {/* Filters */}
-              <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
-                <select value={datasetFilters.year} onChange={(event) => setDatasetFilters((current) => ({ ...current, year: event.target.value }))} style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)", color: "var(--ink)" }}>
-                  <option value="">Semua Tahun</option>
-                  {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
-                </select>
-                <select value={datasetFilters.regency} onChange={(event) => setDatasetFilters((current) => ({ ...current, regency: event.target.value }))} style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)", color: "var(--ink)" }}>
-                  <option value="">Semua Kabupaten</option>
-                  {availableRegencies.map((regency) => <option key={regency} value={regency}>{regency}</option>)}
-                </select>
-                <select value={datasetFilters.type} onChange={(event) => setDatasetFilters((current) => ({ ...current, type: event.target.value }))} style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)", color: "var(--ink)" }}>
-                  <option value="">Semua Jenis</option>
-                  {availableTypes.map((type) => <option key={type} value={type}>{type}</option>)}
-                </select>
-                <div style={{ flex: 1, position: "relative", minWidth: "200px" }}>
-                  <Icon name="search" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "18px", color: "var(--ink-soft)" }} />
-                  <input type="text" value={datasetFilters.search} onChange={(event) => setDatasetFilters((current) => ({ ...current, search: event.target.value }))} onKeyDown={(event) => { if (event.key === "Enter") applyDatasetFilters(); }} placeholder="Cari dataset..." style={{ width: "100%", padding: "10px 14px 10px 38px", borderRadius: "8px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)", color: "var(--ink)", boxSizing: "border-box" }} />
+              <div className="rp-filter">
+                <div className="rp-search">
+                  <div className="rp-search-field">
+                    <Icon name="search" className="rp-search-ic" />
+                    <input
+                      type="text"
+                      value={datasetFilters.search}
+                      onChange={(event) => setDatasetFilters((current) => ({ ...current, search: event.target.value }))}
+                      onKeyDown={(event) => { if (event.key === "Enter") applyDatasetFilters(); }}
+                      placeholder="Cari nama dataset…"
+                      aria-label="Cari dataset"
+                    />
+                    {datasetFilters.search && (
+                      <button type="button" className="rp-search-clear" aria-label="Bersihkan pencarian" onClick={() => changeDatasetFilter({ search: "" })}>
+                        <Icon name="close" style={{ fontSize: 16 }} />
+                      </button>
+                    )}
+                  </div>
+                  <button type="button" className="rp-search-go" onClick={applyDatasetFilters}>
+                    <Icon name="search" style={{ fontSize: 18 }} /> <span className="rp-go-label">Cari</span>
+                  </button>
                 </div>
-                <button className="btn secondary" style={{ padding: "10px 16px" }} onClick={applyDatasetFilters}><Icon name="filter_list" style={{ fontSize: "18px" }} /> Filter</button>
+                <div className="rp-selects">
+                  <select className="rp-select" aria-label="Tahun" value={datasetFilters.year} onChange={(event) => changeDatasetFilter({ year: event.target.value })}>
+                    <option value="">Semua Tahun</option>
+                    {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
+                  </select>
+                  <select className="rp-select" aria-label="Kabupaten/Kota" value={datasetFilters.regency} onChange={(event) => changeDatasetFilter({ regency: event.target.value })}>
+                    <option value="">Semua Kabupaten</option>
+                    {availableRegencies.map((regency) => <option key={regency} value={regency}>{regency}</option>)}
+                  </select>
+                  <select className="rp-select" aria-label="Jenis dataset" value={datasetFilters.type} onChange={(event) => changeDatasetFilter({ type: event.target.value })}>
+                    <option value="">Semua Jenis</option>
+                    {availableTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+                  </select>
+                </div>
+                {hasDatasetFilters && (
+                  <button type="button" className="rp-reset" onClick={resetDatasetFilters}>
+                    <Icon name="restart_alt" style={{ fontSize: 17 }} /> Reset
+                  </button>
+                )}
               </div>
 
               {/* Table */}
@@ -379,8 +459,8 @@ export function ResearchPortalPage() {
                         <td style={{ padding: "16px 20px" }}>
                           <span style={{ display: "inline-block", background: "var(--surface-muted)", padding: "4px 10px", borderRadius: "100px", fontSize: "11px", fontWeight: 600, color: "var(--ink)" }}>{ds.dataset_type}</span>
                         </td>
-                        <td style={{ padding: "16px 20px", fontSize: "13px", color: "var(--ink)" }}>
-                          {ds.period_start} — {ds.period_end}
+                        <td style={{ padding: "16px 20px", fontSize: "13px", color: "var(--ink)", whiteSpace: "nowrap" }}>
+                          {formatPeriodDate(ds.period_start)} – {formatPeriodDate(ds.period_end)}
                         </td>
                         <td style={{ padding: "16px 20px", fontSize: "13px", color: "var(--ink)" }}>{ds.resolution}</td>
                         <td style={{ padding: "16px 20px", fontSize: "13px", color: "var(--ink)", textAlign: "right", fontWeight: 500 }}>

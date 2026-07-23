@@ -58,8 +58,17 @@ final class ResearchController
 
         $paginator = $query->paginate($filters['per_page'] ?? 10);
 
+        // REKAMAN dihitung langsung dari query data nyata (sama dengan yang
+        // diekspor saat download), bukan kolom seeder statis — agar angka selalu
+        // cocok dengan isi CSV/JSON yang bisa diunduh.
+        $items = array_map(function (Dataset $dataset): Dataset {
+            $dataset->record_count = $this->queryForDataset($dataset)[0]->count();
+
+            return $dataset;
+        }, $paginator->items());
+
         return response()->json([
-            'data' => $paginator->items(),
+            'data' => $items,
             'meta' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),
@@ -100,7 +109,7 @@ final class ResearchController
             'dataset_type' => $dataset->dataset_type,
         ]);
 
-        return $this->exportOrPaginate($query, $data, $filename);
+        return $this->exportOrPaginate($query, $data, $filename, fullExport: true);
     }
 
     public function apiKeys(Request $request)
@@ -156,7 +165,9 @@ final class ResearchController
 
         return response()->json(['data' => [
             'dataset_count' => Dataset::count(),
-            'total_records' => (int) Dataset::sum('record_count'),
+            // Jumlah rekaman nyata lintas dataset (count dari query data asli),
+            // bukan penjumlahan kolom seeder statis.
+            'total_records' => (int) Dataset::all()->sum(fn (Dataset $dataset): int => $this->queryForDataset($dataset)[0]->count()),
             'downloads_this_month' => DB::table('audit_logs')
                 ->where('action', 'download_research_dataset')
                 ->where('outcome', 'success')
@@ -438,8 +449,25 @@ final class ResearchController
             ]);
     }
 
-    private function exportOrPaginate(Builder $query, array $data, string $filename): JsonResponse|StreamedResponse
+    private function exportOrPaginate(Builder $query, array $data, string $filename, bool $fullExport = false): JsonResponse|StreamedResponse
     {
+        // Unduhan JSON (fullExport): file lengkap & rapi — pretty-print, semua baris
+        // via cursor (hemat memori), sekelas CSV. API v1 tetap paginated/compact.
+        if ($fullExport && ($data['format'] ?? 'json') === 'json') {
+            $jsonFilename = str_replace('.csv', '.json', $filename);
+
+            return response()->streamDownload(function () use ($query): void {
+                $first = true;
+                foreach ($query->cursor() as $row) {
+                    echo $first ? "[\n" : ",\n";
+                    $encoded = json_encode((array) $row, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                    echo '  '.str_replace("\n", "\n  ", (string) $encoded);
+                    $first = false;
+                }
+                echo $first ? "[]\n" : "\n]\n";
+            }, $jsonFilename, ['Content-Type' => 'application/json; charset=UTF-8']);
+        }
+
         if (($data['format'] ?? 'json') === 'csv') {
             return response()->streamDownload(function () use ($query): void {
                 $output = fopen('php://output', 'wb');
