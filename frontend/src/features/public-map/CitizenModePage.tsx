@@ -778,13 +778,18 @@ function CitizenModeMobile({
       </motion.section>
 
       {/* Bottom Share Buttons */}
-      <motion.section variants={itemVariants} initial="hidden" animate="show" style={{ display: "flex", gap: 10, paddingBottom: 24 }}>
-        <button className="btn primary" type="button" onClick={handleShareWhatsApp} style={{ flex: 1, justifyContent: "center", background: "#16a34a", borderColor: "#16a34a", fontSize: "13px", padding: "12px" }}>
-          <Icon name="share" style={{ fontSize: 18 }} /> WA
-        </button>
-        <button className="btn secondary" type="button" onClick={handleCopyWarning} style={{ flex: 1, justifyContent: "center", fontSize: "13px", padding: "12px" }}>
-          <Icon name="content_copy" style={{ fontSize: 18 }} /> Salin
-        </button>
+      <motion.section variants={itemVariants} initial="hidden" animate="show" style={{ marginBottom: 32, paddingBottom: 24 }}>
+        <h2 style={{ fontSize: "1.1rem", margin: "0 0 4px 0", fontWeight: 700 }}>Sebarkan Peringatan</h2>
+        <p style={{ margin: "0 0 16px 0", color: "var(--ink-soft)", fontSize: "13px" }}>Bantu kerabat bersiap dengan membagikan informasi ini</p>
+        
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <button className="btn primary" type="button" onClick={handleShareWhatsApp} style={{ width: "100%", justifyContent: "center", background: "#16a34a", borderColor: "#16a34a", fontSize: "13.5px", padding: "12px", gap: 8 }}>
+            <Icon name="share" style={{ fontSize: 18 }} /> Bagikan via WhatsApp
+          </button>
+          <button className="btn secondary" type="button" onClick={handleCopyWarning} style={{ width: "100%", justifyContent: "center", fontSize: "13.5px", padding: "12px", gap: 8 }}>
+            <Icon name="content_copy" style={{ fontSize: 18 }} /> Salin Teks Peringatan
+          </button>
+        </div>
       </motion.section>
       
     </AppShell>

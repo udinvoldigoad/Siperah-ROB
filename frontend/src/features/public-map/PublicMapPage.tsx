@@ -469,7 +469,8 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, user
           clusterMaxZoom: CLUSTER_MAX_ZOOM,
           clusterProperties: { 
             maxRank: ["max", ["get", "riskRank"]],
-            sumProb: ["+", ["get", "probability"]]
+            sumProb: ["+", ["get", "probability"]],
+            maxProb: ["max", ["get", "probability"]]
           },
         });
         instance.addLayer({
@@ -501,7 +502,7 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, user
           layout: {
             "text-field": [
               "concat",
-              ["to-string", ["round", ["/", ["get", "sumProb"], ["get", "point_count"]]]],
+              ["to-string", ["round", ["get", "maxProb"]]],
               "%"
             ],
             "text-font": ["opensans"],
