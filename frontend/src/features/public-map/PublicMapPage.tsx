@@ -142,6 +142,9 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
   const regionsRef = useRef(regions);
   regionsRef.current = regions;
   const clusterHandlersBound = useRef(false);
+  // Ditandai true saat peta selesai `load`. Dipakai sebagai gerbang update yang
+  // andal (lihat catatan di efek update di bawah).
+  const mapLoaded = useRef(false);
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -158,7 +161,8 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
     });
     map.current.addControl(new maplibregl.NavigationControl(), "top-right");
     map.current.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: "metric" }), "bottom-right");
-    return () => { map.current?.remove(); map.current = null; };
+    map.current.on("load", () => { mapLoaded.current = true; });
+    return () => { map.current?.remove(); map.current = null; mapLoaded.current = false; };
   }, []);
 
   useEffect(() => {
@@ -503,16 +507,21 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
         instance.flyTo({ center: [105.26, -5.48], zoom: 9, duration: 1000 });
       }
     };
-    // "idle" (bukan "load") sebagai fallback: event load hanya fire sekali
-    // seumur peta, sehingga toggle layer setelahnya bisa jadi no-op bila
-    // isStyleLoaded() kebetulan false sesaat (mis. saat tile masih dimuat).
-    if (instance.isStyleLoaded()) update(); else instance.once("idle", update);
+    // Gerbang update memakai flag `mapLoaded` (di-set pada event `load`), bukan
+    // isStyleLoaded()/idle. Sejak ada layer symbol + glyphs eksternal untuk
+    // label "%", isStyleLoaded() bisa lama bernilai false dan `idle` tak kunjung
+    // fire di koneksi lambat — akibatnya saat data wilayah tiba, update tak
+    // pernah jalan dan zona tidak muncul ketika peta baru dibuka (baru muncul
+    // setelah digeser/zoom yang memicu moveend). `load` fire andal setelah
+    // basemap siap, tanpa menunggu unduhan glyphs.
+    const onLoad = () => update();
+    if (mapLoaded.current) update(); else instance.once("load", onLoad);
 
     // Badge dibuat per-viewport & bergantung zoom, jadi perlu digambar ulang
     // setiap peta selesai digeser/di-zoom — tanpa framing ulang.
     const handleMoveEnd = () => update(false);
     instance.on("moveend", handleMoveEnd);
-    return () => { instance.off("moveend", handleMoveEnd); };
+    return () => { instance.off("moveend", handleMoveEnd); instance.off("load", onLoad); };
   }, [regions, reports, layers, activeLayers, selectedRegency]);
 
   return <div ref={mapContainer} className="map-canvas" style={{ minHeight: 560, width: "100%" }} aria-label="Peta interaktif risiko banjir rob" />;
