@@ -821,6 +821,15 @@ export function PublicMapPage() {
           white-space: nowrap;
         }
         .map-filter-bar .layer-btn-suffix { display: none; }
+        /* Dropdown layer dilebarkan agar label opsi tak terpotong kolom sempit;
+           dijangkarkan ke kanan supaya melebar ke kiri (tetap di dalam layar). */
+        .map-filter-bar .layer-dropdown {
+          left: auto !important;
+          right: 0 !important;
+          min-width: 200px;
+          width: max-content;
+          max-width: calc(100vw - 40px);
+        }
 
         /* Dua lapis harus dibatasi: .map-container DAN div maplibre di dalamnya
            (.map-canvas) yang punya minHeight 560 inline — kalau hanya luarnya,
