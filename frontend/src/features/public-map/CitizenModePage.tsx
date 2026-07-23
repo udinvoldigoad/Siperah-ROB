@@ -532,13 +532,13 @@ function CitizenModeMobile({
           position: relative;
           overflow: visible;
           box-shadow: ${cardStyle.boxShadow};
-          border-radius: 0 0 32px 32px;
+          border-radius: 0;
         }
         .mobile-native-hero-bg {
           position: absolute;
           inset: 0;
           overflow: hidden;
-          border-radius: 0 0 32px 32px;
+          border-radius: 0;
           pointer-events: none;
           z-index: 0;
         }
@@ -914,11 +914,14 @@ export function CitizenModePage() {
 
   const forecastDays = data ? (Array.isArray(data.forecast) ? data.forecast : data.forecast.data).map((item: any) => {
     const rawDate = item.prediction_date.split("T")[0].split(" ")[0]; // Get only YYYY-MM-DD
+    const isMonitored = !!data?.is_monitored;
+    const percent = isMonitored ? item.risk_probability : 0;
+    const riskClass = isMonitored ? (item.risk_class as RiskClass) : ("rendah" as RiskClass);
     return {
       day: new Date(`${rawDate}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
-      label: riskLabels[item.risk_class as RiskClass],
-      percent: item.risk_probability, 
-      color: item.risk_class === "sangat_tinggi" ? "var(--critical)" : item.risk_class === "tinggi" ? "var(--high)" : item.risk_class === "sedang" ? "var(--medium)" : "var(--low)",
+      label: riskLabels[riskClass],
+      percent: percent, 
+      color: riskClass === "sangat_tinggi" ? "var(--critical)" : riskClass === "tinggi" ? "var(--high)" : riskClass === "sedang" ? "var(--medium)" : "var(--low)",
     };
   }) : [];
 

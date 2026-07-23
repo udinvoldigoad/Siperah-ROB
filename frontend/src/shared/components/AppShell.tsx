@@ -247,7 +247,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
       
       {/* Mobile Bottom Pill Navigation */}
       <nav className="mobile-bottom-pill">
-        {allowedNavItems.slice(0, 4).map((item) => (
+        {allowedNavItems.slice(0, allowedNavItems.length > 4 ? 4 : allowedNavItems.length).map((item) => (
           <a
             key={item.href}
             className={`pill-nav-item ${item.href.includes(active) ? "active" : ""}`}
@@ -258,7 +258,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
             <span>{item.label}</span>
           </a>
         ))}
-        {allowedNavItems.length > 4 && (
+        {(allowedNavItems.length > 4 || isUserLoggedIn) && (
           <button type="button" className={`pill-nav-item ${isMoreMenuOpen ? "active" : ""}`} onClick={() => setIsMoreMenuOpen(true)} style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
             <Icon name="more_horiz" style={{ fontSize: "24px", marginBottom: "4px" }} />
             <span>Lainnya</span>
@@ -301,6 +301,14 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
               }}
             >
               <div className="drag-handle" style={{ width: 40, height: 4, background: "var(--line)", borderRadius: 99, margin: "0 auto 16px" }} />
+              
+              {isUserLoggedIn && user && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px", padding: "0 12px 12px 12px", borderBottom: "1px solid var(--line)" }}>
+                  <strong style={{ fontSize: "16px", color: "var(--ink-primary)", lineHeight: 1.2 }}>{user.name}</strong>
+                  <span style={{ fontSize: "13px", color: "var(--ink-soft)" }}>{roleLabels[user.role] || user.role}</span>
+                </div>
+              )}
+
               {allowedNavItems.slice(4).map(item => (
                 <a 
                   key={item.href} 
@@ -312,6 +320,23 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
                   {item.label}
                 </a>
               ))}
+
+              {isUserLoggedIn && (
+                <a
+                  href="#/"
+                  onClick={() => {
+                    localStorage.removeItem("siperah-token");
+                    localStorage.removeItem("siperah-user");
+                    setIsMoreMenuOpen(false);
+                    window.location.hash = "/";
+                    window.location.reload();
+                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 16, color: "var(--critical)", textDecoration: "none", fontSize: "15px", fontWeight: 600, padding: "12px", borderRadius: "12px", marginTop: "8px" }}
+                >
+                  <Icon name="logout" style={{ fontSize: 24, color: "var(--critical)" }} />
+                  <span>Logout</span>
+                </a>
+              )}
             </motion.div>
           </>
         )}
