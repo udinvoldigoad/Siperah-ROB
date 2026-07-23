@@ -55,6 +55,8 @@ export function OperatorDashboardPage() {
   const [activeTab, setActiveTab] = useState<"antrean" | "riwayat">("antrean");
   // Untuk mendeteksi kedatangan laporan baru antar polling (null = belum ada baseline).
   const prevPendingRef = useRef<number | null>(null);
+  // Panel antrean — target scroll dari tombol "Lihat laporan" di banner.
+  const queueRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
 
   const loadReports = async (targetPage = page) => {
@@ -161,6 +163,64 @@ export function OperatorDashboardPage() {
         .operator-page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 800; }
         .operator-page-btn:disabled { cursor: not-allowed; opacity: .45; }
         .dashboard-split-layout { display: grid; gap: 24px; }
+
+        /* KPI operator: kartu lebih ringkas & angka berukuran standar/modern
+           (bukan 3rem tipis). Di-scope ke .operator-kpis agar dashboard lain
+           tak ikut berubah. */
+        .metric-grid.operator-kpis .metric-card { min-height: 0; padding: 18px 20px; gap: 6px; }
+        .metric-grid.operator-kpis .metric-card span { font-size: 12px; font-weight: 600; }
+        .metric-grid.operator-kpis .metric-card strong { font-size: 1.8rem; font-weight: 700; }
+        .metric-grid.operator-kpis .metric-card small { font-size: 11px; }
+        /* 2 kolom di mobile (override aturan global 1fr !important di ≤768px);
+           spesifisitas .metric-grid.operator-kpis + !important memenangkannya. */
+        @media (max-width: 768px) {
+          .metric-grid.operator-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px; }
+        }
+
+        /* Header panel antrean: switcher + subjudul + filter, ditumpuk rapi. */
+        .op-panel-head { padding: 18px 20px; border-bottom: 1px solid var(--line); display: grid; gap: 14px; }
+
+        /* Switcher tab modern (segmented control). */
+        .op-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 4px; width: 100%; max-width: 400px; }
+        .op-tab { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 0; background: transparent; color: var(--ink-soft); font: inherit; font-size: 0.9rem; font-weight: 600; padding: 9px 10px; border-radius: 9px; cursor: pointer; transition: background .15s, color .15s, box-shadow .15s; }
+        .op-tab:hover { color: var(--ink); }
+        .op-tab.active { background: var(--surface); color: var(--accent); box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
+        .op-tab-count { font-size: 11px; font-weight: 800; line-height: 1; background: var(--critical); color: #fff; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; }
+
+        .op-subtitle { color: var(--ink-soft); font-size: 12px; }
+
+        /* Filter 3 kolom satu baris; Export CSV hijau. */
+        .op-filter-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-width: 520px; }
+        .op-filter-select, .op-filter-btn { min-width: 0; width: 100%; height: 40px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 600; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+        .op-filter-btn { white-space: nowrap; overflow: hidden; }
+        .op-filter-btn .op-btn-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .op-filter-btn:hover { border-color: var(--accent); }
+        .op-filter-btn.active { background: var(--critical); border-color: var(--critical); color: #fff; }
+        .op-filter-btn.export { background: var(--low); border-color: var(--low); color: #fff; }
+        .op-filter-btn.export:hover { border-color: var(--low); filter: brightness(0.94); }
+
+        /* Baris laporan: rapi & proporsional. */
+        .op-report-row { padding: 18px 20px; }
+        .op-report-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+        .op-report-head > div:first-child { min-width: 0; }
+        .op-report-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+        .op-report-desc { font-size: 14px; color: var(--ink); margin: 12px 0 0; padding: 14px 16px; background: var(--surface-soft); border-radius: var(--radius); }
+        .op-report-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
+        @media (max-width: 768px) {
+          .op-panel-head { padding: 16px; }
+          .op-tabs { max-width: none; }
+          /* Label tombol filter diringkas ("SLA"/"Export") agar muat 3 kolom. */
+          .op-btn-suffix { display: none; }
+          .op-report-row { padding: 16px; }
+          /* Badge severity/SLA turun ke bawah judul (chip) agar tak menekan judul. */
+          .op-report-head { flex-direction: column; }
+          .op-report-badges { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+          /* Aksi proporsional: Validasi full-width, Tolak & Detail berbagi baris. */
+          .op-report-actions { flex-wrap: wrap; justify-content: stretch; }
+          .op-report-actions .btn { flex: 1 1 calc(50% - 5px); min-width: 0; justify-content: center; padding: 11px 12px; }
+          .op-report-actions .op-act-primary { flex-basis: 100%; }
+        }
       `}</style>
       <motion.div
         className="content"
@@ -187,19 +247,20 @@ export function OperatorDashboardPage() {
               </div>
             </div>
           </div>
-          <motion.a 
+          <motion.button
+            type="button"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            href="#/province"
+            onClick={() => queueRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
             className="btn primary"
             style={{ background: "#7a1a13", borderColor: "#7a1a13", fontSize: "13px", whiteSpace: "nowrap" }}
           >
-            Ringkasan Provinsi <Icon name="arrow_forward" style={{ fontSize: "16px" }} />
-          </motion.a>
+            Lihat laporan <Icon name="arrow_downward" style={{ fontSize: "16px" }} />
+          </motion.button>
         </motion.div>
 
         {/* KPI Grid */}
-        <motion.div variants={containerVariants} className="metric-grid" style={{ marginBottom: "32px" }}>
+        <motion.div variants={containerVariants} className="metric-grid operator-kpis" style={{ marginBottom: "32px" }}>
           {[
             { title: "Kelurahan pantau aktif", val: summary.monitored_villages, sub: "wilayah pesisir", cls: "" },
             { title: "Bahaya Sangat Tinggi", val: summary.critical_villages, sub: "kelurahan hari ini", cls: "critical" },
@@ -229,34 +290,35 @@ export function OperatorDashboardPage() {
         {/* Main Content Layout */}
         <motion.div variants={itemVariants} className="dashboard-split-layout">
           {/* Antrean Moderasi */}
-          <div className="panel flush">
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-              <div>
-                <div style={{ display: "flex", gap: 24, alignItems: "center", marginBottom: 6 }}>
-                  <h2 
-                    style={{ margin: 0, fontSize: "1.1rem", cursor: "pointer", color: activeTab === "antrean" ? "var(--ink)" : "var(--ink-soft)", borderBottom: activeTab === "antrean" ? "2px solid var(--accent)" : "2px solid transparent", paddingBottom: 4 }}
-                    onClick={() => setActiveTab("antrean")}
-                  >
-                    Antrean Laporan Masuk
-                  </h2>
-                  <h2 
-                    style={{ margin: 0, fontSize: "1.1rem", cursor: "pointer", color: activeTab === "riwayat" ? "var(--ink)" : "var(--ink-soft)", borderBottom: activeTab === "riwayat" ? "2px solid var(--accent)" : "2px solid transparent", paddingBottom: 4 }}
-                    onClick={() => setActiveTab("riwayat")}
-                  >
-                    Riwayat Validasi
-                  </h2>
-                </div>
-                <span style={{ color: "var(--ink-soft)", fontSize: 12 }}>
-                  {operatorArea} · {pageMeta.total === 0 ? "tidak ada laporan pada filter ini" : `menampilkan ${pageMeta.from}-${pageMeta.to} dari ${pageMeta.total} laporan`}
-                  {(severityFilter || slaOverdue) && <> · <button type="button" onClick={() => { setSeverityFilter(""); setSlaOverdue(false); }} style={{ background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontSize: 12, padding: 0, fontWeight: 600 }}>reset filter</button></>}
-                </span>
+          <div className="panel flush" ref={queueRef} style={{ scrollMarginTop: 16 }}>
+            <div className="op-panel-head">
+              <div className="op-tabs" role="tablist" aria-label="Tampilan laporan">
+                <button
+                  type="button" role="tab" aria-selected={activeTab === "antrean"}
+                  className={`op-tab ${activeTab === "antrean" ? "active" : ""}`}
+                  onClick={() => setActiveTab("antrean")}
+                >
+                  Laporan Masuk
+                  {pendingCount > 0 && <span className="op-tab-count">{pendingCount}</span>}
+                </button>
+                <button
+                  type="button" role="tab" aria-selected={activeTab === "riwayat"}
+                  className={`op-tab ${activeTab === "riwayat" ? "active" : ""}`}
+                  onClick={() => setActiveTab("riwayat")}
+                >
+                  Riwayat Validasi
+                </button>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span className="op-subtitle">
+                {operatorArea} · {pageMeta.total === 0 ? "tidak ada laporan pada filter ini" : `menampilkan ${pageMeta.from}-${pageMeta.to} dari ${pageMeta.total} laporan`}
+                {(severityFilter || slaOverdue) && <> · <button type="button" onClick={() => { setSeverityFilter(""); setSlaOverdue(false); }} style={{ background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontSize: 12, padding: 0, fontWeight: 600 }}>reset filter</button></>}
+              </span>
+              <div className="op-filter-row">
                 <select
                   value={severityFilter}
                   onChange={(e) => setSeverityFilter(e.target.value as ReportSeverity | "")}
                   aria-label="Filter keparahan laporan"
-                  style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 13 }}
+                  className="op-filter-select"
                 >
                   <option value="">Semua keparahan</option>
                   <option value="sangat_parah">Sangat parah</option>
@@ -266,22 +328,15 @@ export function OperatorDashboardPage() {
                 </select>
                 <button
                   type="button"
-                  className={`btn secondary ${slaOverdue ? "active" : ""}`}
+                  className={`op-filter-btn ${slaOverdue ? "active" : ""}`}
                   aria-pressed={slaOverdue}
                   onClick={() => setSlaOverdue((v) => !v)}
-                  style={{ padding: "9px 14px", ...(slaOverdue ? { background: "var(--critical)", borderColor: "var(--critical)", color: "#fff" } : {}) }}
                 >
-                  <Icon name="schedule" /> SLA terlambat
+                  <Icon name="schedule" style={{ fontSize: 18 }} /> <span className="op-btn-label">SLA<span className="op-btn-suffix"> terlambat</span></span>
                 </button>
-                <motion.button whileHover={{ y: -2 }} type="button" className="btn secondary" style={{ padding: "9px 14px" }} onClick={handleExport}>
-                  <Icon name="download" /> Export CSV
+                <motion.button whileHover={{ y: -1 }} type="button" className="op-filter-btn export" onClick={handleExport}>
+                  <Icon name="download" style={{ fontSize: 18 }} /> <span className="op-btn-label">Export<span className="op-btn-suffix"> CSV</span></span>
                 </motion.button>
-                <motion.span
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  className="badge severity-sangat_parah"
-                >
-                  {pendingCount} baru
-                </motion.span>
               </div>
             </div>
 
@@ -297,23 +352,23 @@ export function OperatorDashboardPage() {
               ) : (
                 <AnimatePresence>
                   {reports.map((report) => (
-                    <motion.div 
-                      key={report.id} 
+                    <motion.div
+                      key={report.id}
                       layout
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0, scale: 0.95 }}
                       transition={{ duration: 0.3 }}
-                      className={`report-row severity-left-${report.severity}`} 
-                      style={{ gridTemplateColumns: "1fr", padding: "24px" }}
+                      className={`report-row op-report-row severity-left-${report.severity}`}
+                      style={{ display: "block" }}
                     >
-                      <div style={{ display: "flex", alignItems: "start", justifyContent: "space-between", marginBottom: "12px" }}>
+                      <div className="op-report-head">
                         <div>
                           <div className="report-title" style={{ fontSize: "15px" }}>Kel. {report.village} &bull; Kec. {report.district}</div>
                           <p>Dilaporkan: {report.submittedAt} &bull; oleh warga ({report.waterHeightCm ? `${report.waterHeightCm} cm` : "-"})</p>
                           {!report.isWithinMonitoringArea && <p style={{ color: "var(--medium)", fontWeight: 700 }}>Triase: lokasi di luar wilayah pantauan rob, tetapi masih dalam {report.regency}.</p>}
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                        <div className="op-report-badges">
                           <span className={`badge severity-${report.severity}`}>
                             {severityLabels[report.severity]}
                           </span>
@@ -324,21 +379,21 @@ export function OperatorDashboardPage() {
                           )}
                         </div>
                       </div>
-                      <div style={{ fontSize: "14px", color: "var(--ink)", marginBottom: "20px", padding: "16px", background: "var(--surface-soft)", borderRadius: "var(--radius)" }}>
+                      <div className="op-report-desc">
                         "{report.description}"
                       </div>
-                      <div style={{ display: "flex", gap: 10, marginTop: "16px", justifyContent: "flex-end" }}>
+                      <div className="op-report-actions">
                         {activeTab === "antrean" && (
                           <>
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn primary" style={{ background: "var(--low)", padding: "10px 20px", color: "#fff", border: "none" }} onClick={() => handleValidate(report)}>
+                            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="btn primary op-act-primary" style={{ background: "var(--low)", padding: "10px 20px", color: "#fff", border: "none" }} onClick={() => handleValidate(report)}>
                               <Icon name="check_circle" /> Validasi Laporan
                             </motion.button>
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn secondary" style={{ color: "var(--critical)", padding: "10px 20px" }} onClick={() => handleReject(report)}>
+                            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="btn secondary" style={{ color: "var(--critical)", padding: "10px 20px" }} onClick={() => handleReject(report)}>
                               <Icon name="close" /> Tolak
                             </motion.button>
                           </>
                         )}
-                        <motion.a whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} href={`#/operator/reports/${report.id}`} className="btn secondary" style={{ padding: "10px 20px" }}>
+                        <motion.a whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} href={`#/operator/reports/${report.id}`} className="btn secondary" style={{ padding: "10px 20px" }}>
                           <Icon name="visibility" /> Detail
                         </motion.a>
                       </div>
