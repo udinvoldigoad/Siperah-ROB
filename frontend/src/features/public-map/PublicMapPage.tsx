@@ -804,12 +804,14 @@ export function PublicMapPage() {
           gap: 6px !important;
           font-size: 12px !important;
         }
-        .map-filter-bar .layer-menu-btn > .material-symbols-outlined:first-child { display: none; }
+        /* Ikon layer (biru) tetap tampil; teks diringkas jadi "1 dari 6" saja
+           dengan menyembunyikan sufiks " layer aktif" agar muat kolom sempit. */
         .map-filter-bar .layer-menu-btn > span {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
+        .map-filter-bar .layer-btn-suffix { display: none; }
 
         /* Dua lapis harus dibatasi: .map-container DAN div maplibre di dalamnya
            (.map-canvas) yang punya minHeight 560 inline — kalau hanya luarnya,
@@ -885,7 +887,7 @@ export function PublicMapPage() {
                 style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 14px", borderRadius: 10, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontSize: 14, fontWeight: 500, width: "100%", textAlign: "left" }}
               >
                 <Icon name="layers" style={{ fontSize: 18, color: "var(--accent)" }} />
-                <span style={{ flex: 1 }}>{Object.values(activeLayers).filter(Boolean).length} dari 6 layer aktif</span>
+                <span style={{ flex: 1 }}>{Object.values(activeLayers).filter(Boolean).length} dari 6<span className="layer-btn-suffix"> layer aktif</span></span>
                 <Icon name="expand_more" style={{ fontSize: 18, color: "var(--ink-soft)", transform: layerMenuOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
               </button>
               {layerMenuOpen && (
