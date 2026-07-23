@@ -688,6 +688,13 @@ export function PublicMapPage() {
         letter-spacing: .5px;
       }
       .map-filter-bar select { min-height: 44px; }
+      /* Select dengan ikon depan (biru) agar sekelas tombol layer. */
+      .select-icon-wrap { position: relative; display: block; }
+      .select-icon-wrap > .material-symbols-outlined {
+        position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+        font-size: 18px; color: var(--accent); pointer-events: none;
+      }
+      .select-icon-wrap > select { width: 100%; padding-left: 34px; }
       .layer-menu-btn { transition: border-color .15s, box-shadow .15s; }
       .layer-menu-btn:hover, .layer-menu-btn[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 1px 6px rgba(2, 132, 199, .12); }
       .layer-option { transition: background .12s; }
@@ -796,8 +803,10 @@ export function PublicMapPage() {
           min-width: 0;
           min-height: 42px;
           font-size: 12px;
-          padding: 0 4px;
+          padding: 0 2px;
         }
+        .map-filter-bar .select-icon-wrap > .material-symbols-outlined { left: 7px; font-size: 17px; }
+        .map-filter-bar .select-icon-wrap > select { padding-left: 27px; }
         .map-filter-bar .layer-menu-btn {
           min-height: 42px !important;
           padding: 0 8px !important;
@@ -865,16 +874,22 @@ export function PublicMapPage() {
           </button>
           <div className={`map-filter-bar${mobileFilterOpen ? " is-open" : ""}`} style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
             <label>Horizon prediksi
-              <select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)}>
-                <option value="all">Prediksi terbaru</option>
-                {HORIZON_OPTIONS.map((horizon) => <option key={horizon.offset} value={dateFromOffset(horizon.offset)}>{horizon.label}</option>)}
-              </select>
+              <span className="select-icon-wrap">
+                <Icon name="schedule" />
+                <select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)}>
+                  <option value="all">Terbaru</option>
+                  {HORIZON_OPTIONS.map((horizon) => <option key={horizon.offset} value={dateFromOffset(horizon.offset)}>{horizon.label}</option>)}
+                </select>
+              </span>
             </label>
             <label>Kabupaten/Kota
-              <select value={selectedRegency} onChange={(event) => setSelectedRegency(event.target.value)}>
-                <option value="all">Semua wilayah</option>
-                {regencies.map((regency) => <option key={regency} value={regency}>{regency}</option>)}
-              </select>
+              <span className="select-icon-wrap">
+                <Icon name="place" />
+                <select value={selectedRegency} onChange={(event) => setSelectedRegency(event.target.value)}>
+                  <option value="all">Semua wilayah</option>
+                  {regencies.map((regency) => <option key={regency} value={regency}>{regency}</option>)}
+                </select>
+              </span>
             </label>
             <div ref={layerMenuRef} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 9, flex: 1, minWidth: 190, maxWidth: 320 }}>
               <strong style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: .5, color: "var(--ink-soft)" }}>Pilihan Layer</strong>
