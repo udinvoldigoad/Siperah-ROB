@@ -28,9 +28,9 @@ final class RbacNegativePathTest extends TestCase
         '/api/dashboard/operator/reports/export' => ['bpbd_operator', 'admin'],
         '/api/dashboard/province/summary' => ['bpbd_provinsi', 'admin'],
         '/api/dashboard/province/export' => ['bpbd_provinsi', 'admin'],
-        '/api/research/datasets' => ['peneliti', 'admin'],
-        '/api/research/stats' => ['peneliti', 'admin'],
-        '/api/research/api-keys' => ['peneliti', 'admin'],
+        '/api/research/datasets' => ['peneliti', 'bpbd_provinsi', 'admin'],
+        '/api/research/stats' => ['peneliti', 'bpbd_provinsi', 'admin'],
+        '/api/research/api-keys' => ['peneliti', 'bpbd_provinsi', 'admin'],
     ];
 
     private const ALL_ROLES = ['warga', 'peneliti', 'bpbd_operator', 'bpbd_provinsi', 'admin'];
