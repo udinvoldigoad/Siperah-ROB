@@ -128,7 +128,7 @@ export function LoginPage() {
   const inputStyle = {
     width: "100%",
     padding: "14px 16px",
-    borderRadius: "10px",
+    borderRadius: "12px",
     border: "1px solid var(--line)",
     background: "var(--surface-soft)",
     fontSize: "15px",
@@ -147,7 +147,7 @@ export function LoginPage() {
   };
 
   return (
-    <main style={{ display: "flex", minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font)" }}>
+    <main style={{ display: "flex", width: "100%", minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font)", justifyContent: "center" }}>
       {/* Visual Left Banner */}
       <section style={{ 
         flex: "1 1 50%", 
@@ -198,18 +198,18 @@ export function LoginPage() {
       </section>
 
       {/* Form Right Panel */}
-      <section style={{ flex: "1 1 50%", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
+      <section className="auth-form-section">
         <motion.div 
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          style={{ width: "100%", maxWidth: "440px" }}
+          className="auth-card-wrapper"
         >
           {/* Logo for mobile */}
-          <div className="mobile-only" style={{ marginBottom: "40px", textAlign: "center" }}>
-            <div style={{ display: "inline-flex", width: "48px", height: "48px", background: "var(--ocean-light)", color: "var(--ocean-dark)", borderRadius: 8, alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
-              <Icon name="water_drop" style={{ fontSize: "28px" }} />
+          <div className="mobile-only mobile-only-header">
+            <div className="mobile-logo-badge">
+              <Icon name="water_drop" style={{ fontSize: "26px" }} />
             </div>
-            <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 800 }}>SIPERAH-RoB</h2>
+            <h2 className="mobile-brand-title">SIPERAH-RoB</h2>
           </div>
 
 
@@ -222,7 +222,7 @@ export function LoginPage() {
                 exit={{ opacity: 0, y: -10 }}
                 onSubmit={handleLogin}
               >
-                <div style={{ marginBottom: "32px" }}>
+                <div className="auth-header-text" style={{ marginBottom: "32px" }}>
                   <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 8px", color: "var(--ink)" }}>Selamat datang</h2>
                   <p style={{ color: "var(--ink-soft)", fontSize: "0.95rem", margin: 0 }}>Silakan masukkan kredensial Anda untuk melanjutkan.</p>
                 </div>
@@ -344,7 +344,7 @@ export function LoginPage() {
                 exit={{ opacity: 0, y: -10 }}
                 onSubmit={handleRegister}
               >
-                <div style={{ marginBottom: "32px" }}>
+                <div className="auth-header-text" style={{ marginBottom: "32px" }}>
                   <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 12px", color: "var(--ink)" }}>Buat Akun Baru</h2>
                   <p style={{ color: "var(--ink-soft)", fontSize: "1rem", lineHeight: "1.6", margin: 0 }}>Daftar sebagai warga untuk berpartisipasi melaporkan kejadian rob. Akun Anda akan direview oleh admin setelah mendaftar.</p>
                 </div>
@@ -432,12 +432,87 @@ export function LoginPage() {
         </motion.div>
       </section>
       <style>{`
+        .auth-form-section {
+          flex: 1 1 100%;
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 24px;
+          min-height: 100vh;
+          box-sizing: border-box;
+        }
+        .auth-card-wrapper {
+          width: 100%;
+          max-width: 440px;
+          margin: 0 auto;
+          box-sizing: border-box;
+        }
+        .mobile-only-header {
+          margin-bottom: 32px;
+          text-align: center;
+        }
+        .mobile-logo-badge {
+          display: inline-flex;
+          width: 52px;
+          height: 52px;
+          background: linear-gradient(135deg, rgba(2, 132, 199, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%);
+          color: var(--accent);
+          border-radius: 16px;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 12px;
+          box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+        }
+        .mobile-brand-title {
+          margin: 0;
+          font-size: 1.5rem;
+          font-weight: 850;
+          letter-spacing: -0.02em;
+          color: var(--ink);
+        }
+
         @media (min-width: 1024px) {
           .desktop-flex {
             display: flex !important;
+            flex: 1 1 50% !important;
+          }
+          .auth-form-section {
+            flex: 1 1 50% !important;
           }
           .mobile-only {
             display: none !important;
+          }
+        }
+
+        @media (max-width: 1023px) {
+          .auth-form-section {
+            flex: 1 1 100% !important;
+            width: 100% !important;
+            padding: 32px 20px !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            min-height: 100dvh !important;
+          }
+          .auth-card-wrapper {
+            width: 100% !important;
+            max-width: 440px !important;
+            margin: 0 auto !important;
+          }
+          .auth-header-text {
+            text-align: center !important;
+          }
+          .mobile-only-header {
+            margin-bottom: 24px !important;
+          }
+          .mobile-logo-badge {
+            width: 44px !important;
+            height: 44px !important;
+            border-radius: 12px !important;
+          }
+          .mobile-brand-title {
+            font-size: 1.35rem !important;
           }
         }
       `}</style>
