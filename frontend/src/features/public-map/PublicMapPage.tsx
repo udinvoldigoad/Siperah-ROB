@@ -630,6 +630,9 @@ export function PublicMapPage() {
   const layerMenuRef = useRef<HTMLDivElement>(null);
   // Di mobile filter diringkas jadi satu tombol agar peta langsung terlihat.
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  // Deteksi lokasi pengguna (geolokasi browser) untuk memilih wilayah terdekat.
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState<string | null>(null);
 
   // Tutup dropdown layer saat klik di luar atau tekan Escape.
   useEffect(() => {
@@ -687,6 +690,48 @@ export function PublicMapPage() {
   }, [regions, highestRisk]);
 
   const handleSelectFeature = useCallback((feature: GeoJsonFeature) => setSelectedFeature(feature), []);
+
+  // Deteksi lokasi: ambil koordinat pengguna, pilih wilayah pantau TERDEKAT, lalu
+  // filter peta ke kabupatennya (memicu zoom). Perbandingan jarak kuadrat pada
+  // derajat cukup untuk mencari yang terdekat pada area sekecil ini.
+  const detectLocation = useCallback(() => {
+    if (!("geolocation" in navigator)) {
+      setLocError("Perangkat ini tidak mendukung deteksi lokasi.");
+      return;
+    }
+    setLocating(true);
+    setLocError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        let nearest: GeoJsonFeature | null = null;
+        let bestDistance = Infinity;
+        regions.features.forEach((feature) => {
+          const center = featureCenter(feature);
+          if (!center) return;
+          const distance = (center[0] - longitude) ** 2 + (center[1] - latitude) ** 2;
+          if (distance < bestDistance) { bestDistance = distance; nearest = feature; }
+        });
+        setLocating(false);
+        if (!nearest) {
+          setLocError("Belum ada data wilayah untuk dicocokkan.");
+          return;
+        }
+        setSelectedFeature(nearest);
+        const regency = String((nearest as GeoJsonFeature).properties.regency ?? "");
+        if (regency && regency !== selectedRegency) setSelectedRegency(regency);
+      },
+      (geoError) => {
+        setLocating(false);
+        setLocError(
+          geoError.code === geoError.PERMISSION_DENIED
+            ? "Izin lokasi ditolak. Aktifkan izin lokasi di browser lalu coba lagi."
+            : "Gagal mendapatkan lokasi. Coba lagi.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
+  }, [regions, selectedRegency]);
 
   const selectedRiskClass = String(selectedFeature?.properties.risk_class ?? "");
   const selectedColor = riskColors[selectedRiskClass] ?? "var(--accent)";
@@ -1080,6 +1125,10 @@ export function PublicMapPage() {
             {selectedFeature && <div style={{ padding: "16px 20px", display: "grid", gap: 12 }}>
               <div className="info-item"><Icon name="insights" /><div><strong>Probabilitas</strong><p>{Math.round(Number(selectedFeature.properties.risk_probability ?? 0))}%</p></div></div>
               <div className="info-item"><Icon name="groups" /><div><strong>Populasi risiko</strong><p>{typeof selectedPopulation === "number" && selectedPopulation > 0 ? `${numberFormatter.format(selectedPopulation)} jiwa` : "Data belum tersedia"}</p></div></div>
+              <button type="button" className="btn secondary" onClick={detectLocation} disabled={locating} style={{ justifyContent: "center" }}>
+                <Icon name="my_location" /> {locating ? "Mendeteksi lokasi…" : "Deteksi lokasi saya"}
+              </button>
+              {locError && <p style={{ margin: "-4px 0 0", fontSize: 12, color: "var(--critical)" }}>{locError}</p>}
               <a className="btn primary" href="#/reports" style={{ justifyContent: "center" }}><Icon name="add_location_alt" /> Lapor Kejadian di Sini</a>
             </div>}
           </motion.div>
