@@ -58,6 +58,9 @@ export function OnboardingPage() {
         
         <div className="content" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 100px", position: "relative", zIndex: 1 }}>
           <style>{`
+            .app-content:has(.onboarding-page-container) {
+              padding: 0 !important;
+            }
             .onboarding-page-container {
               min-height: 100vh;
               background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%);
