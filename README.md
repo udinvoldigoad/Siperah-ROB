@@ -90,17 +90,17 @@ Seluruh modul dan dokumentasi resmi tugas akhir dikompilasi secara rapi di dalam
 ```carousel
 | Berkas Utama | Kode Blok | Deskripsi Utama |
 | :--- | :---: | :--- |
-| 📖 [Panduan Deployment Produksi](file:///c:/laragon/www/Siperah-ROB/docs/deployment_guide.md) | `D1` | Prosedur deploy Hostinger + Supabase + cron worker. |
-| 📋 [Matriks Ketertelusuran SKPL](file:///c:/laragon/www/Siperah-ROB/docs/SKPL_traceability_matrix.md) | `D2` | Pemetaan Kebutuhan FR ke UI, API, dan berkas pengujian. |
-| 🔌 [Kontrak & Referensi API Peneliti](file:///c:/laragon/www/Siperah-ROB/docs/api-contract.md) | `D3` | API key, rate limit, dan endpoint penelitian v1. |
-| 🗄️ [Diagram Skema Database (ERD)](file:///c:/laragon/www/Siperah-ROB/docs/erd_diagram.md) | `D4` | Diagram relasi entitas PostgreSQL/PostGIS. |
+| 📖 [Panduan Deployment Produksi](docs/operations/deployment.md) | `D1` | Prosedur deploy Hostinger + Supabase + cron worker. |
+| 📋 [Matriks Ketertelusuran SKPL](docs/academic/skpl-traceability-matrix.md) | `D2` | Pemetaan Kebutuhan FR ke UI, API, dan berkas pengujian. |
+| 🔌 [Kontrak & Referensi API Peneliti](docs/operations/api-contract.md) | `D3` | API key, rate limit, dan endpoint penelitian v1. |
+| 🗄️ [Diagram Skema Database (ERD)](docs/academic/erd.md) | `D4` | Diagram relasi entitas PostgreSQL/PostGIS. |
 <!-- slide -->
 | Berkas Panduan & Hasil | Kode Blok | Deskripsi Utama |
 | :--- | :---: | :--- |
-| 👤 [Panduan Pengguna per Peran](file:///c:/laragon/www/Siperah-ROB/docs/user_guide.md) | `D5` | Cara pakai aplikasi untuk Warga, Operator, dan Provinsi. |
-| ⚙️ [Runbook Operasional & Insiden](file:///c:/laragon/www/Siperah-ROB/docs/admin_runbook.md) | `D6` | Langkah taktis jika API down, DB down, dan prosedur backup. |
-| 🧪 [Laporan Pengujian UAT](file:///c:/laragon/www/Siperah-ROB/docs/uat_results.md) | `D7` | Hasil pengujian skenario E2E Playwright. |
-| 📝 [Standardisasi Copywriting & Istilah](file:///c:/laragon/www/Siperah-ROB/docs/copywriting_review.md) | `D8` | Penyeragaman glosarium status dan level risiko UI. |
+| 👤 [Panduan Pengguna per Peran](docs/operations/user-guide.md) | `D5` | Cara pakai aplikasi untuk Warga, Operator, dan Provinsi. |
+| ⚙️ [Runbook Operasional & Insiden](docs/operations/admin-runbook.md) | `D6` | Langkah taktis jika API down, DB down, dan prosedur backup. |
+| 🧪 [Laporan Pengujian UAT](docs/academic/uat-results.md) | `D7` | Hasil pengujian skenario E2E Playwright. |
+| 📝 [Standardisasi Copywriting & Istilah](docs/review/copywriting.md) | `D8` | Penyeragaman glosarium status dan level risiko UI. |
 ```
 
 ---

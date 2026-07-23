@@ -3,8 +3,8 @@ import { existsSync, readFileSync } from "node:fs";
 
 const requiredFiles = [
   "README.md",
-  "docs/architecture.md",
-  "docs/mockup-awal.md",
+  "docs/academic/architecture.md",
+  "docs/internal/initial-mockup.md",
   "database/schema.sql",
   "backend/composer.json",
   "backend/routes/api.php",

@@ -115,7 +115,7 @@ Jika deploy menyertakan migrasi database yang merusak (*breaking migrations*):
    ```
 
 ### C. Restore Database dari Backup Terakhir
-Jika database mengalami kerusakan data parah, lakukan pemulihan (*restore*) menggunakan langkah di [backup-database.md](file:///c:/laragon/www/Siperah-ROB/docs/backup-database.md#L61-L68):
+Jika database mengalami kerusakan data parah, lakukan pemulihan (*restore*) menggunakan langkah di [backup-database.md](backup-database.md#L61-L68):
 ```bash
 pg_restore -h aws-0-ap-southeast-1.pooler.supabase.com -p 5432 -U postgres.xxxx -d postgres --no-owner --no-privileges --clean --if-exists siperah-YYYY-MM-DD.dump
 ```
