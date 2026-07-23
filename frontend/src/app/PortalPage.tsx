@@ -25,6 +25,7 @@ const faqData = [
 export function PortalPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [isDarkMode, setDarkMode] = useState(() => localStorage.getItem("siperah-theme") === "dark" || document.documentElement.getAttribute("data-theme") === "dark");
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -35,6 +36,15 @@ export function PortalPage() {
       localStorage.setItem("siperah-theme", "light");
     }
   }, [isDarkMode]);
+
+  // Header solid saat di puncak, berubah jadi frosted-blur (bukan transparan
+  // penuh) begitu halaman digulir sedikit.
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const userStr = localStorage.getItem("siperah-user");
   const isLoggedIn = Boolean(localStorage.getItem("siperah-token") && userStr);
@@ -720,15 +730,47 @@ export function PortalPage() {
         @media (max-width: 768px) {
           .nav-links-wrap { display: none !important; }
           .header-actions .btn-link-login { display: none; }
-          .hero-section { padding: 100px 16px 40px !important; }
+          .hero-section { padding: 100px 16px 20px !important; }
           .hero-section h1 { font-size: 1.75rem !important; line-height: 1.2; margin-bottom: 20px; }
           .hero-section p { font-size: 1rem !important; margin-bottom: 24px; padding: 0 10px; }
-          .hero-actions { flex-direction: column; gap: 12px !important; margin-bottom: 60px !important; }
+          .hero-actions { flex-direction: column; gap: 12px !important; margin-bottom: 24px !important; }
           .hero-actions > a { width: 100%; box-sizing: border-box; text-align: center; }
           .inline-pill-img { display: none; }
           .marquee-container { height: 160px; }
           .bento-card-el { padding: 24px; }
-          .landing-header-full { padding: 0 20px; background: transparent !important; backdrop-filter: none; }
+          .landing-header-full {
+            padding: 0 16px;
+            height: 64px;
+            background: var(--bg-primary);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            border-bottom-color: transparent;
+            box-shadow: none;
+            transition: background .25s ease, border-color .25s ease, box-shadow .25s ease;
+          }
+          .landing-header-full.is-scrolled {
+            background: var(--bg-header);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom-color: var(--border-color);
+            box-shadow: 0 2px 12px rgba(15, 23, 42, .06);
+          }
+          .landing-header-full .brand-link {
+            font-size: 1rem !important;
+            gap: 8px !important;
+            white-space: nowrap;
+          }
+          .landing-header-full .brand-link img {
+            width: 34px !important;
+            height: 34px !important;
+            border-radius: 9px !important;
+          }
+          .landing-header-full .btn-nav-primary {
+            padding: 8px 15px;
+            font-size: 0.85rem;
+            border-radius: 9px;
+          }
+          .landing-header-full .header-actions { gap: 10px; }
           .bento-header-wrap { flex-direction: column; align-items: center !important; text-align: center; gap: 16px; margin-bottom: 32px !important; }
           .bento-header-wrap h2 { font-size: 1.8rem !important; }
           .guide-section { margin: 72px auto !important; padding: 0 16px !important; }
@@ -749,7 +791,7 @@ export function PortalPage() {
       <div className="ambient-grid"></div>
 
       {/* Full-Width Header */}
-        <header className="landing-header-full">
+        <header className={`landing-header-full${isScrolled ? " is-scrolled" : ""}`}>
           <a className="brand-link" href="#/" style={{ gap: "12px" }}>
             <img src="/logo.png" alt="Logo SIPERAH" style={{ width: "48px", height: "48px", objectFit: "contain", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }} />
             SIPERAH-RoB
