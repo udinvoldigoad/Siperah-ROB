@@ -50,7 +50,7 @@ final class ResearchDownloadTest extends TestCase
             ->assertJsonMissing(['risk_class' => 'tinggi']);
     }
 
-    public function test_dataset_download_streams_csv_paginates_json_and_writes_audit(): void
+    public function test_dataset_download_streams_csv_and_full_json_and_writes_audit(): void
     {
         $region = $this->insertRegion('Kabupaten Dataset Unduh');
         $this->makePrediction($region, CarbonImmutable::today()->toDateString(), 'tinggi');
@@ -74,12 +74,16 @@ final class ResearchDownloadTest extends TestCase
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
         $this->assertStringContainsString('Kabupaten Dataset Unduh', $csv->streamedContent());
 
-        // JSON dipaginasi urut tanggal terbaru; DB dev berisi prediksi nyata
-        // sehingga baris seed tak pasti di halaman 1 — cukup uji struktur.
-        $json = $this->getJson("/api/research/datasets/{$dataset->id}/download?per_page=5")
+        // Unduhan JSON: file lengkap (bukan paginated), pretty-print, streamed.
+        $jsonResponse = $this->get("/api/research/datasets/{$dataset->id}/download?format=json")
             ->assertOk()
-            ->assertJsonStructure(['data', 'meta' => ['current_page', 'total']]);
-        $this->assertGreaterThanOrEqual(1, $json->json('meta.total'));
+            ->assertHeader('content-type', 'application/json; charset=UTF-8');
+        $jsonBody = $jsonResponse->streamedContent();
+        $this->assertStringContainsString('Kabupaten Dataset Unduh', $jsonBody);
+        $decoded = json_decode($jsonBody, true);
+        $this->assertIsArray($decoded);
+        $this->assertGreaterThanOrEqual(1, count($decoded));
+        $this->assertArrayHasKey('regency', $decoded[0]);
 
         $this->assertSame(
             2,
