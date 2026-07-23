@@ -659,6 +659,13 @@ function CitizenModeMobile({
             </span>
           )}
 
+          {data?.prediction_notice && (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "rgba(255, 255, 255, 0.15)", border: "1px solid rgba(255, 255, 255, 0.25)", borderRadius: 12, padding: "10px 14px", fontSize: 13, lineHeight: 1.5, marginBottom: 16, color: "white" }}>
+              <Icon name={data.prediction_status === "unavailable" ? "schedule" : "update"} style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }} />
+              <span>{data.prediction_notice}</span>
+            </div>
+          )}
+
           <h1 style={{ fontSize: "2.5rem", fontWeight: 900, lineHeight: 1.1, margin: "0 0 12px 0", letterSpacing: "-0.03em" }}>
             Status<br />{risk}
           </h1>
@@ -912,11 +919,12 @@ export function CitizenModePage() {
     ? [data.region.village, data.region.district, data.region.regency].filter(Boolean).join(", ") 
     : locationNote;
 
-  const forecastDays = data ? (Array.isArray(data.forecast) ? data.forecast : data.forecast.data).map((item: any) => {
+  let forecastDays = data ? (Array.isArray(data.forecast) ? data.forecast : data.forecast.data).map((item: any) => {
     const rawDate = item.prediction_date.split("T")[0].split(" ")[0]; // Get only YYYY-MM-DD
     const isMonitored = !!data?.is_monitored;
-    const percent = isMonitored ? item.risk_probability : 0;
-    const riskClass = isMonitored ? (item.risk_class as RiskClass) : ("rendah" as RiskClass);
+    const isStale = data?.prediction_status === "stale" || data?.prediction_status === "unavailable";
+    const percent = (isMonitored && !isStale) ? item.risk_probability : 0;
+    const riskClass = (isMonitored && !isStale) ? (item.risk_class as RiskClass) : ("rendah" as RiskClass);
     return {
       day: new Date(`${rawDate}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
       label: riskLabels[riskClass],
@@ -924,6 +932,21 @@ export function CitizenModePage() {
       color: riskClass === "sangat_tinggi" ? "var(--critical)" : riskClass === "tinggi" ? "var(--high)" : riskClass === "sedang" ? "var(--medium)" : "var(--low)",
     };
   }) : [];
+
+  if (forecastDays.length === 0) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    forecastDays = Array.from({ length: 7 }, (_, i) => {
+      const targetDate = new Date(today);
+      targetDate.setDate(today.getDate() + i);
+      return {
+        day: targetDate.toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
+        label: "Rendah",
+        percent: 0,
+        color: "var(--low)"
+      };
+    });
+  }
 
   const actionCards = [
     ["Jauhi area rendah", "Hindari jalan pesisir dan area yang mudah tergenang.", "priority_high"],
