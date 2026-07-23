@@ -147,7 +147,7 @@ export function LoginPage() {
   };
 
   return (
-    <main style={{ display: "flex", width: "100%", minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font)", justifyContent: "center" }}>
+    <main className="login-main">
       {/* Visual Left Banner */}
       <section style={{ 
         flex: "1 1 50%", 
@@ -290,12 +290,13 @@ export function LoginPage() {
               </button>
 
               <div style={{ display: "flex", alignItems: "center", margin: "24px 0" }}>
-                <div style={{ flex: 1, height: "1px", background: "var(--line)" }}></div>
-                <span style={{ padding: "0 16px", color: "var(--ink-soft)", fontSize: "13px" }}>atau</span>
-                <div style={{ flex: 1, height: "1px", background: "var(--line)" }}></div>
+                <div className="divider-line" style={{ flex: 1, height: "1px", background: "var(--line)" }}></div>
+                <span className="or-text" style={{ padding: "0 16px", color: "var(--ink-soft)", fontSize: "13px" }}>atau</span>
+                <div className="divider-line" style={{ flex: 1, height: "1px", background: "var(--line)" }}></div>
               </div>
 
                 <a 
+                  className="google-btn"
                   href="/api/auth/google/redirect"
                   style={{ width: "100%", background: "var(--surface)", color: "var(--ink)", padding: "14px", borderRadius: 8, fontSize: "15px", fontWeight: 600, border: "1px solid var(--line)", display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", cursor: "pointer", textDecoration: "none", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", transition: "all 0.2s" }}
                 >
@@ -310,10 +311,10 @@ export function LoginPage() {
 
               {/* DEV ONLY: Quick Login Shortcuts */}
               <details style={{ marginTop: "32px" }}>
-                <summary style={{ fontSize: "12px", color: "var(--ink-soft)", fontWeight: 600, textAlign: "center", cursor: "pointer", padding: "8px" }}>
+                <summary className="dev-shortcut-summary" style={{ fontSize: "12px", color: "var(--ink-soft)", fontWeight: 600, textAlign: "center", cursor: "pointer", padding: "8px" }}>
                   ⚡ DEV SHORTCUTS
                 </summary>
-                <div style={{ marginTop: "12px", padding: "16px", background: "var(--surface-soft)", borderRadius: "12px", border: "1px dashed var(--line)" }}>
+                <div className="dev-shortcut-box" style={{ marginTop: "12px", padding: "16px", background: "var(--surface-soft)", borderRadius: "12px", border: "1px dashed var(--line)" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                     <button type="button" onClick={() => { setEmail("warga@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>👤 Warga</button>
                     <button type="button" onClick={() => { setEmail("operator@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>🛡️ Operator BPBD</button>
@@ -326,9 +327,10 @@ export function LoginPage() {
               </details>
 
                 <div style={{ marginTop: "40px", textAlign: "center", fontSize: "14px", color: "var(--ink-soft)" }}>
-                  Belum punya akun?{" "}
+                  <span className="or-text">Belum punya akun?</span>{" "}
                   <button 
                     type="button" 
+                    className="link-btn"
                     onClick={() => setMode("register")}
                     style={{ background: "none", border: "none", color: "var(--accent)", fontWeight: 600, cursor: "pointer", padding: 0 }}
                   >
@@ -417,9 +419,10 @@ export function LoginPage() {
                 </button>
 
                 <div style={{ marginTop: "40px", textAlign: "center", fontSize: "14px", color: "var(--ink-soft)" }}>
-                  Sudah punya akun?{" "}
+                  <span className="or-text">Sudah punya akun?</span>{" "}
                   <button 
                     type="button" 
+                    className="link-btn"
                     onClick={() => setMode("login")}
                     style={{ background: "none", border: "none", color: "var(--accent)", fontWeight: 600, cursor: "pointer", padding: 0 }}
                   >
@@ -432,6 +435,14 @@ export function LoginPage() {
         </motion.div>
       </section>
       <style>{`
+        .login-main {
+          display: flex;
+          width: 100%;
+          min-height: 100vh;
+          font-family: var(--font);
+          justify-content: center;
+          background: var(--bg);
+        }
         .auth-form-section {
           flex: 1 1 100%;
           width: 100%;
@@ -486,10 +497,14 @@ export function LoginPage() {
         }
 
         @media (max-width: 1023px) {
+          .login-main {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.90) 0%, rgba(30, 64, 175, 0.85) 100%), url('/bg-laut.jpg') center/cover no-repeat !important;
+            background-attachment: fixed !important;
+          }
           .auth-form-section {
             flex: 1 1 100% !important;
             width: 100% !important;
-            padding: 32px 20px !important;
+            padding: 24px 20px !important;
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
@@ -499,6 +514,13 @@ export function LoginPage() {
             width: 100% !important;
             max-width: 440px !important;
             margin: 0 auto !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            backdrop-filter: blur(24px) !important;
+            -webkit-backdrop-filter: blur(24px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            border-radius: 28px !important;
+            padding: 40px 28px !important;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3) !important;
           }
           .auth-header-text {
             text-align: center !important;
@@ -509,10 +531,61 @@ export function LoginPage() {
           .mobile-logo-badge {
             width: 44px !important;
             height: 44px !important;
-            border-radius: 12px !important;
+            border-radius: 14px !important;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.3) 100%) !important;
+            color: #38bdf8 !important;
           }
-          .mobile-brand-title {
-            font-size: 1.35rem !important;
+          .mobile-brand-title, .auth-card-wrapper h2, .auth-card-wrapper label {
+            color: #ffffff !important;
+          }
+          .auth-card-wrapper .auth-header-text p, .auth-card-wrapper .or-text, .auth-card-wrapper .dev-shortcut-summary {
+            color: rgba(255, 255, 255, 0.7) !important;
+          }
+          .auth-card-wrapper input {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            color: #ffffff !important;
+          }
+          .auth-card-wrapper input:focus {
+            background: rgba(255, 255, 255, 0.15) !important;
+            border-color: #60a5fa !important;
+            box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.2) !important;
+          }
+          .auth-card-wrapper .google-btn {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            color: #ffffff !important;
+          }
+          .auth-card-wrapper .google-btn:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+          }
+          .auth-card-wrapper .divider-line {
+            background: rgba(255, 255, 255, 0.2) !important;
+          }
+          .auth-card-wrapper .dev-shortcut-box {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+          }
+          .auth-card-wrapper .dev-shortcut-box button {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
+            color: #ffffff !important;
+          }
+          .auth-card-wrapper .link-btn {
+            color: #60a5fa !important;
+          }
+          .auth-card-wrapper input[type="checkbox"] {
+            accent-color: #60a5fa !important;
+          }
+          .auth-card-wrapper [role="alert"] {
+            background: rgba(0, 0, 0, 0.3) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+          }
+          .auth-card-wrapper [role="alert"] div, .auth-card-wrapper [role="alert"] .material-symbols-outlined {
+            color: #ffffff !important;
+          }
+          .auth-card-wrapper button[title] {
+            color: rgba(255, 255, 255, 0.6) !important;
           }
         }
       `}</style>
