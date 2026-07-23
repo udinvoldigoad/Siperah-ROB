@@ -278,7 +278,7 @@ export function LoginPage() {
                           <input type="checkbox" style={{ accentColor: "var(--accent)", width: "16px", height: "16px", borderRadius: "4px" }} />
                           Ingat saya
                         </label>
-                        <a href="#/" style={{ fontSize: "14px", color: "var(--accent)", textDecoration: "none", fontWeight: 600 }}>Lupa sandi?</a>
+                        <a href="#/forgot-password" className="link-btn" style={{ fontSize: "14px", color: "var(--accent)", textDecoration: "none", fontWeight: 600 }}>Lupa sandi?</a>
                       </div>
                 <button 
                   className="btn solid" 

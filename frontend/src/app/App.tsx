@@ -7,6 +7,8 @@ import { ErrorBoundary } from "../shared/components/ErrorBoundary";
 import { PageFallback } from "../shared/components/PageFallback";
 
 import { OAuthCallbackPage } from "../features/auth/OAuthCallbackPage";
+import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "../features/auth/ResetPasswordPage";
 
 // Halaman fitur di-lazy-load agar bundle awal ringan: library berat (maplibre-gl
 // pada peta/laporan) & kode tiap rute hanya diunduh saat halamannya dibuka.
@@ -66,6 +68,8 @@ export function App() {
 
     let Component;
     if (route === "login") Component = <LoginPage />;
+    else if (route === "forgot-password") Component = <ForgotPasswordPage />;
+    else if (route === "reset-password") Component = <ResetPasswordPage />;
     else if (route === "oauth-callback") Component = <OAuthCallbackPage />;
     else if (route === "map") Component = <PublicMapPage />;
     else if (route === "awam") Component = <CitizenModePage />;

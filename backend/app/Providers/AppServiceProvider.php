@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -17,6 +18,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
+            return 'http://localhost:5173/#/reset-password?token='.$token.'&email='.urlencode($notifiable->getEmailForPasswordReset());
+        });
+
         // Rate limiter WAJIB didefinisikan di provider, bukan di routes/api.php:
         // saat route:cache aktif (production), file route tidak dieksekusi lagi
         // sehingga limiter yang didefinisikan di sana tidak pernah terdaftar.
