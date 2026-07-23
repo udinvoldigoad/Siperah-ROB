@@ -755,17 +755,60 @@ export function PublicMapPage() {
         .map-warnings-mobile { display: grid; gap: 12px; }
         .map-warnings-desktop { display: none; }
 
-        .map-filter-toggle { display: flex; }
+        /* Ketiga filter tampil sejajar 3 kolom rapat di atas peta (tanpa tombol
+           ringkas): hemat ruang vertikal & langsung terlihat. Baris label diberi
+           tinggi tetap agar label 1–2 baris tak menggeser sejajarnya kontrol. */
+        .map-filter-toggle { display: none; }
 
-        .map-filter-bar {
-          display: none;
-          flex-direction: column;
+        .map-filter-bar,
+        .map-filter-bar.is-open {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          align-items: start;
+          gap: 8px;
+          padding: 12px 14px !important;
         }
-
-        .map-filter-bar.is-open { display: flex; }
-
+        .map-filter-bar > label {
+          display: grid;
+          grid-template-rows: 26px auto;
+          gap: 6px;
+          min-width: 0 !important;
+          max-width: none;
+          font-size: 10px;
+          letter-spacing: .3px;
+          line-height: 1.25;
+        }
+        .map-filter-bar > div {
+          display: grid !important;
+          grid-template-rows: 26px auto;
+          gap: 6px !important;
+          min-width: 0 !important;
+          max-width: none !important;
+          font-size: 10px;
+        }
+        .map-filter-bar > div > strong {
+          font-size: 10px !important;
+          letter-spacing: .3px !important;
+          line-height: 1.25;
+        }
         .map-filter-bar select {
           width: 100%;
+          min-width: 0;
+          min-height: 42px;
+          font-size: 12px;
+          padding: 0 4px;
+        }
+        .map-filter-bar .layer-menu-btn {
+          min-height: 42px !important;
+          padding: 0 8px !important;
+          gap: 6px !important;
+          font-size: 12px !important;
+        }
+        .map-filter-bar .layer-menu-btn > .material-symbols-outlined:first-child { display: none; }
+        .map-filter-bar .layer-menu-btn > span {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         /* Dua lapis harus dibatasi: .map-container DAN div maplibre di dalamnya
