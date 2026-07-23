@@ -133,7 +133,9 @@ function FilterSelect({ icon, ariaLabel, value, options, onChange }: {
   icon: string;
   ariaLabel: string;
   value: string;
-  options: { value: string; label: string }[];
+  // `short` opsional: teks ringkas untuk tombol (mis. "Semua") saat label
+  // penuhnya panjang; daftar dropdown tetap memakai `label`.
+  options: { value: string; label: string; short?: string }[];
   onChange: (value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -159,7 +161,7 @@ function FilterSelect({ icon, ariaLabel, value, options, onChange }: {
         style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 14px", borderRadius: 10, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontSize: 14, fontWeight: 500, width: "100%", textAlign: "left" }}
       >
         <Icon name={icon} style={{ fontSize: 18, color: "var(--accent)" }} />
-        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected?.label ?? ""}</span>
+        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected?.short ?? selected?.label ?? ""}</span>
         <Icon name="expand_more" style={{ fontSize: 18, color: "var(--ink-soft)", transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
       </button>
       {open && (
@@ -961,7 +963,7 @@ export function PublicMapPage() {
                 ariaLabel="Kabupaten/Kota"
                 value={selectedRegency}
                 onChange={setSelectedRegency}
-                options={[{ value: "all", label: "Semua wilayah" }, ...regencies.map((regency) => ({ value: regency, label: regency }))]}
+                options={[{ value: "all", label: "Semua wilayah", short: "Semua" }, ...regencies.map((regency) => ({ value: regency, label: regency }))]}
               />
             </div>
             <div ref={layerMenuRef} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 9, flex: 1, minWidth: 190, maxWidth: 320 }}>
