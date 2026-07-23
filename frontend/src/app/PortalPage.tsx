@@ -129,6 +129,10 @@ export function PortalPage() {
           display: flex;
           flex-direction: column;
         }
+        /* Section adalah flex item; min-width:auto default membuatnya melar
+           mengikuti min-content konten lebar dan terpotong overflow-x di layar
+           sempit. min-width:0 mengizinkannya menyusut ke lebar layar. */
+        .siperah-landing-root > * { min-width: 0; }
 
         /* Full-Width Editorial Header */
         .landing-header-full {
@@ -779,18 +783,32 @@ export function PortalPage() {
           .landing-header-full .header-actions { gap: 10px; }
           .bento-header-wrap { flex-direction: column; align-items: center !important; text-align: center; gap: 16px; margin-bottom: 32px !important; }
           .bento-header-wrap h2 { font-size: 1.8rem !important; }
-          .guide-section { margin: 72px auto !important; padding: 0 16px !important; }
+          /* width:100% wajib: margin auto kiri/kanan mematikan stretch flex
+             sehingga section menyusut ke max-content konten (melar & terpotong).
+             Dengan lebar pasti 100%, section mengikuti lebar layar. */
+          .guide-section { width: 100%; margin: 72px auto !important; padding: 0 16px !important; }
           .guide-definition-grid, .guide-map-grid { margin-bottom: 72px !important; }
           .guide-definition-grid h2 { font-size: 2.15rem !important; }
           .guide-map-grid > div:last-child { height: 300px !important; padding: 20px !important; }
           .landing-map-frame { min-height: 300px !important; padding: 6px !important; }
+          /* Padding 60px terlalu boros di mobile (konten tersisa ~238px, judul
+             pecah 3 baris). Dikecilkan agar lebih lega & rapi. */
+          .reporting-cta { padding: 32px 20px !important; }
+          .reporting-cta h2 { font-size: 1.7rem !important; }
           .reporting-flow { grid-template-columns: 1fr; gap: 16px; }
           .reporting-step { min-height: 0; padding: 24px; }
           .reporting-step-number { margin-bottom: 20px; }
           .landing-faq-grid { margin-bottom: 64px !important; }
           .landing-footer { margin-top: 72px; padding: 36px 20px 0; }
           .footer-links { text-align: center !important; }
+          /* Footer mobile: kontak rata kiri (bukan rata kanan yang ragged),
+             padding & jarak lebih ringkas, blok menumpuk rapi. */
+          .site-footer { padding: 44px 22px 30px !important; }
+          .site-footer-inner { gap: 26px !important; flex-direction: column; }
+          .footer-contact-col { text-align: left !important; min-width: 0 !important; }
+          .footer-bottom { margin-top: 30px !important; }
         }
+        .footer-contact-link:hover { color: #fff !important; }
       `}</style>
 
       {/* Grid Ambient Background Pattern */}
@@ -1031,7 +1049,8 @@ export function PortalPage() {
         </motion.div>
 
         {/* Feature 3: Full Width Interactive Style */}
-        <motion.div 
+        <motion.div
+          className="reporting-cta"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -1113,20 +1132,20 @@ export function PortalPage() {
       </section>
 
       {/* Minimal Landing Footer */}
-      <footer style={{ background: "var(--bg-footer)", color: "#cbd5e1", padding: "60px 40px 40px", marginTop: "auto", borderTop: "1px solid var(--border-color)" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", flexWrap: "wrap", gap: "40px", justifyContent: "space-between" }}>
-          <div style={{ lineHeight: '1.6', maxWidth: "400px" }}>
-            <strong style={{ fontSize: '1.1rem', color: '#fff' }}>SIPERAH-RoB</strong><br />
-            Sistem Informasi Prediksi Risiko Banjir Rob Terpadu Provinsi Lampung.
+      <footer className="site-footer" style={{ background: "var(--bg-footer)", color: "#cbd5e1", padding: "60px 40px 40px", marginTop: "auto", borderTop: "1px solid var(--border-color)" }}>
+        <div className="site-footer-inner" style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", flexWrap: "wrap", gap: "40px", justifyContent: "space-between" }}>
+          <div className="footer-brand-col" style={{ lineHeight: '1.6', maxWidth: "400px" }}>
+            <strong style={{ fontSize: '1.15rem', color: '#fff', letterSpacing: '-0.01em' }}>SIPERAH-RoB</strong>
+            <p style={{ margin: '8px 0 0', fontSize: '0.92rem', color: '#94a3b8', lineHeight: 1.6 }}>Sistem Informasi Prediksi Risiko Banjir Rob Terpadu Provinsi Lampung.</p>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'right', minWidth: "300px" }}>
-            <span style={{ color: "#fff" }}><strong>Pusdalops BPBD Provinsi Lampung</strong></span>
-            <span>Jl. Beringin Raya No. 1, Teluk Betung, Bandar Lampung</span>
-            <span>Email: tanggap@bpbd.lampungprov.go.id</span>
-            <span>Hotline: (0721) 123456</span>
+          <div className="footer-contact-col" style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'right', minWidth: "260px" }}>
+            <strong style={{ color: "#fff", fontSize: '0.95rem' }}>Pusdalops BPBD Provinsi Lampung</strong>
+            <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Jl. Beringin Raya No. 1, Teluk Betung, Bandar Lampung</span>
+            <a href="mailto:tanggap@bpbd.lampungprov.go.id" className="footer-contact-link" style={{ fontSize: '0.9rem', color: '#cbd5e1', textDecoration: 'none', wordBreak: 'break-word' }}>tanggap@bpbd.lampungprov.go.id</a>
+            <a href="tel:+62721123456" className="footer-contact-link" style={{ fontSize: '0.9rem', color: '#cbd5e1', textDecoration: 'none' }}>(0721) 123456</a>
           </div>
         </div>
-        <div style={{ maxWidth: "1200px", margin: "40px auto 0", paddingTop: "24px", borderTop: "1px solid #1e293b", textAlign: "center", fontSize: "0.9rem", color: "#64748b" }}>
+        <div className="footer-bottom" style={{ maxWidth: "1200px", margin: "40px auto 0", paddingTop: "24px", borderTop: "1px solid #1e293b", textAlign: "center", fontSize: "0.85rem", color: "#64748b" }}>
           SIPERAH-RoB &copy; 2026. Institut Teknologi Sumatera
         </div>
       </footer>

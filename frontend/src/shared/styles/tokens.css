@@ -734,16 +734,29 @@ textarea { min-height: 100px; resize: vertical; }
 }
 
 .map-preview {
-  background:
-    linear-gradient(rgba(16, 35, 59, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(16, 35, 59, 0.08) 1px, transparent 1px),
-    #dfeee8;
-  background-size: 44px 44px, 44px 44px, auto;
-  min-height: 380px;
-  overflow: hidden;
+  /* content-box wajib: reset global memakai border-box, dan trik padding-bottom
+     untuk rasio hanya benar dengan content-box (kalau tidak, height:0 + padding
+     menghasilkan tinggi yang salah). */
+  box-sizing: content-box;
   position: relative;
+  width: 100%;
+  height: 0;
+  /* Rasio 1572:1122 lewat padding-bottom (selalu relatif ke lebar) supaya
+     tinggi mengikuti lebar — bukan aspect-ratio yang di dalam flex bisa
+     menghitung lebar dari tinggi dan memicu overflow. */
+  padding-bottom: 71.374%;
+  overflow: hidden;
+  background: #a9d2e6;
 }
-.map-preview.large { min-height: calc(100dvh - 126px); }
+.map-preview.large { height: calc(100dvh - 126px); padding-bottom: 0; }
+.map-preview-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .map-toolbar {
   align-items: center;
   background: rgba(255, 255, 255, 0.92);
@@ -762,53 +775,6 @@ textarea { min-height: 100px; resize: vertical; }
 }
 .map-toolbar span { color: var(--ink-soft); font-size: 0.88rem; }
 .map-toolbar strong { font-size: 0.9rem; }
-.coast, .water, .hazard, .pin, .map-label { position: absolute; }
-.coast {
-  background: #c4ddd4;
-  border: 2px solid rgba(39, 92, 88, 0.32);
-  border-radius: 48% 52% 58% 42%;
-  height: 76%;
-  left: -7%;
-  top: 30%;
-  transform: rotate(-12deg);
-  width: 82%;
-}
-.water {
-  background: linear-gradient(145deg, #9bc8da, #5f9cbc);
-  border-radius: 42% 58% 0 0;
-  bottom: -18%;
-  height: 42%;
-  left: -8%;
-  width: 112%;
-}
-.hazard { border-radius: 50%; }
-.hazard.critical { background: rgba(180, 35, 24, 0.36); height: 34%; right: 18%; top: 34%; width: 28%; }
-.hazard.high { background: rgba(194, 65, 12, 0.24); height: 52%; right: 8%; top: 24%; width: 48%; }
-.hazard.medium { background: rgba(161, 98, 7, 0.18); height: 66%; left: 12%; top: 23%; width: 62%; }
-.hazard.low { background: rgba(16, 128, 85, 0.16); height: 30%; left: 0%; top: 52%; width: 26%; }
-.pin {
-  align-items: center;
-  background: #fff;
-  border: 2px solid currentColor;
-  border-radius: 999px;
-  display: flex;
-  font-size: 0.88rem;
-  font-weight: 850;
-  height: 34px;
-  justify-content: center;
-  width: 34px;
-}
-.pin.red { color: var(--critical); left: 63%; top: 39%; }
-.pin.orange { color: var(--high); left: 48%; top: 60%; }
-.pin.amber { color: var(--medium); left: 40%; top: 36%; }
-.pin.green { color: var(--low); left: 20%; top: 62%; }
-.map-label {
-  color: rgba(17, 24, 39, 0.74);
-  font-size: 0.84rem;
-  font-weight: 780;
-  left: 17%;
-  top: 33%;
-}
 .legend {
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid var(--line);
@@ -832,17 +798,6 @@ textarea { min-height: 100px; resize: vertical; }
 .dot.high { background: var(--high); }
 .dot.medium { background: var(--medium); }
 .dot.low { background: var(--low); }
-.map-scale {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  bottom: 16px;
-  color: var(--ink-soft);
-  font-size: 0.82rem;
-  padding: 8px 10px;
-  position: absolute;
-  right: 16px;
-}
 
 .metric-card {
   min-height: 160px;
@@ -1436,7 +1391,7 @@ code {
   }
   .report-actions .btn { min-width: 0; }
   .status-hero strong { font-size: 2.45rem; }
-  .map-preview, .map-preview.large { min-height: 430px; }
+  .map-preview.large { min-height: 430px; }
   .legend { max-width: calc(100% - 32px); }
     .province-table-wrap {
       overflow-x: auto;
