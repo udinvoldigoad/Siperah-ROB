@@ -752,7 +752,7 @@ export function PublicMapPage() {
             : "Gagal mendapatkan lokasi. Coba lagi.",
         );
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   }, [regions]);
 
