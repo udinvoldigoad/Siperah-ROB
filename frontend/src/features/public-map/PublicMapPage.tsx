@@ -191,9 +191,10 @@ function FilterSelect({ icon, ariaLabel, value, options, onChange }: {
   );
 }
 
-function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSelectFeature }: { regions: FeatureCollection; reports: FeatureCollection; layers: MapLayers; activeLayers: Record<LayerKey, boolean>; selectedRegency: string; onSelectFeature: (feature: GeoJsonFeature) => void }) {
+function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, userLocation, onSelectFeature }: { regions: FeatureCollection; reports: FeatureCollection; layers: MapLayers; activeLayers: Record<LayerKey, boolean>; selectedRegency: string; userLocation: [number, number] | null; onSelectFeature: (feature: GeoJsonFeature) => void }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
+  const userMarker = useRef<maplibregl.Marker | null>(null);
   const reportMarkers = useRef<maplibregl.Marker[]>([]);
   const predictionMarkers = useRef<maplibregl.Marker[]>([]);
   const tidalMarkers = useRef<maplibregl.Marker[]>([]);
@@ -231,6 +232,24 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
     map.current.on("load", () => { mapLoaded.current = true; });
     return () => { map.current?.remove(); map.current = null; mapLoaded.current = false; };
   }, []);
+
+  // Penanda "Anda di sini" pada koordinat asli pengguna + terbang ke titik itu.
+  // Terpisah dari efek update agar flyTo ke lokasi persis tidak ditimpa fitBounds.
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance || !userLocation) return;
+    const showUser = () => {
+      userMarker.current?.remove();
+      const element = document.createElement("div");
+      element.className = "user-location-marker";
+      element.setAttribute("aria-label", "Lokasi Anda");
+      element.title = "Lokasi Anda";
+      userMarker.current = new maplibregl.Marker({ element }).setLngLat(userLocation).addTo(instance);
+      instance.flyTo({ center: userLocation, zoom: 14, duration: 1200 });
+    };
+    if (mapLoaded.current) showUser(); else instance.once("load", showUser);
+    return () => { instance.off("load", showUser); };
+  }, [userLocation]);
 
   useEffect(() => {
     const instance = map.current;
@@ -633,6 +652,8 @@ export function PublicMapPage() {
   // Deteksi lokasi pengguna (geolokasi browser) untuk memilih wilayah terdekat.
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
+  // Koordinat asli pengguna [lon, lat] untuk penanda "Anda di sini" di peta.
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
 
   // Tutup dropdown layer saat klik di luar atau tekan Escape.
   useEffect(() => {
@@ -713,13 +734,14 @@ export function PublicMapPage() {
           if (distance < bestDistance) { bestDistance = distance; nearest = feature; }
         });
         setLocating(false);
+        // Tandai posisi asli & terbang ke titik itu (lihat efek di RiskMap).
+        setUserLocation([longitude, latitude]);
         if (!nearest) {
           setLocError("Belum ada data wilayah untuk dicocokkan.");
           return;
         }
+        // Panel kanan menampilkan risiko wilayah pantau terdekat dari posisi.
         setSelectedFeature(nearest);
-        const regency = String((nearest as GeoJsonFeature).properties.regency ?? "");
-        if (regency && regency !== selectedRegency) setSelectedRegency(regency);
       },
       (geoError) => {
         setLocating(false);
@@ -731,7 +753,7 @@ export function PublicMapPage() {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
     );
-  }, [regions, selectedRegency]);
+  }, [regions]);
 
   const selectedRiskClass = String(selectedFeature?.properties.risk_class ?? "");
   const selectedColor = riskColors[selectedRiskClass] ?? "var(--accent)";
@@ -876,6 +898,18 @@ export function PublicMapPage() {
         border-left: 1px solid var(--line);
       }
       .map-viewport .maplibregl-ctrl-top-right { z-index: 3; }
+      /* Penanda lokasi asli pengguna: titik biru dengan denyut halus. */
+      .user-location-marker {
+        width: 18px; height: 18px; border-radius: 50%;
+        background: #2563eb; border: 3px solid #fff;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, .4);
+        animation: user-loc-pulse 2s ease-out infinite;
+      }
+      @keyframes user-loc-pulse {
+        0% { box-shadow: 0 1px 4px rgba(15,23,42,.4), 0 0 0 0 rgba(37,99,235,.45); }
+        70% { box-shadow: 0 1px 4px rgba(15,23,42,.4), 0 0 0 16px rgba(37,99,235,0); }
+        100% { box-shadow: 0 1px 4px rgba(15,23,42,.4), 0 0 0 0 rgba(37,99,235,0); }
+      }
       .map-risk-badge {
         align-items: center;
         background: #fff;
@@ -1090,7 +1124,7 @@ export function PublicMapPage() {
               <strong>{toolbarHorizon}</strong>
             </div>
             <div className="map-container" style={{ minHeight: 560 }}>
-              <RiskMap regions={regions} reports={reports} layers={layers} activeLayers={activeLayers} selectedRegency={selectedRegency} onSelectFeature={handleSelectFeature} />
+              <RiskMap regions={regions} reports={reports} layers={layers} activeLayers={activeLayers} selectedRegency={selectedRegency} userLocation={userLocation} onSelectFeature={handleSelectFeature} />
             </div>
             <div className="legend">
               <strong>Legenda risiko</strong>
