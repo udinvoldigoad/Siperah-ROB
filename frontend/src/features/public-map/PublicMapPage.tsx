@@ -150,7 +150,7 @@ function FilterSelect({ icon, ariaLabel, value, options, onChange }: {
   }, [open]);
   const selected = options.find((option) => option.value === value);
   return (
-    <div ref={ref} className="filter-select" style={{ position: "relative" }}>
+    <div ref={ref} className="filter-select" style={{ position: "relative", minWidth: 0 }}>
       <button
         type="button"
         className="layer-menu-btn"
@@ -161,7 +161,7 @@ function FilterSelect({ icon, ariaLabel, value, options, onChange }: {
         style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 14px", borderRadius: 10, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontSize: 14, fontWeight: 500, width: "100%", textAlign: "left" }}
       >
         <Icon name={icon} style={{ fontSize: 18, color: "var(--accent)" }} />
-        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected?.short ?? selected?.label ?? ""}</span>
+        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected?.short ?? selected?.label ?? ""}</span>
         <Icon name="expand_more" style={{ fontSize: 18, color: "var(--ink-soft)", transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
       </button>
       {open && (
@@ -846,7 +846,10 @@ export function PublicMapPage() {
         .map-filter-bar,
         .map-filter-bar.is-open {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          /* minmax(0,1fr), bukan 1fr (= minmax(auto,1fr)): tanpa ini kolom
+             berisi teks panjang (nama kabupaten) melebar & menekan kolom lain
+             ("mepet") alih-alih dipangkas. */
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           align-items: start;
           gap: 8px;
           padding: 12px 14px !important;
@@ -854,6 +857,10 @@ export function PublicMapPage() {
         .map-filter-bar > div {
           display: grid !important;
           grid-template-rows: 26px auto;
+          /* Kolom implisit grid default auto (= max-content) membuat tombol
+             melebar ke lebar teks penuh & chevron terdorong keluar. minmax(0,1fr)
+             mengunci lebar ke sel sehingga teks dipangkas rapi. */
+          grid-template-columns: minmax(0, 1fr);
           gap: 6px !important;
           min-width: 0 !important;
           max-width: none !important;
@@ -873,10 +880,12 @@ export function PublicMapPage() {
         }
         .map-filter-bar .layer-menu-btn {
           min-height: 42px !important;
-          padding: 0 8px !important;
-          gap: 6px !important;
+          padding: 0 6px !important;
+          gap: 4px !important;
           font-size: 12px !important;
         }
+        /* Ikon dikecilkan di mobile agar label pendek (mis. "Terbaru") muat utuh. */
+        .map-filter-bar .layer-menu-btn .material-symbols-outlined { font-size: 16px !important; }
         /* Ikon layer (biru) tetap tampil; teks diringkas jadi "1 dari 6" saja
            dengan menyembunyikan sufiks " layer aktif" agar muat kolom sempit. */
         .map-filter-bar .layer-menu-btn > span {
@@ -963,7 +972,7 @@ export function PublicMapPage() {
                 ariaLabel="Kabupaten/Kota"
                 value={selectedRegency}
                 onChange={setSelectedRegency}
-                options={[{ value: "all", label: "Semua wilayah", short: "Semua" }, ...regencies.map((regency) => ({ value: regency, label: regency }))]}
+                options={[{ value: "all", label: "Semua wilayah", short: "Semua" }, ...regencies.map((regency) => ({ value: regency, label: regency, short: regency.replace(/^(Kabupaten|Kota)\s+/, "") }))]}
               />
             </div>
             <div ref={layerMenuRef} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 9, flex: 1, minWidth: 190, maxWidth: 320 }}>
