@@ -739,6 +739,26 @@ export function PublicMapPage() {
         row-gap: 16px;
         flex-wrap: wrap;
       }
+      /* Desktop lebar: paksa 3 kolom sebaris. Panel di layout ini cukup sempit
+         (≈ viewport − 732px), jadi 3 kolom baru dipaksa mulai 1280px; di bawahnya
+         tetap wrap agar label & tombol tak berdesakan. */
+      @media (min-width: 1280px) {
+        .map-filter-bar {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          align-items: start;
+          gap: 20px;
+        }
+        /* minmax(0,1fr) butuh anak yang boleh menyusut; inline field punya
+           min-width:190 sehingga di-nol-kan agar 3 kolom muat sebaris. */
+        .map-filter-bar > div { min-width: 0 !important; }
+        /* Kolom lebih ramping: rapatkan tombol & ringkas teks layer jadi
+           "1 dari 6" agar muat tanpa terpotong. */
+        .map-filter-bar .layer-menu-btn { padding: 0 12px; gap: 7px; }
+        .map-filter-bar .layer-btn-suffix { display: none; }
+      }
+      /* Teks tombol layer dipangkas rapi bila kolom sempit (tak mepet). */
+      .map-filter-bar .layer-menu-btn > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .map-filter-bar > label {
         display: grid;
         gap: 9px;
@@ -986,7 +1006,7 @@ export function PublicMapPage() {
                 style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 14px", borderRadius: 10, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontSize: 14, fontWeight: 500, width: "100%", textAlign: "left" }}
               >
                 <Icon name="layers" style={{ fontSize: 18, color: "var(--accent)" }} />
-                <span style={{ flex: 1 }}>{Object.values(activeLayers).filter(Boolean).length} dari 6<span className="layer-btn-suffix"> layer aktif</span></span>
+                <span style={{ flex: 1, minWidth: 0 }}>{Object.values(activeLayers).filter(Boolean).length} dari 6<span className="layer-btn-suffix"> layer aktif</span></span>
                 <Icon name="expand_more" style={{ fontSize: 18, color: "var(--ink-soft)", transform: layerMenuOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
               </button>
               {layerMenuOpen && (

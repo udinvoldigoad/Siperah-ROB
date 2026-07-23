@@ -23,9 +23,11 @@ async function focusRegency(page: Page) {
   await expect(page.locator(".map-risk-badge").first()).toBeVisible();
 }
 
-/** Buka dropdown "Pilihan Layer" — checkbox layer ada di dalamnya. */
+/** Buka dropdown "Pilihan Layer" — checkbox layer ada di dalamnya.
+ * Cocokkan "dari 6" (bukan "layer aktif"): di desktop lebar sufiks "layer
+ * aktif" disembunyikan sehingga tombol hanya bertuliskan "N dari 6". */
 async function openLayerMenu(page: Page) {
-  await page.getByRole("button", { name: /layer aktif/ }).click();
+  await page.getByRole("button", { name: /dari 6/ }).click();
 }
 
 test.describe("peta publik", () => {
