@@ -142,11 +142,13 @@ export function OnboardingPage() {
               .citizen-hero-metrics{grid-template-columns:1fr!important} 
               .citizen-feature-box{padding:32px!important; margin-bottom:40px!important; border-radius: 24px;}
               .citizen-report-step p { max-width:100%!important; }
+              .onboarding-hero { padding: 40px 16px 40px !important; margin-bottom: 24px !important; }
             }
           `}</style>
           
           {/* Modern Cinematic Hero */}
           <motion.div
+            className="onboarding-hero"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
