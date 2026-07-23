@@ -154,7 +154,10 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
       zoom: 9,
       style: {
         version: 8,
-        glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
+        // Glyph di-host sendiri (frontend/public/fonts/opensans/0-255.pbf) alih-alih
+        // fonts.openmaptiles.org — server demo itu diblokir CSP produksi (tak masuk
+        // connect-src) dan tak andal. Same-origin: aman CSP, cepat, tanpa pihak ketiga.
+        glyphs: "/fonts/{fontstack}/{range}.pbf",
         sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap contributors" } },
         layers: [{ id: "osm", type: "raster", source: "osm" }],
       },
@@ -367,8 +370,8 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
       // Sumber titik risiko dengan clustering bawaan MapLibre. Ukuran gelembung
       // = banyaknya wilayah di dalamnya, warna = risiko TERTINGGI di dalamnya
       // (bukan rata-rata, supaya area berbahaya tidak tersamarkan tetangganya).
-      // Tidak memakai layer `symbol`/teks karena style peta ini raster tanpa
-      // glyphs — angka pasti tidak akan ter-render.
+      // Label persen digambar layer `symbol` (risk-cluster-labels) memakai glyph
+      // yang di-host sendiri (lihat `glyphs` di atas).
       const pointSourceId = "risk-points";
       const pointData = { type: "FeatureCollection", features: riskPointFeatures } as any;
       const pointSource = instance.getSource(pointSourceId);
@@ -418,7 +421,7 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSe
               ["to-string", ["round", ["/", ["get", "sumProb"], ["get", "point_count"]]]],
               "%"
             ],
-            "text-font": ["Open Sans Regular"],
+            "text-font": ["opensans"],
             "text-size": 12,
             "text-allow-overlap": true
           },
