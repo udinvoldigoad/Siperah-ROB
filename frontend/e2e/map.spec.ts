@@ -15,7 +15,10 @@ async function focusRegency(page: Page) {
   const filtered = page.waitForResponse((response) =>
     response.url().includes("/api/public/map") && response.url().includes("regency="),
   );
-  await page.locator('label:has-text("Kabupaten/Kota") select').selectOption(REGENCY);
+  // Horizon & kabupaten kini dropdown custom (FilterSelect), bukan <select>.
+  const field = page.locator(".filter-field", { hasText: "Kabupaten/Kota" });
+  await field.locator(".filter-select > button").click();
+  await field.locator(".filter-option", { hasText: REGENCY }).click();
   await filtered;
   await expect(page.locator(".map-risk-badge").first()).toBeVisible();
 }
@@ -46,14 +49,16 @@ test.describe("peta publik", () => {
   });
 
   test("horizon prediksi mengubah tanggal yang diminta ke API", async ({ page }) => {
-    const horizonSelect = page.locator('label:has-text("Horizon prediksi") select');
-    const optionValue = await horizonSelect.locator("option").nth(1).getAttribute("value");
-    expect(optionValue, "opsi horizon pertama harus punya tanggal").toBeTruthy();
+    const field = page.locator(".filter-field", { hasText: "Horizon prediksi" });
+    await field.locator(".filter-select > button").click();
+    const secondOption = field.locator(".filter-option").nth(1);
+    const optionValue = await secondOption.getAttribute("data-value");
+    expect(optionValue, "opsi horizon kedua harus punya tanggal").toBeTruthy();
 
     const dated = page.waitForResponse((response) =>
       response.url().includes("/api/public/map") && response.url().includes(`date=${optionValue}`),
     );
-    await horizonSelect.selectOption(optionValue as string);
+    await secondOption.click();
     await dated;
 
     // Toolbar peta tidak lagi menampilkan "Prediksi terbaru".

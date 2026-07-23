@@ -127,6 +127,68 @@ const CLUSTER_MAX_ZOOM = 10;
 // dilakukan MapLibre lewat clusterProperties).
 const RISK_RANK: Record<string, number> = { rendah: 1, sedang: 2, tinggi: 3, sangat_tinggi: 4 };
 
+// Dropdown custom (bukan <select> native) agar tampilannya konsisten dengan
+// tombol layer dan rapi lintas OS — popup <select> native tak bisa distyle.
+function FilterSelect({ icon, ariaLabel, value, options, onChange }: {
+  icon: string;
+  ariaLabel: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (event: MouseEvent) => { if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false); };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+  const selected = options.find((option) => option.value === value);
+  return (
+    <div ref={ref} className="filter-select" style={{ position: "relative" }}>
+      <button
+        type="button"
+        className="layer-menu-btn"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-label={ariaLabel}
+        style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 14px", borderRadius: 10, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontSize: 14, fontWeight: 500, width: "100%", textAlign: "left" }}
+      >
+        <Icon name={icon} style={{ fontSize: 18, color: "var(--accent)" }} />
+        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected?.label ?? ""}</span>
+        <Icon name="expand_more" style={{ fontSize: 18, color: "var(--ink-soft)", transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+      </button>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: .15 }}
+          className="filter-select-dropdown"
+          role="listbox"
+        >
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={option.value === value}
+              data-value={option.value}
+              className="filter-option"
+              onClick={() => { onChange(option.value); setOpen(false); }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
 function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, onSelectFeature }: { regions: FeatureCollection; reports: FeatureCollection; layers: MapLayers; activeLayers: Record<LayerKey, boolean>; selectedRegency: string; onSelectFeature: (feature: GeoJsonFeature) => void }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
@@ -688,13 +750,25 @@ export function PublicMapPage() {
         letter-spacing: .5px;
       }
       .map-filter-bar select { min-height: 44px; }
-      /* Select dengan ikon depan (biru) agar sekelas tombol layer. */
-      .select-icon-wrap { position: relative; display: block; }
-      .select-icon-wrap > .material-symbols-outlined {
-        position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-        font-size: 18px; color: var(--accent); pointer-events: none;
+      /* Dropdown custom horizon & kabupaten — seragam dengan dropdown layer. */
+      .filter-select-dropdown {
+        position: absolute; top: 100%; left: 0; margin-top: 6px; z-index: 20;
+        min-width: 100%;
+        background: var(--surface); border: 1px solid var(--line);
+        border-radius: 12px; box-shadow: 0 12px 32px rgba(15, 23, 42, .16);
+        padding: 6px; display: grid; gap: 1px;
+        max-height: 288px; overflow-y: auto;
       }
-      .select-icon-wrap > select { width: 100%; padding-left: 34px; }
+      .filter-option {
+        display: flex; align-items: center; gap: 8px;
+        width: 100%; padding: 9px 12px; border-radius: 8px;
+        font: inherit; font-size: 13px; font-weight: 500; color: var(--ink);
+        background: transparent; border: 0; cursor: pointer;
+        text-align: left; white-space: nowrap;
+        transition: background .12s;
+      }
+      .filter-option:hover { background: var(--surface-soft); }
+      .filter-option[aria-selected="true"] { background: var(--surface-soft); color: var(--accent); font-weight: 700; }
       .layer-menu-btn { transition: border-color .15s, box-shadow .15s; }
       .layer-menu-btn:hover, .layer-menu-btn[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 1px 6px rgba(2, 132, 199, .12); }
       .layer-option { transition: background .12s; }
@@ -775,16 +849,6 @@ export function PublicMapPage() {
           gap: 8px;
           padding: 12px 14px !important;
         }
-        .map-filter-bar > label {
-          display: grid;
-          grid-template-rows: 26px auto;
-          gap: 6px;
-          min-width: 0 !important;
-          max-width: none;
-          font-size: 10px;
-          letter-spacing: .3px;
-          line-height: 1.25;
-        }
         .map-filter-bar > div {
           display: grid !important;
           grid-template-rows: 26px auto;
@@ -798,15 +862,13 @@ export function PublicMapPage() {
           letter-spacing: .3px !important;
           line-height: 1.25;
         }
-        .map-filter-bar select {
-          width: 100%;
-          min-width: 0;
-          min-height: 42px;
-          font-size: 12px;
-          padding: 0 2px;
+        /* Dropdown horizon & kabupaten dilebarkan agar teks opsi (mis. nama
+           kabupaten panjang) tak terpotong kolom sempit. */
+        .map-filter-bar .filter-select-dropdown {
+          min-width: 190px;
+          width: max-content;
+          max-width: calc(100vw - 40px);
         }
-        .map-filter-bar .select-icon-wrap > .material-symbols-outlined { left: 7px; font-size: 17px; }
-        .map-filter-bar .select-icon-wrap > select { padding-left: 27px; }
         .map-filter-bar .layer-menu-btn {
           min-height: 42px !important;
           padding: 0 8px !important;
@@ -882,24 +944,26 @@ export function PublicMapPage() {
             <Icon name="expand_more" style={{ fontSize: 18, color: "var(--ink-soft)", transform: mobileFilterOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
           </button>
           <div className={`map-filter-bar${mobileFilterOpen ? " is-open" : ""}`} style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
-            <label>Horizon prediksi
-              <span className="select-icon-wrap">
-                <Icon name="schedule" />
-                <select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)}>
-                  <option value="all">Terbaru</option>
-                  {HORIZON_OPTIONS.map((horizon) => <option key={horizon.offset} value={dateFromOffset(horizon.offset)}>{horizon.label}</option>)}
-                </select>
-              </span>
-            </label>
-            <label>Kabupaten/Kota
-              <span className="select-icon-wrap">
-                <Icon name="place" />
-                <select value={selectedRegency} onChange={(event) => setSelectedRegency(event.target.value)}>
-                  <option value="all">Semua wilayah</option>
-                  {regencies.map((regency) => <option key={regency} value={regency}>{regency}</option>)}
-                </select>
-              </span>
-            </label>
+            <div className="filter-field" style={{ display: "flex", flexDirection: "column", gap: 9, flex: 1, minWidth: 190, maxWidth: 320 }}>
+              <strong style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: .5, color: "var(--ink-soft)" }}>Horizon prediksi</strong>
+              <FilterSelect
+                icon="schedule"
+                ariaLabel="Horizon prediksi"
+                value={selectedDate}
+                onChange={setSelectedDate}
+                options={[{ value: "all", label: "Terbaru" }, ...HORIZON_OPTIONS.map((horizon) => ({ value: dateFromOffset(horizon.offset), label: horizon.label }))]}
+              />
+            </div>
+            <div className="filter-field" style={{ display: "flex", flexDirection: "column", gap: 9, flex: 1, minWidth: 190, maxWidth: 320 }}>
+              <strong style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: .5, color: "var(--ink-soft)" }}>Kabupaten/Kota</strong>
+              <FilterSelect
+                icon="place"
+                ariaLabel="Kabupaten/Kota"
+                value={selectedRegency}
+                onChange={setSelectedRegency}
+                options={[{ value: "all", label: "Semua wilayah" }, ...regencies.map((regency) => ({ value: regency, label: regency }))]}
+              />
+            </div>
             <div ref={layerMenuRef} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 9, flex: 1, minWidth: 190, maxWidth: 320 }}>
               <strong style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: .5, color: "var(--ink-soft)" }}>Pilihan Layer</strong>
               <button
