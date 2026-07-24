@@ -2,8 +2,10 @@ name: Prediksi ML Harian
 
 on:
   schedule:
-    # 23:00 UTC = 06:00 WIB
-    - cron: "0 23 * * *"
+    # 22:00 UTC = 05:00 WIB (target). Digeser 1 jam lebih awal sebagai buffer:
+    # scheduled workflow GitHub kerap molor 30-60 menit di awal jam, jadi run
+    # nyata biasanya mendarat ~05:30-06:00 WIB (sebelum/pas pukul 06:00).
+    - cron: "0 22 * * *"
   workflow_dispatch: {}
 
 jobs:
