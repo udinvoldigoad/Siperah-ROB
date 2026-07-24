@@ -357,28 +357,39 @@ export function PortalPage() {
         .marquee-content {
           display: flex;
           align-items: center;
-          gap: 80px;
-          padding-right: 80px;
+          gap: 60px;
+          padding-right: 60px;
         }
         .marquee-item {
           display: flex;
           align-items: center;
           gap: 12px;
-          font-weight: 800;
-          font-size: 0.95rem;
+          font-weight: 700;
+          font-size: 0.88rem;
           color: var(--ink-primary);
           letter-spacing: 0.05em;
           text-transform: uppercase;
+          white-space: nowrap;
         }
         .marquee-item span {
-          display: flex;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 24px;
-          height: 24px;
-          background: rgba(18, 19, 20, 0.06);
-          border-radius: 4px;
-          color: var(--ink-primary);
+          width: 32px;
+          height: 32px;
+          background: rgba(37, 99, 235, 0.08);
+          border: 1px solid rgba(37, 99, 235, 0.15);
+          border-radius: 8px;
+          color: #2563eb;
+          flex-shrink: 0;
+        }
+        .marquee-item span .material-symbols-outlined {
+          font-size: 18px;
+        }
+        [data-theme="dark"] .marquee-item span {
+          background: rgba(59, 130, 246, 0.15);
+          border-color: rgba(59, 130, 246, 0.25);
+          color: #60a5fa;
         }
         .live-kicker-dot {
           animation: live-kicker-pulse 1.4s ease-in-out infinite;
@@ -878,23 +889,29 @@ export function PortalPage() {
         </motion.div>
       </section>
 
-      {/* Infinite Scrolling Marquee Row */}
+      {/* Infinite Scrolling Marquee Row (Hidden for now) */}
+      {/*
       <section className="marquee-container">
         <div className="marquee-track">
           <div className="marquee-content">
-            <div className="marquee-item"><span><Icon name="radar" /></span> BMKG Pasang Surut</div>
+            <div className="marquee-item"><span><Icon name="waves" /></span> BMKG Pasang Surut</div>
             <div className="marquee-item"><span><Icon name="map" /></span> Geospasial BIG</div>
-            <div className="marquee-item"><span><Icon name="analytics" /></span> Sensus Penduduk BPS</div>
-            <div className="marquee-item"><span><Icon name="security" /></span> Pusdalops BPBD Lampung</div>
+            <div className="marquee-item"><span><Icon name="groups" /></span> Sensus Penduduk BPS</div>
+            <div className="marquee-item"><span><Icon name="shield" /></span> Pusdalops BPBD Lampung</div>
+            <div className="marquee-item"><span><Icon name="anchor" /></span> Pushidrosal TNI AL</div>
+            <div className="marquee-item"><span><Icon name="cloud" /></span> Open-Meteo ERA5</div>
           </div>
           <div className="marquee-content">
-            <div className="marquee-item"><span><Icon name="radar" /></span> BMKG Pasang Surut</div>
+            <div className="marquee-item"><span><Icon name="waves" /></span> BMKG Pasang Surut</div>
             <div className="marquee-item"><span><Icon name="map" /></span> Geospasial BIG</div>
-            <div className="marquee-item"><span><Icon name="analytics" /></span> Sensus Penduduk BPS</div>
-            <div className="marquee-item"><span><Icon name="security" /></span> Pusdalops BPBD Lampung</div>
+            <div className="marquee-item"><span><Icon name="groups" /></span> Sensus Penduduk BPS</div>
+            <div className="marquee-item"><span><Icon name="shield" /></span> Pusdalops BPBD Lampung</div>
+            <div className="marquee-item"><span><Icon name="anchor" /></span> Pushidrosal TNI AL</div>
+            <div className="marquee-item"><span><Icon name="cloud" /></span> Open-Meteo ERA5</div>
           </div>
         </div>
       </section>
+      */}
 
       {/* Bento Layout Grid */}
       <section className="bento-section">
