@@ -60,8 +60,7 @@ class PasswordResetController
         }
 
         return response()->json([
-            'message' => 'Kode OTP telah dibuat.',
-            'otp'     => $otp,
+            'message' => 'Kode OTP telah dikirim ke email Anda.',
         ]);
     }
 
