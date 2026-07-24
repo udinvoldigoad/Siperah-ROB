@@ -16,6 +16,10 @@ export default defineConfig(({ mode }) => {
     server: {
       host: true,
       port: 5173,
+      // Izinkan host apa pun saat dev agar bisa diakses lewat HTTPS tunnel
+      // (cloudflared/ngrok) untuk uji di perangkat mobile. Hanya berlaku di
+      // `vite dev`, tidak memengaruhi build/produksi.
+      allowedHosts: true,
       hmr: {
         host: "localhost",
         port: 5173
