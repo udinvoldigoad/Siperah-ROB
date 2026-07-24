@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class DashboardController
@@ -45,9 +46,15 @@ final class DashboardController
             );
         }
         $regionIds = $regionQuery->pluck('id');
+        // Konsisten dengan peta risiko & dashboard provinsi: pakai prediksi
+        // TERDEKAT yang akan datang (>= hari ini), fallback ke tanggal terbaru.
         $latestPredictionDate = DB::table('predictions')
             ->whereIn('region_id', $regionIds)
-            ->max('prediction_date');
+            ->whereDate('prediction_date', '>=', CarbonImmutable::today())
+            ->min('prediction_date')
+            ?: DB::table('predictions')
+                ->whereIn('region_id', $regionIds)
+                ->max('prediction_date');
 
         $monitored = $regionIds->count();
 
@@ -325,7 +332,7 @@ final class DashboardController
 
     private function latestProvincePredictionDate(?string $selectedMonth = null, ?string $selectedRegency = null): ?string
     {
-        return DB::table('predictions')
+        $base = fn () => DB::table('predictions')
             ->join('regions', 'predictions.region_id', '=', 'regions.id')
             ->where(function ($query): void {
                 $this->applyMonitoredRegionFilter($query, 'regions');
@@ -335,8 +342,17 @@ final class DashboardController
                 $end = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
                 $query->whereBetween('predictions.prediction_date', [$start, $end]);
             })
-            ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
-            ->max('predictions.prediction_date');
+            ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'));
+
+        // Samakan dengan peta risiko: utamakan prediksi TERDEKAT yang akan datang
+        // (>= hari ini) sebagai "prediksi terkini", bukan tanggal terjauh di
+        // dataset. Fallback ke tanggal terbaru bila tak ada prediksi mendatang
+        // (mis. hanya tersisa data historis).
+        $upcoming = (clone $base())
+            ->whereDate('predictions.prediction_date', '>=', CarbonImmutable::today())
+            ->min('predictions.prediction_date');
+
+        return $upcoming ?: $base()->max('predictions.prediction_date');
     }
 
     private function provinceRegencyOptions()
