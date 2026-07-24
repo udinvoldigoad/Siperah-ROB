@@ -56,3 +56,6 @@ frontend/playwright-report/
 .env.testing
 scripts/deploy.env
 scratch/
+
+# Dokumen kerja internal (jangan publish ke repo public)
+FINALISASI-CHECKLIST.md

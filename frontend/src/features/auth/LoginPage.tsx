@@ -300,7 +300,10 @@ export function LoginPage() {
                 Masuk dengan Google
               </a>
 
-              {/* DEV ONLY: Quick Login Shortcuts */}
+              {/* DEV ONLY: Quick Login Shortcuts — hanya tampil saat `npm run dev`.
+                  import.meta.env.DEV = false di build produksi, sehingga blok ini
+                  di-tree-shake (tidak ikut ke bundle & password demo tak terekspos). */}
+              {import.meta.env.DEV && (
               <details style={{ marginTop: "32px" }}>
                 <summary className="dev-shortcut-summary" style={{ fontSize: "12px", color: "var(--ink-soft)", fontWeight: 600, textAlign: "center", cursor: "pointer", padding: "8px" }}>
                   ⚡ DEV SHORTCUTS
@@ -316,6 +319,7 @@ export function LoginPage() {
                   </div>
                 </div>
               </details>
+              )}
 
                 <div style={{ marginTop: "40px", textAlign: "center", fontSize: "14px", color: "var(--ink-soft)" }}>
                   <span className="or-text">Belum punya akun?</span>{" "}
