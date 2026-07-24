@@ -9,7 +9,6 @@ final class RunMlPredictions extends Command
 {
     protected $signature = 'ml:predict
         {--mode=predict : Mode pipeline (fetch|train|predict)}
-        {--simulate : Pakai data simulasi (offline/demo)}
         {--timeout=900 : Batas waktu eksekusi dalam detik}';
 
     protected $description = 'Jalankan pipeline ML prediksi banjir rob (ml-api) dan tulis hasil ke tabel predictions';
@@ -25,9 +24,6 @@ final class RunMlPredictions extends Command
         }
 
         $command = [$python, 'main.py', '--mode', (string) $this->option('mode')];
-        if ($this->option('simulate')) {
-            $command[] = '--simulate';
-        }
 
         $this->info('Menjalankan: '.implode(' ', $command)." (cwd: {$mlApiPath})");
 

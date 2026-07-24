@@ -140,13 +140,10 @@ def load_tide_model(conn):
         t0, beta = fit_harmonic_model(df_tide)
 
     if t0 is None or beta is None:
-        print("[INFO] Memakai model pasut fallback (simulasi).")
-        t0 = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-        beta = np.array([0.6, 0.35, 0.12, 0.28, 0.08, 0.18, 0.06, 0.12, 0.04])
-        is_simulated = True
+        raise ValueError("Data historis pasang surut (tidal_data) kosong atau tidak cukup. Jalankan 'php artisan data:fetch-tidal-sealevel' terlebih dahulu.")
 
     t0 = strip_timezone(t0.to_pydatetime() if isinstance(t0, pd.Timestamp) else t0)
-    return t0, beta, is_simulated
+    return t0, beta, False
 
 
 def daily_max_tide_cm(t0, beta, start, end) -> pd.DataFrame:
@@ -163,41 +160,13 @@ def daily_max_tide_cm(t0, beta, start, end) -> pd.DataFrame:
 
 # 3. Penyusunan dataset training --------------------------------------------------
 
-def simulated_historical(days: int = 730) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Data cuaca/gelombang sintetis (fallback offline). Provenance: simulated."""
-    print("[WARNING] Memakai data cuaca SIMULASI -- hanya untuk pengembangan/demo.")
-    frames_w, frames_m = [], []
-    dates = pd.date_range(end=datetime.now().date(), periods=days, freq="D")
-    rng = np.random.default_rng(42)
-    for key in data_fetcher.STATIONS:
-        frames_w.append(pd.DataFrame({
-            "date": dates.strftime("%Y-%m-%d"),
-            "rainfall_mm": rng.gamma(0.9, 8.0, len(dates)).clip(0, 120),
-            "wind_speed_ms": rng.uniform(1, 9, len(dates)),
-            "wind_direction_deg": rng.uniform(0, 360, len(dates)),
-            "pressure_hpa": rng.uniform(1005, 1015, len(dates)),
-            "station": key,
-        }))
-        frames_m.append(pd.DataFrame({
-            "date": dates.strftime("%Y-%m-%d"),
-            "wave_height_max_m": rng.gamma(2.0, 0.35, len(dates)).clip(0.05, 4),
-            "swell_wave_height_max_m": rng.gamma(2.0, 0.22, len(dates)).clip(0.02, 3),
-            "station": key,
-        }))
-    return pd.concat(frames_w, ignore_index=True), pd.concat(frames_m, ignore_index=True)
-
-
-def build_training_frame(conn, simulate: bool = False):
+def build_training_frame(conn):
     """Gabungkan pasut (harmonik), cuaca, gelombang per stasiun + label."""
-    if simulate:
-        weather, marine = simulated_historical()
-        data_source = "simulated"
-    else:
-        weather, marine = data_fetcher.load_cached_historical()
-        if weather is None:
-            print("[INFO] CSV historis belum ada -- mengunduh dari Open-Meteo...")
-            weather, marine = data_fetcher.fetch_all_historical()
-        data_source = "openmeteo_era5"
+    weather, marine = data_fetcher.load_cached_historical()
+    if weather is None:
+        print("[INFO] CSV historis belum ada -- mengunduh dari Open-Meteo...")
+        weather, marine = data_fetcher.fetch_all_historical()
+    data_source = "openmeteo_era5"
 
     t0, beta, tide_simulated = load_tide_model(conn)
     start = pd.to_datetime(weather["date"]).min()
@@ -231,9 +200,9 @@ def build_training_frame(conn, simulate: bool = False):
     return df, tide_stats, data_source, (t0, beta, tide_simulated)
 
 
-def run_train(conn, simulate: bool = False, tune: bool = True):
+def run_train(conn, tune: bool = True):
     print("[INFO] Menyusun dataset training dari database & API historis...")
-    df, tide_stats, data_source, tide_params = build_training_frame(conn, simulate=simulate)
+    df, tide_stats, data_source, tide_params = build_training_frame(conn)
     
     # Menyelaraskan nama kolom target dengan target yang diharapkan train_model (Rob)
     df = df.rename(columns={"label_rob": "Rob"})
@@ -286,7 +255,7 @@ def climatology_from_history(weather: pd.DataFrame | None, marine: pd.DataFrame 
     return clim, wave_clim
 
 
-def run_predict(conn, simulate: bool = False):
+def run_predict(conn):
     cursor = conn.cursor()
     print("[INFO] Mengambil wilayah pesisir...")
     cursor.execute("SELECT id, regency, district, village, distance_to_coast_m, avg_elevation_m FROM regions WHERE coastal_flag = true")
@@ -299,7 +268,7 @@ def run_predict(conn, simulate: bool = False):
     model = train_model.load_model()
     if model is None:
         print("[INFO] Model tersimpan belum ada -- menjalankan training terlebih dahulu...")
-        model = run_train(conn, simulate=simulate)
+        model = run_train(conn)
 
     # Pasang surut 30 hari ke depan (harmonik dari tidal_data)
     t0, beta, tide_simulated = load_tide_model(conn)
@@ -316,27 +285,10 @@ def run_predict(conn, simulate: bool = False):
     }
 
     # Prakiraan cuaca + gelombang per stasiun
-    if simulate:
-        forecasts = {}
-        rng = np.random.default_rng()
-        horizon = pd.date_range(today, periods=8, freq="D").strftime("%Y-%m-%d")
-        for key in data_fetcher.STATIONS:
-            forecasts[key] = {
-                "weather": pd.DataFrame({"date": horizon,
-                                          "rainfall_mm": rng.gamma(0.9, 8.0, len(horizon)).clip(0, 80),
-                                          "wind_speed_ms": rng.uniform(1, 8, len(horizon)),
-                                          "pressure_hpa": rng.uniform(1006, 1014, len(horizon))}),
-                "marine": pd.DataFrame({"date": horizon,
-                                         "wave_height_max_m": rng.gamma(2.0, 0.35, len(horizon)),
-                                         "swell_wave_height_max_m": rng.gamma(2.0, 0.22, len(horizon))}),
-            }
-        weather_hist = marine_hist = None
-        data_source = "MLPipeline-Simulated"
-    else:
-        print(f"[INFO] Mengambil prakiraan cuaca & gelombang ({WEATHER_SOURCE})...")
-        forecasts = data_fetcher.fetch_daily_forecast_for_inference(days=8, weather_source=WEATHER_SOURCE)
-        weather_hist, marine_hist = data_fetcher.load_cached_historical()
-        data_source = "MLPipeline-OpenMeteo"
+    print(f"[INFO] Mengambil prakiraan cuaca & gelombang ({WEATHER_SOURCE})...")
+    forecasts = data_fetcher.fetch_daily_forecast_for_inference(days=8, weather_source=WEATHER_SOURCE)
+    weather_hist, marine_hist = data_fetcher.load_cached_historical()
+    data_source = "MLPipeline-OpenMeteo"
     if tide_simulated:
         data_source += "+SimTide"
 
@@ -412,12 +364,19 @@ def run_predict(conn, simulate: bool = False):
     station_hits: dict[str, int] = {}
 
     for region in regions:
-        region_id, regency = region[0], region[1]
+        region_id, regency, district, village = region[0], region[1], region[2], region[3]
+        dist_to_coast_m = float(region[4]) if region[4] is not None else 0.0
+        avg_elevation_m = float(region[5]) if region[5] is not None else 0.0
+        
         station_key = labeler._normalize_regency(regency)
         if station_key not in station_results:
             station_key = default_station if default_station in station_results else next(iter(station_results))
         station_hits[station_key] = station_hits.get(station_key, 0) + 1
         result = station_results[station_key]
+
+        # Logika Spasial: Probabilitas turun eksponensial seiring tingginya elevasi dan jauhnya dari pantai
+        # Elevasi 5m = exp(-2.5) = ~8% probabilitas asli. Elevasi 0m = 100%.
+        spatial_factor = np.exp(-avg_elevation_m * 0.5) * np.exp(-dist_to_coast_m / 1000.0)
 
         for _, row in result.iterrows():
             pred_date = row["date"]
@@ -425,12 +384,16 @@ def run_predict(conn, simulate: bool = False):
                 continue
             tide_row = tide_lookup.loc[pred_date]
 
-            raw_prob = round(max(max(2.0, (float(tide_row["tide_height_cm"]) - 100) / 10.0), min(98.0, float(row["prob_rob"]) * 100)), 2)
+            # Skor ML Murni dikalikan faktor keruangan
+            base_prob = float(row["prob_rob"])
+            final_prob = base_prob * spatial_factor
+            
+            raw_prob = round(final_prob * 100.0, 2)
             
             try:
                 contract = PredictionContract(
                     risk_probability=raw_prob,
-                    risk_class=row["risk_class"],
+                    risk_class=predict_forecast.risk_class_from_probability(final_prob),
                     confidence_score=float(row["confidence"]),
                     max_tidal_height=round(float(tide_row["tide_height_cm"]) / 100, 3),
                     peak_time=tide_row["peak_time"]
@@ -450,7 +413,7 @@ def run_predict(conn, simulate: bool = False):
                 generated_at,
                 data_source,
                 f"{train_model.MODEL_VERSION} - {row['horizon_type']} - stasiun {station_key}",
-                "official" if not simulate else "demo",
+                "official",
             ))
 
     # Batch insert: satu roundtrip per ratusan baris. Insert per baris memakan
@@ -506,13 +469,12 @@ def _log_prediction_run(conn, written, data_source, tide_simulated):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Pipeline ML Prediksi Banjir Rob SIPERAH-RoB")
-    parser.add_argument("--mode", choices=["fetch", "train", "predict"], default="predict")
+    parser = argparse.ArgumentParser(description="Pipeline Prediksi Banjir Rob SIPERAH-RoB")
+    parser.add_argument("--mode", choices=["fetch", "train", "predict"], default="predict",
+                        help="Mode eksekusi (default: predict)")
     parser.add_argument("--start", default="2015-01-01", help="Awal data historis (mode fetch)")
     parser.add_argument("--end", default=datetime.now().strftime("%Y-%m-%d"), help="Akhir data historis (mode fetch)")
     parser.add_argument("--tune", action="store_true", help="Hyperparameter tuning saat training")
-    parser.add_argument("--simulate", action="store_true",
-                        help="Pakai data cuaca simulasi (offline/demo, provenance 'estimated')")
     parser.add_argument("--only-if-astronomical", action="store_true",
                         help="Keluar tanpa aksi kecuali hari ini dalam jendela pasang purnama/bulan baru (refresh sore ekstra)")
     args = parser.parse_args()
@@ -538,9 +500,9 @@ def main():
 
     try:
         if args.mode == "train":
-            run_train(conn, simulate=args.simulate, tune=args.tune)
+            run_train(conn, tune=args.tune)
         else:
-            run_predict(conn, simulate=args.simulate)
+            run_predict(conn)
     finally:
         conn.close()
 
