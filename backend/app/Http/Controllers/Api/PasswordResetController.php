@@ -6,14 +6,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use App\Models\User;
 use Carbon\Carbon;
 
 class PasswordResetController
 {
     /**
-     * Step 1: Kirim kode OTP 6 digit ke pengguna.
-     * Karena SMTP sering terkendala, OTP juga dikembalikan langsung di response.
+     * Step 1: Generate kode OTP 6 digit dan kirim ke email pengguna.
      */
     public function sendOtp(Request $request)
     {
@@ -46,10 +46,34 @@ class PasswordResetController
 
         Log::info("Password Reset OTP for {$user->email}: {$otp}");
 
-        return response()->json([
-            'message' => 'Kode OTP telah dibuat. Masukkan kode 6 digit untuk melanjutkan.',
-            'otp'     => $otp, // Langsung dikembalikan (tidak bergantung SMTP)
-        ]);
+        // Kirim OTP via email
+        try {
+            Mail::raw(
+                "Halo {$user->name},\n\nKode OTP untuk reset kata sandi akun SIPERAH-RoB Anda adalah:\n\n{$otp}\n\nKode ini berlaku selama 10 menit.\nJika Anda tidak meminta reset kata sandi, abaikan email ini.\n\nSalam,\nTim SIPERAH-RoB",
+                function ($message) use ($user) {
+                    $message->to($user->email, $user->name)
+                            ->subject('Kode OTP Reset Kata Sandi - SIPERAH-RoB');
+                }
+            );
+
+            return response()->json([
+                'message' => 'Kode OTP telah dikirim ke email Anda. Periksa inbox atau folder spam.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning("SMTP gagal mengirim OTP ke {$user->email}: " . $e->getMessage());
+
+            // Di mode debug/development, kembalikan OTP di response sebagai fallback
+            if (config('app.debug')) {
+                return response()->json([
+                    'message' => 'Email gagal terkirim (SMTP error). Kode OTP ditampilkan di bawah karena mode development aktif.',
+                    'debug_otp' => $otp,
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Gagal mengirim email. Silakan coba beberapa saat lagi.',
+            ], 500);
+        }
     }
 
     /**
