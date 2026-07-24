@@ -14,7 +14,12 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 850,
     },
     server: {
+      host: true,
       port: 5173,
+      hmr: {
+        host: "localhost",
+        port: 5173
+      },
       proxy: {
         "/api": env.VITE_PROXY_TARGET || "http://127.0.0.1:8000",
         "/storage": env.VITE_PROXY_TARGET || "http://127.0.0.1:8000"
