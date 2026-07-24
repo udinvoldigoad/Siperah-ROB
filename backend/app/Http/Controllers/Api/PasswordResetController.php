@@ -51,7 +51,8 @@ class PasswordResetController
             Mail::raw(
                 "Halo {$user->name},\n\nKode OTP untuk reset kata sandi akun SIPERAH-RoB Anda adalah:\n\n{$otp}\n\nKode ini berlaku selama 10 menit.\nJika Anda tidak meminta reset kata sandi, abaikan email ini.\n\nSalam,\nTim SIPERAH-RoB",
                 function ($message) use ($user) {
-                    $message->to($user->email, $user->name)
+                    $message->from('onboarding@resend.dev', 'SIPERAH-RoB')
+                            ->to($user->email)
                             ->subject('Kode OTP Reset Kata Sandi - SIPERAH-RoB');
                 }
             );
