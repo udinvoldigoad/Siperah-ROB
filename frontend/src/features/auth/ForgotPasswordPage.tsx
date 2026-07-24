@@ -278,8 +278,8 @@ export function ForgotPasswordPage() {
                     <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "48px", height: "48px", borderRadius: "50%", background: "rgba(37, 99, 235, 0.12)", marginBottom: "12px" }}>
                       <Icon name="mail" style={{ fontSize: "24px", color: "var(--accent)" }} />
                     </div>
-                    <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.8)", margin: "0", lineHeight: 1.6 }}>
-                      Kami telah mencoba mengirim kode 6 digit ke <strong style={{ color: "#fff" }}>{email}</strong>. Periksa inbox atau folder spam Anda.
+                    <p className="otp-hint" style={{ fontSize: "13px", color: "var(--ink-soft)", margin: "0", lineHeight: 1.6 }}>
+                      Kami telah mencoba mengirim kode 6 digit ke <strong style={{ color: "var(--accent)" }}>{email}</strong>. Periksa inbox atau folder spam Anda.
                     </p>
                   </div>
 
@@ -327,12 +327,13 @@ export function ForgotPasswordPage() {
                   <div style={{ textAlign: "center", marginTop: "16px" }}>
                     <button
                       type="button"
+                      className="otp-resend"
                       onClick={handleResend}
                       disabled={cooldown > 0 || isLoading}
                       style={{
                         background: "none",
                         border: "none",
-                        color: cooldown > 0 ? "rgba(255,255,255,0.5)" : "var(--accent)",
+                        color: cooldown > 0 ? "var(--ink-soft)" : "var(--accent)",
                         fontSize: "14px",
                         fontWeight: 600,
                         cursor: cooldown > 0 ? "default" : "pointer",
@@ -519,6 +520,17 @@ export function ForgotPasswordPage() {
           }
           .auth-card-wrapper .link-btn {
             color: #60a5fa !important;
+          }
+          /* Kartu di mobile = glass gelap, jadi teks hint/resend dipaksa terang
+             (di desktop pakai token tema var(--ink-soft) via inline style). */
+          .auth-card-wrapper .otp-hint {
+            color: rgba(255, 255, 255, 0.85) !important;
+          }
+          .auth-card-wrapper .otp-hint strong {
+            color: #ffffff !important;
+          }
+          .auth-card-wrapper .otp-resend {
+            color: rgba(255, 255, 255, 0.6) !important;
           }
         }
       `}</style>
