@@ -9,6 +9,8 @@ export function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [devUrl, setDevUrl] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,11 +21,15 @@ export function ForgotPasswordPage() {
 
     setIsLoading(true);
     try {
-      await api("/auth/forgot-password", {
+      const res: any = await api("/auth/forgot-password", {
         method: "POST",
         body: JSON.stringify({ email }),
       });
       setIsSuccess(true);
+      setSuccessMsg(res?.message || "Tautan reset kata sandi telah dikirim.");
+      if (res?.dev_url) {
+        setDevUrl(res.dev_url);
+      }
     } catch (err: any) {
       toast.error(err.message || "Gagal mengirim link reset.");
     } finally {
@@ -99,11 +105,35 @@ export function ForgotPasswordPage() {
               <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 8px", color: "var(--ink)" }}>Reset Sandi</h2>
               <p style={{ color: "var(--ink-soft)", fontSize: "0.95rem", margin: 0 }}>
                 {isSuccess 
-                  ? "Tautan reset telah dikirim ke email Anda. (Periksa laravel.log di lingkungan lokal)"
+                  ? (successMsg || "Tautan reset telah dikirim ke email Anda.")
                   : "Masukkan email yang terdaftar untuk mengatur ulang sandi Anda."
                 }
               </p>
             </div>
+
+            {isSuccess && devUrl && (
+              <div style={{ marginBottom: "24px", textAlign: "center" }}>
+                <a 
+                  href={devUrl} 
+                  style={{
+                    display: "inline-block",
+                    width: "100%",
+                    padding: "14px",
+                    background: "var(--accent)",
+                    color: "#ffffff",
+                    borderRadius: "12px",
+                    fontWeight: 700,
+                    fontSize: "15px",
+                    textDecoration: "none",
+                    boxSizing: "border-box",
+                    boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  Buka Formulir Reset Kata Sandi Baru →
+                </a>
+              </div>
+            )}
 
             {!isSuccess && (
               <>
