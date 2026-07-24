@@ -1164,13 +1164,9 @@ export function PublicMapPage() {
                 <Icon name="my_location" /> {locating ? "Mendeteksi lokasi…" : "Deteksi lokasi saya"}
               </button>
               {locError && <p style={{ margin: "-4px 0 0", fontSize: 12, color: "var(--critical)" }}>{locError}</p>}
-              {(() => {
-                let user: { role?: string } | null = null;
-                try { user = JSON.parse(localStorage.getItem("siperah-user") || "null"); } catch {}
-                return user?.role !== "admin" ? (
-                  <a className="btn primary" href="#/reports" style={{ justifyContent: "center" }}><Icon name="add_location_alt" /> Lapor Kejadian di Sini</a>
-                ) : null;
-              })()}
+              {/* Terbuka untuk semua pengguna login (pelaporan darurat). Tamu yang
+                  menekan ini akan diarahkan login dulu oleh guard route #/reports. */}
+              <a className="btn primary" href="#/reports" style={{ justifyContent: "center" }}><Icon name="add_location_alt" /> Lapor Kejadian di Sini</a>
             </div>}
           </motion.div>
         </aside>

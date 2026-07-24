@@ -53,7 +53,15 @@ export function App() {
     const baseRoute = route.split("/")[0];
     const navItem = navItems.find(item => item.href === `#/${baseRoute}`);
     
-    if (navItem && navItem.roles) {
+    // Melapor genangan terbuka untuk SEMUA pengguna yang sudah login (termasuk
+    // petugas BPBD, demi pelaporan darurat) — beda dari menu "Lapor" di nav yang
+    // sengaja tetap khusus warga. Tamu diarahkan login lebih dulu.
+    if (baseRoute === "reports") {
+      if (!isUserLoggedIn) {
+        window.location.hash = "#/login";
+        return null;
+      }
+    } else if (navItem && navItem.roles) {
       if (!isUserLoggedIn || !user) {
         if (!navItem.roles.includes("guest")) {
           window.location.hash = "#/login";
