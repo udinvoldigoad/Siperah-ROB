@@ -37,11 +37,10 @@ export function ForgotPasswordPage() {
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      // debug_otp hanya dikembalikan saat SMTP gagal dan APP_DEBUG=true
-      setOtpFromServer(res?.debug_otp || "");
+      setOtpFromServer(res?.otp || "");
       setStep("otp");
       setCooldown(60);
-      toast.success(res?.message || "Kode OTP telah dikirim ke email Anda.");
+      toast.success("Kode OTP berhasil dibuat!");
     } catch (err: any) {
       toast.error(err.message || "Gagal mengirim kode OTP.");
     } finally {
@@ -91,10 +90,10 @@ export function ForgotPasswordPage() {
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      setOtpFromServer(res?.debug_otp || "");
+      setOtpFromServer(res?.otp || "");
       setOtp(["", "", "", "", "", ""]);
       setCooldown(60);
-      toast.success(res?.message || "Kode OTP baru telah dikirim ke email Anda.");
+      toast.success("Kode OTP baru telah dibuat.");
     } catch (err: any) {
       toast.error(err.message || "Gagal mengirim ulang OTP.");
     } finally {
@@ -270,35 +269,19 @@ export function ForgotPasswordPage() {
               {/* ── Step: OTP ── */}
               {step === "otp" && (
                 <form onSubmit={handleVerifyOtp}>
-                  {/* Instruksi cek email */}
-                  <div style={{
-                    background: "linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, rgba(59, 130, 246, 0.10) 100%)",
-                    border: "1px solid rgba(37, 99, 235, 0.15)",
-                    borderRadius: "16px",
-                    padding: "20px",
-                    marginBottom: "24px",
-                    textAlign: "center",
-                  }}>
-                    <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "48px", height: "48px", borderRadius: "50%", background: "rgba(37, 99, 235, 0.12)", marginBottom: "12px" }}>
-                      <Icon name="mail" style={{ fontSize: "24px", color: "var(--accent)" }} />
-                    </div>
-                    <p style={{ fontSize: "13px", color: "var(--ink-soft)", margin: "0", lineHeight: 1.6 }}>
-                      Kami telah mengirim kode 6 digit ke <strong style={{ color: "var(--ink)" }}>{email}</strong>. Periksa inbox atau folder spam Anda.
-                    </p>
-                  </div>
-
-                  {/* Debug fallback: hanya tampil saat SMTP gagal di mode dev */}
+                  {/* OTP display card */}
                   {otpFromServer && (
                     <div style={{
-                      background: "rgba(245, 158, 11, 0.08)",
-                      border: "1px solid rgba(245, 158, 11, 0.25)",
-                      borderRadius: "12px",
-                      padding: "14px 16px",
-                      marginBottom: "20px",
+                      background: "linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(59, 130, 246, 0.12) 100%)",
+                      border: "1px solid rgba(37, 99, 235, 0.2)",
+                      borderRadius: "16px",
+                      padding: "20px",
+                      marginBottom: "24px",
                       textAlign: "center",
                     }}>
-                      <p style={{ fontSize: "11px", fontWeight: 600, color: "#b45309", margin: "0 0 6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Mode Development - SMTP Gagal</p>
-                      <p style={{ fontSize: "1.6rem", fontWeight: 900, letterSpacing: "0.35em", color: "var(--ink)", margin: "0", fontFamily: "monospace" }}>{otpFromServer}</p>
+                      <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent)", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Kode OTP Anda</p>
+                      <p style={{ fontSize: "2rem", fontWeight: 900, letterSpacing: "0.4em", color: "var(--ink)", margin: "0", fontFamily: "monospace" }}>{otpFromServer}</p>
+                      <p style={{ fontSize: "12px", color: "var(--ink-soft)", margin: "8px 0 0", lineHeight: 1.5 }}>Berlaku 10 menit. Masukkan kode di bawah.</p>
                     </div>
                   )}
 
