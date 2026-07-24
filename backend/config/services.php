@@ -29,4 +29,10 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL') . '/api/auth/google/callback'),
     ],
 
+    // URL SPA frontend tujuan redirect setelah OAuth. Dibaca via config() (bukan
+    // env() langsung) agar tetap benar saat config di-cache di produksi.
+    'frontend' => [
+        'url' => env('FRONTEND_URL', 'http://localhost:5173'),
+    ],
+
 ];
