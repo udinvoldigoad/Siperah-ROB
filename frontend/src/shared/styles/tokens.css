@@ -679,11 +679,6 @@ textarea { min-height: 100px; resize: vertical; }
 .history-photos { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
 .history-photos a, .history-photos > span { align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); display: flex; font-size: 12px; gap: 8px; overflow: hidden; padding: 7px 10px; }
 .history-photos img { height: 40px; object-fit: cover; width: 48px; }
-.permission-review-bar { align-items: center; background: var(--accent-soft); border: 1px solid rgba(99, 102, 241, .24); border-radius: var(--radius); display: flex; gap: 18px; justify-content: space-between; margin-bottom: 20px; padding: 14px 16px; }
-.permission-review-bar strong, .permission-review-bar span { display: block; }
-.permission-review-bar strong { color: var(--ink); font-size: 14px; }
-.permission-review-bar span { color: var(--ink-soft); font-size: 12px; margin-top: 3px; }
-@media (max-width: 640px) { .permission-review-bar { align-items: stretch; flex-direction: column; } }
 .topbar h1 {
   font-size: 1.58rem;
   line-height: 1.15;
