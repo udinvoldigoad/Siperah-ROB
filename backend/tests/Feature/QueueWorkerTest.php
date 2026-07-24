@@ -25,6 +25,11 @@ final class QueueWorkerTest extends TestCase
     public function test_queued_notification_is_processed_by_stop_when_empty_worker(): void
     {
         config(['queue.default' => 'database']);
+        // Bekukan waktu ke jam non-tenang (10:00) agar deterministik: penerima lain
+        // (admin/provinsi) memakai jam tenang default 22:00–05:00, dan bila test jalan
+        // di rentang itu notifikasi mereka ter-delay (available_at masa depan) sehingga
+        // worker --stop-when-empty melewatinya dan job tersisa → flaky tergantung jam.
+        $this->travelTo(now()->setTime(10, 0));
         DB::table('jobs')->delete();
         $jobsBefore = 0;
 
