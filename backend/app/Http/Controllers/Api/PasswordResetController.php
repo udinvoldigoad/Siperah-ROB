@@ -17,9 +17,17 @@ class PasswordResetController
             $request->only('email')
         );
 
-        return $status === Password::RESET_LINK_SENT
-                    ? response()->json(['message' => __($status)])
-                    : response()->json(['message' => __($status)], 400);
+        if ($status === Password::RESET_LINK_SENT) {
+            return response()->json(['message' => 'Link reset kata sandi telah dikirim ke email Anda.']);
+        }
+
+        $errorMessage = match ($status) {
+            Password::INVALID_USER => 'Alamat email tidak terdaftar dalam sistem.',
+            Password::RESET_THROTTLED => 'Terlalu banyak permintaan reset. Silakan tunggu beberapa saat.',
+            default => 'Gagal mengirim link reset kata sandi.',
+        };
+
+        return response()->json(['message' => $errorMessage], 400);
     }
 
     public function reset(Request $request)
@@ -39,8 +47,17 @@ class PasswordResetController
             }
         );
 
-        return $status === Password::PASSWORD_RESET
-                    ? response()->json(['message' => __($status)])
-                    : response()->json(['message' => __($status)], 400);
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json(['message' => 'Kata sandi berhasil diperbarui. Silakan login.']);
+        }
+
+        $errorMessage = match ($status) {
+            Password::INVALID_USER => 'Alamat email tidak terdaftar dalam sistem.',
+            Password::INVALID_TOKEN => 'Token reset kata sandi tidak valid atau sudah kedaluwarsa.',
+            Password::RESET_THROTTLED => 'Terlalu banyak permintaan. Silakan tunggu beberapa saat.',
+            default => 'Gagal memperbarui kata sandi.',
+        };
+
+        return response()->json(['message' => $errorMessage], 400);
     }
 }
