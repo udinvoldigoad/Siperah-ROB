@@ -67,11 +67,13 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/users', [AdminController::class, 'users']);
+        Route::get('/admin/regions', [AdminController::class, 'regions']);
         Route::post('/admin/users', [AdminController::class, 'storeUser']);
         Route::get('/admin/users/export', [AdminController::class, 'exportUsers']);
         Route::post('/admin/users/{user}/approve', [AdminController::class, 'approveUser']);
         Route::post('/admin/users/{user}/reject', [AdminController::class, 'rejectUser']);
         Route::patch('/admin/users/{user}', [AdminController::class, 'updateUser']);
+        Route::delete('/admin/users/{user}', [AdminController::class, 'destroyUser']);
         Route::get('/admin/audit-logs', [AuditController::class, 'index']);
     });
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Icon } from "../../shared/components/Icon";
 import { api, ApiError } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
+import { dashboardHashForRole } from "../../shared/constants/roles";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface LoginResponse {
@@ -67,19 +68,9 @@ export function LoginPage() {
 
       toast.success(`Selamat datang kembali, ${res.user.name}!`);
       
-      // Dynamic redirect based on role
+      // Redirect langsung ke dashboard sesuai peran (bukan balik ke landing).
       setTimeout(() => {
-        if (res.user.role === "admin") {
-          window.location.hash = "#/admin";
-        } else if (res.user.role === "bpbd_operator") {
-          window.location.hash = "#/operator";
-        } else if (res.user.role === "bpbd_provinsi") {
-          window.location.hash = "#/province";
-        } else if (res.user.role === "peneliti") {
-          window.location.hash = "#/research";
-        } else {
-          window.location.hash = "#/";
-        }
+        window.location.hash = dashboardHashForRole(res.user.role);
       }, 500);
 
     } catch (err: any) {

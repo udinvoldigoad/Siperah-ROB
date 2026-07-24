@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "../../shared/components/Icon";
 import { api } from "../../shared/api/client";
+import { dashboardHashForRole } from "../../shared/constants/roles";
 
 export function OAuthCallbackPage() {
   const [errorMsg, setErrorMsg] = useState("");
@@ -22,7 +23,7 @@ export function OAuthCallbackPage() {
             return;
           }
           localStorage.setItem("siperah-user", JSON.stringify(user));
-          window.location.href = "/#/";
+          window.location.href = `/${dashboardHashForRole(user.role)}`;
         })
         .catch((err: any) => {
           console.error(err);

@@ -42,6 +42,17 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
     localStorage.setItem(SIDEBAR_STORAGE_KEY, isSidebarOpen ? "open" : "closed");
   }, [isSidebarOpen]);
 
+  // Kunci scroll halaman selagi panel "Lainnya" terbuka agar konten di
+  // belakang tidak ikut bergeser. Dikembalikan saat ditutup/unmount.
+  useEffect(() => {
+    if (!isMoreMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMoreMenuOpen]);
+
   const closeMenu = useCallback((e: MouseEvent) => {
     if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
       setNotificationOpen(false);
@@ -96,6 +107,21 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
     if (!isUserLoggedIn || !user) return item.roles.includes("guest");
     return item.roles.includes(user.role) || (item.roles.includes("guest") && user.role === "warga");
   });
+
+  // Prioritas item bottom-bar mobile per peran: 4 pertama tampil di bar,
+  // sisanya masuk "Lainnya". Peran tanpa entri memakai urutan nav default.
+  const MOBILE_PRIMARY_HREFS: Record<string, string[]> = {
+    admin: ["#/map", "#/admin", "#/research", "#/audit"],
+  };
+  const bottomNavItems = (() => {
+    const priority = user ? MOBILE_PRIMARY_HREFS[user.role] : undefined;
+    if (!priority) return allowedNavItems;
+    const rank = (href: string) => {
+      const i = priority.indexOf(href);
+      return i === -1 ? priority.length + 1 : i;
+    };
+    return [...allowedNavItems].sort((a, b) => rank(a.href) - rank(b.href));
+  })();
 
   return (
     <div className={`app-shell ${isSidebarOpen ? "" : "sidebar-collapsed"}`}>
@@ -247,7 +273,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
       
       {/* Mobile Bottom Pill Navigation */}
       <nav className="mobile-bottom-pill">
-        {allowedNavItems.slice(0, allowedNavItems.length > 4 ? 4 : allowedNavItems.length).map((item) => (
+        {bottomNavItems.slice(0, bottomNavItems.length > 4 ? 4 : bottomNavItems.length).map((item) => (
           <a
             key={item.href}
             className={`pill-nav-item ${item.href.includes(active) ? "active" : ""}`}
@@ -258,8 +284,8 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
             <span>{item.label}</span>
           </a>
         ))}
-        {(allowedNavItems.length > 4 || isUserLoggedIn) && (
-          <button type="button" className={`pill-nav-item ${isMoreMenuOpen ? "active" : ""}`} onClick={() => setIsMoreMenuOpen(true)} style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+        {(bottomNavItems.length > 4 || isUserLoggedIn) && (
+          <button type="button" className={`pill-nav-item ${isMoreMenuOpen ? "active" : ""}`} onClick={() => setIsMoreMenuOpen((open) => !open)} style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
             <Icon name="more_horiz" style={{ fontSize: "24px", marginBottom: "4px" }} />
             <span>Lainnya</span>
           </button>
@@ -275,7 +301,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }}
               onClick={() => setIsMoreMenuOpen(false)}
-              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9998 }}
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9985 }}
             />
             {/* Action Sheet Menu */}
             <motion.div
@@ -285,13 +311,16 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               style={{
                 position: "fixed",
-                bottom: "80px",
+                // Diberi jarak di atas bottom bar (tinggi bar 72px + safe-area
+                // + 12px gap). z-index di bawah pill (9999) supaya animasi
+                // buka/tutup tetap keluar-masuk dari BELAKANG bar.
+                bottom: "calc(72px + env(safe-area-inset-bottom, 8px) + 12px)",
                 left: "16px",
                 right: "16px",
                 background: "var(--surface)",
                 borderRadius: "24px",
                 padding: "24px 16px",
-                zIndex: 9999,
+                zIndex: 9990,
                 boxShadow: "0 -10px 40px rgba(0,0,0,0.1)",
                 display: "flex",
                 flexDirection: "column",
@@ -309,7 +338,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
                 </div>
               )}
 
-              {allowedNavItems.slice(4).map(item => (
+              {bottomNavItems.slice(4).map(item => (
                 <a 
                   key={item.href} 
                   href={item.href} 

@@ -10,6 +10,7 @@ use App\Services\AuditService;
 use App\Support\CsvWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -50,6 +51,27 @@ final class AdminController
         ];
 
         return UserResource::collection($query->paginate(15))->additional(['summary' => $summary]);
+    }
+
+    /**
+     * Daftar kabupaten/kota terpantau untuk dropdown "wilayah kerja" saat admin
+     * membuat pengguna. Region berlevel desa/kelurahan, jadi dikelompokkan per
+     * regency dan diwakili satu region_id (MIN) — cukup untuk scoping operator
+     * (dashboard menurunkan regency dari region_id) dan ramah dipilih admin.
+     */
+    public function regions(): JsonResponse
+    {
+        // Postgres tak punya MIN(uuid); cast ke text untuk mengambil satu id
+        // perwakilan per regency (hasil tetap uuid valid yang ada di tabel).
+        $rows = DB::table('regions')
+            ->selectRaw('MIN(id::text) as id, regency')
+            ->whereNotNull('regency')
+            ->where('regency', '<>', '')
+            ->groupBy('regency')
+            ->orderBy('regency')
+            ->get();
+
+        return response()->json(['data' => $rows]);
     }
 
     public function storeUser(StoreAdminUserRequest $request): JsonResponse
@@ -102,6 +124,25 @@ final class AdminController
         ]);
 
         return response()->json(['message' => 'User rejected', 'id' => $user]);
+    }
+
+    public function destroyUser(Request $request, string $user): JsonResponse
+    {
+        $userData = User::findOrFail($user);
+        abort_if($userData->id === $request->user()->id, 422, 'Admin tidak dapat menghapus akunnya sendiri.');
+
+        // Soft delete: baris tetap ada agar FK audit_logs/ground_truth_reports
+        // (ON DELETE NO ACTION) tak dilanggar & jejak riwayat utuh. Sesi diputus
+        // dan akun hilang dari semua query User (login/daftar) via global scope.
+        $userData->tokens()->delete();
+        $userData->delete();
+
+        $this->audit->write($request, 'delete_user', 'success', "users:{$userData->id}", [
+            'email' => $userData->email,
+            'role' => $userData->role,
+        ]);
+
+        return response()->json(['message' => 'User deleted', 'id' => $user]);
     }
 
     public function updateUser(UpdateAdminUserRequest $request, string $user): JsonResponse
