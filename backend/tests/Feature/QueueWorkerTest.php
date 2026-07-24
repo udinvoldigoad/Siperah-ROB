@@ -25,7 +25,8 @@ final class QueueWorkerTest extends TestCase
     public function test_queued_notification_is_processed_by_stop_when_empty_worker(): void
     {
         config(['queue.default' => 'database']);
-        $jobsBefore = DB::table('jobs')->count();
+        DB::table('jobs')->delete();
+        $jobsBefore = 0;
 
         $region = $this->insertRegion();
         $operator = $this->makeUser('bpbd_operator', $region->id);

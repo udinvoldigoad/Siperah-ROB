@@ -18,8 +18,8 @@ Route::post('/auth/login', [AuthController::class, 'login'])->middleware('thrott
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:registration');
 Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect']);
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
-Route::post('/auth/forgot-password', [\App\Http\Controllers\Api\PasswordResetController::class, 'sendResetLinkEmail'])->middleware('throttle:6,1');
-Route::post('/auth/reset-password', [\App\Http\Controllers\Api\PasswordResetController::class, 'reset']);
+Route::post('/auth/forgot-password', [\App\Http\Controllers\Api\PasswordResetController::class, 'sendOtp'])->middleware('throttle:6,1');
+Route::post('/auth/reset-password', [\App\Http\Controllers\Api\PasswordResetController::class, 'resetWithOtp']);
 
 // ── Public (tanpa login) ─────────────────────────────────────────
 Route::prefix('public')->middleware('throttle:public')->group(function () {
