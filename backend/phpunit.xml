@@ -18,5 +18,6 @@
         <env name="CACHE_STORE" value="array" force="true"/>
         <env name="SESSION_DRIVER" value="array" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
     </php>
 </phpunit>
