@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AppShell } from "../../shared/components/AppShell";
 import { api, apiUrl } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
 import { EmptyState } from "../../shared/components/EmptyState";
+import { Skeleton } from "../../shared/components/Skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface DatasetData {
@@ -49,6 +51,25 @@ interface ApiKeyResponse {
 interface RegenerateKeyResponse {
   message: string;
   raw_key: string;
+}
+
+interface ApiAccessPermit {
+  id: string;
+  purpose: string;
+  organization: string | null;
+  project_title: string | null;
+  status: "menunggu" | "disetujui" | "ditolak";
+  review_note: string | null;
+  reviewed_at: string | null;
+  created_at: string | null;
+}
+
+interface ApiAccessResponse {
+  data: {
+    requires_permit: boolean;
+    can_generate_key: boolean;
+    request: ApiAccessPermit | null;
+  };
 }
 
 interface ResearchStats {
@@ -120,6 +141,10 @@ export function ResearchPortalPage() {
   const [datasets, setDatasets] = useState<DatasetData[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKeyData[]>([]);
   const [rawGeneratedKey, setRawGeneratedKey] = useState<string | null>(null);
+  const [permit, setPermit] = useState<ApiAccessResponse["data"] | null>(null);
+  const [isPermitFormOpen, setIsPermitFormOpen] = useState(false);
+  const [permitForm, setPermitForm] = useState({ purpose: "", organization: "", project_title: "" });
+  const [permitSubmitting, setPermitSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<number>(0);
   const [stats, setStats] = useState<ResearchStats>({ dataset_count: 0, total_records: 0, downloads_this_month: 0, api_calls_today: 0, active_api_keys: 0 });
@@ -175,14 +200,16 @@ export function ResearchPortalPage() {
       if (dsRes.meta?.available_regencies) setAvailableRegencies(dsRes.meta.available_regencies);
 
       if (isResearcher) {
-        const [keysRes, statsRes, refRes] = await Promise.all([
+        const [keysRes, statsRes, refRes, permitRes] = await Promise.all([
           api<ApiKeyResponse>("/research/api-keys"),
           api<ResearchStatsResponse>("/research/stats"),
           api<ApiReferenceResponse>("/research/api-reference"),
+          api<ApiAccessResponse>("/research/api-access-request"),
         ]);
         setApiKeys(keysRes.data);
         setStats(statsRes.data);
         setApiReference(refRes.data);
+        setPermit(permitRes.data);
       } else {
         setStats((current) => ({ ...current, dataset_count: dsRes.data.length, total_records: dsRes.data.reduce((sum, item) => sum + Number(item.record_count ?? 0), 0) }));
       }
@@ -217,7 +244,43 @@ export function ResearchPortalPage() {
     }
   }, [activeTab]);
 
+  const handleSubmitPermit = async () => {
+    if (permitForm.purpose.trim().length < 20) {
+      toast.error("Jelaskan tujuan penggunaan minimal 20 karakter.");
+      return;
+    }
+    setPermitSubmitting(true);
+    try {
+      await api("/research/api-access-request", {
+        method: "POST",
+        body: JSON.stringify({
+          purpose: permitForm.purpose.trim(),
+          organization: permitForm.organization.trim() || null,
+          project_title: permitForm.project_title.trim() || null,
+        }),
+      });
+      toast.success("Permohonan izin terkirim. Menunggu persetujuan admin.");
+      setIsPermitFormOpen(false);
+      const permitRes = await api<ApiAccessResponse>("/research/api-access-request");
+      setPermit(permitRes.data);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengirim permohonan izin.");
+    } finally {
+      setPermitSubmitting(false);
+    }
+  };
+
   const handleRegenerateKey = async () => {
+    // Peneliti tanpa izin disetujui: arahkan ke form perizinan, bukan buat kunci.
+    if (permit && !permit.can_generate_key) {
+      if (permit.request?.status === "menunggu") {
+        toast.error("Permohonan izin Anda masih menunggu persetujuan admin.");
+        return;
+      }
+      setPermitForm({ purpose: "", organization: "", project_title: "" });
+      setIsPermitFormOpen(true);
+      return;
+    }
     try {
       const res = await api<RegenerateKeyResponse>("/research/api-keys", {
         method: "POST",
@@ -270,19 +333,34 @@ export function ResearchPortalPage() {
     loadResearchData(nextPage);
   };
 
+  // Gating pembuatan API key oleh status izin (peneliti). Selama data izin belum
+  // termuat, anggap boleh agar UI tak "mengunci" keliru untuk admin/provinsi.
+  const canGenerateKey = permit ? permit.can_generate_key : true;
+  const permitStatus = permit?.request?.status ?? null;
+  // Status izin/kunci belum diketahui saat pemuatan awal — tampilkan skeleton
+  // agar tombol tak keliru muncul "Buat Kunci" sebelum gating izin termuat.
+  const credentialLoading = isResearcher && isLoading && permit === null;
+  const keyButtonLabel = canGenerateKey
+    ? (activeKey || rawGeneratedKey ? "Regenerasi" : "Buat Kunci")
+    : permitStatus === "menunggu" ? "Menunggu Persetujuan" : "Ajukan Izin API";
+  const keyButtonIcon = canGenerateKey ? "refresh" : permitStatus === "menunggu" ? "hourglass_top" : "assignment";
+  const keyButtonDisabled = !canGenerateKey && permitStatus === "menunggu";
+
   return (
     <AppShell active="research" title={isResearcher ? "Arsip & API Peneliti" : "Arsip Data Provinsi"}>
       <div className="content" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 80px" }}>
         
         {/* API Key Management Header row */}
-        {isResearcher && <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", background: "var(--surface)", padding: "16px 24px", borderRadius: "var(--radius)", border: "1px solid var(--line)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        {isResearcher && <div className="cred-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", background: "var(--surface)", padding: "16px 24px", borderRadius: "var(--radius)", border: "1px solid var(--line)" }}>
+          <div className="cred-card-info" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "var(--ocean-light, #e0f2fe)", color: "var(--ocean-dark, #0284c7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Icon name="vpn_key" style={{ fontSize: "20px" }} />
             </div>
             <div>
               <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--ink)" }}>Kredensial API Aktif</div>
-              {rawGeneratedKey ? (
+              {credentialLoading ? (
+                <Skeleton width={220} height={14} borderRadius={6} style={{ marginTop: 6 }} />
+              ) : rawGeneratedKey ? (
                 <>
                   <div style={{ fontSize: "13px", color: "var(--ink)", fontFamily: "monospace", marginTop: "2px", wordBreak: "break-all" }}>{rawGeneratedKey}</div>
                   <div style={{ fontSize: "12px", color: "var(--medium)", fontWeight: 700, marginTop: "3px", display: "flex", alignItems: "center", gap: 4 }}>
@@ -290,34 +368,145 @@ export function ResearchPortalPage() {
                   </div>
                 </>
               ) : activeKey ? (
-                <div style={{ fontSize: "13px", color: "var(--ink-soft)", fontFamily: "monospace", marginTop: "2px" }}>
+                <div style={{ fontSize: "13px", color: "var(--ink-soft)", fontFamily: "monospace", marginTop: "2px", wordBreak: "break-all" }}>
                   {activeKey.key_prefix}**************** · <span style={{ fontFamily: "inherit" }}>kunci penuh hanya tampil sekali saat dibuat</span>
                 </div>
+              ) : !canGenerateKey ? (
+                permitStatus === "menunggu" ? (
+                  <div style={{ fontSize: "13px", color: "var(--medium)", marginTop: "2px" }}>Izin akses API sedang ditinjau admin.</div>
+                ) : permitStatus === "ditolak" ? (
+                  <div style={{ fontSize: "13px", color: "var(--critical)", marginTop: "2px" }}>
+                    Permohonan izin ditolak{permit?.request?.review_note ? ` — ${permit.request.review_note}` : ""}. Ajukan ulang untuk memakai API.
+                  </div>
+                ) : (
+                  <div style={{ fontSize: "13px", color: "var(--critical)", marginTop: "2px" }}>Ajukan izin akses API dulu untuk membuat kunci.</div>
+                )
               ) : (
                 <div style={{ fontSize: "13px", color: "var(--critical)", marginTop: "2px" }}>Belum ada kunci API.</div>
               )}
             </div>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div className="cred-card-actions" style={{ display: "flex", gap: "8px" }}>
+            {credentialLoading ? (
+              <Skeleton width={130} height={38} borderRadius={10} />
+            ) : (
+            <>
             {rawGeneratedKey && (
               <button className="btn secondary" style={{ fontSize: "12px", padding: "8px 16px" }} onClick={handleCopyKey}>
                 <Icon name="content_copy" style={{ fontSize: "16px" }} /> Salin Kunci
               </button>
             )}
-            <button className="btn outline" style={{ fontSize: "12px", padding: "8px 16px", color: "var(--critical)", borderColor: "var(--critical)" }} onClick={handleRegenerateKey}>
-              <Icon name="refresh" style={{ fontSize: "16px" }} /> {activeKey || rawGeneratedKey ? "Regenerasi" : "Buat Kunci"}
+            <button
+              className="btn outline"
+              disabled={keyButtonDisabled}
+              style={{ fontSize: "12px", padding: "8px 16px", color: canGenerateKey ? "var(--critical)" : "var(--ocean-dark, #0284c7)", borderColor: canGenerateKey ? "var(--critical)" : "var(--ocean-dark, #0284c7)", opacity: keyButtonDisabled ? 0.65 : 1, cursor: keyButtonDisabled ? "not-allowed" : "pointer" }}
+              onClick={handleRegenerateKey}
+            >
+              <Icon name={keyButtonIcon} style={{ fontSize: "16px" }} /> {keyButtonLabel}
             </button>
+            </>
+            )}
           </div>
         </div>}
 
+        {isResearcher && isPermitFormOpen && createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(e) => { if (e.target === e.currentTarget && !permitSubmitting) setIsPermitFormOpen(false); }}
+            style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 10000 }}
+          >
+            <div style={{ width: "100%", maxWidth: 480, background: "var(--surface)", borderRadius: 16, border: "1px solid var(--line)", boxShadow: "0 24px 60px rgba(0,0,0,0.28)", overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, padding: "18px 20px", borderBottom: "1px solid var(--line)" }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Ajukan Izin Akses API</div>
+                  <div style={{ fontSize: 12.5, color: "var(--medium)", marginTop: 3 }}>Permohonan akan ditinjau admin sebelum kunci API bisa dibuat.</div>
+                </div>
+                <button type="button" onClick={() => !permitSubmitting && setIsPermitFormOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--medium)", padding: 4, lineHeight: 0 }} aria-label="Tutup">
+                  <Icon name="close" style={{ fontSize: 20 }} />
+                </button>
+              </div>
+              <div style={{ padding: "18px 20px", display: "grid", gap: 14 }}>
+                <label style={{ display: "grid", gap: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Tujuan penggunaan API <span style={{ color: "var(--critical)" }}>*</span></span>
+                  <textarea
+                    value={permitForm.purpose}
+                    onChange={(e) => setPermitForm((f) => ({ ...f, purpose: e.target.value }))}
+                    rows={4}
+                    maxLength={1000}
+                    placeholder="Contoh: Penelitian skripsi analisis pola banjir rob di pesisir Bandar Lampung 2024–2026 untuk pemodelan risiko."
+                    style={{ width: "100%", resize: "vertical", padding: "10px 12px", borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 13.5, fontFamily: "inherit", lineHeight: 1.5 }}
+                  />
+                  <span style={{ fontSize: 11.5, color: "var(--medium)" }}>Minimal 20 karakter. Jelaskan untuk keperluan apa data ini digunakan.</span>
+                </label>
+                <label style={{ display: "grid", gap: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Instansi / lembaga</span>
+                  <input
+                    value={permitForm.organization}
+                    onChange={(e) => setPermitForm((f) => ({ ...f, organization: e.target.value }))}
+                    maxLength={150}
+                    placeholder="Contoh: Universitas Lampung"
+                    style={{ width: "100%", height: 44, padding: "0 12px", borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 13.5 }}
+                  />
+                </label>
+                <label style={{ display: "grid", gap: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Judul penelitian / proyek</span>
+                  <input
+                    value={permitForm.project_title}
+                    onChange={(e) => setPermitForm((f) => ({ ...f, project_title: e.target.value }))}
+                    maxLength={150}
+                    placeholder="Opsional"
+                    style={{ width: "100%", height: 44, padding: "0 12px", borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 13.5 }}
+                  />
+                </label>
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "14px 20px", borderTop: "1px solid var(--line)" }}>
+                <button type="button" className="btn secondary" style={{ fontSize: 13 }} disabled={permitSubmitting} onClick={() => setIsPermitFormOpen(false)}>Batal</button>
+                <button type="button" className="btn primary" style={{ fontSize: 13 }} disabled={permitSubmitting} onClick={handleSubmitPermit}>
+                  <Icon name="send" style={{ fontSize: 16 }} /> {permitSubmitting ? "Mengirim…" : "Kirim Permohonan"}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
         {/* KPI Grid */}
         <style>{`
+          /* Kartu Kredensial API menumpuk & rapi di mobile (hindari teks kunci
+             menempel ke tombol). Tombol jadi lebar penuh, mudah ditekan. */
+          .cred-card-info { min-width: 0; }
+          .cred-card-info > div:last-child { min-width: 0; }
+          .cred-card-actions { flex-shrink: 0; }
+          @media (max-width: 640px) {
+            .cred-card { flex-direction: column; align-items: stretch !important; gap: 14px; padding: 16px !important; }
+            .cred-card-info { align-items: flex-start !important; }
+            .cred-card-actions { width: 100%; }
+            .cred-card-actions .btn { flex: 1; justify-content: center; }
+            .cred-card-actions .skeleton { width: 100% !important; }
+          }
+
           /* KPI peneliti jadi 2 kolom di mobile (override global 1fr !important). */
           @media (max-width: 768px) {
             .metric-grid.research-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px !important; }
             .metric-grid.research-kpis > div { padding: 16px !important; }
             .metric-grid.research-kpis > div > div:nth-child(2) { font-size: 1.6rem !important; margin: 6px 0 !important; }
           }
+
+          /* Panduan cepat API: langkah bernomor agar peneliti tak bingung mulai. */
+          .api-steps { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 14px; }
+          .api-steps li { position: relative; padding-left: 42px; font-size: 13.5px; color: var(--ink-soft); line-height: 1.6; counter-increment: step; }
+          .api-steps li::before { content: counter(step); position: absolute; left: 0; top: -1px; width: 28px; height: 28px; border-radius: 50%; background: var(--ocean-dark, #0284c7); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+          .api-steps strong { color: var(--ink); font-weight: 700; }
+          /* Chip kode inline yang rapi — override rule global 'code' (inline-block
+             dengan margin/padding besar) yang membuat teks terpisah berantakan. */
+          .api-ref code, .api-inline-code { display: inline-block; margin: 0; border: 0; overflow-x: visible; vertical-align: baseline; background: var(--surface-muted); color: var(--ink); padding: 2px 7px; border-radius: 5px; font-size: 12px; font-family: monospace; word-break: break-word; }
+          .api-step-codes { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+          .api-step-codes span { font-size: 12.5px; color: var(--ink-soft); }
+          .api-error-codes { display: grid; gap: 10px; }
+          .api-error-row { display: flex; align-items: baseline; gap: 10px; }
+          .api-error-row code { flex-shrink: 0; font-weight: 700; color: var(--critical); }
+          .api-error-row span { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
 
           /* --- Filter Arsip Data --- */
           .rp-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 24px; }
@@ -511,11 +700,53 @@ export function ResearchPortalPage() {
 
           {/* Tab 1: API Reference */}
           {isResearcher && activeTab === 1 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ maxWidth: "800px" }}>
+            <motion.div className="api-ref" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ maxWidth: "800px" }}>
+              {/* Panduan cepat: orientasi "mulai dari mana" sebelum detail teknis. */}
+              <div style={{ marginBottom: "32px", padding: "22px 24px", border: "1px solid var(--line)", borderLeft: "4px solid var(--ocean-dark, #0284c7)", borderRadius: 12, background: "var(--surface-soft)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+                  <Icon name="rocket_launch" style={{ color: "var(--ocean-dark, #0284c7)", fontSize: 22 }} />
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "var(--ink)" }}>Cara Pakai API — 3 Langkah</div>
+                </div>
+                <ol className="api-steps">
+                  <li>
+                    <strong>Buat &amp; salin API Key.</strong> Klik <strong>“Buat Kunci”</strong> pada kartu <em>Kredensial API Aktif</em> di bagian atas halaman ini. Kunci penuh (mis. <code>spr_xxxxxxxx</code>) <strong>hanya tampil sekali</strong> — salin &amp; simpan segera.
+                  </li>
+                  <li>
+                    <strong>Sertakan key di setiap permintaan</strong> lewat header berikut:
+                    <div className="api-step-codes">
+                      <code>{apiReference?.authentication.header ?? "X-API-Key: spr_xxx"}</code>
+                      {apiReference?.authentication.alternative && (
+                        <><span>atau</span><code>{apiReference.authentication.alternative}</code></>
+                      )}
+                    </div>
+                  </li>
+                  <li>
+                    <strong>Panggil endpoint</strong> di bawah Base URL <code>{apiReference?.base_path ?? "/api/v1"}</code>. Contoh <code>curl</code> siap-pakai ada di akhir halaman.
+                  </li>
+                </ol>
+              </div>
+
               <div style={{ marginBottom: "32px" }}>
                 <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: "var(--ink)" }}>Base URL</div>
                 <div style={{ background: "#0f172a", borderRadius: "8px", padding: "16px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "13px" }}>
                   {apiReference?.base_path ?? "/api/v1"}
+                </div>
+              </div>
+
+              {/* Autentikasi eksplisit: sebelumnya hanya tersirat di contoh curl. */}
+              <div style={{ marginBottom: "32px" }}>
+                <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: "var(--ink)" }}>Autentikasi</div>
+                <div style={{ padding: "16px 20px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface)", fontSize: "13px", color: "var(--ink-soft)", lineHeight: 1.6 }}>
+                  Setiap permintaan wajib menyertakan API Key kamu di header:
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div><span className="api-inline-code">{apiReference?.authentication.header ?? "X-API-Key: spr_xxx"}</span></div>
+                    {apiReference?.authentication.alternative && (
+                      <div>atau <span className="api-inline-code">{apiReference.authentication.alternative}</span></div>
+                    )}
+                  </div>
+                  <div style={{ marginTop: 12, fontSize: 12.5 }}>
+                    <Icon name="info" style={{ fontSize: 15, verticalAlign: "-2px", color: "var(--ocean-dark, #0284c7)" }} /> Belum punya key? Buat lewat tombol <strong>“Buat Kunci”</strong> di kartu <em>Kredensial API Aktif</em>. Ganti kunci kapan saja dengan <strong>“Regenerasi”</strong> (kunci lama otomatis dicabut).
+                  </div>
                 </div>
               </div>
 
@@ -573,9 +804,9 @@ export function ResearchPortalPage() {
                   <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "12px", color: "var(--ink)" }}>Format Error</div>
                   <div style={{ padding: "16px 20px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface)" }}>
                     <pre style={{ background: "#0f172a", borderRadius: 6, padding: "12px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "12px", margin: "0 0 12px", overflowX: "auto" }}>{JSON.stringify(apiReference.error_format.shape, null, 2)}</pre>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <div className="api-error-codes">
                       {Object.entries(apiReference.error_format.codes).map(([code, desc]) => (
-                        <div key={code} style={{ fontSize: "13px", color: "var(--ink-soft)" }}><code style={{ fontWeight: 700, color: "var(--critical)" }}>{code}</code> — {desc}</div>
+                        <div key={code} className="api-error-row"><code>{code}</code><span>{desc}</span></div>
                       ))}
                     </div>
                   </div>

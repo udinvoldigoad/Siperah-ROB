@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\UserResource;
 use App\Http\Requests\StoreAdminUserRequest;
 use App\Http\Requests\UpdateAdminUserRequest;
+use App\Models\ApiAccessRequest;
 use App\Models\User;
+use App\Notifications\ApiAccessReviewedNotification;
 use App\Services\AuditService;
 use App\Support\CsvWriter;
 use Illuminate\Http\JsonResponse;
@@ -164,6 +166,92 @@ final class AdminController
         $this->audit->write($request, 'update_user', 'success', "users:{$userData->id}", $data);
 
         return response()->json(['message' => 'User updated', 'data' => new UserResource($userData->load('region'))]);
+    }
+
+    /**
+     * Daftar permohonan izin akses API untuk ditinjau admin di halaman Perizinan.
+     * Default menampilkan yang menunggu; filter status opsional.
+     */
+    public function apiAccessRequests(Request $request): JsonResponse
+    {
+        $query = ApiAccessRequest::with(['user:id,name,email,institution,role', 'reviewer:id,name'])
+            ->orderByRaw("CASE WHEN status = 'menunggu' THEN 0 ELSE 1 END")
+            ->orderBy('created_at', 'desc');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->query('status'));
+        }
+
+        $requests = $query->paginate(20);
+
+        return response()->json([
+            'data' => $requests->getCollection()->map(fn (ApiAccessRequest $item): array => [
+                'id' => $item->id,
+                'purpose' => $item->purpose,
+                'organization' => $item->organization,
+                'project_title' => $item->project_title,
+                'status' => $item->status,
+                'review_note' => $item->review_note,
+                'reviewed_by' => $item->reviewer?->name,
+                'reviewed_at' => optional($item->reviewed_at)->toIso8601String(),
+                'created_at' => optional($item->created_at)->toIso8601String(),
+                'user' => [
+                    'id' => $item->user?->id,
+                    'name' => $item->user?->name,
+                    'email' => $item->user?->email,
+                    'institution' => $item->user?->institution,
+                    'role' => $item->user?->role,
+                ],
+            ])->values(),
+            'meta' => [
+                'current_page' => $requests->currentPage(),
+                'last_page' => $requests->lastPage(),
+                'total' => $requests->total(),
+                'pending' => ApiAccessRequest::where('status', 'menunggu')->count(),
+            ],
+        ]);
+    }
+
+    public function approveApiAccessRequest(Request $request, string $apiAccessRequest): JsonResponse
+    {
+        $permit = ApiAccessRequest::findOrFail($apiAccessRequest);
+        $permit->update([
+            'status' => 'disetujui',
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now(),
+            'review_note' => null,
+        ]);
+
+        $this->audit->write($request, 'approve_api_access', 'success', "api_access_requests:{$permit->id}", [
+            'user_id' => $permit->user_id,
+        ]);
+
+        $permit->user?->notify(new ApiAccessReviewedNotification('disetujui'));
+
+        return response()->json(['message' => 'Izin akses API disetujui', 'id' => $permit->id]);
+    }
+
+    public function rejectApiAccessRequest(Request $request, string $apiAccessRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'review_note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $permit = ApiAccessRequest::findOrFail($apiAccessRequest);
+        $permit->update([
+            'status' => 'ditolak',
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now(),
+            'review_note' => $data['review_note'] ?? null,
+        ]);
+
+        $this->audit->write($request, 'reject_api_access', 'success', "api_access_requests:{$permit->id}", [
+            'user_id' => $permit->user_id,
+        ]);
+
+        $permit->user?->notify(new ApiAccessReviewedNotification('ditolak', $permit->review_note));
+
+        return response()->json(['message' => 'Izin akses API ditolak', 'id' => $permit->id]);
     }
 
     public function exportUsers(Request $request): StreamedResponse

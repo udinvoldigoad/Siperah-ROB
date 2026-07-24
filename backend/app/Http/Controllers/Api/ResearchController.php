@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\ResearchDataRequest;
 use App\Http\Resources\ApiKeyResource;
+use App\Models\ApiAccessRequest;
 use App\Models\ApiKey;
 use App\Models\Dataset;
 use App\Services\AuditService;
@@ -119,9 +120,106 @@ final class ResearchController
         );
     }
 
+    /**
+     * Status permohonan izin akses API milik pengguna saat ini.
+     *
+     * Peneliti wajib memiliki izin berstatus "disetujui" sebelum bisa membuat
+     * API key. Admin & BPBD Provinsi memakai API untuk tugas resmi sehingga
+     * dibebaskan dari alur perizinan (can_generate_key selalu true).
+     */
+    public function apiAccessRequest(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $latest = ApiAccessRequest::where('user_id', $user->id)->latest()->first();
+
+        return response()->json([
+            'data' => [
+                'requires_permit' => $user->role === 'peneliti',
+                'can_generate_key' => $this->canGenerateApiKey($user),
+                'request' => $latest ? [
+                    'id' => $latest->id,
+                    'purpose' => $latest->purpose,
+                    'organization' => $latest->organization,
+                    'project_title' => $latest->project_title,
+                    'status' => $latest->status,
+                    'review_note' => $latest->review_note,
+                    'reviewed_at' => optional($latest->reviewed_at)->toIso8601String(),
+                    'created_at' => optional($latest->created_at)->toIso8601String(),
+                ] : null,
+            ],
+        ]);
+    }
+
+    /**
+     * Peneliti mengajukan izin akses API (menyertakan tujuan penggunaan).
+     * Permohonan masuk berstatus "menunggu" untuk divalidasi admin.
+     */
+    public function storeApiAccessRequest(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Admin/BPBD Provinsi tak perlu mengajukan izin.
+        abort_if($user->role !== 'peneliti', 403, 'Peran Anda sudah memiliki akses API tanpa perlu mengajukan izin.');
+
+        $data = $request->validate([
+            'purpose' => ['required', 'string', 'min:20', 'max:1000'],
+            'organization' => ['nullable', 'string', 'max:150'],
+            'project_title' => ['nullable', 'string', 'max:150'],
+        ]);
+
+        // Cegah pengajuan ganda: hanya boleh mengajukan lagi bila belum pernah
+        // mengajukan atau permohonan terakhir ditolak.
+        $latest = ApiAccessRequest::where('user_id', $user->id)->latest()->first();
+        if ($latest && in_array($latest->status, ['menunggu', 'disetujui'], true)) {
+            $message = $latest->status === 'menunggu'
+                ? 'Permohonan Anda masih menunggu keputusan admin.'
+                : 'Anda sudah memiliki izin akses API yang disetujui.';
+
+            return response()->json(['data' => null, 'message' => $message], 422);
+        }
+
+        $permit = ApiAccessRequest::create([
+            'id' => (string) Str::uuid(),
+            'user_id' => $user->id,
+            'purpose' => $data['purpose'],
+            'organization' => $data['organization'] ?? $user->institution,
+            'project_title' => $data['project_title'] ?? null,
+            'status' => 'menunggu',
+        ]);
+
+        $this->audit->write($request, 'request_api_access', 'success', "api_access_requests:{$permit->id}", [
+            'organization' => $permit->organization,
+            'project_title' => $permit->project_title,
+        ]);
+
+        return response()->json([
+            'data' => ['id' => $permit->id, 'status' => $permit->status],
+            'message' => 'Permohonan izin akses API terkirim. Menunggu persetujuan admin.',
+        ], 201);
+    }
+
+    /** Apakah pengguna boleh membuat API key (peneliti wajib izin disetujui). */
+    private function canGenerateApiKey($user): bool
+    {
+        if ($user->role !== 'peneliti') {
+            return true;
+        }
+
+        return ApiAccessRequest::where('user_id', $user->id)
+            ->where('status', 'disetujui')
+            ->exists();
+    }
+
     public function regenerateKey(Request $request): JsonResponse
     {
         $user = $request->user();
+
+        abort_unless(
+            $this->canGenerateApiKey($user),
+            403,
+            'Anda harus mengajukan izin akses API dan menunggu persetujuan admin sebelum membuat kunci.',
+        );
+
         $rawKey = 'spr_'.Str::random(40);
 
         DB::transaction(function () use ($user, $rawKey): void {
