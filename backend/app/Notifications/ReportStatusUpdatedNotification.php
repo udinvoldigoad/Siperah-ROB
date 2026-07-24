@@ -58,12 +58,6 @@ class ReportStatusUpdatedNotification extends Notification implements ShouldQueu
             ->data(['report_code' => $this->report->report_code]);
     }
 
-    public function toWhatsApp($notifiable): string
-    {
-        $dbData = $this->toDatabase($notifiable);
-        return "*{$dbData['title']}*\n{$dbData['body']}\n\nSilakan cek sistem SIPERAH-RoB.";
-    }
-
     public function toMail(object $notifiable)
     {
         $dbData = $this->toDatabase($notifiable);

@@ -60,13 +60,6 @@ class ApiAccessReviewedNotification extends Notification implements ShouldQueue
             ->data(['url' => '/#/research']);
     }
 
-    public function toWhatsApp($notifiable): string
-    {
-        $dbData = $this->toDatabase($notifiable);
-
-        return "*{$dbData['title']}*\n{$dbData['body']}\n\nSilakan cek sistem SIPERAH-RoB.";
-    }
-
     public function toMail(object $notifiable)
     {
         $dbData = $this->toDatabase($notifiable);

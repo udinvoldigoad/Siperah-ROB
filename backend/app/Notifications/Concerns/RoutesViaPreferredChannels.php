@@ -4,7 +4,6 @@ namespace App\Notifications\Concerns;
 
 use App\Models\NotificationSetting;
 use App\Notifications\Channels\InboxChannel;
-use App\Notifications\Channels\MockWhatsAppChannel;
 use NotificationChannels\WebPush\WebPushChannel;
 
 /**
@@ -28,9 +27,6 @@ trait RoutesViaPreferredChannels
         }
         if (in_array('browser', $channels, true)) {
             $delivery[] = WebPushChannel::class;
-        }
-        if (in_array('whatsapp', $channels, true)) {
-            $delivery[] = MockWhatsAppChannel::class;
         }
 
         return $delivery;

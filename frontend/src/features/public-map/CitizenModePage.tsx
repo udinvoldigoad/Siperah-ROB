@@ -981,7 +981,9 @@ export function CitizenModePage() {
   ].join("\n");
 
   const handleShareWhatsApp = () => {
-    window.open(`https://wa.me/6281367289083`, "_blank", "noopener,noreferrer");
+    // Skema "teruskan pesan": buka WhatsApp dengan teks peringatan sudah terisi,
+    // pengguna memilih sendiri kontak/grup tujuan (tanpa nomor tetap).
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
   };
   const handleCopyWarning = async () => {
     try {

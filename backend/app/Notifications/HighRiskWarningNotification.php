@@ -64,13 +64,6 @@ class HighRiskWarningNotification extends Notification implements ShouldQueue
             ->data(['prediction_date' => $this->predictionDate]);
     }
 
-    public function toWhatsApp($notifiable): string
-    {
-        $dbData = $this->toDatabase($notifiable);
-
-        return "🚨 *{$dbData['title']}*\n{$dbData['body']}\n\nPantau peta bahaya di SIPERAH-RoB.";
-    }
-
     public function toMail(object $notifiable)
     {
         $dbData = $this->toDatabase($notifiable);

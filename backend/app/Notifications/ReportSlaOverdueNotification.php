@@ -45,12 +45,6 @@ class ReportSlaOverdueNotification extends Notification implements ShouldQueue
             ->data(['report_code' => $this->report->report_code]);
     }
 
-    public function toWhatsApp($notifiable): string
-    {
-        $dbData = $this->toDatabase($notifiable);
-        return "⚠️ *{$dbData['title']}*\n{$dbData['body']}\n\nHarap segera menindaklanjuti laporan di SIPERAH-RoB.";
-    }
-
     public function toMail(object $notifiable)
     {
         $dbData = $this->toDatabase($notifiable);

@@ -60,12 +60,6 @@ class NewReportReviewNotification extends Notification implements ShouldQueue
     /**
      * Get the WhatsApp representation of the notification.
      */
-    public function toWhatsApp($notifiable): string
-    {
-        $dbData = $this->toDatabase($notifiable);
-        return "*{$dbData['title']}*\n{$dbData['body']}\n\nSilakan cek sistem SIPERAH-RoB.";
-    }
-
     /**
      * Get the mail representation of the notification.
      */

@@ -24,6 +24,23 @@ const lampungRegionOptions = [
   "Bandar Lampung", "Lampung Selatan", "Pesawaran", "Tanggamus", "Pesisir Barat", "Lampung Timur", "Tulang Bawang"
 ];
 
+// Nilai channel & event yang valid saat ini. Data lama bisa menyimpan kode usang
+// (mis. "push_browser", "whatsapp", "event_bahaya") yang kini ditolak backend —
+// dinormalisasi & disaring saat dimuat agar UI konsisten & simpan tak gagal.
+const VALID_CHANNELS = ["browser", "email"];
+const VALID_EVENTS = ["bahaya_sangat_tinggi", "laporan_ground_truth", "pembaruan_model", "ringkasan_harian", "peringatan_bmkg"];
+const CHANNEL_ALIASES: Record<string, string> = { push_browser: "browser" };
+const EVENT_ALIASES: Record<string, string> = {
+  event_bahaya: "bahaya_sangat_tinggi",
+  event_laporan: "laporan_ground_truth",
+  event_pasang_ekstrem: "peringatan_bmkg",
+};
+
+function sanitize(values: string[] | undefined, aliases: Record<string, string>, valid: string[]): string[] {
+  const mapped = (values ?? []).map((v) => aliases[v] ?? v).filter((v) => valid.includes(v));
+  return Array.from(new Set(mapped));
+}
+
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } }
@@ -53,8 +70,8 @@ export function NotificationSettingsPage() {
     try {
       const res = await api<NotificationSettingsResponse>("/notifications/settings");
       const data = res.data;
-      setChannels(data.channels || []);
-      setEventTypes(data.event_types || []);
+      setChannels(sanitize(data.channels, CHANNEL_ALIASES, VALID_CHANNELS));
+      setEventTypes(sanitize(data.event_types, EVENT_ALIASES, VALID_EVENTS));
       setMonitoredRegions(data.monitored_regions || []);
       if (data.quiet_start) {
         setQuietStart(data.quiet_start.substring(0, 5));
@@ -258,8 +275,7 @@ export function NotificationSettingsPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {[
                   { id: "browser", icon: "notifications", title: "Push Notifikasi Browser", desc: "Notifikasi real-time di desktop/mobile" },
-                  { id: "email", icon: "mail", title: "Email Instansi", desc: "Pesan dikirim ke email Anda" },
-                  { id: "whatsapp", icon: "chat", title: "WhatsApp Peringatan", desc: "Pesan instan via WhatsApp bot (Segera hadir)" }
+                  { id: "email", icon: "mail", title: "Email Instansi", desc: "Pesan dikirim ke email Anda" }
                 ].map((ch) => (
                   <div key={ch.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
