@@ -1,19 +1,21 @@
 {
-  "recall_rob": 0.973,
-  "precision_rob": 1.0,
-  "f1_rob": 0.9863,
-  "test_rows": 876,
-  "test_positives": 148,
-  "roc_auc": 0.9937,
-  "pr_auc": 0.9858,
+  "recall_rob": 0.7154,
+  "precision_rob": 0.1961,
+  "f1_rob": 0.3078,
+  "test_rows": 4424,
+  "test_positives": 253,
+  "roc_auc": 0.8764,
+  "pr_auc": 0.2217,
   "feature_importance": {
-    "Gangguan Cuaca": 0.7318,
-    "Prediksi Tinggi Muka Laut": 0.1878,
-    "Peristiwa Astronomi": 0.0742,
-    "Gelombang": 0.0037,
-    "Kecepatan Angin": 0.0024
+    "Gangguan Cuaca": 0.9331,
+    "Peristiwa Astronomi": 0.037,
+    "Gelombang": 0.0077,
+    "Arah Angin": 0.006,
+    "Prediksi Tinggi Muka Laut": 0.0057,
+    "Angin Onshore": 0.0057,
+    "Kecepatan Angin": 0.0048
   },
-  "targets_met": true,
-  "data_source": "simulated",
-  "trained_rows": 4087
+  "targets_met": false,
+  "data_source": "openmeteo_era5",
+  "trained_rows": 20643
 }

@@ -218,7 +218,7 @@ def run_train(conn, tune: bool = True):
         print("[ERROR] Data latih (train_df) setelah split hanya memiliki satu kelas. Silakan turunkan ambang batas pasut/cuaca.")
         sys.exit(1)
         
-    model = train_model.train_random_forest(train_df, tune=tune)
+    model = train_model.train_xgboost(train_df, tune=tune)
     metrics = train_model.evaluate_model(model, test_df)
     metrics["data_source"] = data_source
     metrics["trained_rows"] = int(len(train_df))

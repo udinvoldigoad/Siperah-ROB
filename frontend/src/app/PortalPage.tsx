@@ -832,7 +832,7 @@ export function PortalPage() {
             SIPERAH-RoB
           </a>
         <nav className="nav-links-wrap">
-          <a href="#/map">Peta Publik</a>
+          <a href="#/map">Peta Risiko</a>
           {currentRole !== "bpbd_provinsi" && <a href="#/awam">Mode Awam</a>}
           <a href="#panduan">Panduan</a>
         </nav>

@@ -14,7 +14,9 @@ FEATURE_COLS = [
     "Kecepatan Angin",
     "Gangguan Cuaca",
     "Gelombang",
-    "Peristiwa Astronomi"
+    "Peristiwa Astronomi",
+    "Arah Angin",
+    "Angin Onshore"
 ]
 
 def is_full_moon_period(dates: pd.Series) -> pd.Series:
@@ -66,5 +68,13 @@ def build_daily_features(tide_df: pd.DataFrame, weather_df: pd.DataFrame,
     
     # Peristiwa Astronomi (Biner: Bulan Purnama/Baru)
     df["Peristiwa Astronomi"] = is_full_moon_period(df["date"]).astype(int)
+    
+    # Arah Angin (Derajat)
+    if "wind_direction_deg" not in df.columns:
+        df["wind_direction_deg"] = 0.0
+    df["Arah Angin"] = df["wind_direction_deg"].fillna(0.0)
+    
+    # Angin Onshore (Biner: Angin bertiup dari laut ke darat, asumsi Selatan 135-225 derajat)
+    df["Angin Onshore"] = ((df["Arah Angin"] >= 135) & (df["Arah Angin"] <= 225)).astype(int)
 
     return df

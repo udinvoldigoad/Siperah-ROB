@@ -20,7 +20,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
 from sklearn.metrics import (
     average_precision_score,
     classification_report,
@@ -73,30 +73,37 @@ def _apply_smote(X_train: pd.DataFrame, y_train: pd.Series):
         return X_train, y_train
 
 
-def train_random_forest(train_df: pd.DataFrame, tune: bool = True,
-                        use_smote: bool = True) -> RandomForestClassifier:
+def train_xgboost(train_df: pd.DataFrame, tune: bool = True,
+                  use_smote: bool = True) -> XGBClassifier:
     X_train = train_df[FEATURE_COLS]
     y_train = train_df[TARGET_COL]
 
     if use_smote:
         X_train, y_train = _apply_smote(X_train, y_train)
 
+    # Menghitung scale_pos_weight untuk XGBoost agar class_weight="balanced" bekerja
+    neg_count = (y_train == 0).sum()
+    pos_count = (y_train == 1).sum()
+    scale_pos = neg_count / pos_count if pos_count > 0 else 1.0
+
     if not tune:
-        model = RandomForestClassifier(
-            n_estimators=200, max_depth=10, class_weight="balanced",
-            random_state=42, n_jobs=-1,
+        model = XGBClassifier(
+            n_estimators=200, max_depth=6, scale_pos_weight=scale_pos,
+            random_state=42, n_jobs=-1, learning_rate=0.05,
+            eval_metric='logloss'
         )
         model.fit(X_train, y_train)
         return model
 
     param_dist = {
         "n_estimators": [100, 200, 300, 500],
-        "max_depth": [5, 10, 15, 20, None],
-        "min_samples_split": [2, 5, 10],
-        "min_samples_leaf": [1, 2, 4],
+        "max_depth": [3, 5, 7, 10],
+        "learning_rate": [0.01, 0.05, 0.1, 0.2],
+        "subsample": [0.7, 0.8, 1.0],
+        "colsample_bytree": [0.7, 0.8, 1.0]
     }
     search = RandomizedSearchCV(
-        RandomForestClassifier(class_weight="balanced", random_state=42, n_jobs=-1),
+        XGBClassifier(scale_pos_weight=scale_pos, random_state=42, n_jobs=-1, eval_metric='logloss'),
         param_distributions=param_dist,
         n_iter=20,
         cv=TimeSeriesSplit(n_splits=5),
