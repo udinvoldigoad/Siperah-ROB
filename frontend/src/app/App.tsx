@@ -29,7 +29,10 @@ function currentRoute() {
   if (window.location.pathname.startsWith('/oauth-callback')) {
     return "oauth-callback";
   }
-  return window.location.hash.replace("#/", "") || "";
+  // Buang query string dari hash (mis. "#/login?error=menunggu") — tanpa ini
+  // route "login?error=..." tidak cocok dengan cabang mana pun dan pengguna
+  // OAuth yang gagal terlempar ke portal tanpa pesan apa pun.
+  return (window.location.hash.replace("#/", "") || "").split("?")[0];
 }
 
 export function App() {
