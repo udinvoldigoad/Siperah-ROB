@@ -13,7 +13,14 @@ interface SummaryData {
   validated_reports_this_month: number;
   latest_prediction_date?: string | null;
   regencies?: RegencySummary[];
-  trend_30_days?: { prediction_date: string; avg_probability: number | string; max_probability: number | string; }[];
+  trend_30_days?: {
+    prediction_date: string;
+    avg_probability: number | string;
+    max_probability: number | string;
+    critical_count?: number | string;
+    high_count?: number | string;
+    high_risk_count?: number | string;
+  }[];
   filters?: { month?: string | null; regency?: string | null };
   available_regencies?: string[];
   top_impacted?: TopImpactedPrediction[];
@@ -241,10 +248,16 @@ export function ProvinceDashboardPage() {
   // dari /public/predictions — endpoint itu terurut DESC & terbatas 1000 baris
   // sehingga hanya memuat ~3 hari terjauh, bukan 30 hari penuh.
   const trendData = useMemo(() => {
-    const byDate = new Map<string, { avgProb: number; maxProb: number }>();
+    const byDate = new Map<string, { avgProb: number; maxProb: number; criticalCount: number; highCount: number; highRiskCount: number }>();
     for (const row of summary.trend_30_days ?? []) {
       const key = row.prediction_date.substring(0, 10);
-      byDate.set(key, { avgProb: toNumber(row.avg_probability), maxProb: toNumber(row.max_probability) });
+      byDate.set(key, {
+        avgProb: toNumber(row.avg_probability),
+        maxProb: toNumber(row.max_probability),
+        criticalCount: toNumber(row.critical_count),
+        highCount: toNumber(row.high_count),
+        highRiskCount: toNumber(row.high_risk_count),
+      });
     }
 
     const today = new Date();
@@ -260,7 +273,11 @@ export function ProvinceDashboardPage() {
         date: d,
         avgProb: stat?.avgProb ?? 0,
         maxProb: stat?.maxProb ?? 0,
+        criticalCount: stat?.criticalCount ?? 0,
+        highCount: stat?.highCount ?? 0,
+        highRiskCount: stat?.highRiskCount ?? 0,
         isToday: key === actualToday,
+        hasData: !!stat,
       };
     });
   }, [summary.trend_30_days]);
@@ -436,177 +453,227 @@ export function ProvinceDashboardPage() {
             </div>
           </motion.div>
 
-          {/* ML Prediction Timeline — Line Chart */}
+          {/* ML Prediction Timeline — Line & Area Chart */}
           <motion.div variants={itemVariants} className="panel" style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
-                <div>
-                  <h2 style={{ margin: "0 0 8px", fontSize: "1.25rem", color: "var(--ink)" }}>Prediksi Peluang Rob 30 Hari ke Depan</h2>
-                  <p style={{ margin: 0, fontSize: "13px", color: "var(--ink-soft)", lineHeight: 1.5, maxWidth: "500px" }}>
-                    Rata-rata persentase peluang terjadinya banjir rob harian berdasarkan model prediktif (FR-PROV-3).
-                  </p>
-                </div>
-                <div style={{ display: "flex", gap: "16px", fontSize: "11px", fontWeight: 600 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <div style={{ width: "10px", height: "10px", background: "var(--accent)", borderRadius: "2px" }}></div>
-                    <span style={{ color: "var(--ink-soft)" }}>Rata-rata Peluang</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <div style={{ width: "10px", height: "10px", background: "var(--high)", borderRadius: "2px" }}></div>
-                    <span style={{ color: "var(--ink-soft)" }}>Peluang Maksimum</span>
-                  </div>
-                </div>
+            <div style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+              <div>
+                <h2 style={{ margin: "0 0 6px", fontSize: "1.25rem", color: "var(--ink)" }}>Prediksi Peluang Rob 30 Hari ke Depan</h2>
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--ink-soft)", lineHeight: 1.5, maxWidth: "520px" }}>
+                  Rata-rata persentase peluang terjadinya banjir rob harian dibandingkan titik maksimum tertinggi.
+                </p>
               </div>
 
-              {(() => {
-                const svgW = 800, svgH = 260;
-                const pad = { top: 30, right: 20, bottom: 40, left: 44 };
-                const chartW = svgW - pad.left - pad.right;
-                const chartH = svgH - pad.top - pad.bottom;
-                const data = trendData;
-  
-                // Sumbu Y persentase dinamis: 0 - 100%
-                const max = 100;
-                const uniqueYTicks = [0, 25, 50, 75, 100];
-  
-                const xOf = (i: number) => pad.left + (i / Math.max(1, data.length - 1)) * chartW;
-                const yOf = (v: number) => pad.top + chartH - (v / max) * chartH;
-  
-                const buildLine = (get: (d: typeof data[number]) => number) =>
-                  data.map((d, i) => `${i === 0 ? "M" : "L"}${xOf(i).toFixed(1)},${yOf(get(d)).toFixed(1)}`).join(" ");
-                const criticalLine = buildLine((d) => d.avgProb);
-                const criticalArea = `${criticalLine} L${xOf(data.length - 1).toFixed(1)},${yOf(0).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(0).toFixed(1)} Z`;
-                const highLine = buildLine((d) => d.maxProb);
-  
-                // X ticks — show ~6 date labels
-                const xTickStep = Math.max(1, Math.floor(data.length / 5));
-                const xTicks = data.map((_, i) => i).filter((i) => i % xTickStep === 0 || i === data.length - 1);
-  
-                // Today index
-                const todayIdx = data.findIndex((d) => d.isToday);
-  
-                const hovered = trendHoverIdx !== null ? data[trendHoverIdx] : null;
-                const hoverX = trendHoverIdx !== null ? xOf(trendHoverIdx) : 0;
-                const hoverY = hovered ? yOf(hovered.avgProb) : 0;
-                const hoverColor = "#2563eb"; // Solid Blue
-  
-                const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-                  const svg = trendSvgRef.current;
-                  if (!svg) return;
-                  const pt = svg.createSVGPoint();
-                  pt.x = e.clientX;
-                  pt.y = e.clientY;
-                  const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
-                  let closestI = 0;
-                  let minD = Infinity;
-                  data.forEach((_, i) => {
-                    const dx = xOf(i) - svgP.x;
-                    const d = Math.abs(dx);
-                    if (d < minD) {
-                      minD = d;
-                      closestI = i;
-                    }
-                  });
-                  if (minD < 30) setTrendHoverIdx(closestI);
-                  else setTrendHoverIdx(null);
-                };
-  
-                return (
-                  <svg
-                    ref={trendSvgRef}
-                    viewBox={`0 0 ${svgW} ${svgH}`}
-                    style={{ width: "100%", height: "auto", maxHeight: 320, cursor: "crosshair", overflow: "visible" }}
-                    onMouseMove={handleMouseMove}
-                    onMouseLeave={() => setTrendHoverIdx(null)}
-                  >
-                    <defs>
-                      <linearGradient id="trendAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#2563eb" stopOpacity="0.25" />
-                        <stop offset="100%" stopColor="#2563eb" stopOpacity="0.02" />
-                      </linearGradient>
-                    </defs>
-  
-                    {/* Y Grid lines (Persentase) */}
-                    {uniqueYTicks.map((t) => (
-                      <g key={`y-${t}`}>
-                        <line x1={pad.left} y1={yOf(t)} x2={pad.left + chartW} y2={yOf(t)} stroke="var(--line, #e5e7eb)" strokeWidth="0.8" opacity="0.5" />
-                        <text x={pad.left - 8} y={yOf(t) + 4} textAnchor="end" fontSize="11" fill="var(--ink-soft, #94a3b8)" fontWeight="500">
-                          {t}%
-                        </text>
-                      </g>
-                    ))}
-  
-                    {/* Area under critical line */}
-                    <path d={criticalArea} fill="url(#trendAreaGrad)" />
-                    
-                    {/* High line (Maksimal) - Dashed so it's clearly distinct from the solid average */}
-                    <path d={highLine} fill="none" stroke="var(--high)" strokeWidth="2" strokeDasharray="5 5" opacity="0.8" />
-                    
-                    {/* Average line */}
-                    <path d={criticalLine} fill="none" stroke="#2563eb" strokeWidth="3" />
-  
-                    {/* Dots for Average line */}
-                    {data.map((d, i) => (
-                      <circle 
-                        key={`dot-${i}`} 
-                        cx={xOf(i)} cy={yOf(d.avgProb)} r="4" 
-                        fill="#2563eb" 
-                        strokeWidth={d.isToday ? 2 : 0} 
-                        opacity={trendHoverIdx === i ? 0 : 1} 
-                      />
-                    ))}
-  
-                    {/* Today vertical marker */}
-                    {todayIdx >= 0 && (
-                      <g>
-                        <line x1={xOf(todayIdx)} y1={pad.top - 14} x2={xOf(todayIdx)} y2={yOf(0)} stroke="var(--critical)" strokeWidth="1.2" strokeDasharray="4 3" opacity="0.6" />
-                        <rect x={xOf(todayIdx) - 24} y={pad.top - 26} width="48" height="18" rx="4" fill="var(--critical)" />
-                        <text x={xOf(todayIdx)} y={pad.top - 13.5} textAnchor="middle" fontSize="10" fill="var(--surface)" fontWeight="700">Hari ini</text>
-                      </g>
-                    )}
-  
-                    {/* X-Axis labels */}
-                    {xTicks.map((i) => (
-                      <text key={`x-${i}`} x={xOf(i)} y={svgH - 6} textAnchor="middle" fontSize="10.5" fill={data[i]?.isToday ? "#2563eb" : "var(--ink-soft)"} fontWeight={data[i]?.isToday ? 700 : 500}>
-                        {data[i]?.date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
+              {/* Quick Regency Filter */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                <select
+                  value={selectedRegency}
+                  onChange={(e) => setSelectedRegency(e.target.value)}
+                  style={{
+                    height: "38px",
+                    padding: "0 12px",
+                    borderRadius: "10px",
+                    border: "1px solid var(--line)",
+                    background: "var(--surface)",
+                    color: "var(--ink)",
+                    fontSize: "12.5px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    outline: "none",
+                  }}
+                >
+                  <option value="all">Semua Kabupaten/Kota</option>
+                  {summary.available_regencies?.map((reg) => (
+                    <option key={reg} value={reg}>{reg}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div style={{ display: "flex", gap: "20px", fontSize: "12px", fontWeight: 600, marginBottom: "14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <div style={{ width: "12px", height: "12px", background: "#2563eb", borderRadius: "3px" }}></div>
+                <span style={{ color: "var(--ink)" }}>Rata-rata Peluang Wilayah</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <div style={{ width: "12px", height: "12px", background: "var(--high, #f97316)", borderRadius: "3px" }}></div>
+                <span style={{ color: "var(--ink-soft)" }}>Peluang Maksimum (Titik Ekstrem)</span>
+              </div>
+            </div>
+
+            {(() => {
+              const svgW = 800, svgH = 265;
+              const pad = { top: 30, right: 24, bottom: 40, left: 48 };
+              const chartW = svgW - pad.left - pad.right;
+              const chartH = svgH - pad.top - pad.bottom;
+              const data = trendData;
+
+              // Filter indeks yang memiliki data prediksi agar garis tidak anjlok ke 0 saat ada gap atau di akhir bulan
+              const validIndices = data.map((d, idx) => (d.hasData ? idx : -1)).filter((idx) => idx !== -1);
+              const firstValidIdx = validIndices.length > 0 ? validIndices[0] : 0;
+              const lastValidIdx = validIndices.length > 0 ? validIndices[validIndices.length - 1] : 0;
+
+              // Sumbu Y persentase dinamis mengikuti data maksimum (minimal 20% agar grafik selalu interaktif & jelas)
+              const maxDataVal = Math.max(...data.map((d) => (d.hasData ? Math.max(d.avgProb, d.maxProb) : 0)), 10);
+              const max = Math.max(20, Math.ceil(maxDataVal / 10) * 10);
+              const uniqueYTicks = [0, Math.round(max * 0.25), Math.round(max * 0.5), Math.round(max * 0.75), max];
+
+              const xOf = (i: number) => pad.left + (i / Math.max(1, data.length - 1)) * chartW;
+              const yOf = (v: number) => pad.top + chartH - (v / max) * chartH;
+
+              // Bangun garis hanya menghubungkan titik-titik yang memiliki data valid
+              const buildLine = (get: (d: typeof data[number]) => number) => {
+                let path = "";
+                let isFirst = true;
+                data.forEach((d, i) => {
+                  if (!d.hasData) return;
+                  path += `${isFirst ? "M" : "L"}${xOf(i).toFixed(1)},${yOf(get(d)).toFixed(1)} `;
+                  isFirst = false;
+                });
+                return path.trim();
+              };
+
+              const primaryLine = buildLine((d) => d.avgProb);
+              const primaryArea = validIndices.length > 0
+                ? `${primaryLine} L${xOf(lastValidIdx).toFixed(1)},${yOf(0).toFixed(1)} L${xOf(firstValidIdx).toFixed(1)},${yOf(0).toFixed(1)} Z`
+                : "";
+              const secondaryLine = buildLine((d) => d.maxProb);
+
+              const primaryColor = "#2563eb";
+              const secondaryColor = "var(--high, #f97316)";
+
+              // X ticks — show ~6 date labels
+              const xTickStep = Math.max(1, Math.floor(data.length / 5));
+              const xTicks = data.map((_, i) => i).filter((i) => i % xTickStep === 0 || i === data.length - 1);
+
+              // Today index
+              const todayIdx = data.findIndex((d) => d.isToday);
+
+              const hovered = trendHoverIdx !== null ? data[trendHoverIdx] : null;
+              const hoverX = trendHoverIdx !== null ? xOf(trendHoverIdx) : 0;
+              const hoverY = hovered ? yOf(hovered.avgProb) : 0;
+
+              const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+                const svg = trendSvgRef.current;
+                if (!svg) return;
+                const pt = svg.createSVGPoint();
+                pt.x = e.clientX;
+                pt.y = e.clientY;
+                const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+                let closestI = 0;
+                let minD = Infinity;
+                data.forEach((_, i) => {
+                  const dx = xOf(i) - svgP.x;
+                  const d = Math.abs(dx);
+                  if (d < minD) {
+                    minD = d;
+                    closestI = i;
+                  }
+                });
+                if (minD < 30) setTrendHoverIdx(closestI);
+                else setTrendHoverIdx(null);
+              };
+
+              return (
+                <svg
+                  ref={trendSvgRef}
+                  viewBox={`0 0 ${svgW} ${svgH}`}
+                  style={{ width: "100%", height: "auto", maxHeight: 330, cursor: "crosshair", overflow: "visible" }}
+                  onMouseMove={handleMouseMove}
+                  onMouseLeave={() => setTrendHoverIdx(null)}
+                >
+                  <defs>
+                    <linearGradient id="trendAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={primaryColor} stopOpacity="0.25" />
+                      <stop offset="100%" stopColor={primaryColor} stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Y Grid lines */}
+                  {uniqueYTicks.map((t) => (
+                    <g key={`y-${t}`}>
+                      <line x1={pad.left} y1={yOf(t)} x2={pad.left + chartW} y2={yOf(t)} stroke="var(--line, #e5e7eb)" strokeWidth="0.8" opacity="0.6" />
+                      <text x={pad.left - 10} y={yOf(t) + 4} textAnchor="end" fontSize="11" fill="var(--ink-soft, #94a3b8)" fontWeight="600">
+                        {t}%
                       </text>
-                    ))}
-  
-                    {/* Hover crosshair & tooltip */}
-                    {trendHoverIdx !== null && hovered && (
-                      <g style={{ pointerEvents: "none" }}>
-                        <line x1={hoverX} y1={pad.top} x2={hoverX} y2={yOf(0)} stroke={hoverColor} strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
-                        <circle cx={hoverX} cy={hoverY} r="6" fill={hoverColor} stroke="var(--surface)" strokeWidth="2.5" />
-                        <circle cx={hoverX} cy={hoverY} r="10" fill={hoverColor} opacity="0.15" />
-                        
-                        {/* Dot for Max Prob */}
-                        <circle cx={hoverX} cy={yOf(hovered.maxProb)} r="4" fill="var(--high)" stroke="var(--surface)" strokeWidth="1.5" />
-  
-                        {/* Tooltip */}
-                        {(() => {
-                          const tooltipW = 190, tooltipH = 58;
-                          let tx = hoverX - tooltipW / 2;
-                          if (tx < pad.left) tx = pad.left;
-                          if (tx + tooltipW > pad.left + chartW) tx = pad.left + chartW - tooltipW;
-                          const ty = Math.max(pad.top - 6, hoverY - tooltipH - 20);
-                          return (
-                            <g>
-                              <rect x={tx} y={ty} width={tooltipW} height={tooltipH} rx="8" fill="var(--surface, #fff)" stroke="var(--line, #e2e8f0)" strokeWidth="1" filter="drop-shadow(0 4px 12px rgba(0,0,0,0.12))" />
-                              <text x={tx + tooltipW / 2} y={ty + 20} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--ink, #1e293b)">
-                                {hovered.date.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "long" })}
-                              </text>
-                              <text x={tx + tooltipW / 2} y={ty + 40} textAnchor="middle" fontSize="11.5" fontWeight="600">
-                                <tspan fill="#2563eb">{hovered.avgProb.toFixed(1)}% Rata-rata</tspan>
-                                <tspan fill="var(--ink-soft)"> | </tspan>
-                                <tspan fill="var(--high)">{hovered.maxProb.toFixed(1)}% Max</tspan>
-                              </text>
-                            </g>
-                          );
-                        })()}
-                      </g>
-                    )}
-                  </svg>
-                );
-              })()}
+                    </g>
+                  ))}
+
+                  {/* Area under primary line */}
+                  {primaryArea && <path d={primaryArea} fill="url(#trendAreaGrad)" />}
+                  
+                  {/* Secondary line (Maksimum) */}
+                  {secondaryLine && <path d={secondaryLine} fill="none" stroke={secondaryColor} strokeWidth="2.2" strokeDasharray="5 5" opacity="0.85" />}
+                  
+                  {/* Primary line (Rata-rata) */}
+                  {primaryLine && <path d={primaryLine} fill="none" stroke={primaryColor} strokeWidth="3" />}
+
+                  {/* Dots for primary line (only for valid points) */}
+                  {data.map((d, i) => d.hasData ? (
+                    <circle 
+                      key={`dot-${i}`} 
+                      cx={xOf(i)} cy={yOf(d.avgProb)} r="4" 
+                      fill={primaryColor} 
+                      strokeWidth={d.isToday ? 2 : 0} 
+                      stroke="var(--surface, #fff)"
+                      opacity={trendHoverIdx === i ? 0 : 1} 
+                    />
+                  ) : null)}
+
+                  {/* Today vertical marker */}
+                  {todayIdx >= 0 && (
+                    <g>
+                      <line x1={xOf(todayIdx)} y1={pad.top - 14} x2={xOf(todayIdx)} y2={yOf(0)} stroke="var(--critical, #dc2626)" strokeWidth="1.2" strokeDasharray="4 3" opacity="0.6" />
+                      <rect x={xOf(todayIdx) - 24} y={pad.top - 26} width="48" height="18" rx="4" fill="var(--critical, #dc2626)" />
+                      <text x={xOf(todayIdx)} y={pad.top - 13.5} textAnchor="middle" fontSize="10" fill="var(--surface, #fff)" fontWeight="700">Hari ini</text>
+                    </g>
+                  )}
+
+                  {/* X-Axis labels */}
+                  {xTicks.map((i) => (
+                    <text key={`x-${i}`} x={xOf(i)} y={svgH - 6} textAnchor="middle" fontSize="10.5" fill={data[i]?.isToday ? primaryColor : "var(--ink-soft)"} fontWeight={data[i]?.isToday ? 700 : 500}>
+                      {data[i]?.date.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
+                    </text>
+                  ))}
+
+                  {/* Hover crosshair & tooltip */}
+                  {trendHoverIdx !== null && hovered && (
+                    <g style={{ pointerEvents: "none" }}>
+                      <line x1={hoverX} y1={pad.top} x2={hoverX} y2={yOf(0)} stroke={primaryColor} strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
+                      <circle cx={hoverX} cy={hoverY} r="6" fill={primaryColor} stroke="var(--surface)" strokeWidth="2.5" />
+                      <circle cx={hoverX} cy={hoverY} r="10" fill={primaryColor} opacity="0.15" />
+                      
+                      {/* Dot for secondary value */}
+                      {hovered.hasData && (
+                        <circle cx={hoverX} cy={yOf(hovered.maxProb)} r="4" fill={secondaryColor} stroke="var(--surface)" strokeWidth="1.5" />
+                      )}
+
+                      {/* Tooltip */}
+                      {(() => {
+                        const tooltipW = 200, tooltipH = 58;
+                        let tx = hoverX - tooltipW / 2;
+                        if (tx < pad.left) tx = pad.left;
+                        if (tx + tooltipW > pad.left + chartW) tx = pad.left + chartW - tooltipW;
+                        const ty = Math.max(pad.top - 6, hoverY - tooltipH - 20);
+                        return (
+                          <g>
+                            <rect x={tx} y={ty} width={tooltipW} height={tooltipH} rx="8" fill="var(--surface, #fff)" stroke="var(--line, #e2e8f0)" strokeWidth="1" filter="drop-shadow(0 4px 12px rgba(0,0,0,0.12))" />
+                            <text x={tx + tooltipW / 2} y={ty + 20} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--ink, #1e293b)">
+                              {hovered.date.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "long" })}
+                            </text>
+                            <text x={tx + tooltipW / 2} y={ty + 40} textAnchor="middle" fontSize="11.5" fontWeight="600">
+                              <tspan fill={primaryColor}>{hovered.avgProb.toFixed(1)}% Rata-rata</tspan>
+                              <tspan fill="var(--ink-soft)"> | </tspan>
+                              <tspan fill={secondaryColor}>{hovered.maxProb.toFixed(1)}% Max</tspan>
+                            </text>
+                          </g>
+                        );
+                      })()}
+                    </g>
+                  )}
+                </svg>
+              );
+            })()}
           </motion.div>
         </div>
 
