@@ -23,8 +23,6 @@ final class NotificationService
                 'id' => (string) Str::uuid(),
                 'channels' => ['browser', 'email'],
                 'event_types' => ['bahaya_sangat_tinggi', 'laporan_ground_truth', 'peringatan_bmkg'],
-                'quiet_start' => '22:00',
-                'quiet_end' => '05:00',
                 'monitored_regions' => [],
             ],
         );
@@ -48,12 +46,6 @@ final class NotificationService
         if (!$user) return;
 
         $notification = new \App\Notifications\ReportStatusUpdatedNotification($report);
-        
-        $delay = $this->calculateQuietHoursDelay($user);
-        if ($delay > 0) {
-            $notification->delay(now()->addMinutes($delay));
-        }
-
         $user->notify($notification);
     }
 
@@ -99,13 +91,6 @@ final class NotificationService
             }
 
             $notification = new \App\Notifications\NewReportReviewNotification($report, $isWithinMonitoringArea);
-            
-            // Laporan baru tidak sepenting bahaya tinggi, tahan kalau sedang quiet hours
-            $delay = $this->calculateQuietHoursDelay($recipient);
-            if ($delay > 0) {
-                $notification->delay(now()->addMinutes($delay));
-            }
-
             $recipient->notify($notification);
         }
     }
@@ -151,13 +136,6 @@ final class NotificationService
             }
 
             $notification = new \App\Notifications\ReportSlaOverdueNotification($report);
-            
-            // SLA Overdue adalah peringatan penting, tapi tidak darurat. Kita taati quiet hours.
-            $delay = $this->calculateQuietHoursDelay($recipient);
-            if ($delay > 0) {
-                $notification->delay(now()->addMinutes($delay));
-            }
-
             $recipient->notify($notification);
         }
     }
@@ -252,36 +230,4 @@ final class NotificationService
         return collect($monitored)->contains(fn (string $item) => in_array(mb_strtolower($item), $haystack, true));
     }
 
-    private function calculateQuietHoursDelay(User $user): int
-    {
-        $settings = $this->settings($user->id);
-        if (!$settings->quiet_start || !$settings->quiet_end) {
-            return 0;
-        }
-
-        $now = now();
-        // Assuming time strings like "22:00:00" or "22:00"
-        $start = \Carbon\Carbon::createFromFormat('H:i:s', strlen($settings->quiet_start) === 5 ? $settings->quiet_start.':00' : $settings->quiet_start);
-        $end = \Carbon\Carbon::createFromFormat('H:i:s', strlen($settings->quiet_end) === 5 ? $settings->quiet_end.':00' : $settings->quiet_end);
-
-        // If end time is less than start time, it means it crosses midnight
-        $isOvernight = $end->lessThan($start);
-
-        $isQuietTime = false;
-        if ($isOvernight) {
-            $isQuietTime = $now->greaterThanOrEqualTo($start) || $now->lessThanOrEqualTo($end);
-        } else {
-            $isQuietTime = $now->between($start, $end);
-        }
-
-        if ($isQuietTime) {
-            $target = $now->copy()->setTimeFrom($end);
-            if ($now->greaterThanOrEqualTo($start) && $isOvernight) {
-                $target->addDay();
-            }
-            return $now->diffInMinutes($target);
-        }
-
-        return 0;
-    }
 }

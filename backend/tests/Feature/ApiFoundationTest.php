@@ -193,7 +193,6 @@ final class ApiFoundationTest extends TestCase
         $this->putJson('/api/notifications/settings', [
             'channels' => ['browser', 'email'],
             'event_types' => ['bahaya_sangat_tinggi', 'pembaruan_model'],
-            'quiet_start' => '22:00:00', 'quiet_end' => '06:00:00',
             'monitored_regions' => ['Panjang Utara'],
         ])->assertOk()->assertJsonPath('data.user_id', $user->id);
     }

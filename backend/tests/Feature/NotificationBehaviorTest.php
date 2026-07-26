@@ -2,12 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\GroundTruthReport;
 use App\Models\Prediction;
 use App\Models\Region;
 use App\Models\User;
 use App\Notifications\HighRiskWarningNotification;
-use App\Notifications\NewReportReviewNotification;
 use App\Services\NotificationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -20,32 +18,12 @@ final class NotificationBehaviorTest extends TestCase
 {
     use DatabaseTransactions;
 
-    public function test_quiet_hours_delays_non_critical_notification(): void
-    {
-        Notification::fake();
-
-        $region = $this->makeRegion('Kabupaten Notif Quiet');
-        $reporter = $this->makeUser('warga');
-        $operator = $this->makeUser('bpbd_operator', $region->id);
-        $this->setQuietHoursSpanningNow($operator);
-        $report = $this->makeReport($reporter, $region);
-
-        app(NotificationService::class)->notifyNewReportForReview($report);
-
-        Notification::assertSentTo(
-            $operator,
-            NewReportReviewNotification::class,
-            fn (NewReportReviewNotification $notification) => $notification->delay !== null,
-        );
-    }
-
-    public function test_critical_high_risk_warning_bypasses_quiet_hours(): void
+    public function test_critical_high_risk_warning_is_not_delayed(): void
     {
         Notification::fake();
 
         $region = $this->makeRegion('Kabupaten Notif Kritis');
         $warga = $this->makeUser('warga');
-        $this->setQuietHoursSpanningNow($warga);
         $this->makePrediction($region, 'sangat_tinggi');
 
         $sent = app(NotificationService::class)
@@ -104,14 +82,6 @@ final class NotificationBehaviorTest extends TestCase
         $this->assertSame(1, $inboxCount);
     }
 
-    private function setQuietHoursSpanningNow(User $user): void
-    {
-        $settings = app(NotificationService::class)->settings($user->id);
-        $settings->quiet_start = now()->subHours(2)->format('H:i');
-        $settings->quiet_end = now()->addHours(2)->format('H:i');
-        $settings->save();
-    }
-
     private function setMonitoredRegions(User $user, array $regions): void
     {
         $settings = app(NotificationService::class)->settings($user->id);
@@ -147,23 +117,6 @@ final class NotificationBehaviorTest extends TestCase
             'role' => $role,
             'status' => 'aktif',
             'region_id' => $regionId,
-        ]);
-    }
-
-    private function makeReport(User $reporter, Region $region): GroundTruthReport
-    {
-        return GroundTruthReport::create([
-            'id' => (string) Str::uuid(),
-            'report_code' => 'NOTIF-'.Str::upper(Str::random(8)),
-            'user_id' => $reporter->id,
-            'region_id' => $region->id,
-            'latitude' => -5.445,
-            'longitude' => 105.260,
-            'severity' => 'sedang',
-            'water_height_cm' => 20,
-            'incident_time' => now(),
-            'description' => 'Laporan uji perilaku notifikasi.',
-            'status' => 'menunggu',
         ]);
     }
 

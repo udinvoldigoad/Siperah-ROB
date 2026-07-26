@@ -18,8 +18,6 @@ class NotificationSetting extends Model
         'user_id',
         'channels',
         'event_types',
-        'quiet_start',
-        'quiet_end',
         'monitored_regions',
     ];
 

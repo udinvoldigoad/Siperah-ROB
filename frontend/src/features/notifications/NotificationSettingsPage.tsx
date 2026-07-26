@@ -8,8 +8,6 @@ import { motion, AnimatePresence, type Variants } from "framer-motion";
 interface NotificationSettings {
   channels: string[];
   event_types: string[];
-  quiet_start: string | null;
-  quiet_end: string | null;
   monitored_regions: string[];
 }
 
@@ -58,9 +56,6 @@ export function NotificationSettingsPage() {
   // Form States
   const [channels, setChannels] = useState<string[]>([]);
   const [eventTypes, setEventTypes] = useState<string[]>([]);
-  const [quietStart, setQuietStart] = useState("22:00");
-  const [quietEnd, setQuietEnd] = useState("06:00");
-  const [quietHoursEnabled, setQuietHoursEnabled] = useState(true);
   const [monitoredRegions, setMonitoredRegions] = useState<string[]>([]);
   const [newRegion, setNewRegion] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -73,15 +68,6 @@ export function NotificationSettingsPage() {
       setChannels(sanitize(data.channels, CHANNEL_ALIASES, VALID_CHANNELS));
       setEventTypes(sanitize(data.event_types, EVENT_ALIASES, VALID_EVENTS));
       setMonitoredRegions(data.monitored_regions || []);
-      if (data.quiet_start) {
-        setQuietStart(data.quiet_start.substring(0, 5));
-        setQuietHoursEnabled(true);
-      } else {
-        setQuietHoursEnabled(false);
-      }
-      if (data.quiet_end) {
-        setQuietEnd(data.quiet_end.substring(0, 5));
-      }
     } catch (err: any) {
       toast.error(err.message || "Gagal memuat pengaturan notifikasi.");
     }
@@ -192,8 +178,6 @@ export function NotificationSettingsPage() {
         body: JSON.stringify({
           channels,
           event_types: eventTypes,
-          quiet_start: quietHoursEnabled ? quietStart + ":00" : null,
-          quiet_end: quietHoursEnabled ? quietEnd + ":00" : null,
           monitored_regions: monitoredRegions,
         }),
       });
@@ -216,19 +200,8 @@ export function NotificationSettingsPage() {
           grid-template-columns: 1fr 1fr;
           gap: 24px;
         }
-        .notif-time-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-          margin-bottom: 16px;
-          padding-top: 16px;
-          border-top: 1px solid var(--line);
-        }
         @media (max-width: 992px) {
           .notif-layout { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 600px) {
-          .notif-time-grid { grid-template-columns: 1fr; }
         }
       `}</style>
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="content" style={{ maxWidth: 1000, margin: "0 auto", paddingBottom: 60 }}>
@@ -244,11 +217,6 @@ export function NotificationSettingsPage() {
             <span>Peristiwa Dipantau</span>
             <strong>{activeEventsCount}</strong>
             <small>Jenis peringatan & update</small>
-          </div>
-          <div className={`metric-card ${quietHoursEnabled ? "critical" : ""}`}>
-            <span>Jam Sunyi</span>
-            <strong>{quietHoursEnabled ? "Aktif" : "Nonaktif"}</strong>
-            <small>{quietHoursEnabled ? `${quietStart} - ${quietEnd}` : "Menerima notif 24/7"}</small>
           </div>
           <div className="metric-card">
             <span>Wilayah Area</span>
@@ -312,80 +280,6 @@ export function NotificationSettingsPage() {
               </div>
             </motion.div>
 
-            {/* Quiet Hours Panel */}
-            <motion.div variants={itemVariants} className="panel">
-              <div style={{ marginBottom: "20px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Icon name="do_not_disturb_on" style={{ color: "var(--critical)" }} /> Jam Sunyi (DND)
-                </h3>
-              </div>
-              
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", flexWrap: "wrap", gap: 16 }}>
-                <div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>Jeda notifikasi otomatis</div>
-                  <div style={{ fontSize: "12px", color: "var(--ink-soft)", marginTop: "2px" }}>Tahan notifikasi non-kritis selama periode ini</div>
-                </div>
-                <label style={{ position: "relative", width: "44px", height: "24px", cursor: "pointer" }}>
-                  <input 
-                    type="checkbox" 
-                    checked={quietHoursEnabled} 
-                    onChange={(e) => setQuietHoursEnabled(e.target.checked)} 
-                    style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
-                  />
-                  <span style={{ 
-                    position: "absolute", top: 0, left: 0, right: 0, bottom: 0, 
-                    background: quietHoursEnabled ? "var(--critical)" : "var(--line)", 
-                    borderRadius: 8, transition: "0.3s" 
-                  }}>
-                    <span style={{ 
-                      position: "absolute", height: "18px", width: "18px", left: "3px", bottom: "3px", 
-                      background: "#fff", borderRadius: "50%", transition: "0.3s",
-                      transform: quietHoursEnabled ? "translateX(20px)" : "translateX(0)" 
-                    }} />
-                  </span>
-                </label>
-              </div>
-
-              <AnimatePresence>
-                {quietHoursEnabled && (
-                  <motion.div 
-                    initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                    style={{ overflow: "hidden" }}
-                  >
-                    <div className="notif-time-grid">
-                      <div>
-                        <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-soft)", display: "block", marginBottom: "6px" }}>Mulai (WIB)</label>
-                        <input 
-                          type="time" 
-                          value={quietStart} 
-                          onChange={(e) => setQuietStart(e.target.value)}
-                          style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--line)", borderRadius: "var(--radius)", fontSize: "14px", color: "var(--ink)", background: "var(--surface)" }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-soft)", display: "block", marginBottom: "6px" }}>Selesai (WIB)</label>
-                        <input 
-                          type="time" 
-                          value={quietEnd} 
-                          onChange={(e) => setQuietEnd(e.target.value)}
-                          style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--line)", borderRadius: "var(--radius)", fontSize: "14px", color: "var(--ink)", background: "var(--surface)" }}
-                        />
-                      </div>
-                      </div>
-                      <p style={{ marginTop: "12px", fontSize: "12px", color: "var(--ink-soft)", lineHeight: 1.5 }}>
-                        <strong>Catatan:</strong> Peringatan kritis (seperti bencana sangat tinggi atau mendesak) akan tetap dikirimkan dan mengabaikan pengaturan jam sunyi ini.
-                      </p>
-                    </motion.div>
-                  )}
-              </AnimatePresence>
-              
-              <div style={{ background: "var(--warning-soft)", border: "1px solid #fde68a", borderRadius: "var(--radius)", padding: "12px 16px", fontSize: "12px", color: "#92400e", display: "flex", gap: "12px", alignItems: "start", marginTop: "8px" }}>
-                <Icon name="warning" style={{ fontSize: "18px", color: "#d97706", flexShrink: 0 }} />
-                <div style={{ lineHeight: 1.5 }}>
-                  Peringatan <strong>Sangat Tinggi</strong> dan darurat evakuasi akan <strong>tetap dikirimkan</strong> meskipun jam sunyi sedang aktif.
-                </div>
-              </div>
-            </motion.div>
           </div>
 
           {/* Right Column */}

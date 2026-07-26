@@ -41,7 +41,7 @@ final class NotificationApiTest extends TestCase
         $this->assertDatabaseHas('notification_settings', ['user_id' => $user->id]);
     }
 
-    public function test_settings_update_rejects_unknown_channel_event_and_bad_time(): void
+    public function test_settings_update_rejects_unknown_channel_and_event(): void
     {
         $user = $this->makeUser();
 
@@ -52,12 +52,10 @@ final class NotificationApiTest extends TestCase
         $this->putJson('/api/notifications/settings', [
             'channels' => ['telegram'],
             'event_types' => ['gempa_bumi'],
-            'quiet_start' => '25:00',
-            'quiet_end' => '9 malam',
             'monitored_regions' => [],
         ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['channels.0', 'event_types.0', 'quiet_start', 'quiet_end']);
+            ->assertJsonValidationErrors(['channels.0', 'event_types.0']);
     }
 
     public function test_settings_update_persists_roundtrip_and_writes_audit(): void
@@ -67,8 +65,6 @@ final class NotificationApiTest extends TestCase
         $this->actingAs($user)->putJson('/api/notifications/settings', [
             'channels' => ['browser'],
             'event_types' => ['bahaya_sangat_tinggi'],
-            'quiet_start' => '22:00',
-            'quiet_end' => '05:30',
             'monitored_regions' => ['Kelurahan Uji Notif'],
         ])->assertOk();
 
