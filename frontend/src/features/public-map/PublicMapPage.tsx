@@ -6,6 +6,7 @@ import { api } from "../../shared/api/client";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { riskColors, riskLabels } from "../../shared/constants/risk";
+import { severityLabels, type ReportSeverity } from "../reports/reportData";
 
 type GeoJsonFeature = { type: "Feature"; id: string; geometry: { type: string; coordinates: unknown }; properties: Record<string, unknown> };
 type FeatureCollection = { type: "FeatureCollection"; features: GeoJsonFeature[] };
@@ -342,7 +343,13 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, user
             properties: { color, risk_class: severity }
           });
 
-          const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`<strong>Laporan: ${report.properties.report_code ?? "Warga"}</strong><br>${report.properties.location ?? "Wilayah pesisir"}<br>Tingkat Genangan: <span style="color:${color}; font-weight:bold;">${riskText(severity)}</span><br>Radius Area: ${Math.round(radiusKm * 1000)} meter<br>Ketinggian air: ${report.properties.water_height_cm ?? "-"} cm`);
+          const incidentDate = report.properties.incident_time
+            ? new Date(String(report.properties.incident_time)).toLocaleString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }) + " WIB"
+            : null;
+          // severity memakai kamus keparahan laporan (ringan/sedang/parah/
+          // sangat_parah) — bukan kamus kelas risiko; radius lingkaran hanya
+          // visualisasi keparahan, bukan hasil pengukuran.
+          const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`<strong>Laporan: ${report.properties.report_code ?? "Warga"}</strong><br>${report.properties.location ?? "Wilayah pesisir"}${incidentDate ? `<br>Waktu kejadian: ${incidentDate}` : ""}<br>Tingkat Genangan: <span style="color:${color}; font-weight:bold;">${severityLabels[severity as ReportSeverity] ?? severity}</span><br>Ketinggian air: ${report.properties.water_height_cm ?? "-"} cm`);
 
           reportMarkers.current.push(
             new maplibregl.Marker({ color })
@@ -632,6 +639,7 @@ export function PublicMapPage() {
     evacuation_routes: { type: "FeatureCollection", features: [] },
   });
   const [activeWarning, setActiveWarning] = useState<ActiveWarning | null>(null);
+  const [freshness, setFreshness] = useState<DataFreshness | null>(null);
   const [catalog, setCatalog] = useState<Prediction[]>([]);
   const [selectedRegency, setSelectedRegency] = useState("all");
   const [selectedDate, setSelectedDate] = useState("all");
@@ -683,7 +691,15 @@ export function PublicMapPage() {
       setRegions(response.data.regions); setReports(response.data.reports);
       if (response.data.layers) setLayers(response.data.layers);
       setActiveWarning(response.data.active_warning ?? null);
-    }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Data peta belum bisa dimuat."); }).finally(() => { if (active) setLoading(false); });
+      setFreshness(response.data.data_freshness ?? null);
+    }).catch((reason: unknown) => {
+      if (!active) return;
+      setError(reason instanceof Error ? reason.message : "Data peta belum bisa dimuat.");
+      // Kosongkan peta saat gagal — tanpa ini toolbar sudah berganti tanggal
+      // sementara peta masih menggambar zona dari tanggal sebelumnya.
+      setRegions({ type: "FeatureCollection", features: [] });
+      setReports({ type: "FeatureCollection", features: [] });
+    }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [selectedDate, selectedRegency]);
 
@@ -696,12 +712,10 @@ export function PublicMapPage() {
     return !highest || (rank[String(feature.properties.risk_class)] ?? 0) > (rank[String(highest.properties.risk_class)] ?? 0) ? feature : highest;
   }, null), [regions]);
 
-  const isStaleData = useMemo(() => {
-    if (!regions.features.length) return false;
-    const generatedAt = regions.features[0]?.properties?.generated_at;
-    if (!generatedAt) return false;
-    return daysFromToday(String(generatedAt).substring(0, 10)) < 0;
-  }, [regions]);
+  // Pakai penanda kesegaran dari server (aturan 30 jam) — hitung ulang
+  // per-kalender di sisi klien salah menandai "basi" setiap dini hari
+  // (run pipeline 06:00 WIB) dan hanya menyampel satu fitur.
+  const isStaleData = freshness?.is_stale ?? false;
 
   useEffect(() => {
     if (!regions.features.length) { setSelectedFeature(null); return; }
@@ -770,8 +784,8 @@ export function PublicMapPage() {
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
           <Icon name="warning" style={{ fontSize: 20, color: riskColors[String(highestRisk?.properties.risk_class)] ?? "var(--accent)", flexShrink: 0 }} />
           <div>
-            <strong style={{ display: "block", marginBottom: 3, color: "var(--ink)", fontSize: 13 }}>{highestRisk ? `Risiko ${riskText(highestRisk.properties.risk_class)} terdeteksi` : "Memuat peringatan risiko"}</strong>
-            <span style={{ color: "var(--ink-soft)", fontSize: 12, lineHeight: 1.5 }}>{highestRisk ? `${highestRisk.properties.village ?? "Wilayah pesisir"}, ${highestRisk.properties.regency ?? "Lampung"} · peluang rob ${Math.round(Number(highestRisk.properties.risk_probability ?? 0))}%` : "Mengambil data peta dari server."}</span>
+            <strong style={{ display: "block", marginBottom: 3, color: "var(--ink)", fontSize: 13 }}>{highestRisk ? `Risiko ${riskText(highestRisk.properties.risk_class)} terdeteksi` : loading ? "Memuat peringatan risiko" : "Tidak ada prediksi untuk tanggal ini"}</strong>
+            <span style={{ color: "var(--ink-soft)", fontSize: 12, lineHeight: 1.5 }}>{highestRisk ? `${highestRisk.properties.village ?? "Wilayah pesisir"}, ${highestRisk.properties.regency ?? "Lampung"} · peluang rob ${Math.round(Number(highestRisk.properties.risk_probability ?? 0))}%` : loading ? "Mengambil data peta dari server." : "Coba pilih tanggal atau kabupaten lain."}</span>
           </div>
         </div>
         {(!userRole || userRole === "warga") && <a className="btn secondary" href="#/awam" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>Lihat mode awam</a>}
@@ -780,8 +794,8 @@ export function PublicMapPage() {
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
           <Icon name="history" style={{ fontSize: 20, color: "#b45309", flexShrink: 0 }} />
           <div>
-            <strong style={{ display: "block", marginBottom: 3, color: "#78350f", fontSize: 13 }}>Menampilkan Prediksi Historis</strong>
-            <span style={{ color: "#92400e", fontSize: 12, lineHeight: 1.5 }}>Data peringatan cuaca hari ini gagal dimuat atau tertunda. Anda sedang melihat prediksi historis dari {regions.features[0]?.properties?.generated_at ? String(regions.features[0].properties.generated_at).substring(0, 10) : "sebelumnya"}.</span>
+            <strong style={{ display: "block", marginBottom: 3, color: "#78350f", fontSize: 13 }}>Prediksi Belum Diperbarui</strong>
+            <span style={{ color: "#92400e", fontSize: 12, lineHeight: 1.5 }}>{freshness?.notice ?? `Pembaruan prediksi harian tertunda. Anda melihat prediksi yang dibuat ${freshness?.last_generated_at ? String(freshness.last_generated_at).substring(0, 10) : "sebelumnya"}.`}</span>
           </div>
         </div>
       </motion.div>}
@@ -1136,7 +1150,7 @@ export function PublicMapPage() {
         </div>
         <aside className="stack" style={{ gap: 14 }}>
           <motion.div variants={itemVariants} className="panel flush">
-            <div className="map-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", background: "var(--surface)" }}>{[[regions.features.length, "Zona dipantau", "var(--ink)"], [reports.features.length, "Laporan valid", "var(--low)"], [regions.features.filter((item) => ["tinggi", "sangat_tinggi"].includes(String(item.properties.risk_class))).length, "Risiko tinggi+", "var(--critical)"]].map(([value, label, color]) => <div key={String(label)} style={{ padding: "16px 8px", textAlign: "center" }}><strong style={{ display: "block", fontSize: 21, color: String(color) }}>{value}</strong><span style={{ fontSize: 11, color: "var(--ink-soft)" }}>{label}</span></div>)}</div>
+            <div className="map-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", background: "var(--surface)" }}>{[[regions.features.length, "Zona tanggal ini", "var(--ink)"], [reports.features.length, "Laporan valid (100 terbaru)", "var(--low)"], [regions.features.filter((item) => ["tinggi", "sangat_tinggi"].includes(String(item.properties.risk_class))).length, "Risiko tinggi+", "var(--critical)"]].map(([value, label, color]) => <div key={String(label)} style={{ padding: "16px 8px", textAlign: "center" }}><strong style={{ display: "block", fontSize: 21, color: String(color) }}>{value}</strong><span style={{ fontSize: 11, color: "var(--ink-soft)" }}>{label}</span></div>)}</div>
           </motion.div>
           {activeWarning && <motion.div variants={itemVariants} className="panel" style={{ padding: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
