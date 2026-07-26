@@ -56,7 +56,9 @@ class GoogleAuthController
         } catch (\Exception $e) {
             \Log::error('Google Auth Error: ' . $e->getMessage());
             $frontendUrl = config('services.frontend.url');
-            return redirect($frontendUrl . '/login?error=google_auth_failed');
+            // Router frontend berbasis hash — path "/login?..." tidak pernah
+            // dibaca; harus "/#/login?..." agar pesan errornya tampil.
+            return redirect($frontendUrl . '/#/login?error=google_auth_failed');
         }
     }
 }
