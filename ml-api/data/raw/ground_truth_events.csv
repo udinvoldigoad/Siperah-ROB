@@ -1,0 +1,13 @@
+date,station,label,event_type,source,source_reference
+2018-07-25,pesisir_barat,1,gelombang_pasang_abrasi,BNPB DIBI (gis.bnpb.go.id/databencana),1813104201807251
+2020-05-25,pesawaran,1,gelombang_pasang_abrasi,BNPB DIBI (gis.bnpb.go.id/databencana),1809 104 2020 05 025 1
+2020-08-06,pesisir_barat,1,gelombang_pasang_abrasi,BNPB DIBI (gis.bnpb.go.id/databencana),1813 104 2020 08 06 1
+2021-12-20,mesuji,1,banjir_pasang_campuran,BNPB DIBI (gis.bnpb.go.id/databencana),1811 101 2021 012 20 1
+2022-06-18,mesuji,1,banjir_pasang_campuran,BNPB DIBI (gis.bnpb.go.id/databencana),1811 101 2022 06 018 1
+2022-06-23,tulang_bawang,1,banjir_pasang,BNPB DIBI (gis.bnpb.go.id/databencana),1808 101 2022 06 023 1
+2022-07-15,lampung_selatan,1,banjir_gelombang_pasang,BNPB DIBI (gis.bnpb.go.id/databencana),1803 101 2022 07 015 1
+2024-05-24,tulang_bawang,1,banjir_pasang_campuran,BNPB DIBI (gis.bnpb.go.id/databencana),1805 101 20240524 1
+2024-12-03,lampung_timur,1,banjir_rob,BNPB DIBI (gis.bnpb.go.id/databencana),1807 101 20241203 1
+2024-12-13,lampung_timur,1,banjir_rob,BNPB DIBI (gis.bnpb.go.id/databencana),1807 101 20241213 1
+2024-12-13,tulang_bawang,1,banjir_pasang,BNPB DIBI (gis.bnpb.go.id/databencana),1805 101 20241213 1
+2024-12-15,mesuji,1,banjir_gelombang_pasang,BNPB DIBI (gis.bnpb.go.id/databencana),1811 101 20241215 1

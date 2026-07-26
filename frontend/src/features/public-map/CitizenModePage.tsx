@@ -338,7 +338,7 @@ function CitizenModeDesktop({
               <div className="citizen-status-metrics">
                 {[
                   ["Kemungkinan Rob", data ? `${data.risk_probability}%` : "-", data ? risk : (dataLoaded ? "Tidak tersedia" : "Memuat...")],
-                  ["Puncak Pasang", data ? `${meters.format(data.max_tidal_height)} meter` : "-", data ? `Pukul ${data.peak_time} WIB` : (dataLoaded ? "Tidak tersedia" : "Menunggu Data")],
+                  ["Puncak Pasang (di atas muka laut rata-rata)", data ? `${meters.format(data.max_tidal_height)} meter` : "-", data ? `Pukul ${data.peak_time} WIB` : (dataLoaded ? "Tidak tersedia" : "Menunggu Data")],
                   ["Laporan Sekitar", data ? `${data.nearby_reports.length} laporan` : "-", data ? "Dari pantauan warga" : (dataLoaded ? "Tidak tersedia" : "Dari pantauan warga")],
                 ].map(([label, value, note], i) => (
                   <motion.div
@@ -688,7 +688,7 @@ function CitizenModeMobile({
               <div style={{ fontSize: 24, fontWeight: 800 }}>{data ? `${data.risk_probability}%` : "-"}</div>
             </div>
             <div style={{ flex: 1, background: "rgba(0,0,0,0.15)", borderRadius: 16, padding: "12px 16px" }}>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>Tinggi Air</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>Pasang (vs MSL)</div>
               <div style={{ fontSize: 24, fontWeight: 800 }}>{data ? `${meters.format(data.max_tidal_height)}m` : "-"}</div>
             </div>
           </div>

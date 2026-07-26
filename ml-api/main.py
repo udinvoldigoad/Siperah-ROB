@@ -51,8 +51,10 @@ DB_DATABASE = os.getenv("DB_DATABASE", "siperah_rob")
 DB_USERNAME = os.getenv("DB_USERNAME", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 
-# Offset datum pasut (cm). tidal_data internal memakai meter relatif MSL sensor;
-# kalibrasikan terhadap datum ambang rob BIG bila sudah ada data resmi.
+# Datum pasut: tidal_data memakai sea_level_height_msl Open-Meteo Marine (model
+# FES), yaitu meter RELATIF MSL. Seluruh pipeline bekerja native di datum MSL —
+# tidak ada offset karangan. Env ini hanya diisi bila kelak ada nilai datum
+# resmi BIG/BMKG hasil pengukuran (default 0 = tetap MSL).
 TIDE_DATUM_OFFSET_CM = float(os.getenv("ML_TIDE_DATUM_OFFSET_CM", 0))
 WEATHER_SOURCE = os.getenv("ML_WEATHER_SOURCE", "openmeteo")  # openmeteo | bmkg
 
@@ -119,31 +121,60 @@ def strip_timezone(dt):
     return dt
 
 
-def load_tide_model(conn):
-    """Fit model harmonik dari tabel tidal_data; fallback simulasi bila kosong."""
+def _prepare_tide_frame(rows) -> pd.DataFrame:
+    df_tide = pd.DataFrame(rows, columns=["recorded_at", "tidal_height"])
+    series = pd.to_datetime(df_tide["recorded_at"])
+    if series.dt.tz is not None:
+        series = series.dt.tz_convert("UTC").dt.tz_localize(None)
+    df_tide["recorded_at"] = series
+    # Kolom numeric Postgres tiba sebagai Decimal; lstsq butuh float murni.
+    df_tide["tidal_height"] = pd.to_numeric(df_tide["tidal_height"], errors="coerce").astype(float)
+    return df_tide.dropna(subset=["tidal_height"])
+
+
+def load_tide_models(conn) -> dict[str, tuple]:
+    """
+    Fit model harmonik PER STASIUN dari tabel tidal_data.
+
+    Fase & amplitudo pasut berbeda nyata antar perairan (Samudra Hindia di
+    Pesisir Barat vs Laut Jawa di Tulang Bawang/Mesuji vs Teluk Lampung) —
+    satu model gabungan mencampur fase semua stasiun dan meratakan sinyal.
+    """
     cursor = conn.cursor()
-    cursor.execute("SELECT recorded_at, tidal_height FROM tidal_data ORDER BY recorded_at ASC")
+    cursor.execute(
+        "SELECT station_code, recorded_at, tidal_height FROM tidal_data ORDER BY recorded_at ASC")
     rows = cursor.fetchall()
     cursor.close()
 
-    t0 = beta = None
-    is_simulated = False
-    if rows:
-        df_tide = pd.DataFrame(rows, columns=["recorded_at", "tidal_height"])
-        series = pd.to_datetime(df_tide["recorded_at"])
-        if series.dt.tz is not None:
-            series = series.dt.tz_convert("UTC").dt.tz_localize(None)
-        df_tide["recorded_at"] = series
-        # Kolom numeric Postgres tiba sebagai Decimal; lstsq butuh float murni.
-        df_tide["tidal_height"] = pd.to_numeric(df_tide["tidal_height"], errors="coerce").astype(float)
-        df_tide = df_tide.dropna(subset=["tidal_height"])
+    if not rows:
+        raise ValueError(
+            "Data historis pasang surut (tidal_data) kosong. "
+            "Jalankan 'php artisan data:fetch-tidal-sealevel' terlebih dahulu.")
+
+    all_rows = pd.DataFrame(rows, columns=["station_code", "recorded_at", "tidal_height"])
+    models: dict[str, tuple] = {}
+    for station, group in all_rows.groupby("station_code"):
+        df_tide = _prepare_tide_frame(group[["recorded_at", "tidal_height"]].values.tolist())
         t0, beta = fit_harmonic_model(df_tide)
+        if t0 is None or beta is None:
+            print(f"[WARNING] Stasiun {station}: data pasut < 10 baris — dilewati.")
+            continue
+        t0 = strip_timezone(t0.to_pydatetime() if isinstance(t0, pd.Timestamp) else t0)
+        models[station] = (t0, beta)
 
-    if t0 is None or beta is None:
-        raise ValueError("Data historis pasang surut (tidal_data) kosong atau tidak cukup. Jalankan 'php artisan data:fetch-tidal-sealevel' terlebih dahulu.")
+    if not models:
+        raise ValueError("Tidak ada stasiun dengan data pasut cukup untuk fit harmonik.")
+    print(f"[INFO] Model harmonik pasut per stasiun: {sorted(models)}")
+    return models
 
-    t0 = strip_timezone(t0.to_pydatetime() if isinstance(t0, pd.Timestamp) else t0)
-    return t0, beta, False
+
+def tide_model_for(models: dict[str, tuple], station: str) -> tuple:
+    """Model stasiun; fallback ke stasiun pertama bila stasiun tak punya data."""
+    if station in models:
+        return models[station]
+    fallback = next(iter(sorted(models)))
+    print(f"[WARNING] Stasiun {station} tidak punya model pasut — memakai {fallback}.")
+    return models[fallback]
 
 
 def daily_max_tide_cm(t0, beta, start, end) -> pd.DataFrame:
@@ -161,17 +192,16 @@ def daily_max_tide_cm(t0, beta, start, end) -> pd.DataFrame:
 # 3. Penyusunan dataset training --------------------------------------------------
 
 def build_training_frame(conn):
-    """Gabungkan pasut (harmonik), cuaca, gelombang per stasiun + label."""
+    """Gabungkan pasut (harmonik per stasiun), cuaca, gelombang + label terkalibrasi."""
     weather, marine = data_fetcher.load_cached_historical()
     if weather is None:
         print("[INFO] CSV historis belum ada -- mengunduh dari Open-Meteo...")
         weather, marine = data_fetcher.fetch_all_historical()
     data_source = "openmeteo_era5"
 
-    t0, beta, tide_simulated = load_tide_model(conn)
+    tide_models = load_tide_models(conn)
     start = pd.to_datetime(weather["date"]).min()
     end = pd.to_datetime(weather["date"]).max() + timedelta(days=1)
-    tide_daily = daily_max_tide_cm(t0, beta, start, end)
 
     frames = []
     for key in weather["station"].unique():
@@ -182,27 +212,33 @@ def build_training_frame(conn):
             m = marine[marine["station"] == key].copy()
             m["date"] = pd.to_datetime(m["date"])
             m = m.drop(columns=["station"])
+        t0, beta = tide_model_for(tide_models, key)
+        tide_daily = daily_max_tide_cm(t0, beta, start, end)
         tide = tide_daily[["date", "tide_height_cm"]]
         features = feature_engineering.build_daily_features(tide, w.drop(columns=["station"]), m)
         features["station"] = key
         frames.append(features)
 
     df = pd.concat(frames, ignore_index=True)
-    df = labeler.apply_proxy_labels(df)
+
+    # Ambang proxy dikalibrasi terhadap kejadian riil (DIBI BNPB + episode
+    # terkurasi) — bukan konstanta tetap. Hasil kalibrasi disimpan ke models/.
+    calibration = labeler.calibrate_proxy_thresholds(df)
+    print(f"[INFO] Kalibrasi ambang proxy: tide_q={calibration['tide_quantile']} "
+          f"rain_q={calibration['rain_quantile']} "
+          f"(F1 vs kejadian riil={calibration['f1_vs_truth']}, "
+          f"recall={calibration['recall_vs_truth']})")
+    df = labeler.apply_proxy_labels(df, calibration["tide_quantile"], calibration["rain_quantile"])
+    df = labeler.merge_external_labels(df)
     df = labeler.merge_ground_truth_labels(df, labeler.fetch_validated_report_dates(conn))
     print(f"[INFO] Dataset: {len(df)} baris fitur. Label: {labeler.label_summary(df)}")
 
-    tide_stats = {
-        "monthly_avg": tide_daily.assign(month=tide_daily["date"].dt.month)
-                                  .groupby("month")["tide_height_cm"].mean().to_dict(),
-        "p95": float(tide_daily["tide_height_cm"].quantile(0.95)),
-    }
-    return df, tide_stats, data_source, (t0, beta, tide_simulated)
+    return df, data_source, calibration
 
 
 def run_train(conn, tune: bool = True):
     print("[INFO] Menyusun dataset training dari database & API historis...")
-    df, tide_stats, data_source, tide_params = build_training_frame(conn)
+    df, data_source, calibration = build_training_frame(conn)
     
     # Menyelaraskan nama kolom target dengan target yang diharapkan train_model (Rob)
     df = df.rename(columns={"label_rob": "Rob"})
@@ -222,7 +258,12 @@ def run_train(conn, tune: bool = True):
     metrics = train_model.evaluate_model(model, test_df)
     metrics["data_source"] = data_source
     metrics["trained_rows"] = int(len(train_df))
+    metrics["label_calibration"] = calibration
     train_model.save_model(model, metrics)
+
+    calibration_path = train_model.MODELS_DIR / "label_calibration.json"
+    calibration_path.write_text(json.dumps(calibration, indent=2))
+    print(f"[OK] Kalibrasi label disimpan: {calibration_path}")
     return model
 
 
@@ -270,36 +311,39 @@ def run_predict(conn):
         print("[INFO] Model tersimpan belum ada -- menjalankan training terlebih dahulu...")
         model = run_train(conn)
 
-    # Pasang surut 30 hari ke depan (harmonik dari tidal_data)
-    t0, beta, tide_simulated = load_tide_model(conn)
+    # Pasang surut 30 hari ke depan — harmonik PER STASIUN dari tidal_data
+    tide_models = load_tide_models(conn)
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-    tide_daily = daily_max_tide_cm(t0, beta, today, today + timedelta(days=31))
-    tide_forecast = tide_daily.rename(columns={"tide_height_cm": "max_tide_height_cm"})
-
-    # Statistik pasut (anomali/king tide) dari backcast 2 tahun agar konsisten training
-    tide_hist = daily_max_tide_cm(t0, beta, today - timedelta(days=730), today)
-    tide_stats = {
-        "monthly_avg": tide_hist.assign(month=tide_hist["date"].dt.month)
-                                 .groupby("month")["tide_height_cm"].mean().to_dict(),
-        "p95": float(tide_hist["tide_height_cm"].quantile(0.95)),
-    }
 
     # Prakiraan cuaca + gelombang per stasiun
     print(f"[INFO] Mengambil prakiraan cuaca & gelombang ({WEATHER_SOURCE})...")
     forecasts = data_fetcher.fetch_daily_forecast_for_inference(days=8, weather_source=WEATHER_SOURCE)
     weather_hist, marine_hist = data_fetcher.load_cached_historical()
     data_source = "MLPipeline-OpenMeteo"
-    if tide_simulated:
-        data_source += "+SimTide"
 
     # Prediksi per stasiun (sekali per stasiun, dipakai semua region di dalamnya)
     station_results: dict[str, pd.DataFrame] = {}
+    station_tide_daily: dict[str, pd.DataFrame] = {}
     for key in data_fetcher.STATIONS:
         frames = forecasts.get(key, {})
         weather_fc = frames.get("weather", pd.DataFrame())
         if weather_fc is None or weather_fc.empty:
             print(f"[WARNING] Tidak ada prakiraan cuaca untuk stasiun {key} -- dilewati.")
             continue
+
+        t0, beta = tide_model_for(tide_models, key)
+        tide_daily = daily_max_tide_cm(t0, beta, today, today + timedelta(days=31))
+        station_tide_daily[key] = tide_daily
+        tide_forecast = tide_daily.rename(columns={"tide_height_cm": "max_tide_height_cm"})
+
+        # Statistik pasut (anomali/king tide) dari backcast 2 tahun stasiun ybs.
+        tide_hist = daily_max_tide_cm(t0, beta, today - timedelta(days=730), today)
+        tide_stats = {
+            "monthly_avg": tide_hist.assign(month=tide_hist["date"].dt.month)
+                                     .groupby("month")["tide_height_cm"].mean().to_dict(),
+            "p95": float(tide_hist["tide_height_cm"].quantile(0.95)),
+        }
+
         clim, wave_clim = climatology_from_history(weather_hist, marine_hist, key)
         recent_rain = float(pd.to_numeric(weather_fc["rainfall_mm"], errors="coerce").fillna(0).mean())
         station_results[key] = predict_forecast.generate_forecast(
@@ -356,7 +400,10 @@ def run_predict(conn):
                 provenance_status = VALUES(provenance_status)
         """
 
-    tide_lookup = tide_daily.set_index(tide_daily["date"].dt.date)
+    tide_lookups = {
+        key: daily.set_index(daily["date"].dt.date)
+        for key, daily in station_tide_daily.items()
+    }
     generated_at = datetime.now()
     default_station = "bandar_lampung"
     written = 0
@@ -373,6 +420,7 @@ def run_predict(conn):
             station_key = default_station if default_station in station_results else next(iter(station_results))
         station_hits[station_key] = station_hits.get(station_key, 0) + 1
         result = station_results[station_key]
+        tide_lookup = tide_lookups[station_key]
 
         # Logika Spasial: Probabilitas turun eksponensial seiring tingginya elevasi dan jauhnya dari pantai
         # Elevasi 5m = exp(-2.5) = ~8% probabilitas asli. Elevasi 0m = 100%.
@@ -432,7 +480,7 @@ def run_predict(conn):
 
     # Audit trail: catat run prediksi ke data_import_runs (kapan, versi model,
     # jumlah, sumber) — ml-api menulis langsung ke DB, jadi ini jejak resminya.
-    _log_prediction_run(conn, written, data_source, tide_simulated)
+    _log_prediction_run(conn, written, data_source, False)
     cursor.close()
 
     print(f"[SUCCESS] {written} prediksi ditulis/diperbarui "

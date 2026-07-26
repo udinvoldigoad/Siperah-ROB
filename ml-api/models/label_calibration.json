@@ -1,0 +1,45 @@
+{
+  "tide_quantile": 0.85,
+  "rain_quantile": 0.7,
+  "f1_vs_truth": 0.5455,
+  "precision_vs_truth": 1.0,
+  "recall_vs_truth": 0.375,
+  "truth_days_matched": 45,
+  "overall_positive_rate": 0.04771,
+  "station_thresholds": {
+    "bandar_lampung": {
+      "tide_thr_cm": 126.08,
+      "rain_thr_mm": 8.3
+    },
+    "lampung_selatan": {
+      "tide_thr_cm": 113.62,
+      "rain_thr_mm": 7.0
+    },
+    "lampung_timur": {
+      "tide_thr_cm": 111.45,
+      "rain_thr_mm": 8.9
+    },
+    "mesuji": {
+      "tide_thr_cm": 149.88,
+      "rain_thr_mm": 10.2
+    },
+    "pesawaran": {
+      "tide_thr_cm": 125.65,
+      "rain_thr_mm": 8.4
+    },
+    "pesisir_barat": {
+      "tide_thr_cm": 121.39,
+      "rain_thr_mm": 8.4
+    },
+    "tanggamus": {
+      "tide_thr_cm": 124.31,
+      "rain_thr_mm": 6.9
+    },
+    "tulang_bawang": {
+      "tide_thr_cm": 135.79,
+      "rain_thr_mm": 10.8
+    }
+  },
+  "truth_positives": 24,
+  "truth_negatives": 21
+}

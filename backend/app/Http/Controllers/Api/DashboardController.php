@@ -135,26 +135,33 @@ final class DashboardController
             ->distinct('regency')
             ->count('regency');
 
-        $highRisk = DB::table('predictions')
-            ->join('regions', 'predictions.region_id', '=', 'regions.id')
-            ->whereIn('risk_class', ['tinggi', 'sangat_tinggi'])
-            ->when($latestPredictionDate, fn ($query) => $query->whereDate('prediction_date', $latestPredictionDate))
-            ->where(function ($query): void {
-                $this->applyMonitoredRegionFilter($query, 'regions');
-            })
-            ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
-            ->distinct('region_id')
-            ->count('predictions.region_id');
+        // Tanpa tanggal prediksi (mis. filter bulan tanpa data) KPI harus nol —
+        // bila tidak, agregasi berjalan tanpa filter tanggal dan menghitung
+        // seluruh tabel prediksi (satu kelurahan terhitung puluhan kali).
+        $highRisk = 0;
+        $population = 0;
+        if ($latestPredictionDate) {
+            $highRisk = DB::table('predictions')
+                ->join('regions', 'predictions.region_id', '=', 'regions.id')
+                ->whereIn('risk_class', ['tinggi', 'sangat_tinggi'])
+                ->whereDate('prediction_date', $latestPredictionDate)
+                ->where(function ($query): void {
+                    $this->applyMonitoredRegionFilter($query, 'regions');
+                })
+                ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
+                ->distinct('region_id')
+                ->count('predictions.region_id');
 
-        $population = DB::table('predictions')
-            ->join('regions', 'predictions.region_id', '=', 'regions.id')
-            ->when($latestPredictionDate, fn ($query) => $query->whereDate('predictions.prediction_date', $latestPredictionDate))
-            ->whereIn('predictions.risk_class', ['tinggi', 'sangat_tinggi'])
-            ->where(function ($query): void {
-                $this->applyMonitoredRegionFilter($query, 'regions');
-            })
-            ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
-            ->sum('regions.population');
+            $population = DB::table('predictions')
+                ->join('regions', 'predictions.region_id', '=', 'regions.id')
+                ->whereDate('predictions.prediction_date', $latestPredictionDate)
+                ->whereIn('predictions.risk_class', ['tinggi', 'sangat_tinggi'])
+                ->where(function ($query): void {
+                    $this->applyMonitoredRegionFilter($query, 'regions');
+                })
+                ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
+                ->sum('regions.population');
+        }
 
         $startOfMonth = $selectedMonth ? Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth() : Carbon::now()->startOfMonth();
         $endOfMonth = (clone $startOfMonth)->endOfMonth();
@@ -167,9 +174,10 @@ final class DashboardController
 
         $regencyRows = $this->regencyRiskRows($latestPredictionDate, $selectedRegency);
 
-        // FR-PROV-3: grafik prediksi 30 hari KE DEPAN, jumlah kelurahan kelas
-        // Sangat Tinggi (utama) + Tinggi (sekunder). Anchor ke hari ini karena
-        // ini forecast — bukan mundur dari tanggal prediksi terjauh.
+        // FR-PROV-3: grafik prediksi 30 hari KE DEPAN — rata-rata & maksimum
+        // peluang rob harian; jumlah kelurahan Tinggi/Sangat Tinggi ikut dikirim
+        // sebagai pelengkap. Anchor ke hari ini karena ini forecast — bukan
+        // mundur dari tanggal prediksi terjauh.
         $trendStart = Carbon::now()->toDateString();
         $trendEnd = Carbon::now()->addDays(29)->toDateString();
         $trend = DB::table('predictions')
@@ -272,6 +280,12 @@ final class DashboardController
 
     private function regencyRiskRows(?string $latestPredictionDate, ?string $selectedRegency = null)
     {
+        // Tanpa tanggal acuan, tabel per kabupaten harus kosong — tanpa guard
+        // ini agregasi menjumlahkan SEMUA tanggal prediksi sekaligus.
+        if (!$latestPredictionDate) {
+            return collect();
+        }
+
         $previousPredictionDate = $latestPredictionDate
             ? DB::table('predictions')
                 ->join('regions', 'predictions.region_id', '=', 'regions.id')
@@ -305,14 +319,14 @@ final class DashboardController
                 $this->applyMonitoredRegionFilter($query, 'regions');
             })
             ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
-            ->when($latestPredictionDate, fn ($query) => $query->whereDate('predictions.prediction_date', $latestPredictionDate))
+            ->whereDate('predictions.prediction_date', $latestPredictionDate)
             ->selectRaw("
                 regions.regency,
                 SUM(CASE WHEN predictions.risk_class = 'rendah' THEN 1 ELSE 0 END) AS low_count,
                 SUM(CASE WHEN predictions.risk_class = 'sedang' THEN 1 ELSE 0 END) AS medium_count,
                 SUM(CASE WHEN predictions.risk_class = 'tinggi' THEN 1 ELSE 0 END) AS high_count,
                 SUM(CASE WHEN predictions.risk_class = 'sangat_tinggi' THEN 1 ELSE 0 END) AS critical_count,
-                SUM(COALESCE(regions.population, 0)) AS risk_population,
+                SUM(CASE WHEN predictions.risk_class IN ('tinggi', 'sangat_tinggi') THEN COALESCE(regions.population, 0) ELSE 0 END) AS risk_population,
                 MAX(predictions.risk_probability) AS max_probability
             ")
             ->groupBy('regions.regency')
@@ -367,12 +381,16 @@ final class DashboardController
 
     private function topImpactedRows(?string $latestPredictionDate, ?string $selectedRegency = null)
     {
+        if (!$latestPredictionDate) {
+            return collect();
+        }
+
         return DB::table('predictions')
             ->join('regions', 'predictions.region_id', '=', 'regions.id')
             ->where(function ($query): void {
                 $this->applyMonitoredRegionFilter($query, 'regions');
             })
-            ->when($latestPredictionDate, fn ($query) => $query->whereDate('predictions.prediction_date', $latestPredictionDate))
+            ->whereDate('predictions.prediction_date', $latestPredictionDate)
             ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'))
             ->select([
                 'predictions.id',
@@ -385,8 +403,8 @@ final class DashboardController
                 'regions.district',
                 'regions.regency',
                 'regions.population',
-                'regions.data_source as population_source',
-                'regions.provenance_status as population_provenance_status',
+                'regions.population_source',
+                'regions.population_provenance_status',
             ])
             ->orderByRaw("CASE predictions.risk_class WHEN 'sangat_tinggi' THEN 4 WHEN 'tinggi' THEN 3 WHEN 'sedang' THEN 2 ELSE 1 END DESC")
             ->orderByDesc('predictions.risk_probability')
@@ -402,12 +420,16 @@ final class DashboardController
 
         $total = (clone $query)->count();
         $withPopulation = (clone $query)->whereNotNull('population')->where('population', '>', 0)->count();
+        // Resmi = provenance populasi eksplisit 'official' DAN sumbernya BPS
+        // (diisi oleh data:import-population). Provenance geometri BIG di
+        // data_source TIDAK dihitung — BIG tidak menerbitkan data populasi.
         $official = (clone $query)
             ->whereNotNull('population')
             ->where('population', '>', 0)
+            ->where('population_provenance_status', 'official')
             ->where(function ($items): void {
-                $items->whereRaw("LOWER(COALESCE(data_source, '')) LIKE '%bps%'")
-                    ->orWhereRaw("LOWER(COALESCE(source_reference, '')) LIKE '%bps%'");
+                $items->whereRaw("LOWER(COALESCE(population_source, '')) LIKE '%bps%'")
+                    ->orWhereRaw("LOWER(COALESCE(population_source_reference, '')) LIKE '%bps%'");
             })
             ->count();
 

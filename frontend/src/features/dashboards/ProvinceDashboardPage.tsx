@@ -242,11 +242,12 @@ export function ProvinceDashboardPage() {
     });
   }, [summary.regencies, predictions, sortKey, sortDirection]);
 
-  // FR-PROV-3: grafik prediksi 30 hari KE DEPAN — jumlah kelurahan kelas
-  // Sangat Tinggi (utama) & Tinggi (sekunder). Sumbernya summary.trend_30_days
-  // yang diagregasi server (mengikuti filter kabupaten halaman), BUKAN rata-rata
-  // dari /public/predictions — endpoint itu terurut DESC & terbatas 1000 baris
-  // sehingga hanya memuat ~3 hari terjauh, bukan 30 hari penuh.
+  // FR-PROV-3: grafik prediksi 30 hari KE DEPAN — rata-rata (garis utama) &
+  // maksimum (garis putus-putus) peluang rob harian. Sumbernya
+  // summary.trend_30_days yang diagregasi server (mengikuti filter kabupaten
+  // halaman), BUKAN rata-rata dari /public/predictions — endpoint itu terurut
+  // DESC & terbatas 1000 baris sehingga hanya memuat ~3 hari terjauh, bukan
+  // 30 hari penuh.
   const trendData = useMemo(() => {
     const byDate = new Map<string, { avgProb: number; maxProb: number; criticalCount: number; highCount: number; highRiskCount: number }>();
     for (const row of summary.trend_30_days ?? []) {
@@ -363,9 +364,9 @@ export function ProvinceDashboardPage() {
             <small style={{ fontSize: "13px", color: "var(--ink-soft)", display: "block", marginTop: "12px" }}>Kabupaten & Kota di Lampung</small>
           </motion.div>
           <motion.div variants={itemVariants} className="metric-card critical" style={{ padding: "28px", borderRadius: 8 }}>
-            <span style={{ fontSize: "14px", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Zona Sangat Bahaya</span>
+            <span style={{ fontSize: "14px", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Zona Risiko Tinggi</span>
             <strong style={{ fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.high_risk_villages}</strong>
-            <small style={{ fontSize: "13px", display: "block", marginTop: "12px" }}>Kelurahan butuh perhatian khusus</small>
+            <small style={{ fontSize: "13px", display: "block", marginTop: "12px" }}>Kelurahan kelas Tinggi & Sangat Tinggi</small>
           </motion.div>
           <motion.div variants={itemVariants} className="metric-card medium" style={{ padding: "28px", borderRadius: 8 }}>
             <span style={{ fontSize: "14px", color: "var(--ink-soft)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Warga Terdampak Potensial</span>
@@ -696,7 +697,7 @@ export function ProvinceDashboardPage() {
                 <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)" }}>Kelurahan Utama</th>
                 <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)" }}>Wilayah Kota</th>
                 <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)" }}>Kategori Bahaya</th>
-                <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)", textAlign: "right" }}>Tinggi Pasang Prediksi</th>
+                <th style={{ padding: "14px 24px", fontSize: "12px", color: "var(--ink-soft)", textAlign: "right" }}>Tinggi Pasang Prediksi (di atas MSL)</th>
               </tr>
             </thead>
             <tbody>
@@ -725,7 +726,9 @@ export function ProvinceDashboardPage() {
                   <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontWeight: 700 }}>{index + 1}</td>
                   <td style={{ padding: "16px 24px", fontWeight: 700 }}>
                     {p.village ?? "-"}
-                    <div style={{ fontSize: 11, color: "var(--ink-soft)", fontWeight: 500, marginTop: 4 }}>{toNumber(p.population).toLocaleString("id-ID")} jiwa</div>
+                    <div style={{ fontSize: 11, color: "var(--ink-soft)", fontWeight: 500, marginTop: 4 }}>
+                      {toNumber(p.population) > 0 ? `${toNumber(p.population).toLocaleString("id-ID")} jiwa` : "Populasi belum tersedia"}
+                    </div>
                   </td>
                   <td style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>{p.district ?? "-"}, {p.regency ?? "-"}</td>
                   <td style={{ padding: "16px 24px" }}>

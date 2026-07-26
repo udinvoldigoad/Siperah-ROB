@@ -4,8 +4,19 @@
 __pycache__/
 *.pyc
 
-# Data mentah/olahan (diunduh ulang via `python main.py --mode fetch`)
-data/
+# Data mentah/olahan (diunduh ulang via `python main.py --mode fetch`) —
+# KECUALI ground truth terkurasi: itu data kejadian riil (BNPB DIBI + episode
+# terdokumentasi) yang tidak bisa diunduh ulang dan wajib ikut repo agar
+# training di CI memakai label yang sama.
+data/**
+!data/raw/
+!data/raw/ground_truth_2020.csv
+!data/raw/ground_truth_events.csv
 
-# Artefak model & metrik (dilatih ulang via `python main.py --mode train`)
-models/
+# Artefak model & metrik (dilatih ulang via `python main.py --mode train`) —
+# artefak rilis + kalibrasi label ikut repo supaya prediksi harian CI memakai
+# model & ambang yang persis sama dengan yang diaudit.
+models/**
+!models/flood_classifier_v1.joblib
+!models/metrics_flood_classifier_v1.json
+!models/label_calibration.json
