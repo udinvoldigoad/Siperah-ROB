@@ -179,7 +179,7 @@ final class DashboardController
                 COUNT(DISTINCT CASE WHEN risk_class = 'sangat_tinggi' THEN region_id END) AS critical_count,
                 COUNT(DISTINCT CASE WHEN risk_class = 'tinggi' THEN region_id END) AS high_count,
                 COUNT(DISTINCT CASE WHEN risk_class IN ('tinggi', 'sangat_tinggi') THEN region_id END) AS high_risk_count,
-                AVG(risk_probability) AS avg_probability,
+                COALESCE(AVG(CASE WHEN risk_probability > 5 THEN risk_probability END), AVG(risk_probability)) AS avg_probability,
                 MAX(risk_probability) AS max_probability
             ")
             ->where(function ($query): void {
