@@ -10,12 +10,15 @@ final class NotificationSettingsRequest extends FormRequest
 
     public function rules(): array
     {
+        // 'present' (bukan 'required'): array kosong adalah nilai yang sah —
+        // UI sendiri berbunyi "Kosongkan untuk seluruh Provinsi", dan user
+        // berhak mematikan semua saluran/peristiwa.
         return [
-            'channels' => ['required', 'array'],
+            'channels' => ['present', 'array'],
             'channels.*' => ['string', 'in:browser,email'],
-            'event_types' => ['required', 'array'],
+            'event_types' => ['present', 'array'],
             'event_types.*' => ['string', 'in:bahaya_sangat_tinggi,laporan_ground_truth,pembaruan_model,ringkasan_harian,peringatan_bmkg'],
-            'monitored_regions' => ['required', 'array'],
+            'monitored_regions' => ['present', 'array'],
             'monitored_regions.*' => ['string', 'max:100'],
         ];
     }
