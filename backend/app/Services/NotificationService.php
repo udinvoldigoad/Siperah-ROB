@@ -85,8 +85,11 @@ final class NotificationService
                 continue;
             }
 
+            // Preferensi wilayah pantau dihormati juga untuk laporan luar area
+            // pantau (region tetap ter-assign ke tetangga terdekat) — tanpa ini
+            // laporan triase membanjiri user yang sudah membatasi wilayahnya.
             $monitored = $settings->monitored_regions ?? [];
-            if ($monitored !== [] && $region && $isWithinMonitoringArea && !$this->matchesMonitoredRegions($region, $monitored)) {
+            if ($monitored !== [] && $region && !$this->matchesMonitoredRegions($region, $monitored)) {
                 continue;
             }
 
@@ -225,9 +228,17 @@ final class NotificationService
      */
     private function matchesMonitoredRegions(Region $region, array $monitored): bool
     {
-        $haystack = array_map('mb_strtolower', array_filter([$region->village, $region->district, $region->regency]));
+        // Normalisasi prefiks "Kota/Kabupaten": DB menyimpan "Kota Bandar
+        // Lampung" sedangkan UI menawarkan "Bandar Lampung" — tanpa ini
+        // langganan wilayah tidak pernah cocok dan notifikasi hilang diam-diam.
+        $normalize = static fn (string $name): string => trim(
+            (string) preg_replace('/^(kabupaten|kota)\s+/i', '', mb_strtolower(trim($name)))
+        );
+        $haystack = array_map($normalize, array_filter([$region->village, $region->district, $region->regency]));
 
-        return collect($monitored)->contains(fn (string $item) => in_array(mb_strtolower($item), $haystack, true));
+        return collect($monitored)->contains(
+            fn (string $item) => in_array($normalize($item), $haystack, true)
+        );
     }
 
 }
