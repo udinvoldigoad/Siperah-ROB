@@ -25,6 +25,7 @@ type OperatorSummary = {
   pending_reports: number;
   monthly_validations: number;
   operator_regency?: string | null;
+  latest_prediction_date?: string | null;
   region_statuses: {
     id: string;
     village: string | null;
@@ -59,8 +60,10 @@ export function OperatorDashboardPage() {
   const queueRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
 
-  const loadReports = async (targetPage = page) => {
-    setIsLoading(true);
+  const loadReports = async (targetPage = page, options: { silent?: boolean } = {}) => {
+    // silent: dipakai polling — refresh data tanpa mem-flash "Memuat laporan..."
+    // dan tanpa menghilangkan blok paginasi tiap 30 detik.
+    if (!options.silent) setIsLoading(true);
     try {
       const statusFilter = activeTab === "riwayat" ? "divalidasi,ditolak" : "menunggu,perlu_review";
       const [data, summaryRes] = await Promise.all([
@@ -92,11 +95,14 @@ export function OperatorDashboardPage() {
     }
   };
 
-  // Muat ulang & reset polling saat filter berubah; polling menyegarkan halaman 1
-  // (laporan terbaru tampil di atas berdasarkan created_at desc).
+  // Muat ulang & reset polling saat filter berubah. Polling menyegarkan
+  // HALAMAN AKTIF secara senyap — dulu selalu loadReports(1) sehingga operator
+  // yang sedang membaca halaman 2/3 dilempar balik ke halaman 1 tiap 30 detik.
+  const pageRef = useRef(page);
+  pageRef.current = page;
   useEffect(() => {
     loadReports(1);
-    const timer = window.setInterval(() => loadReports(1), 30000);
+    const timer = window.setInterval(() => loadReports(pageRef.current, { silent: true }), 30000);
     return () => window.clearInterval(timer);
   }, [severityFilter, slaOverdue, activeTab]);
 
@@ -304,7 +310,7 @@ export function OperatorDashboardPage() {
                 <button
                   type="button" role="tab" aria-selected={activeTab === "riwayat"}
                   className={`op-tab ${activeTab === "riwayat" ? "active" : ""}`}
-                  onClick={() => setActiveTab("riwayat")}
+                  onClick={() => { setActiveTab("riwayat"); setSlaOverdue(false); }}
                 >
                   Riwayat Validasi
                 </button>
@@ -326,6 +332,10 @@ export function OperatorDashboardPage() {
                   <option value="sedang">Sedang</option>
                   <option value="ringan">Ringan</option>
                 </select>
+                {/* Filter SLA hanya relevan untuk antrean terbuka — backend
+                    mengecualikan laporan selesai dari sla=overdue, jadi
+                    kombinasi Riwayat+SLA selalu kosong dan menyesatkan. */}
+                {activeTab === "antrean" && (
                 <button
                   type="button"
                   className={`op-filter-btn ${slaOverdue ? "active" : ""}`}
@@ -334,6 +344,7 @@ export function OperatorDashboardPage() {
                 >
                   <Icon name="schedule" style={{ fontSize: 18 }} /> <span className="op-btn-label">SLA<span className="op-btn-suffix"> terlambat</span></span>
                 </button>
+                )}
                 <motion.button whileHover={{ y: -1 }} type="button" className="op-filter-btn export" onClick={handleExport}>
                   <Icon name="download" style={{ fontSize: 18 }} /> <span className="op-btn-label">Export<span className="op-btn-suffix"> CSV</span></span>
                 </motion.button>
@@ -345,9 +356,28 @@ export function OperatorDashboardPage() {
                 <div style={{ padding: "32px", textAlign: "center", color: "var(--ink-soft)" }}>Memuat laporan...</div>
               ) : reports.length === 0 ? (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="report-empty" style={{ textAlign: "center", padding: "64px 20px" }}>
-                  <Icon name="verified_user" style={{ fontSize: "48px", color: "var(--low)", margin: "0 auto 16px" }} />
-                  <strong>Antrean Bersih</strong>
-                  <span>Semua laporan telah diverifikasi.</span>
+                  {/* Pesan dibedakan per konteks — "Antrean Bersih" untuk hasil
+                      filter kosong bisa dibaca "tidak ada tunggakan" padahal
+                      hanya tersaring. */}
+                  {severityFilter || slaOverdue ? (
+                    <>
+                      <Icon name="filter_alt_off" style={{ fontSize: "48px", color: "var(--ink-soft)", margin: "0 auto 16px" }} />
+                      <strong>Tidak Ada yang Cocok</strong>
+                      <span>Tidak ada laporan yang cocok dengan filter aktif. Coba longgarkan filternya.</span>
+                    </>
+                  ) : activeTab === "riwayat" ? (
+                    <>
+                      <Icon name="history" style={{ fontSize: "48px", color: "var(--ink-soft)", margin: "0 auto 16px" }} />
+                      <strong>Belum Ada Riwayat</strong>
+                      <span>Belum ada laporan yang divalidasi atau ditolak.</span>
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="verified_user" style={{ fontSize: "48px", color: "var(--low)", margin: "0 auto 16px" }} />
+                      <strong>Antrean Bersih</strong>
+                      <span>Semua laporan telah diverifikasi.</span>
+                    </>
+                  )}
                 </motion.div>
               ) : (
                 <AnimatePresence>
@@ -429,7 +459,12 @@ export function OperatorDashboardPage() {
           {/* Status Kelurahan */}
           <div className="panel flush">
             <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-              <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Status Kelurahan {operatorArea}</h2>
+              <div>
+                <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Status Kelurahan {operatorArea}</h2>
+                <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--ink-soft)" }}>
+                  Prediksi {summary.latest_prediction_date ? `per ${new Date(summary.latest_prediction_date).toLocaleDateString("id-ID")}` : "terbaru"} · 25 kelurahan berisiko teratas.
+                </p>
+              </div>
               <motion.a whileHover={{ x: 5 }} href="#/map" style={{ fontSize: "0.9rem", color: "var(--accent)", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}><Icon name="map" /> Buka peta</motion.a>
             </div>
               <div className="table-responsive" style={{ maxHeight: "500px", overflowY: "auto" }}>
@@ -438,7 +473,10 @@ export function OperatorDashboardPage() {
                 <tr style={{ borderBottom: "1px solid var(--line)", background: "var(--surface-soft)" }}>
                   <th style={{ padding: "14px 24px", fontWeight: 600, color: "var(--ink-soft)", fontSize: "0.85rem" }}>Kecamatan / Kelurahan</th>
                   <th style={{ padding: "14px 24px", fontWeight: 600, color: "var(--ink-soft)", fontSize: "0.85rem" }}>Bahaya</th>
-                  <th style={{ padding: "14px 24px", fontWeight: 600, color: "var(--ink-soft)", fontSize: "0.85rem", textAlign: "right" }}>Pop. risiko</th>
+                  {/* Nilainya regions.population apa adanya (semua kelas) — jangan
+                      dilabeli "Pop. risiko" yang bermakna khusus tinggi+ di
+                      dashboard provinsi. */}
+                  <th style={{ padding: "14px 24px", fontWeight: 600, color: "var(--ink-soft)", fontSize: "0.85rem", textAlign: "right" }}>Populasi</th>
                 </tr>
               </thead>
               <tbody>
