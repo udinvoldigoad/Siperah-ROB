@@ -175,12 +175,12 @@ export function NotificationSettingsPage() {
     { id: "browser", icon: "notifications", title: "Push Notifikasi Browser", desc: "Notifikasi real-time di desktop & mobile" },
     { id: "email", icon: "mail", title: "Email Instansi", desc: "Pesan dikirim ke alamat email Anda" },
   ];
+  // Hanya peristiwa yang BENAR-BENAR punya pengirim di backend. Tiga opsi lama
+  // (pembaruan_model, ringkasan_harian, peringatan_bmkg) tidak pernah dikirim
+  // oleh sistem — menawarkannya menjanjikan notifikasi yang tak akan datang.
   const eventOptions = [
     { id: "bahaya_sangat_tinggi", title: "Peringatan bahaya Sangat Tinggi", desc: "Wilayah pantau mencapai kelas Sangat Tinggi" },
     { id: "laporan_ground_truth", title: "Laporan warga (Ground Truth)", desc: "Ada laporan kerusakan baru dari relawan/warga" },
-    { id: "pembaruan_model", title: "Pembaruan model AI", desc: "Model spasial diperbarui dengan data pasang terbaru" },
-    { id: "ringkasan_harian", title: "Ringkasan metrik harian", desc: "Laporan harian kondisi risiko masuk pada 06:00 WIB" },
-    { id: "peringatan_bmkg", title: "Peringatan cuaca ekstrem BMKG", desc: "Peringatan resmi dari stasiun maritim Panjang" },
   ];
 
   return (
