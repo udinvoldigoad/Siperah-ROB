@@ -155,6 +155,7 @@ export function ResearchPortalPage() {
   const [datasetPage, setDatasetPage] = useState(1);
   const [datasetMeta, setDatasetMeta] = useState<DatasetResponse["meta"] | null>(null);
   const [availableRegencies, setAvailableRegencies] = useState<string[]>([]);
+  const [allDatasetTypes, setAllDatasetTypes] = useState<string[]>([]);
 
   const datasetDownloadUrl = (dataset: DatasetData, format: "csv" | "json" | "xlsx") => (
     apiUrl(`/api/research/datasets/${dataset.id}/download?format=${format}`)
@@ -198,6 +199,7 @@ export function ResearchPortalPage() {
       setDatasets(dsRes.data);
       setDatasetMeta(dsRes.meta ?? null);
       if (dsRes.meta?.available_regencies) setAvailableRegencies(dsRes.meta.available_regencies);
+      setAllDatasetTypes((prev) => Array.from(new Set([...prev, ...dsRes.data.map((item) => item.dataset_type)])).sort());
 
       if (isResearcher) {
         const [keysRes, statsRes, refRes, permitRes] = await Promise.all([
@@ -211,7 +213,11 @@ export function ResearchPortalPage() {
         setApiReference(refRes.data);
         setPermit(permitRes.data);
       } else {
-        setStats((current) => ({ ...current, dataset_count: dsRes.data.length, total_records: dsRes.data.reduce((sum, item) => sum + Number(item.record_count ?? 0), 0) }));
+        // admin/bpbd_provinsi juga boleh membaca /research/stats — dulu KPI
+        // mereka dihitung dari 10 baris halaman aktif dan unduhan/API dibiarkan
+        // "0" hardcoded seolah fakta.
+        const statsRes = await api<ResearchStatsResponse>("/research/stats");
+        setStats(statsRes.data);
       }
     } catch (err: any) {
       toast.error(err.message || "Gagal memuat portal penelitian.");
@@ -308,7 +314,10 @@ export function ResearchPortalPage() {
 
   const activeKey = apiKeys.find((k) => k.status === "aktif");
   const availableYears = ["2026", "2025", "2024", "2023", "2022", "2021", "2020"];
-  const availableTypes = Array.from(new Set(datasets.map((item) => item.dataset_type))).sort();
+  // Akumulasi jenis dari semua halaman yang pernah dimuat — bila diturunkan
+  // dari hasil terfilter saja, memilih satu jenis membuat dropdown menyusut
+  // jadi jenis itu sendiri dan user tak bisa pindah tanpa Reset.
+  const availableTypes = allDatasetTypes;
   const applyDatasetFilters = () => {
     setDatasetPage(1);
     loadResearchData(1);
@@ -849,7 +858,10 @@ export function ResearchPortalPage() {
                         <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: "120px" }}>
                           {usage.per_day.map((d) => {
                             const h = Math.round((d.total / maxTotal) * 100);
-                            const failH = d.total > 0 ? Math.round((d.failed / d.total) * h) : 0;
+                            // Persentase relatif terhadap batang induk (yang sudah
+                            // setinggi h%) — dikali h lagi membuat porsi "Gagal"
+                            // terskala dua kali (100% gagal tampak cuma h%).
+                            const failH = d.total > 0 ? Math.round((d.failed / d.total) * 100) : 0;
                             return (
                               <div key={d.day} title={`${d.day}: ${d.total} panggilan (${d.failed} gagal)`} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%", position: "relative" }}>
                                 <div style={{ height: `${h}%`, background: "var(--ocean-light, #bae6fd)", borderRadius: "3px 3px 0 0", display: "flex", flexDirection: "column", justifyContent: "flex-end", minHeight: d.total > 0 ? "2px" : 0 }}>
