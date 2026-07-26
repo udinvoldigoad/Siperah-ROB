@@ -15,9 +15,6 @@ interface NotificationSettingsResponse {
   data: NotificationSettings;
 }
 
-interface InboxItem { id: string; title: string; body: string; read_at: string | null; created_at: string; }
-interface InboxResponse { data: InboxItem[]; }
-
 const lampungRegionOptions = [
   "Bandar Lampung", "Lampung Selatan", "Pesawaran", "Tanggamus", "Pesisir Barat", "Lampung Timur", "Tulang Bawang"
 ];
@@ -59,7 +56,6 @@ export function NotificationSettingsPage() {
   const [monitoredRegions, setMonitoredRegions] = useState<string[]>([]);
   const [newRegion, setNewRegion] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
-  const [inbox, setInbox] = useState<InboxItem[]>([]);
 
   const fetchSettings = async () => {
     try {
@@ -73,23 +69,9 @@ export function NotificationSettingsPage() {
     }
   };
 
-  const fetchInbox = async () => {
-    try {
-      const res = await api<InboxResponse>("/notifications");
-      setInbox(res.data);
-    } catch { /* Kotak masuk bersifat pelengkap; pengaturan tetap dapat digunakan. */ }
-  };
-
   useEffect(() => {
     fetchSettings();
-    fetchInbox();
   }, []);
-
-  const markRead = async (item: InboxItem) => {
-    if (item.read_at) return;
-    await api(`/notifications/${item.id}/read`, { method: "PATCH" });
-    setInbox((current) => current.map((entry) => entry.id === item.id ? { ...entry, read_at: new Date().toISOString() } : entry));
-  };
 
   const urlBase64ToUint8Array = (base64String: string) => {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -189,202 +171,159 @@ export function NotificationSettingsPage() {
     }
   };
 
-  const activeChannelsCount = channels.length;
-  const activeEventsCount = eventTypes.length;
+  const channelOptions = [
+    { id: "browser", icon: "notifications", title: "Push Notifikasi Browser", desc: "Notifikasi real-time di desktop & mobile" },
+    { id: "email", icon: "mail", title: "Email Instansi", desc: "Pesan dikirim ke alamat email Anda" },
+  ];
+  const eventOptions = [
+    { id: "bahaya_sangat_tinggi", title: "Peringatan bahaya Sangat Tinggi", desc: "Wilayah pantau mencapai kelas Sangat Tinggi" },
+    { id: "laporan_ground_truth", title: "Laporan warga (Ground Truth)", desc: "Ada laporan kerusakan baru dari relawan/warga" },
+    { id: "pembaruan_model", title: "Pembaruan model AI", desc: "Model spasial diperbarui dengan data pasang terbaru" },
+    { id: "ringkasan_harian", title: "Ringkasan metrik harian", desc: "Laporan harian kondisi risiko masuk pada 06:00 WIB" },
+    { id: "peringatan_bmkg", title: "Peringatan cuaca ekstrem BMKG", desc: "Peringatan resmi dari stasiun maritim Panjang" },
+  ];
 
   return (
     <AppShell active="settings" title="Pengaturan Notifikasi" subtitle="Atur saluran peringatan dini dan laporan ground truth yang ingin Anda terima.">
       <style>{`
-        .notif-layout {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 24px;
-        }
-        @media (max-width: 992px) {
-          .notif-layout { grid-template-columns: 1fr; }
-        }
+        .ns-stack { display: flex; flex-direction: column; gap: 18px; max-width: 680px; margin: 0 auto; }
+        .ns-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+        .ns-head { display: flex; align-items: center; gap: 13px; padding: 18px 22px; }
+        .ns-head.divider { border-bottom: 1px solid var(--line); }
+        .ns-ico { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: var(--surface-soft); border: 1px solid var(--line); flex-shrink: 0; }
+        .ns-head h3 { font-size: 15px; font-weight: 700; margin: 0; color: var(--ink); line-height: 1.25; }
+        .ns-head p { font-size: 12.5px; color: var(--ink-soft); margin: 3px 0 0; line-height: 1.45; }
+        .ns-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 22px; transition: background .15s; cursor: pointer; }
+        .ns-row:hover { background: var(--surface-soft); }
+        .ns-row + .ns-row { border-top: 1px solid var(--line); }
+        .ns-row-title { font-size: 14px; font-weight: 600; color: var(--ink); }
+        .ns-row-desc { font-size: 12px; color: var(--ink-soft); margin-top: 3px; line-height: 1.4; }
+        .ns-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+        .ns-switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; margin: 0; }
+        .ns-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .ns-track { position: absolute; inset: 0; background: var(--line); border-radius: 999px; transition: .25s; }
+        .ns-track::after { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .25s; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+        .ns-switch input:checked + .ns-track { background: var(--accent); }
+        .ns-switch input:checked + .ns-track::after { transform: translateX(18px); }
+        .ns-check { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+        .ns-pad { padding: 20px 22px; }
+        .ns-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .ns-chip { background: var(--brand-soft); border: 1px solid var(--brand); border-radius: 999px; padding: 6px 6px 6px 12px; font-size: 12px; font-weight: 600; color: var(--brand); display: flex; align-items: center; gap: 4px; }
+        .ns-chip button { background: transparent; border: none; color: var(--brand); cursor: pointer; display: flex; padding: 0; opacity: .65; transition: opacity .15s; }
+        .ns-chip button:hover { opacity: 1; }
+        .ns-add { background: none; border: 1px dashed var(--line); border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 500; color: var(--ink-soft); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .2s; }
+        .ns-add:hover { color: var(--accent); border-color: var(--accent); }
+        .ns-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 4px; }
+        @media (max-width: 560px) { .ns-actions { flex-direction: column-reverse; } .ns-actions .btn { width: 100%; } }
       `}</style>
-      <motion.div variants={containerVariants} initial="hidden" animate="show" className="content" style={{ maxWidth: 1000, margin: "0 auto", paddingBottom: 60 }}>
-        
-        {/* KPI Grid */}
-        <motion.div variants={itemVariants} className="metric-grid" style={{ marginBottom: 32 }}>
-          <div className={`metric-card ${activeChannelsCount > 0 ? "success" : "warning"}`}>
-            <span>Saluran Aktif</span>
-            <strong>{activeChannelsCount}</strong>
-            <small>Media penerimaan notifikasi</small>
-          </div>
-          <div className="metric-card">
-            <span>Peristiwa Dipantau</span>
-            <strong>{activeEventsCount}</strong>
-            <small>Jenis peringatan & update</small>
-          </div>
-          <div className="metric-card">
-            <span>Wilayah Area</span>
-            <strong>{monitoredRegions.length}</strong>
-            <small>Area spesifik difilter</small>
-          </div>
-        </motion.div>
+      <motion.div variants={containerVariants} initial="hidden" animate="show" className="content" style={{ paddingBottom: 60 }}>
+        <div className="ns-stack">
 
-        {/* 2-Column Layout for Settings */}
-        <div className="notif-layout">
-          
-          {/* Left Column */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            
-            {/* Channels Panel */}
-            <motion.div variants={itemVariants} className="panel">
-              <div style={{ marginBottom: "20px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Icon name="cell_tower" style={{ color: "var(--accent)" }} /> Saluran Komunikasi
-                </h3>
-                <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--ink-soft)" }}>Pilih media pengiriman notifikasi ke perangkat Anda.</p>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {[
-                  { id: "browser", icon: "notifications", title: "Push Notifikasi Browser", desc: "Notifikasi real-time di desktop/mobile" },
-                  { id: "email", icon: "mail", title: "Email Instansi", desc: "Pesan dikirim ke email Anda" }
-                ].map((ch) => (
-                  <div key={ch.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                      <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "var(--surface-soft)", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Icon name={ch.icon} style={{ fontSize: "20px", color: "var(--ink-soft)" }} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>{ch.title}</div>
-                        <div style={{ fontSize: "12px", color: "var(--ink-soft)", marginTop: "2px" }}>{ch.desc}</div>
-                      </div>
-                    </div>
-                    {/* Switch */}
-                    <label style={{ position: "relative", width: "44px", height: "24px", cursor: "pointer" }}>
-                      <input 
-                        type="checkbox" 
-                        checked={channels.includes(ch.id)} 
-                        onChange={() => toggleChannel(ch.id)} 
-                        style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
-                      />
-                      <span style={{ 
-                        position: "absolute", top: 0, left: 0, right: 0, bottom: 0, 
-                        background: channels.includes(ch.id) ? "var(--accent)" : "var(--line)", 
-                        borderRadius: 8, transition: "0.3s" 
-                      }}>
-                        <span style={{ 
-                          position: "absolute", height: "18px", width: "18px", left: "3px", bottom: "3px", 
-                          background: "#fff", borderRadius: "50%", transition: "0.3s",
-                          transform: channels.includes(ch.id) ? "translateX(20px)" : "translateX(0)" 
-                        }} />
-                      </span>
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-          </div>
-
-          {/* Right Column */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            
-            {/* Event Subscriptions Panel */}
-            <motion.div variants={itemVariants} className="panel flush">
-              <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Icon name="checklist" style={{ color: "var(--success)" }} /> Berlangganan Peristiwa
-                </h3>
-              </div>
+          {/* Saluran Komunikasi */}
+          <motion.section variants={itemVariants} className="ns-card">
+            <div className="ns-head divider">
+              <div className="ns-ico"><Icon name="cell_tower" style={{ fontSize: 20, color: "var(--accent)" }} /></div>
               <div>
-                {[
-                  { id: "bahaya_sangat_tinggi", title: "Peringatan bahaya Sangat Tinggi", desc: "Wilayah pantau mencapai kelas Sangat Tinggi" },
-                  { id: "laporan_ground_truth", title: "Laporan warga (Ground Truth)", desc: "Ada laporan kerusakan baru dari relawan/warga" },
-                  { id: "pembaruan_model", title: "Pembaruan model AI", desc: "Model spasial diperbarui dengan data pasang terbaru" },
-                  { id: "ringkasan_harian", title: "Ringkasan metrik harian", desc: "Laporan harian kondisi risiko masuk pada 06:00 WIB" },
-                  { id: "peringatan_bmkg", title: "Peringatan cuaca ekstrem BMKG", desc: "Peringatan resmi dari stasiun maritim Panjang" },
-                ].map((event) => (
-                  <label 
-                    key={event.id} 
-                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--line)", cursor: "pointer", transition: "background 0.2s" }}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--surface-soft)"}
-                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 600, color: "var(--ink)", fontSize: "14px" }}>{event.title}</div>
-                      <div style={{ fontSize: "12px", color: "var(--ink-soft)", marginTop: "2px" }}>{event.desc}</div>
-                    </div>
-                    <input 
-                      type="checkbox" 
-                      checked={eventTypes.includes(event.id)} 
-                      onChange={() => toggleEventType(event.id)} 
-                      style={{ accentColor: "var(--accent)", width: "18px", height: "18px", cursor: "pointer" }}
-                    />
-                  </label>
-                ))}
+                <h3>Saluran Komunikasi</h3>
+                <p>Pilih media pengiriman notifikasi ke perangkat Anda.</p>
               </div>
-            </motion.div>
+            </div>
+            {channelOptions.map((ch) => (
+              <label key={ch.id} className="ns-row">
+                <span className="ns-left">
+                  <span className="ns-ico"><Icon name={ch.icon} style={{ fontSize: 19, color: "var(--ink-soft)" }} /></span>
+                  <span>
+                    <span className="ns-row-title" style={{ display: "block" }}>{ch.title}</span>
+                    <span className="ns-row-desc" style={{ display: "block" }}>{ch.desc}</span>
+                  </span>
+                </span>
+                <span className="ns-switch">
+                  <input type="checkbox" checked={channels.includes(ch.id)} onChange={() => toggleChannel(ch.id)} />
+                  <span className="ns-track" />
+                </span>
+              </label>
+            ))}
+          </motion.section>
 
-            {/* Monitored Regions Panel */}
-            <motion.div variants={itemVariants} className="panel">
-              <h3 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 12px 0", display: "flex", alignItems: "center", gap: "8px" }}>
-                <Icon name="my_location" style={{ color: "var(--brand)" }} /> Wilayah Pantau
-              </h3>
-              <p style={{ fontSize: "13px", color: "var(--ink-soft)", margin: "0 0 16px 0", lineHeight: 1.5 }}>
-                Batasi notifikasi hanya untuk kelurahan atau kecamatan tertentu. Kosongkan untuk menerima notifikasi seluruh area Provinsi.
-              </p>
-              
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+          {/* Berlangganan Peristiwa */}
+          <motion.section variants={itemVariants} className="ns-card">
+            <div className="ns-head divider">
+              <div className="ns-ico"><Icon name="checklist" style={{ fontSize: 20, color: "var(--success)" }} /></div>
+              <div>
+                <h3>Berlangganan Peristiwa</h3>
+                <p>Jenis peringatan & pembaruan yang ingin Anda ikuti.</p>
+              </div>
+            </div>
+            {eventOptions.map((event) => (
+              <label key={event.id} className="ns-row">
+                <span style={{ minWidth: 0 }}>
+                  <span className="ns-row-title" style={{ display: "block" }}>{event.title}</span>
+                  <span className="ns-row-desc" style={{ display: "block" }}>{event.desc}</span>
+                </span>
+                <input type="checkbox" className="ns-check" checked={eventTypes.includes(event.id)} onChange={() => toggleEventType(event.id)} />
+              </label>
+            ))}
+          </motion.section>
+
+          {/* Wilayah Pantau */}
+          <motion.section variants={itemVariants} className="ns-card">
+            <div className="ns-head">
+              <div className="ns-ico"><Icon name="my_location" style={{ fontSize: 20, color: "var(--brand)" }} /></div>
+              <div>
+                <h3>Wilayah Pantau</h3>
+                <p>Batasi notifikasi ke wilayah tertentu. Kosongkan untuk seluruh Provinsi.</p>
+              </div>
+            </div>
+            <div className="ns-pad" style={{ paddingTop: 4 }}>
+              <div className="ns-chips">
                 <AnimatePresence>
-                    {monitoredRegions.map((region) => (
-                      <motion.span 
-                        key={region} 
-                        initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-                        style={{ background: "var(--brand-soft)", border: "1px solid var(--brand)", borderRadius: 8, padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: "var(--brand)", display: "flex", alignItems: "center", gap: "6px" }}
-                      >
-                        {region}
-                        <button type="button" onClick={() => handleRemoveRegion(region)} aria-label={`Hapus ${region}`} style={{ background: "transparent", border: "none", color: "var(--brand)", cursor: "pointer", display: "flex", padding: 0 }}>
-                          <Icon name="close" style={{ fontSize: "14px" }} />
-                        </button>
-                      </motion.span>
-                    ))}
-                  </AnimatePresence>
-                  
-                  {showAddForm ? (
-                    <form onSubmit={handleAddRegion} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                      <input 
-                        list="lampung-regions-list"
-                        value={newRegion} 
-                        onChange={(e) => setNewRegion(e.target.value)}
-                        placeholder="Ketik nama kabupaten/kota..."
-                        style={{ padding: "8px 12px", border: "1px solid var(--accent)", borderRadius: "var(--radius)", fontSize: "12px", outline: "none", minWidth: "200px" }}
-                        autoFocus
-                      />
-                      <datalist id="lampung-regions-list">
-                        {lampungRegionOptions.filter((region) => !monitoredRegions.includes(region)).map((region) => <option key={region} value={region} />)}
-                      </datalist>
-                      <button type="submit" className="btn primary" disabled={!newRegion} style={{ padding: "6px 12px", fontSize: "12px", minHeight: "32px" }}>Tambah</button>
-                      <button type="button" onClick={() => setShowAddForm(false)} className="btn secondary" style={{ padding: "6px 12px", fontSize: "12px", minHeight: "32px" }}>Batal</button>
-                    </form>
-                  ) : (
-                  <button 
-                    onClick={() => setShowAddForm(true)}
-                    style={{ background: "none", border: "1px dashed var(--line)", borderRadius: 8, padding: "6px 12px", fontSize: "12px", fontWeight: 500, color: "var(--ink-soft)", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}
-                    onMouseOver={(e) => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
-                    onMouseOut={(e) => { e.currentTarget.style.color = "var(--ink-soft)"; e.currentTarget.style.borderColor = "var(--line)"; }}
-                  >
-                    <Icon name="add" style={{ fontSize: "14px" }} /> Tambah Area Pantau
+                  {monitoredRegions.map((region) => (
+                    <motion.span
+                      key={region}
+                      className="ns-chip"
+                      initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
+                    >
+                      {region}
+                      <button type="button" onClick={() => handleRemoveRegion(region)} aria-label={`Hapus ${region}`}>
+                        <Icon name="close" style={{ fontSize: 14 }} />
+                      </button>
+                    </motion.span>
+                  ))}
+                </AnimatePresence>
+
+                {showAddForm ? (
+                  <form onSubmit={handleAddRegion} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input
+                      list="lampung-regions-list"
+                      value={newRegion}
+                      onChange={(e) => setNewRegion(e.target.value)}
+                      placeholder="Ketik nama kabupaten/kota..."
+                      style={{ padding: "8px 12px", border: "1px solid var(--accent)", borderRadius: "var(--radius)", fontSize: 12, outline: "none", minWidth: 200, background: "var(--surface)", color: "var(--ink)" }}
+                      autoFocus
+                    />
+                    <datalist id="lampung-regions-list">
+                      {lampungRegionOptions.filter((region) => !monitoredRegions.includes(region)).map((region) => <option key={region} value={region} />)}
+                    </datalist>
+                    <button type="submit" className="btn primary" disabled={!newRegion} style={{ padding: "6px 12px", fontSize: 12, minHeight: 32 }}>Tambah</button>
+                    <button type="button" onClick={() => setShowAddForm(false)} className="btn secondary" style={{ padding: "6px 12px", fontSize: 12, minHeight: 32 }}>Batal</button>
+                  </form>
+                ) : (
+                  <button type="button" className="ns-add" onClick={() => setShowAddForm(true)}>
+                    <Icon name="add" style={{ fontSize: 14 }} /> Tambah Area Pantau
                   </button>
                 )}
               </div>
-            </motion.div>
+            </div>
+          </motion.section>
 
-          </div>
+          {/* Aksi */}
+          <motion.div variants={itemVariants} className="ns-actions">
+            <button type="button" onClick={fetchSettings} className="btn secondary" style={{ minWidth: 100 }}>Batal</button>
+            <button className="btn primary" onClick={handleSave} disabled={isLoading} style={{ minWidth: 160 }}>
+              <Icon name="save" /> {isLoading ? "Menyimpan..." : "Simpan Perubahan"}
+            </button>
+          </motion.div>
         </div>
-
-        {/* Action Buttons */}
-        <motion.div variants={itemVariants} style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "32px", paddingTop: "24px", borderTop: "1px solid var(--line)" }}>
-          <button type="button" onClick={fetchSettings} className="btn secondary" style={{ minWidth: "100px" }}>Batal</button>
-          <button className="btn primary" onClick={handleSave} disabled={isLoading} style={{ minWidth: "160px" }}>
-            <Icon name="save" /> {isLoading ? "Menyimpan..." : "Simpan Perubahan"}
-          </button>
-        </motion.div>
       </motion.div>
     </AppShell>
   );

@@ -12,6 +12,25 @@ const SIDEBAR_STORAGE_KEY = "siperah-sidebar";
 type InboxItem = { id: string; title: string; body: string; read_at: string | null; created_at: string };
 type InboxResponse = { data: InboxItem[] };
 
+// Ikon + warna aksen per jenis notifikasi (disimpulkan dari judul).
+function notifMeta(title: string): { icon: string; color: string } {
+  const t = (title || "").toLowerCase();
+  if (t.includes("ditolak")) return { icon: "cancel", color: "var(--critical)" };
+  if (t.includes("divalidasi") || t.includes("disetujui")) return { icon: "check_circle", color: "var(--accent)" };
+  if (t.includes("sangat tinggi") || t.includes("bahaya") || t.includes("darurat")) return { icon: "warning", color: "var(--critical)" };
+  if (t.includes("laporan")) return { icon: "description", color: "var(--accent)" };
+  return { icon: "notifications", color: "var(--accent)" };
+}
+
+// Tanggal + jam ringkas, mis. "25 Jul 2026 · 14.30".
+function formatNotifWhen(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const date = d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+  const time = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  return `${date} · ${time}`;
+}
+
 export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
   active: string;
   title: string;
@@ -245,11 +264,20 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
                       </div>
                     </div>
                     <div className="notification-list">
-                      {notifications.length === 0 ? <p className="notification-empty">Belum ada notifikasi.</p> : notifications.slice(0, 6).map((item) => (
-                        <button type="button" key={item.id} className={item.read_at ? "" : "unread"} onClick={() => void markNotificationRead(item)}>
-                          <strong>{item.title}</strong><span>{item.body}</span>
-                        </button>
-                      ))}
+                      {notifications.length === 0 ? <p className="notification-empty">Belum ada notifikasi.</p> : notifications.slice(0, 6).map((item) => {
+                        const meta = notifMeta(item.title);
+                        return (
+                          <button type="button" key={item.id} className={item.read_at ? "notif-item" : "notif-item unread"} onClick={() => void markNotificationRead(item)}>
+                            <span className="notif-item-ico"><Icon name={meta.icon} style={{ fontSize: 19, color: meta.color }} /></span>
+                            <span className="notif-item-main">
+                              <span className="notif-item-title">{item.title}</span>
+                              <span className="notif-item-body">{item.body}</span>
+                              <span className="notif-item-time"><Icon name="schedule" style={{ fontSize: 13 }} />{formatNotifWhen(item.created_at)}</span>
+                            </span>
+                            {!item.read_at && <span className="notif-item-dot-unread" aria-label="Belum dibaca" />}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
