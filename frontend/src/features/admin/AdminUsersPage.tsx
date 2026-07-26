@@ -41,6 +41,7 @@ interface UserSummary {
   aktif: number;
   menunggu: number;
   nonaktif: number;
+  ditolak?: number;
   peneliti_menunggu: number;
 }
 
@@ -180,6 +181,7 @@ export function AdminUsersPage() {
   const [summary, setSummary] = useState<UserSummary | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [isActing, setActing] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   // Filters & Search
   const [role, setRole] = useState("");
@@ -205,7 +207,11 @@ export function AdminUsersPage() {
     region_id: "",
   });
 
+  // Penanda urutan request: pencarian menembak request per ketukan; tanpa ini
+  // respons yang datang belakangan (dari kueri lama) menimpa hasil kueri baru.
+  const fetchSeqRef = useRef(0);
   const fetchUsers = useCallback(() => {
+    const seq = ++fetchSeqRef.current;
     setIsLoading(true);
     setError(null);
     const query = new URLSearchParams();
@@ -216,15 +222,17 @@ export function AdminUsersPage() {
 
     return api<UserListResponse>(`/admin/users?${query.toString()}`)
       .then((res) => {
+        if (seq !== fetchSeqRef.current) return;
         setUsers(res.data);
         setMeta(res.meta ?? null);
         setSummary(res.summary ?? null);
       })
       .catch((err: unknown) => {
+        if (seq !== fetchSeqRef.current) return;
         setUsers([]);
         setError(err instanceof Error ? err.message : "Daftar pengguna belum bisa dimuat.");
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (seq === fetchSeqRef.current) setIsLoading(false); });
   }, [role, status, search, page]);
 
   useEffect(() => {
@@ -336,7 +344,7 @@ export function AdminUsersPage() {
 
   const confirmReject = (id: string, name: string) => setConfirm({
     title: "Tolak pendaftaran?",
-    message: `Akun "${name}" akan ditandai ditolak dan sesi aktifnya diputus. Tindakan ini dapat diubah lewat "Kelola" nanti.`,
+    message: `Akun "${name}" akan ditandai ditolak dan sesi aktifnya diputus. Bisa dipulihkan lewat tombol "Aktifkan" nanti.`,
     confirmLabel: "Ya, tolak akun",
     tone: "danger",
     onConfirm: () => runAction("menolak akun", api(`/admin/users/${id}/reject`, { method: "POST" }), `Akun "${name}" ditolak.`),
@@ -351,6 +359,23 @@ export function AdminUsersPage() {
       "menghapus akun",
       api(`/admin/users/${user.id}`, { method: "DELETE" }),
       `Akun "${user.name}" dihapus.`,
+    ),
+  });
+
+  // Aktifkan/Nonaktifkan lewat PATCH status — sebelumnya UI menjanjikan tombol
+  // ini tapi tidak ada, sehingga akun nonaktif/tertolak hanya bisa dihapus.
+  const handleActivate = (user: UserData) =>
+    runAction("mengaktifkan akun", api(`/admin/users/${user.id}`, { method: "PATCH", body: JSON.stringify({ status: "aktif" }) }), `Akun "${user.name}" diaktifkan.`);
+
+  const confirmDeactivate = (user: UserData) => setConfirm({
+    title: "Nonaktifkan akun?",
+    message: `Akun "${user.name}" tidak akan bisa masuk dan sesi aktifnya diputus. Bisa diaktifkan kembali kapan saja.`,
+    confirmLabel: "Ya, nonaktifkan",
+    tone: "danger",
+    onConfirm: () => runAction(
+      "menonaktifkan akun",
+      api(`/admin/users/${user.id}`, { method: "PATCH", body: JSON.stringify({ status: "nonaktif" }) }),
+      `Akun "${user.name}" dinonaktifkan.`,
     ),
   });
 
@@ -381,9 +406,13 @@ export function AdminUsersPage() {
   const saveEdit = async (user: UserData) => {
     const payload: Record<string, unknown> = {};
     if (editDraft.role !== user.role) payload.role = editDraft.role;
-    // Field yang tak relevan dengan peran dinolkan agar konsisten dengan form.
-    const nextInstitution = editDraft.role === "peneliti" ? editDraft.institution.trim() : "";
-    if (nextInstitution !== (user.institution ?? "")) payload.institution = nextInstitution || null;
+    // institution hanya disentuh saat field-nya benar-benar tampil (peneliti).
+    // Untuk role lain kolom itu berisi "Desa/Wilayah" dari registrasi warga —
+    // dulu ikut dinolkan diam-diam setiap kali admin menekan Simpan.
+    if (editDraft.role === "peneliti") {
+      const nextInstitution = editDraft.institution.trim();
+      if (nextInstitution !== (user.institution ?? "")) payload.institution = nextInstitution || null;
+    }
     const nextRegion = editDraft.role === "peneliti" ? "" : editDraft.region_id;
     if (nextRegion !== (user.region_id ?? "")) payload.region_id = nextRegion || null;
 
@@ -406,6 +435,8 @@ export function AdminUsersPage() {
 
   const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isCreating) return;
+    setIsCreating(true);
     try {
       await api("/admin/users", {
         method: "POST",
@@ -421,13 +452,21 @@ export function AdminUsersPage() {
       fetchUsers();
     } catch (err: any) {
       toast.error(err.message || "Gagal membuat pengguna.");
+    } finally {
+      setIsCreating(false);
     }
   };
 
   const handleExportUsers = async () => {
     try {
       const token = localStorage.getItem("siperah-token");
-      const response = await fetch(apiUrl("/api/admin/users/export"), {
+      // Bawa filter aktif — tombol export berada tepat di atas bar filter,
+      // hasil unduhan harus sama dengan yang sedang dilihat admin.
+      const query = new URLSearchParams();
+      if (role) query.append("role", role);
+      if (status) query.append("status", status);
+      if (search) query.append("search", search);
+      const response = await fetch(apiUrl(`/api/admin/users/export${query.size ? `?${query.toString()}` : ""}`), {
         headers: { Accept: "text/csv", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       if (!response.ok) throw new Error(`Export gagal (${response.status})`);
@@ -448,7 +487,9 @@ export function AdminUsersPage() {
 
   const activeCount = summary?.aktif ?? 0;
   const pendingCount = summary?.menunggu ?? 0;
-  const inactiveCount = summary?.nonaktif ?? 0;
+  // Nonaktif + ditolak digabung dalam satu kartu "Akses Ditutup" — tanpa
+  // ditolak, aktif+menunggu+nonaktif tidak pernah sama dengan Total Terdaftar.
+  const closedCount = (summary?.nonaktif ?? 0) + (summary?.ditolak ?? 0);
   const totalCount = summary?.total ?? users.length;
   const pageNumbers = meta
     ? Array.from({ length: meta.last_page }, (_, i) => i + 1).filter(
@@ -605,7 +646,7 @@ export function AdminUsersPage() {
           {[
             { title: "Pengguna Aktif", val: activeCount, sub: "Dapat masuk ke dashboard", cls: "success" },
             { title: "Menunggu Approval", val: pendingCount, sub: "Butuh validasi admin", cls: pendingCount > 0 ? "warning" : "" },
-            { title: "Akses Nonaktif", val: inactiveCount, sub: "Akses ditutup", cls: "" },
+            { title: "Akses Ditutup", val: closedCount, sub: "Nonaktif & ditolak", cls: "" },
             { title: "Total Terdaftar", val: totalCount, sub: "Seluruh role pengguna", cls: "" }
           ].map((kpi, idx) => (
             <motion.div
@@ -725,7 +766,7 @@ export function AdminUsersPage() {
                         ? "Operator BPBD wajib memilih wilayah kerja yang dipantau."
                         : "Pilih wilayah pantauan bila relevan untuk akun ini."}
                     </span>
-                    <button type="submit" className="btn primary"><Icon name="save" /> Simpan Pengguna</button>
+                    <button type="submit" className="btn primary" disabled={isCreating}><Icon name="save" /> {isCreating ? "Menyimpan..." : "Simpan Pengguna"}</button>
                   </div>
                 </form>
               </motion.div>
@@ -978,6 +1019,7 @@ export function AdminUsersPage() {
               <input
                 type="text"
                 placeholder="Cari nama, email..."
+                maxLength={100}
                 value={search}
                 onChange={(e) => onFilterChange(setSearch)(e.target.value)}
               />
@@ -1049,6 +1091,7 @@ export function AdminUsersPage() {
                               <>
                                 <motion.button
                                   whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                  disabled={isActing}
                                   style={{ background: "var(--low)", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, padding: "6px 12px", cursor: "pointer", fontWeight: 600 }}
                                   onClick={() => handleApprove(user.id, user.name)}
                                 >
@@ -1056,6 +1099,7 @@ export function AdminUsersPage() {
                                 </motion.button>
                                 <motion.button
                                   whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                  disabled={isActing}
                                   style={{ background: "var(--critical)", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, padding: "6px 12px", cursor: "pointer", fontWeight: 600 }}
                                   onClick={() => confirmReject(user.id, user.name)}
                                 >
@@ -1067,9 +1111,31 @@ export function AdminUsersPage() {
                               </>
                             ) : (
                               <>
+                                {user.status === "aktif" ? (
+                                  <motion.button
+                                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                    className="btn secondary"
+                                    disabled={isActing}
+                                    style={{ fontSize: 12, padding: "6px 12px", color: "var(--medium)" }}
+                                    onClick={() => confirmDeactivate(user)}
+                                  >
+                                    <Icon name="block" style={{ fontSize: 16 }} /> Nonaktifkan
+                                  </motion.button>
+                                ) : (
+                                  <motion.button
+                                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                    className="btn secondary"
+                                    disabled={isActing}
+                                    style={{ fontSize: 12, padding: "6px 12px", color: "var(--low)" }}
+                                    onClick={() => handleActivate(user)}
+                                  >
+                                    <Icon name="how_to_reg" style={{ fontSize: 16 }} /> Aktifkan
+                                  </motion.button>
+                                )}
                                 <motion.button
                                   whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                   className="btn secondary"
+                                  disabled={isActing}
                                   style={{ fontSize: 12, padding: "6px 12px", color: "var(--critical)" }}
                                   onClick={() => confirmDelete(user)}
                                 >

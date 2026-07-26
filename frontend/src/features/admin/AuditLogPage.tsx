@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { api, apiUrl } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
@@ -76,6 +76,7 @@ const actionLabels: Record<string, string> = {
   update_user: "Ubah Data Pengguna",
   delete_user: "Hapus Pengguna",
   export_users: "Ekspor Pengguna",
+  export_audit_logs: "Ekspor Log Audit",
   export_operator_reports: "Ekspor Laporan Operator",
   export_province_dashboard: "Ekspor Dashboard Provinsi",
   download_research_dataset: "Unduh Dataset Riset",
@@ -111,7 +112,11 @@ export function AuditLogPage() {
   const [outcome, setOutcome] = useState("");
   const [search, setSearch] = useState("");
 
+  // Penanda urutan request agar respons kueri lama tidak menimpa hasil kueri
+  // terbaru saat mengetik cepat di kotak pencarian.
+  const fetchSeqRef = useRef(0);
   const fetchLogs = useCallback(() => {
+    const seq = ++fetchSeqRef.current;
     setIsLoading(true);
     setError(null);
     const query = new URLSearchParams();
@@ -122,15 +127,17 @@ export function AuditLogPage() {
 
     api<AuditLogResponse>(`/admin/audit-logs?${query.toString()}`)
       .then((res) => {
+        if (seq !== fetchSeqRef.current) return;
         setLogs(res.data);
         setMeta(res.meta ?? null);
         setSummary(res.summary ?? null);
       })
       .catch((err: unknown) => {
+        if (seq !== fetchSeqRef.current) return;
         setLogs([]);
         setError(err instanceof Error ? err.message : "Log audit belum bisa dimuat.");
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (seq === fetchSeqRef.current) setIsLoading(false); });
   }, [action, outcome, search, page]);
 
   useEffect(() => {
@@ -307,6 +314,7 @@ export function AuditLogPage() {
               <input
                 type="text"
                 placeholder="Cari aktor, target..."
+                maxLength={100}
                 value={search}
                 onChange={(e) => onFilterChange(setSearch)(e.target.value)}
               />
