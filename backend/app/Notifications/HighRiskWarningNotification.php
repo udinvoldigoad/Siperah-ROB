@@ -60,7 +60,7 @@ class HighRiskWarningNotification extends Notification implements ShouldQueue
             ->title($dbData['title'])
             ->icon('/logo.png')
             ->body($dbData['body'])
-            ->action('Buka Peta Bahaya', '/map')
+            ->action('Buka Peta Bahaya', '/#/map')
             ->data(['prediction_date' => $this->predictionDate]);
     }
 
@@ -72,6 +72,6 @@ class HighRiskWarningNotification extends Notification implements ShouldQueue
             ->subject($dbData['title'])
             ->greeting('Peringatan Bahaya Rob')
             ->line($dbData['body'])
-            ->action('Buka Peta Bahaya', url('/map'));
+            ->action('Buka Peta Bahaya', url('/#/map'));
     }
 }

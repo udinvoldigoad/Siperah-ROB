@@ -54,7 +54,7 @@ class ReportStatusUpdatedNotification extends Notification implements ShouldQueu
             ->title($dbData['title'])
             ->icon('/logo.png')
             ->body($dbData['body'])
-            ->action('Lihat Laporan', "/operator/reports/{$this->report->report_code}")
+            ->action('Lihat Laporan', "/#/history")
             ->data(['report_code' => $this->report->report_code]);
     }
 
@@ -65,6 +65,6 @@ class ReportStatusUpdatedNotification extends Notification implements ShouldQueu
             ->subject($dbData['title'])
             ->greeting('Halo, ' . ($notifiable->name ?? 'Pelapor'))
             ->line($dbData['body'])
-            ->action('Cek Status Laporan', url('/operator/reports/' . $this->report->report_code));
+            ->action('Cek Status Laporan', url('/#/history'));
     }
 }

@@ -53,7 +53,7 @@ class NewReportReviewNotification extends Notification implements ShouldQueue
             ->title($dbData['title'])
             ->icon('/logo.png')
             ->body($dbData['body'])
-            ->action('Lihat Laporan', "/operator/reports/{$this->report->report_code}")
+            ->action('Lihat Laporan', "/#/operator/reports/{$this->report->id}")
             ->data(['report_code' => $this->report->report_code]);
     }
 
@@ -70,6 +70,6 @@ class NewReportReviewNotification extends Notification implements ShouldQueue
             ->subject($dbData['title'])
             ->greeting('Halo, ' . ($notifiable->name ?? 'Petugas'))
             ->line($dbData['body'])
-            ->action('Buka Sistem', url('/operator/reports/' . $this->report->report_code));
+            ->action('Buka Sistem', url('/#/operator/reports/' . $this->report->id));
     }
 }

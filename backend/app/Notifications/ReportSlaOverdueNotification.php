@@ -41,7 +41,7 @@ class ReportSlaOverdueNotification extends Notification implements ShouldQueue
             ->title($dbData['title'])
             ->icon('/logo.png')
             ->body($dbData['body'])
-            ->action('Cek Laporan', "/operator/reports/{$this->report->report_code}")
+            ->action('Cek Laporan', "/#/operator/reports/{$this->report->id}")
             ->data(['report_code' => $this->report->report_code]);
     }
 
@@ -52,6 +52,6 @@ class ReportSlaOverdueNotification extends Notification implements ShouldQueue
             ->subject($dbData['title'])
             ->greeting('Peringatan: SLA Laporan Terlewati')
             ->line($dbData['body'])
-            ->action('Tinjau Sekarang', url('/operator/reports/' . $this->report->report_code));
+            ->action('Tinjau Sekarang', url('/#/operator/reports/' . $this->report->id));
     }
 }
