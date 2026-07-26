@@ -8,9 +8,10 @@ import { motion, type Variants } from "framer-motion";
 import type { RiskClass } from "../../shared/types/domain";
 
 type ModeAwamData = {
-  risk_class: RiskClass;
-  risk_probability: number;
-  max_tidal_height: number;
+  // null saat prediksi tidak tersedia — backend tidak lagi mengarang "rendah/0".
+  risk_class: RiskClass | null;
+  risk_probability: number | null;
+  max_tidal_height: number | null;
   peak_time: string | null;
   model_version: string | null;
   confidence_score: number | null;
@@ -96,7 +97,9 @@ function formatGeneratedAt(value: string | null | undefined): string {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return `${date.toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} WIB`;
+  // timeZone eksplisit: tanpa ini perangkat WITA/WIT menampilkan jam lokalnya
+  // sendiri tapi tetap dilabeli "WIB".
+  return `${date.toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })} WIB`;
 }
 
 // Titik tengah bounding box dari geometry GeoJSON (Polygon/MultiPolygon) → [lon, lat].
@@ -337,8 +340,8 @@ function CitizenModeDesktop({
 
               <div className="citizen-status-metrics">
                 {[
-                  ["Kemungkinan Rob", data ? `${data.risk_probability}%` : "-", data ? risk : (dataLoaded ? "Tidak tersedia" : "Memuat...")],
-                  ["Puncak Pasang (di atas muka laut rata-rata)", data ? `${meters.format(data.max_tidal_height)} meter` : "-", data ? `Pukul ${data.peak_time} WIB` : (dataLoaded ? "Tidak tersedia" : "Menunggu Data")],
+                  ["Kemungkinan Rob", data?.risk_probability != null ? `${Math.round(Number(data.risk_probability))}%` : "-", data ? (data.risk_probability != null ? risk : "Prediksi belum tersedia") : (dataLoaded ? "Tidak tersedia" : "Memuat...")],
+                  ["Puncak Pasang (di atas muka laut rata-rata)", data?.max_tidal_height != null ? `${meters.format(data.max_tidal_height)} meter` : "-", data?.peak_time ? `Pukul ${data.peak_time} WIB` : (dataLoaded ? "Tidak tersedia" : "Menunggu Data")],
                   ["Laporan Sekitar", data ? `${data.nearby_reports.length} laporan` : "-", data ? "Dari pantauan warga" : (dataLoaded ? "Tidak tersedia" : "Dari pantauan warga")],
                 ].map(([label, value, note], i) => (
                   <motion.div
@@ -364,6 +367,12 @@ function CitizenModeDesktop({
               <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Sumber: model prediksi SIPERAH-RoB. Waspada saat indikator merah mendominasi.</p>
             </div>
 
+            {forecastDays.length === 0 ? (
+              <div style={{ padding: "32px 24px", textAlign: "center", color: "var(--ink-soft)", fontSize: 14 }}>
+                Prakiraan belum tersedia untuk lokasi ini
+                {dataLoaded ? "." : " — memuat data..."}
+              </div>
+            ) : (
             <div className="citizen-forecast-grid">
               {forecastDays.map(({ day, label, percent, color }: any, i: number) => (
                 <motion.div
@@ -386,6 +395,7 @@ function CitizenModeDesktop({
                 </motion.div>
               ))}
             </div>
+            )}
           </motion.section>
 
           {/* Laporan Warga Sekitar */}
@@ -416,7 +426,7 @@ function CitizenModeDesktop({
                 {data?.nearby_reports.length === 0 && <tr><td colSpan={4} style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>Belum ada laporan tervalidasi di sekitar lokasi ini.</td></tr>}
                 {data?.nearby_reports.map((report: any) => {
                   const region = [report.region?.village, report.region?.district, report.region?.regency].filter(Boolean).join(", ") || "Wilayah pesisir";
-                  const time = new Date(report.incident_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+                  const time = new Date(report.incident_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
                   return <tr key={report.id} style={{ borderBottom: "1px solid var(--line)" }}>
                     <td style={{ padding: "16px 24px", fontWeight: 600, color: "var(--ink)" }}>{region}</td>
                     <td style={{ padding: "16px 24px" }}>
@@ -685,11 +695,11 @@ function CitizenModeMobile({
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ flex: 1, background: "rgba(0,0,0,0.15)", borderRadius: 16, padding: "12px 16px" }}>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>Peluang</div>
-              <div style={{ fontSize: 24, fontWeight: 800 }}>{data ? `${data.risk_probability}%` : "-"}</div>
+              <div style={{ fontSize: 24, fontWeight: 800 }}>{data?.risk_probability != null ? `${Math.round(Number(data.risk_probability))}%` : "-"}</div>
             </div>
             <div style={{ flex: 1, background: "rgba(0,0,0,0.15)", borderRadius: 16, padding: "12px 16px" }}>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>Pasang (vs MSL)</div>
-              <div style={{ fontSize: 24, fontWeight: 800 }}>{data ? `${meters.format(data.max_tidal_height)}m` : "-"}</div>
+              <div style={{ fontSize: 24, fontWeight: 800 }}>{data?.max_tidal_height != null ? `${meters.format(data.max_tidal_height)}m` : "-"}</div>
             </div>
           </div>
         </div>
@@ -700,6 +710,11 @@ function CitizenModeMobile({
         <h2 style={{ fontSize: "1.1rem", margin: "0 0 4px 0", fontWeight: 700 }}>Prakiraan 7 Hari</h2>
         <p style={{ margin: "0 0 16px 0", color: "var(--ink-soft)", fontSize: "13px" }}>Geser untuk melihat hari berikutnya</p>
         
+        {forecastDays.length === 0 && (
+          <div style={{ padding: "20px 0", color: "var(--ink-soft)", fontSize: 13 }}>
+            Prakiraan belum tersedia untuk lokasi ini{dataLoaded ? "." : " — memuat data..."}
+          </div>
+        )}
         <div className="mobile-forecast-scroller">
           {forecastDays.map(({ day, label, percent, color }: any, i: number) => (
             <div key={day} className="mobile-forecast-card">
@@ -762,7 +777,7 @@ function CitizenModeMobile({
           )}
           {data?.nearby_reports.map((report: any) => {
             const region = [report.region?.village, report.region?.district].filter(Boolean).join(", ") || "Wilayah pesisir";
-            const time = new Date(report.incident_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+            const time = new Date(report.incident_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
             return (
               <div key={report.id} className="mobile-report-card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -921,8 +936,8 @@ export function CitizenModePage() {
   }, [coordinates]);
   useEffect(() => { requestGpsLocation(); }, []);
 
-  const risk = data ? riskLabels[data.risk_class] : (dataLoaded ? "Tidak Tersedia" : "Memuat...");
-  const cardStyle = getCardStyle(data?.risk_class);
+  const risk = data?.risk_class ? riskLabels[data.risk_class] : (dataLoaded || data ? "Tidak Tersedia" : "Memuat...");
+  const cardStyle = getCardStyle(data?.risk_class ?? undefined);
   // If we are showing dummy data, or if data is not available, we should prioritize the actual locationNote (which now holds the real geocoded name)
   // rather than the dummy region's name.
   const isDummyData = (data?.region as any)?.provenance_status === "demo" || risk === "Tidak Tersedia";
@@ -930,34 +945,24 @@ export function CitizenModePage() {
     ? [data.region.village, data.region.district, data.region.regency].filter(Boolean).join(", ") 
     : locationNote;
 
-  let forecastDays = data ? (Array.isArray(data.forecast) ? data.forecast : data.forecast.data).map((item: any) => {
-    const rawDate = item.prediction_date.split("T")[0].split(" ")[0]; // Get only YYYY-MM-DD
-    const isMonitored = !!data?.is_monitored;
-    const isStale = data?.prediction_status === "stale" || data?.prediction_status === "unavailable";
-    const percent = (isMonitored && !isStale) ? item.risk_probability : 0;
-    const riskClass = (isMonitored && !isStale) ? (item.risk_class as RiskClass) : ("rendah" as RiskClass);
-    return {
-      day: new Date(`${rawDate}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
-      label: riskLabels[riskClass],
-      percent: percent, 
-      color: riskClass === "sangat_tinggi" ? "var(--critical)" : riskClass === "tinggi" ? "var(--high)" : riskClass === "sedang" ? "var(--medium)" : "var(--low)",
-    };
-  }) : [];
-
-  if (forecastDays.length === 0) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    forecastDays = Array.from({ length: 7 }, (_, i) => {
-      const targetDate = new Date(today);
-      targetDate.setDate(today.getDate() + i);
-      return {
-        day: targetDate.toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
-        label: "Rendah",
-        percent: 0,
-        color: "var(--low)"
-      };
-    });
-  }
+  // Prakiraan menampilkan data apa adanya bila wilayah terpantau — status
+  // "stale" cukup ditandai lewat prediction_notice, TIDAK dengan menolkan
+  // grafik (dulu hero bisa "Sangat Tinggi" sementara 7 bar di bawahnya
+  // dipaksa "Rendah 0%": kontradiksi di layar peringatan).
+  const forecastDays = data && data.is_monitored
+    ? (Array.isArray(data.forecast) ? data.forecast : data.forecast.data).map((item: any) => {
+        const rawDate = item.prediction_date.split("T")[0].split(" ")[0]; // YYYY-MM-DD
+        const riskClass = item.risk_class as RiskClass;
+        return {
+          day: new Date(`${rawDate}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
+          label: riskLabels[riskClass] ?? riskClass,
+          percent: Math.round(Number(item.risk_probability ?? 0)),
+          color: riskClass === "sangat_tinggi" ? "var(--critical)" : riskClass === "tinggi" ? "var(--high)" : riskClass === "sedang" ? "var(--medium)" : "var(--low)",
+        };
+      })
+    : [];
+  // Tidak ada data prakiraan → biarkan kosong; bagian render menampilkan
+  // pesan "belum tersedia", BUKAN tujuh hari "Rendah 0%" karangan.
 
   let user: { role?: string } | null = null;
   try { user = JSON.parse(localStorage.getItem("siperah-user") || "null"); } catch {}
@@ -975,7 +980,9 @@ export function CitizenModePage() {
     `Status: ${risk}`,
     ...(data ? [
       ...(data.guidance_message ? [data.guidance_message] : []),
-      `Peluang rob ${data.risk_probability}%${data.peak_time ? `, puncak pasang ${data.peak_time} WIB` : ""}.`,
+      ...(data.risk_probability != null
+        ? [`Peluang rob ${Math.round(Number(data.risk_probability))}%${data.peak_time ? `, puncak pasang ${data.peak_time} WIB` : ""}.`]
+        : []),
     ] : []),
     "Sumber: SIPERAH-RoB",
   ].join("\n");
