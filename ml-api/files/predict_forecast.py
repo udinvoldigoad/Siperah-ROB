@@ -73,6 +73,7 @@ def generate_forecast(
         month = int(date.month)
 
         wave = swell = 0.0
+        wind_dir = 0.0  # derajat; long-term outlook tak punya arah angin -> 0 (spt fallback build_daily_features)
         if i <= 7:
             # --- SHORT TERM: prakiraan cuaca & gelombang aktual ---
             horizon_type = "short_term"
@@ -82,6 +83,8 @@ def generate_forecast(
             rainfall = float(w_row["rainfall_mm"].values[0])
             wind = float(w_row["wind_speed_ms"].values[0])
             pressure = float(w_row["pressure_hpa"].values[0])
+            if "wind_direction_deg" in w_row.columns:
+                wind_dir = float(w_row["wind_direction_deg"].values[0] or 0)
             if marine_forecast_df is not None and not marine_forecast_df.empty:
                 m_row = marine_forecast_df[marine_forecast_df["date"] == date]
                 if not m_row.empty:
@@ -113,6 +116,10 @@ def generate_forecast(
             "Gangguan Cuaca": int(rainfall > 10.0),
             "Gelombang": wave,
             "Peristiwa Astronomi": int(is_full_moon_period(pd.Series([date])).iloc[0]),
+            # Arah Angin (derajat) & Angin Onshore (biner, Selatan 135-225 = laut->darat),
+            # selaras build_daily_features agar cocok dengan fitur saat training.
+            "Arah Angin": wind_dir,
+            "Angin Onshore": int(135 <= wind_dir <= 225),
         }
         X = pd.DataFrame([features])[FEATURE_COLS]
         prob_rob = float(model.predict_proba(X)[0, 1])

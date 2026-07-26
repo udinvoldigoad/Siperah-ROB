@@ -201,7 +201,7 @@ def fetch_openmeteo_forecast(lat: float, lon: float, days: int = 7) -> pd.DataFr
         "latitude": lat,
         "longitude": lon,
         "forecast_days": days,
-        "daily": "precipitation_sum,wind_speed_10m_max,surface_pressure_mean",
+        "daily": "precipitation_sum,wind_speed_10m_max,wind_direction_10m_dominant,surface_pressure_mean",
         "wind_speed_unit": "ms",
         "timezone": "Asia/Jakarta",
     })
@@ -210,6 +210,8 @@ def fetch_openmeteo_forecast(lat: float, lon: float, days: int = 7) -> pd.DataFr
         "date": daily["time"],
         "rainfall_mm": daily["precipitation_sum"],
         "wind_speed_ms": daily["wind_speed_10m_max"],
+        # Arah angin diperlukan fitur "Arah Angin"/"Angin Onshore" (selaras training).
+        "wind_direction_deg": daily["wind_direction_10m_dominant"],
         "pressure_hpa": daily["surface_pressure_mean"],
     })
 
