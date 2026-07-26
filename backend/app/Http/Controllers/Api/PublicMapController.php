@@ -62,7 +62,7 @@ final class PublicMapController
             $query->whereDate('prediction_date', $filters['date']);
         } else {
             $latestDate = (clone $query)
-                ->whereDate('prediction_date', '>=', CarbonImmutable::today())
+                ->whereDate('prediction_date', '>=', CarbonImmutable::today('Asia/Jakarta'))
                 ->min('prediction_date');
             $latestDate ??= (clone $query)->max('prediction_date');
             if ($latestDate) {
@@ -269,6 +269,10 @@ final class PublicMapController
 
         $regencies = $active->pluck('regency')->unique()->values();
         $topDesc = $active->first()->weather_desc;
+        // Hitung kabupaten HANYA untuk kondisi terparah yang disebut — tanpa
+        // ini "Hujan lebat" di 1 kabupaten + hujan ringan di 7 lainnya tampil
+        // sebagai "Hujan lebat di 8 kabupaten" (melebih-lebihkan sumber resmi).
+        $topRegencies = $active->where('weather_desc', $topDesc)->pluck('regency')->unique()->values();
 
         return [
             'type' => 'bmkg_weather',
@@ -276,8 +280,8 @@ final class PublicMapController
             'message' => sprintf(
                 '%s diprakirakan BMKG di %d kabupaten pesisir (a.l. %s). Waspadai potensi genangan rob saat pasang.',
                 $topDesc,
-                $regencies->count(),
-                $regencies->take(3)->implode(', '),
+                $topRegencies->count(),
+                $topRegencies->take(3)->implode(', '),
             ),
             'affected_regencies' => $regencies,
             'valid_until' => optional($active->max('valid_until'))
@@ -382,6 +386,16 @@ final class PublicMapController
 
         if (!empty($filters['date'])) {
             $query->whereDate('prediction_date', $filters['date']);
+        } else {
+            // Tanpa parameter tanggal, default ke prediksi TERDEKAT yang akan
+            // datang (aturan yang sama dengan peta). Sebelumnya orderBy desc
+            // tanpa filter membuat halaman pertama berisi H+30 — konsumen
+            // (mis. metrik OnboardingPage) menampilkannya sebagai "saat ini".
+            $nearest = Prediction::whereDate('prediction_date', '>=', \Carbon\CarbonImmutable::today('Asia/Jakarta'))
+                ->min('prediction_date') ?: Prediction::max('prediction_date');
+            if ($nearest) {
+                $query->whereDate('prediction_date', $nearest);
+            }
         }
 
         return PredictionResource::collection($query->paginate($filters['per_page'] ?? 200));
@@ -522,9 +536,12 @@ final class PublicMapController
                 'monitoring_status' => $isMonitored ? 'inside_monitoring_area' : 'outside_monitoring_area',
                 'status_label' => $isDummy ? 'Menampilkan data dummy (Lokasi Anda di luar Lampung)' : ($isMonitored ? 'Masuk wilayah pantauan rob' : 'Di luar wilayah pantauan prediksi rob'),
                 'guidance_message' => $isDummy ? 'Lokasi Anda saat ini berada di luar wilayah administrasi Lampung. Menampilkan data dummy untuk keperluan pratinjau antarmuka.' : $this->modeAwamGuidanceMessage($isMonitored, $prediction?->risk_class),
-                'risk_class' => $prediction?->risk_class ?? 'rendah',
-                'risk_probability' => $prediction?->risk_probability ?? 0,
-                'max_tidal_height' => $prediction?->max_tidal_height ?? 0,
+                // null saat prediksi tidak tersedia — frontend menampilkan
+                // "Tidak tersedia", BUKAN default "rendah/0%" yang menenangkan
+                // tanpa dasar data.
+                'risk_class' => $prediction?->risk_class,
+                'risk_probability' => $prediction?->risk_probability,
+                'max_tidal_height' => $prediction?->max_tidal_height,
                 'peak_time' => $prediction?->peak_time ? CarbonImmutable::parse($prediction->peak_time)->format('H:i') : null,
                 'model_version' => $prediction?->model_version,
                 'confidence_score' => $prediction?->confidence_score,
@@ -547,7 +564,7 @@ final class PublicMapController
             'regency' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $window = \App\Support\ForecastWindow::thirtyDaysFrom(CarbonImmutable::today());
+        $window = \App\Support\ForecastWindow::thirtyDaysFrom(CarbonImmutable::today('Asia/Jakarta'));
 
         $query = Prediction::with('region')
             ->whereBetween('prediction_date', [
@@ -638,9 +655,11 @@ final class PublicMapController
             'sangat_tinggi' => 'Risiko rob sangat tinggi. Hindari area rendah dekat pesisir, amankan barang penting, dan ikuti arahan BPBD.',
             'tinggi' => 'Risiko rob tinggi. Kurangi aktivitas di area rendah dekat pesisir dan pantau perubahan pasang.',
             'sedang' => 'Risiko rob sedang. Tetap pantau kondisi sekitar, terutama saat mendekati waktu puncak pasang.',
-            default => 'Risiko rob rendah saat ini. Tetap cek pembaruan berkala dan laporkan jika melihat genangan.',
+            'rendah' => 'Risiko rob rendah saat ini. Tetap cek pembaruan berkala dan laporkan jika melihat genangan.',
+            // Tanpa prediksi (null) JANGAN mengklaim "rendah" — itu pernyataan
+            // aman yang tidak didukung data.
+            default => 'Prediksi untuk wilayah ini belum tersedia. Tetap waspada saat pasang tinggi dan laporkan bila melihat genangan.',
         };
-
     }
 
     public function onboarding(): JsonResponse

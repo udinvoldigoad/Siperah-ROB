@@ -139,7 +139,9 @@ final class ApiFoundationTest extends TestCase
             ->assertJsonPath('data.monitoring_status', 'outside_monitoring_area')
             ->assertJsonPath('data.status_label', 'Di luar wilayah pantauan prediksi rob')
             ->assertJsonPath('data.region.id', $region->id)
-            ->assertJsonPath('data.risk_probability', 0);
+            // Tanpa prediksi, probabilitas harus null (tidak diketahui) —
+            // bukan 0 yang berarti "aman" tanpa dasar data.
+            ->assertJsonPath('data.risk_probability', null);
     }
 
     public function test_mode_awam_returns_clear_message_for_point_outside_available_lampung_boundaries(): void
