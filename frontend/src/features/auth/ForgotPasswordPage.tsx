@@ -38,7 +38,9 @@ export function ForgotPasswordPage() {
       });
       setStep("otp");
       setCooldown(60);
-      toast.success("Kode OTP berhasil dibuat!");
+      // Backend sengaja tidak membocorkan apakah email terdaftar
+      // (anti-enumeration) — jangan mengklaim OTP pasti terkirim.
+      toast.success("Jika email terdaftar, kode OTP telah dikirim. Berlaku 10 menit.");
     } catch (err: any) {
       toast.error(err.message || "Gagal mengirim kode OTP.");
     } finally {
@@ -74,6 +76,11 @@ export function ForgotPasswordPage() {
       setTimeout(() => { window.location.hash = "#/login"; }, 1500);
     } catch (err: any) {
       toast.error(err.message || "Gagal mereset kata sandi.");
+      // OTP salah/kedaluwarsa: kembalikan user ke langkah OTP dengan kode
+      // dikosongkan. Tanpa ini user menekan "Simpan" berulang dengan OTP yang
+      // sama sampai jatah 5 percobaan habis, tanpa jalan kembali.
+      setOtp(["", "", "", "", "", ""]);
+      setStep("otp");
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +97,7 @@ export function ForgotPasswordPage() {
       });
       setOtp(["", "", "", "", "", ""]);
       setCooldown(60);
-      toast.success("Kode OTP baru telah dibuat.");
+      toast.success("Jika email terdaftar, kode OTP baru telah dikirim. Berlaku 10 menit.");
     } catch (err: any) {
       toast.error(err.message || "Gagal mengirim ulang OTP.");
     } finally {
@@ -280,6 +287,7 @@ export function ForgotPasswordPage() {
                     </div>
                     <p className="otp-hint" style={{ fontSize: "13px", color: "var(--ink-soft)", margin: "0", lineHeight: 1.6 }}>
                       Kami telah mencoba mengirim kode 6 digit ke <strong style={{ color: "var(--accent)" }}>{email}</strong>. Periksa inbox atau folder spam Anda.
+                      Kode berlaku <strong>10 menit</strong> dengan maksimal <strong>5 percobaan</strong>.
                     </p>
                   </div>
 
@@ -395,6 +403,16 @@ export function ForgotPasswordPage() {
                     <Icon name="lock_reset" style={{ fontSize: "18px" }} />
                     {isLoading ? "Menyimpan..." : "Simpan Sandi Baru"}
                   </button>
+
+                  <div style={{ textAlign: "center", marginTop: "16px" }}>
+                    <button
+                      type="button"
+                      onClick={() => { setOtp(["", "", "", "", "", ""]); setStep("otp"); }}
+                      style={{ background: "none", border: "none", color: "var(--accent)", fontSize: "14px", fontWeight: 600, cursor: "pointer", padding: "8px 12px" }}
+                    >
+                      Ubah / masukkan ulang kode OTP
+                    </button>
+                  </div>
                 </form>
               )}
             </motion.div>
