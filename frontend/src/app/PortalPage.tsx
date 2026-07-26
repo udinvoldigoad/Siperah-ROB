@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "../shared/components/Icon";
 import { MapPreview } from "../shared/components/MapPreview";
 import { motion, AnimatePresence } from "framer-motion";
+import { dashboardHashForRole } from "../shared/constants/roles";
 
 const faqData = [
   {
@@ -10,7 +11,7 @@ const faqData = [
   },
   {
     q: "Data apa yang digunakan model prediksi?",
-    a: "Model memadukan data cuaca dan gelombang laut historis dari Open-Meteo (reanalisis ERA5), proyeksi pasang surut berbasis model harmonik, estimasi populasi wilayah pesisir, serta laporan lapangan warga yang telah divalidasi BPBD. Integrasi sumber resmi seperti pasang surut BIG/Pushidrosal dan prakiraan BMKG sedang disiapkan secara bertahap."
+    a: "Model memadukan data cuaca dan gelombang laut historis dari Open-Meteo (reanalisis ERA5), proyeksi pasang surut berbasis model harmonik per stasiun, faktor spasial elevasi & jarak ke pantai per kelurahan, serta kejadian rob riil (BNPB DIBI) dan laporan lapangan warga yang telah divalidasi BPBD. Integrasi sumber resmi seperti pasang surut BIG/Pushidrosal dan prakiraan BMKG sedang disiapkan secara bertahap."
   },
   {
     q: "Siapa saja yang bisa menggunakan SIPERAH-RoB?",
@@ -54,14 +55,10 @@ export function PortalPage() {
     try {
       const user = JSON.parse(userStr);
       currentRole = user.role || "";
-      const roleMap: Record<string, string> = {
-        warga: "#/map",
-        peneliti: "#/research",
-        operator_kabkota: "#/operator",
-        operator_provinsi: "#/province",
-        admin: "#/admin"
-      };
-      dashboardRoute = roleMap[user.role] || "#/login";
+      // Pakai helper kanonik — roleMap lama memakai kunci yang tidak pernah
+      // ada di DB (operator_kabkota/operator_provinsi), sehingga operator BPBD
+      // yang sudah login malah dilempar ke halaman login.
+      dashboardRoute = dashboardHashForRole(user.role);
     } catch (e) {}
   }
 
@@ -1055,9 +1052,9 @@ export function PortalPage() {
             </p>
             <div style={{ display: "grid", gap: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#ef4444" }}></div><strong style={{ minWidth: "120px" }}>Sangat Tinggi</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&gt;75% Probabilitas)</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#f97316" }}></div><strong style={{ minWidth: "120px" }}>Tinggi</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(50–75% Probabilitas)</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#f59e0b" }}></div><strong style={{ minWidth: "120px" }}>Sedang</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(25–50% Probabilitas)</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#10b981" }}></div><strong style={{ minWidth: "120px" }}>Rendah</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&lt;25% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#f97316" }}></div><strong style={{ minWidth: "120px" }}>Tinggi</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(55–75% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#f59e0b" }}></div><strong style={{ minWidth: "120px" }}>Sedang</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(30–55% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#10b981" }}></div><strong style={{ minWidth: "120px" }}>Rendah</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&lt;30% Probabilitas)</span></div>
             </div>
           </div>
           <div className="landing-map-frame" style={{ order: 2 }}>

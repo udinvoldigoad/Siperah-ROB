@@ -15,7 +15,7 @@ const faqData = [
   },
   {
     q: "Data apa yang digunakan model prediksi?",
-    a: "Model memadukan data cuaca dan gelombang laut historis dari Open-Meteo (reanalisis ERA5), proyeksi pasang surut berbasis model harmonik, estimasi populasi wilayah pesisir, serta laporan lapangan warga yang telah divalidasi BPBD. Integrasi sumber resmi seperti pasang surut BIG/Pushidrosal dan prakiraan BMKG sedang disiapkan secara bertahap."
+    a: "Model memadukan data cuaca dan gelombang laut historis dari Open-Meteo (reanalisis ERA5), proyeksi pasang surut berbasis model harmonik per stasiun, faktor spasial elevasi & jarak ke pantai per kelurahan, serta kejadian rob riil (BNPB DIBI) dan laporan lapangan warga yang telah divalidasi BPBD. Integrasi sumber resmi seperti pasang surut BIG/Pushidrosal dan prakiraan BMKG sedang disiapkan secara bertahap."
   },
   {
     q: "Siapa saja yang bisa menggunakan SIPERAH-RoB?",
@@ -212,9 +212,9 @@ export function OnboardingPage() {
             </p>
             <div style={{ display: "grid", gap: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#ef4444" }}></div><strong className="dark-text" style={{ minWidth: "120px" }}>Sangat Tinggi</strong><span className="dark-text-soft" style={{ fontSize: "0.95rem" }}>(&gt;75% Probabilitas)</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#f97316" }}></div><strong className="dark-text" style={{ minWidth: "120px" }}>Tinggi</strong><span className="dark-text-soft" style={{ fontSize: "0.95rem" }}>(50–75% Probabilitas)</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#f59e0b" }}></div><strong className="dark-text" style={{ minWidth: "120px" }}>Sedang</strong><span className="dark-text-soft" style={{ fontSize: "0.95rem" }}>(25–50% Probabilitas)</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#10b981" }}></div><strong className="dark-text" style={{ minWidth: "120px" }}>Rendah</strong><span className="dark-text-soft" style={{ fontSize: "0.95rem" }}>(&lt;25% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#f97316" }}></div><strong className="dark-text" style={{ minWidth: "120px" }}>Tinggi</strong><span className="dark-text-soft" style={{ fontSize: "0.95rem" }}>(55–75% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#f59e0b" }}></div><strong className="dark-text" style={{ minWidth: "120px" }}>Sedang</strong><span className="dark-text-soft" style={{ fontSize: "0.95rem" }}>(30–55% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#10b981" }}></div><strong className="dark-text" style={{ minWidth: "120px" }}>Rendah</strong><span className="dark-text-soft" style={{ fontSize: "0.95rem" }}>(&lt;30% Probabilitas)</span></div>
             </div>
           </div>
           <div className="citizen-map-frame" style={{ order: 2 }}>
