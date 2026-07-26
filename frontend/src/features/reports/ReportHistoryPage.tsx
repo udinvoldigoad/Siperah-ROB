@@ -120,7 +120,7 @@ export function ReportHistoryPage() {
                     <Icon name="schedule" style={{ fontSize: 16, color: "var(--accent)" }} /> <strong>{report.incidentTime}</strong>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-soft)", padding: "6px 14px", borderRadius: 20 }}>
-                    <Icon name="water_drop" style={{ fontSize: 16, color: "var(--accent)" }} /> <strong>{report.waterHeightCm ? `${report.waterHeightCm} cm` : "-"}</strong>
+                    <Icon name="water_drop" style={{ fontSize: 16, color: "var(--accent)" }} /> <strong>{report.waterHeightCm !== null ? `${report.waterHeightCm} cm` : "-"}</strong>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-soft)", padding: "6px 14px", borderRadius: 20 }}>
                     <Icon name="location_on" style={{ fontSize: 16, color: "var(--accent)" }} /> <span>{report.coordinates}</span>

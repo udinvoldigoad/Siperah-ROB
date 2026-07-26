@@ -25,7 +25,9 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
     setIsLoading(!local);
     fetchOperatorReport(reportId)
       .then((data) => { setReport(data); setError(""); })
-      .catch(() => setError("Backend belum tersedia. Menampilkan data contoh jika ada."))
+      // Teruskan pesan asli API — 403 "di luar wilayah kerja" atau 404 jauh
+      // lebih mungkin daripada "backend mati", dan pesan generik menyesatkan.
+      .catch((err: any) => setError(err?.message || "Laporan belum bisa dimuat. Coba lagi sebentar."))
       .finally(() => setIsLoading(false));
   }, [reportId]);
 
@@ -42,8 +44,8 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
       setIsSaving(true);
       setReport(await updateOperatorReportStatus(reportId, status, reason));
       setError("");
-    } catch {
-      setError("Status laporan belum tersimpan. Cek koneksi backend.");
+    } catch (err: any) {
+      setError(err?.message || "Status laporan belum tersimpan. Coba lagi sebentar.");
     } finally {
       setIsSaving(false);
     }
@@ -61,8 +63,8 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
       toast.info(`Laporan ${code} telah ditolak.`);
       // Kembali ke dashboard operator setelah laporan ditolak.
       window.location.hash = "#/operator";
-    } catch {
-      setError("Status laporan belum tersimpan. Cek koneksi backend.");
+    } catch (err: any) {
+      setError(err?.message || "Status laporan belum tersimpan. Coba lagi sebentar.");
     } finally {
       setIsSaving(false);
     }

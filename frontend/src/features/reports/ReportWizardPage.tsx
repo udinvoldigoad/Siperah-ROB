@@ -19,10 +19,13 @@ type ReportResponse = {
 type ResolvedRegion = { id: string; village: string | null; district: string | null; regency: string | null; coastal_flag: boolean; is_monitored?: boolean };
 type ResolveRegionResponse = { data: ResolvedRegion | null; message?: string | null };
 
+// Label rentang selaras logika severityFromWaterHeight (<10 / 10-30 / 31-80 / >80)
+// dan perhitungan ulang backend — di angka batas 30 cm hanya satu kartu yang
+// mengklaim nilai itu.
 const severityOptions = [
-  { key: "ringan", label: "Ringan", note: "Genangan <10cm", tone: "#16a34a" },
+  { key: "ringan", label: "Ringan", note: "Genangan <10 cm", tone: "#16a34a" },
   { key: "sedang", label: "Sedang", note: "10-30 cm", tone: "#d97706" },
-  { key: "parah", label: "Parah", note: "30-80 cm", tone: "#ea580c" },
+  { key: "parah", label: "Parah", note: "31-80 cm", tone: "#ea580c" },
   { key: "sangat_parah", label: "Sangat Parah", note: ">80 cm", tone: "#dc2626" },
 ] as const;
 
@@ -30,8 +33,14 @@ function toIncidentDateTime(value: string) {
   if (value.includes("T")) return new Date(value).toISOString();
   const [hours = "00", minutes = "00"] = value.split(":");
   const now = new Date();
-  now.setHours(Number(hours), Number(minutes), 0, 0);
-  return now.toISOString();
+  const incident = new Date();
+  incident.setHours(Number(hours), Number(minutes), 0, 0);
+  // Input hanya jam — bila jam itu belum lewat hari ini (mis. lapor 00:30
+  // untuk kejadian 23:30), artinya kejadian SEMALAM, bukan nanti malam.
+  if (incident.getTime() > now.getTime() + 5 * 60 * 1000) {
+    incident.setDate(incident.getDate() - 1);
+  }
+  return incident.toISOString();
 }
 
 function currentTimeValue() {
@@ -214,7 +223,9 @@ export function ReportWizardPage() {
       toast.success(`Laporan terkirim. Kode verifikasi: ${response.data.report_code}.`);
       form.reset();
       setSelectedPhotos([]);
-      setWaterHeight("45");
+      // Kosongkan seperti state awal — dulu terisi ulang "45" sehingga laporan
+      // berikutnya membawa tinggi air yang tidak pernah diketik pengguna.
+      setWaterHeight("");
       setIncidentTime(currentTimeValue());
       setDeclarationAccepted(false);
     } catch (error: any) {
@@ -349,7 +360,7 @@ export function ReportWizardPage() {
                   <div style={{ fontSize: 12, color: resolvedRegion ? "var(--ink)" : "var(--medium)", marginTop: 4 }}>
                     {isResolvingRegion ? "Mencari nama wilayah..." : resolvedRegion
                       ? `${resolvedRegion.village ?? "-"}, ${resolvedRegion.district ?? "-"}, ${resolvedRegion.regency ?? "-"}`
-                      : "Bukan wilayah administrasi Bandar Lampung."}
+                      : "Koordinat di luar batas administrasi Lampung yang tersedia."}
                   </div>
                 </div>
               </div>
@@ -497,7 +508,7 @@ export function ReportWizardPage() {
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, paddingBottom: 14, borderBottom: "1px solid var(--line)" }}>
                   <span style={{ color: "var(--ink-soft)", fontSize: 13 }}>Waktu kejadian</span>
-                  <strong style={{ fontSize: 14 }}>{incidentTime || "-"} WIB</strong>
+                  <strong style={{ fontSize: 14 }}>{incidentTime || "-"} (waktu perangkat)</strong>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                   <span style={{ color: "var(--ink-soft)", fontSize: 13 }}>Foto dilampirkan</span>
