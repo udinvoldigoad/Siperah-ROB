@@ -10,6 +10,9 @@ export const roleLabels: Record<string, string> = {
   bpbd_provinsi: "BPBD Provinsi",
   admin: "Admin Sistem",
   peneliti: "Peneliti",
+  // AuditService menulis actor_role 'guest' untuk aksi tanpa login
+  // (mis. percobaan login gagal) — tanpa entri ini badge tampil "guest" mentah.
+  guest: "Tamu",
 };
 
 export function roleLabel(role: string | null | undefined): string {

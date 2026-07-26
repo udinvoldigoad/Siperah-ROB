@@ -31,7 +31,7 @@ export function LoginPage() {
       setLoginNotice({ message: "Akun Anda telah dinonaktifkan.", status: "nonaktif" });
     } else if (hash.includes("error=ditolak")) {
       setLoginNotice({ message: "Pendaftaran Anda ditolak oleh admin.", status: "ditolak" });
-    } else if (hash.includes("error=google_auth_failed")) {
+    } else if (hash.includes("error=google_auth_failed") || hash.includes("error=oauth_failed")) {
       toast.error("Gagal masuk dengan Google.");
       window.location.hash = "#/login";
     }
@@ -67,8 +67,10 @@ export function LoginPage() {
       localStorage.setItem("siperah-user", JSON.stringify(res.user));
 
       toast.success(`Selamat datang kembali, ${res.user.name}!`);
-      
+
       // Redirect langsung ke dashboard sesuai peran (bukan balik ke landing).
+      // isLoading sengaja TIDAK di-reset di sini: tombol tetap nonaktif selama
+      // jeda redirect 500ms agar tidak bisa submit ganda.
       setTimeout(() => {
         window.location.hash = dashboardHashForRole(res.user.role);
       }, 500);
@@ -81,7 +83,6 @@ export function LoginPage() {
       } else {
         toast.error(err.message || "Gagal masuk. Silakan cek kredensial Anda.");
       }
-    } finally {
       setIsLoading(false);
     }
   };
@@ -265,12 +266,12 @@ export function LoginPage() {
                       </button>
                     </div>
                   </div>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>                        <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "var(--ink-soft)", cursor: "pointer" }}>
-                          <input type="checkbox" style={{ accentColor: "var(--accent)", width: "16px", height: "16px", borderRadius: "4px" }} />
-                          Ingat saya
-                        </label>
-                        <a href="#/forgot-password" className="link-btn" style={{ fontSize: "14px", color: "var(--accent)", textDecoration: "none", fontWeight: 600 }}>Lupa sandi?</a>
-                      </div>
+                {/* "Ingat saya" dihapus: checkbox lama tidak tersambung ke
+                    apa pun (sesi selalu tersimpan di localStorage) — kontrol
+                    mati hanya menyesatkan. */}
+                <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: "32px" }}>
+                  <a href="#/forgot-password" className="link-btn" style={{ fontSize: "14px", color: "var(--accent)", textDecoration: "none", fontWeight: 600 }}>Lupa sandi?</a>
+                </div>
                 <button 
                   className="btn solid" 
                   type="submit" 
