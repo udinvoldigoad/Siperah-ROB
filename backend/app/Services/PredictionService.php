@@ -18,13 +18,13 @@ final class PredictionService
     /** @return array{current: Prediction|null, forecast: Collection<int, Prediction>, status: string, last_generated_at: string|null} */
     public function sevenDayForecast(string $regionId): array
     {
-        return $this->forecast($regionId, ForecastWindow::sevenDaysFrom(CarbonImmutable::today()), 7);
+        return $this->forecast($regionId, ForecastWindow::sevenDaysFrom(CarbonImmutable::today('Asia/Jakarta')), 7);
     }
 
     /** @return array{current: Prediction|null, forecast: Collection<int, Prediction>, status: string, last_generated_at: string|null} */
     public function thirtyDayForecast(string $regionId): array
     {
-        return $this->forecast($regionId, ForecastWindow::thirtyDaysFrom(CarbonImmutable::today()), 30);
+        return $this->forecast($regionId, ForecastWindow::thirtyDaysFrom(CarbonImmutable::today('Asia/Jakarta')), 30);
     }
 
     /**
@@ -41,7 +41,7 @@ final class PredictionService
 
         // "current" = prediksi untuk HARI INI secara eksplisit, bukan sekadar
         // baris pertama (yang bisa jadi tanggal depan bila hari ini bolong).
-        $today = CarbonImmutable::today()->toDateString();
+        $today = CarbonImmutable::today('Asia/Jakarta')->toDateString();
         $current = $forecast->firstWhere(fn (Prediction $p) => (string) $p->prediction_date === $today
             || CarbonImmutable::parse($p->prediction_date)->toDateString() === $today);
 

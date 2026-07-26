@@ -50,7 +50,7 @@ final class DashboardController
         // TERDEKAT yang akan datang (>= hari ini), fallback ke tanggal terbaru.
         $latestPredictionDate = DB::table('predictions')
             ->whereIn('region_id', $regionIds)
-            ->whereDate('prediction_date', '>=', CarbonImmutable::today())
+            ->whereDate('prediction_date', '>=', CarbonImmutable::today('Asia/Jakarta'))
             ->min('prediction_date')
             ?: DB::table('predictions')
                 ->whereIn('region_id', $regionIds)
@@ -69,7 +69,7 @@ final class DashboardController
             ->whereIn('status', ['menunggu', 'perlu_review'])
             ->count();
 
-        $startOfMonth = Carbon::now()->startOfMonth();
+        $startOfMonth = Carbon::now('Asia/Jakarta')->startOfMonth();
         $monthlyValidations = $this->reports->accessible($user)
             ->where('status', 'divalidasi')
             ->where('validated_at', '>=', $startOfMonth)
@@ -163,7 +163,7 @@ final class DashboardController
                 ->sum('regions.population');
         }
 
-        $startOfMonth = $selectedMonth ? Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth() : Carbon::now()->startOfMonth();
+        $startOfMonth = $selectedMonth ? Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth() : Carbon::now('Asia/Jakarta')->startOfMonth();
         $endOfMonth = (clone $startOfMonth)->endOfMonth();
         $validatedThisMonth = DB::table('ground_truth_reports')
             ->join('regions', 'ground_truth_reports.region_id', '=', 'regions.id')
@@ -178,8 +178,8 @@ final class DashboardController
         // peluang rob harian; jumlah kelurahan Tinggi/Sangat Tinggi ikut dikirim
         // sebagai pelengkap. Anchor ke hari ini karena ini forecast — bukan
         // mundur dari tanggal prediksi terjauh.
-        $trendStart = Carbon::now()->toDateString();
-        $trendEnd = Carbon::now()->addDays(29)->toDateString();
+        $trendStart = Carbon::now('Asia/Jakarta')->toDateString();
+        $trendEnd = Carbon::now('Asia/Jakarta')->addDays(29)->toDateString();
         $trend = DB::table('predictions')
             ->join('regions', 'predictions.region_id', '=', 'regions.id')
             ->selectRaw("
@@ -363,7 +363,7 @@ final class DashboardController
         // dataset. Fallback ke tanggal terbaru bila tak ada prediksi mendatang
         // (mis. hanya tersisa data historis).
         $upcoming = (clone $base())
-            ->whereDate('predictions.prediction_date', '>=', CarbonImmutable::today())
+            ->whereDate('predictions.prediction_date', '>=', CarbonImmutable::today('Asia/Jakarta'))
             ->min('predictions.prediction_date');
 
         return $upcoming ?: $base()->max('predictions.prediction_date');
