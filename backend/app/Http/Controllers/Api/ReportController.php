@@ -78,15 +78,15 @@ final class ReportController
 
         if (!$region) {
             $isOutside = true;
+            // locate() sudah punya fallback tetangga terdekat <=25 km. Bila itu
+            // pun gagal, laporan DITOLAK — dulu ada fallback ketiga yang
+            // mengambil baris region pertama sembarang, sehingga lokasi salah
+            // tersimpan permanen dan ikut mengotori routing operator + label ML.
             $region = $this->regionLocator->locate((float) $data['latitude'], (float) $data['longitude']);
-            
-            if (!$region) {
-                $region = \App\Models\Region::where('coastal_flag', true)->first();
-            }
-            
+
             if (!$region) {
                 throw ValidationException::withMessages([
-                    'latitude' => 'Lokasi laporan berada terlalu jauh dan sistem gagal menemukan wilayah referensi untuk penyimpanan.',
+                    'latitude' => 'Koordinat laporan berada di luar jangkauan wilayah Lampung yang tersedia (lebih dari 25 km dari wilayah terdekat).',
                 ]);
             }
         }
