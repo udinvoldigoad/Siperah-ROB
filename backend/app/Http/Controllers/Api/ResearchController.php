@@ -98,7 +98,7 @@ final class ResearchController
     public function downloadDataset(Request $request, Dataset $dataset): JsonResponse|StreamedResponse
     {
         $data = $request->validate([
-            'format' => ['nullable', 'in:json,csv'],
+            'format' => ['nullable', 'in:json,csv,xlsx'],
             'per_page' => ['nullable', 'integer', 'between:1,200'],
         ]);
         $data['format'] ??= 'json';
@@ -392,9 +392,11 @@ final class ResearchController
                         'data' => [[
                             'id' => 'a1b2c3d4-...',
                             'prediction_date' => '2026-05-07',
-                            'risk_probability' => 0.82,
-                            'risk_class' => 'tinggi',
-                            'confidence_score' => 0.76,
+                            // Skala 0-100 (persen), bukan 0-1 — sesuai kolom numeric(5,2)
+                            // di tabel predictions. >=75 = sangat_tinggi.
+                            'risk_probability' => 82.13,
+                            'risk_class' => 'sangat_tinggi',
+                            'confidence_score' => 76.0,
                             'max_tidal_height' => 1.42,
                             'peak_time' => '11:30:00',
                             'model_version' => 'v1.3.0',
@@ -498,15 +500,47 @@ final class ResearchController
     {
         $type = mb_strtolower($dataset->dataset_type);
 
+        // Metadata dataset (periode & cakupan kabupaten) HARUS membatasi isi
+        // unduhan — tanpa ini kolom "Periode/Cakupan" di UI mendeskripsikan
+        // subset sementara file berisi seluruh tabel.
+        $coverage = collect($dataset->coverage_regencies ?? [])
+            ->map(fn (string $name) => preg_replace('/^(kabupaten|kota)\s+/i', '', mb_strtolower(trim($name))))
+            ->filter()
+            ->values();
+        $regencyFilter = function (Builder $query) use ($coverage): Builder {
+            if ($coverage->isEmpty()) {
+                return $query;
+            }
+            return $query->where(function (Builder $q) use ($coverage): void {
+                foreach ($coverage as $name) {
+                    $q->orWhereRaw("REGEXP_REPLACE(LOWER(TRIM(regions.regency)), '^(kabupaten|kota)\\s+', '') = ?", [$name]);
+                }
+            });
+        };
+
         if (str_contains($type, 'tidal') || str_contains($type, 'pasang')) {
-            return [$this->tidalQuery()->orderByDesc('recorded_at'), 'tidal_data.csv'];
+            // Pasut per stasiun laut — cakupan kabupaten tidak berlaku 1:1,
+            // tapi periode tetap dihormati.
+            $query = $this->tidalQuery()
+                ->when($dataset->period_start, fn (Builder $q) => $q->whereDate('recorded_at', '>=', $dataset->period_start))
+                ->when($dataset->period_end, fn (Builder $q) => $q->whereDate('recorded_at', '<=', $dataset->period_end))
+                ->orderByDesc('recorded_at');
+            return [$query, 'tidal_data.csv'];
         }
 
         if (str_contains($type, 'ground truth') || str_contains($type, 'report')) {
-            return [$this->validatedReportsQuery()->orderByDesc('reports.incident_time'), 'validated_reports.csv'];
+            $query = $regencyFilter($this->validatedReportsQuery())
+                ->when($dataset->period_start, fn (Builder $q) => $q->whereDate('reports.incident_time', '>=', $dataset->period_start))
+                ->when($dataset->period_end, fn (Builder $q) => $q->whereDate('reports.incident_time', '<=', $dataset->period_end))
+                ->orderByDesc('reports.incident_time');
+            return [$query, 'validated_reports.csv'];
         }
 
-        return [$this->dailyPredictionsQuery()->orderByDesc('prediction_date'), 'daily_predictions.csv'];
+        $query = $regencyFilter($this->dailyPredictionsQuery())
+            ->when($dataset->period_start, fn (Builder $q) => $q->whereDate('prediction_date', '>=', $dataset->period_start))
+            ->when($dataset->period_end, fn (Builder $q) => $q->whereDate('prediction_date', '<=', $dataset->period_end))
+            ->orderByDesc('prediction_date');
+        return [$query, 'daily_predictions.csv'];
     }
 
     private function dailyPredictionsQuery(): Builder
@@ -577,6 +611,10 @@ final class ResearchController
                         $first = false;
                     }
                     CsvWriter::putRow($output, array_values($values));
+                }
+                if ($first) {
+                    // Query kosong: jangan kirim file 0 byte tanpa penjelasan.
+                    CsvWriter::putRow($output, ['tidak_ada_data_untuk_rentang_dataset_ini']);
                 }
                 fclose($output);
             }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);

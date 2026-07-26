@@ -14,7 +14,7 @@ final class ResearchDataRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'format' => ['nullable', 'in:json,csv'],
+            'format' => ['nullable', 'in:json,csv,xlsx'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
             'station' => ['nullable', 'string', 'max:50'],
