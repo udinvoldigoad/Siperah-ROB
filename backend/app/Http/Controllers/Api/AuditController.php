@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\AuditLogResource;
 use App\Models\AuditLog;
 use App\Http\Requests\AuditLogRequest;
+use App\Services\AuditService;
 use App\Support\CsvWriter;
 use Carbon\CarbonImmutable;
 
 final class AuditController
 {
+    public function __construct(private readonly AuditService $audit) {}
+
     public function index(AuditLogRequest $request)
     {
         $filters = $request->validated();
@@ -50,11 +53,16 @@ final class AuditController
         }
 
         if (($filters['format'] ?? 'json') === 'csv') {
+            // Penarikan massal jejak audit harus meninggalkan jejak juga.
+            $this->audit->write($request, 'export_audit_logs', 'success', 'audit_logs:export', array_filter($filters));
+
             return response()->streamDownload(function () use ($query): void {
                 $output = fopen('php://output', 'wb');
-                CsvWriter::putRow($output, ['ID', 'Actor', 'Role', 'Action', 'Target', 'Outcome', 'IP', 'Created At']);
+                // Timestamp ISO-8601 ber-offset — kolom mentah Carbon tampil
+                // sebagai UTC polos dan terbaca 7 jam lebih awal dari tabel UI.
+                CsvWriter::putRow($output, ['ID', 'Actor', 'Role', 'Action', 'Target', 'Outcome', 'IP', 'Created At (ISO-8601)']);
                 foreach ($query->cursor() as $log) {
-                    CsvWriter::putRow($output, [$log->id, $log->actor_name, $log->actor_role, $log->action, $log->target_resource, $log->outcome, $log->ip_address, $log->created_at]);
+                    CsvWriter::putRow($output, [$log->id, $log->actor_name, $log->actor_role, $log->action, $log->target_resource, $log->outcome, $log->ip_address, optional($log->created_at)->toIso8601String()]);
                 }
                 fclose($output);
             }, 'audit_logs.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
