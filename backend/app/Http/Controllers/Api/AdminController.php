@@ -49,6 +49,7 @@ final class AdminController
             'aktif' => User::where('status', 'aktif')->count(),
             'menunggu' => User::where('status', 'menunggu')->count(),
             'nonaktif' => User::where('status', 'nonaktif')->count(),
+            'ditolak' => User::where('status', 'ditolak')->count(),
             'peneliti_menunggu' => User::where('role', 'peneliti')->where('status', 'menunggu')->count(),
         ];
 
@@ -256,13 +257,32 @@ final class AdminController
 
     public function exportUsers(Request $request): StreamedResponse
     {
+        // Hormati filter yang sedang aktif di halaman admin — tanpa ini tombol
+        // "Export" yang berada tepat di atas bar filter mengekspor SEMUA user.
+        $filters = $request->validate([
+            'role' => ['nullable', 'string', 'in:admin,bpbd_provinsi,bpbd_operator,peneliti,warga'],
+            'status' => ['nullable', 'string', 'in:aktif,menunggu,nonaktif,ditolak'],
+            'search' => ['nullable', 'string', 'max:100'],
+        ]);
+
         $rows = User::with('region')
+            ->when($filters['role'] ?? null, fn ($q, string $role) => $q->where('role', $role))
+            ->when($filters['status'] ?? null, fn ($q, string $status) => $q->where('status', $status))
+            ->when($filters['search'] ?? null, function ($q, string $search): void {
+                $needle = mb_strtolower(trim($search));
+                $q->where(function ($inner) use ($needle): void {
+                    $inner->whereRaw('LOWER(name) LIKE ?', ["%{$needle}%"])
+                        ->orWhereRaw('LOWER(email) LIKE ?', ["%{$needle}%"])
+                        ->orWhereRaw('LOWER(COALESCE(institution, \'\')) LIKE ?', ["%{$needle}%"]);
+                });
+            })
             ->orderBy('created_at', 'desc')
             ->limit(5000)
             ->get();
 
         $this->audit->write($request, 'export_users', 'success', 'users:export', [
             'rows' => $rows->count(),
+            'filters' => array_filter($filters),
         ]);
 
         return response()->streamDownload(function () use ($rows): void {
