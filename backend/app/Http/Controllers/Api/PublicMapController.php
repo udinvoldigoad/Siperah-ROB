@@ -113,7 +113,10 @@ final class PublicMapController
             'id' => $report->id,
             'geometry' => [
                 'type' => 'Point',
-                'coordinates' => [(float) $report->longitude, (float) $report->latitude],
+                // Peta publik tanpa login: koordinat dibulatkan 3 desimal (~110 m)
+                // agar titik tidak menunjuk rumah pelapor. Selaras kebijakan API v1
+                // dan ReportResource pada jalur publik.
+                'coordinates' => [round((float) $report->longitude, 3), round((float) $report->latitude, 3)],
             ],
             'properties' => [
                 'report_code' => $report->report_code,

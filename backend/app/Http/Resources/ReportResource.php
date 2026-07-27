@@ -26,11 +26,19 @@ class ReportResource extends JsonResource
         $this->resource->loadMissing('region');
         $isWithinMonitoringArea = app(RegionMonitoringService::class)->isReportWithinMonitoringArea($this->resource);
 
+        // Koordinat presisi penuh bisa menunjuk rumah pelapor. Hanya pihak
+        // berwenang (endpoint terautentikasi: operator/admin/pemilik laporan)
+        // yang menerimanya; di jalur publik tanpa login — mis. /public/mode-awam —
+        // koordinat dibulatkan 3 desimal (~110 m), selaras kebijakan API v1
+        // (ROUND(...,3) di ResearchController::validatedReportsQuery).
+        // Default aman: endpoint publik baru otomatis ikut dibulatkan.
+        $isAuthorizedViewer = $request->user() !== null;
+
         return [
             'id' => $this->id,
             'report_code' => $this->report_code,
-            'latitude' => $this->latitude,
-            'longitude' => $this->longitude,
+            'latitude' => $isAuthorizedViewer ? $this->latitude : self::approximateCoordinate($this->latitude),
+            'longitude' => $isAuthorizedViewer ? $this->longitude : self::approximateCoordinate($this->longitude),
             'severity' => $this->severity,
             'water_height_cm' => $this->water_height_cm,
             'incident_time' => $this->incident_time?->toIso8601String(),
@@ -63,5 +71,14 @@ class ReportResource extends JsonResource
                 ]);
             }),
         ];
+    }
+
+    /**
+     * Bulatkan koordinat ke 3 desimal (~110 m) demi privasi pelapor.
+     * Dikembalikan sebagai float agar konsisten dengan konsumen peta; null tetap null.
+     */
+    private static function approximateCoordinate(mixed $value): ?float
+    {
+        return $value === null ? null : round((float) $value, 3);
     }
 }

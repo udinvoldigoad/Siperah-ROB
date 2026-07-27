@@ -87,6 +87,8 @@ Mengambil data laporan banjir rob dari warga yang telah divalidasi oleh BPBD.
   ```
   > [!NOTE]
   > Demi menjaga privasi warga pelapor, koordinat `latitude` dan `longitude` dibulatkan tepat **3 desimal** (sekitar ~110 meter akurasi spasial), serta informasi nama/kontak pelapor tidak pernah diekspos melalui API eksternal.
+  >
+  > Kebijakan yang sama berlaku untuk **seluruh endpoint publik tanpa login** (`/api/public/map`, `/api/public/mode-awam`): koordinat laporan selalu dibulatkan 3 desimal. Presisi penuh hanya diberikan pada endpoint terautentikasi (`/api/reports/*`) kepada pihak berwenang — operator/admin dan pemilik laporan — karena dibutuhkan untuk respons lapangan.
 
 ---
 
