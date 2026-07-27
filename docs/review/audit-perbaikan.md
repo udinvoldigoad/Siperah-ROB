@@ -11,7 +11,9 @@
 > 3. ✅ **roleMap dashboard** (`db643e7`, rekan tim) — operator/provinsi tak lagi terlempar ke login.
 > 4. ✅ **API key BPBD Provinsi + `generated_at` Mode Awam** (`654b183`) — whitelist middleware diselaraskan; `generated_at` terisi (terverifikasi live).
 >
-> **Sisa prioritas 🔴:** index DB · timezone UTC/WIB · koordinat pelapor di endpoint publik · pagination `provinceForecast`.
+> 5. ✅ **Index DB** (`1d7b36e`) — 4 index komposit (FK & kolom filter) via migrasi idempoten + `schema.sql`.
+>
+> **Sisa prioritas 🔴:** timezone UTC/WIB · koordinat pelapor di endpoint publik · pagination `provinceForecast`.
 > Suite backend: **132/132 hijau**.
 
 ---
@@ -33,7 +35,7 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 - [x] ✅ 🔴 **OTP reset-password tanpa throttle + plaintext + banding non-timing-safe → account takeover** — SELESAI (`b1908f9`) — `backend/routes/api.php:22`, `backend/app/Http/Controllers/Api/PasswordResetController.php`
 - [x] ✅ 🔴 **`env()` dibaca saat runtime → rate-limit & config diam-diam pakai default setelah `config:cache`** — SELESAI (`2350fc1`): `config/limits.php` baru; provider/ResearchController/PruneAuditLogs baca via `config('limits.*')`. Terverifikasi di produksi dengan config ter-cache (180/20/120/365). **Nol `env()` runtime** tersisa di `app/`,`routes/`,`bootstrap/`,`database/`.
 - [x] ✅ 🔴 **Tombol Dashboard salah rute → operator & BPBD provinsi terlempar ke `#/login`** — SELESAI (`db643e7`, oleh rekan tim): kini pakai `dashboardHashForRole()`.
-- [ ] 🔴 **Tak ada index pada `ground_truth_reports.status`, FK `region_id`, `audit_logs.actor_user_id` → query berat lambat di skala** — `database/schema.sql:67`
+- [x] ✅ 🔴 **Tak ada index pada `ground_truth_reports.status`, FK `region_id`, `audit_logs.actor_user_id`** — SELESAI (`1d7b36e`): 4 index komposit sesuai pola query nyata, via migrasi idempoten + `schema.sql`.
 - [ ] 🔴 **Off-by-one hari: peta/dashboard/Mode Awam anchor UTC-`today()` tapi notif high-risk pakai WIB** — `backend/app/Http/Controllers/Api/PublicMapController.php:65,550`
 - [x] ✅ 🔴 **API key buatan BPBD Provinsi ditolak middleware 403 (mati sejak lahir)** — SELESAI (`654b183`): whitelist diselaraskan + test regresi.
 - [ ] 🔴 **Koordinat presisi penuh pelapor bocor di endpoint publik (jalur API v1 sudah dibulatkan)** — `backend/app/Http/Controllers/Api/PublicMapController.php:116`, `ReportResource.php:33-34`
@@ -115,8 +117,8 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 ## 6. 🛠️ Backend (Laravel) (13)
 
 - [x] ✅ 🔴 **`env()` dipakai saat runtime → nilai `.env` diabaikan setelah `config:cache`** — SELESAI (`2350fc1`): semua pindah ke `config/limits.php`.
-- [ ] 🔴 **Tak ada index pada `ground_truth_reports.status`, FK `region_id`, `audit_logs.actor_user_id`** — `database/schema.sql:67`
-  Kolom status difilter di hampir semua query berat; Postgres tak buat index FK otomatis. → Migrasi index (komposit `status,region_id,created_at`; `actor_user_id,created_at`).
+- [x] ✅ 🔴 **Tak ada index pada `ground_truth_reports.status`, FK `region_id`, `audit_logs.actor_user_id`** — SELESAI (`1d7b36e`):
+  `reports_user_created_idx (user_id,created_at)` · `reports_status_created_idx (status,created_at)` · `reports_region_idx (region_id)` · `audit_logs_actor_idx (actor_user_id,created_at)`.
 - [ ] 🔴 **N+1 count query per dataset di `ResearchController::stats` & `datasets`** — `backend/app/Http/Controllers/Api/ResearchController.php:268`
   1 COUNT (predictions/reports/tidal) per dataset tiap buka halaman statistik. → Hitung agregat sekali + cache.
 - [ ] 🔴 **`provinceForecast` kembalikan seluruh prediksi 30 hari tanpa pagination** — `backend/app/Http/Controllers/Api/PublicMapController.php:562`
