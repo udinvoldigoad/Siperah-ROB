@@ -32,9 +32,13 @@ final class AuthenticateApiKey
         }
 
         $request->setUserResolver(fn () => $apiKey->user);
-        if (!in_array($apiKey->user->role, ['peneliti', 'admin'], true)) {
+        // Harus SELARAS dengan peran yang boleh membuat key (routes/api.php grup
+        // role:peneliti,bpbd_provinsi,admin + ResearchController::canGenerateApiKey).
+        // Sebelumnya bpbd_provinsi bisa membuat key tapi selalu ditolak di sini —
+        // key-nya mati sejak lahir.
+        if (!in_array($apiKey->user->role, ['peneliti', 'bpbd_provinsi', 'admin'], true)) {
             $this->audit($request, 'api_key_request', 'denied', $request->path(), ['api_key_id' => $apiKey->id, 'reason' => 'owner_role_not_allowed']);
-            return new JsonResponse(['data' => null, 'message' => 'Pemilik API key tidak memiliki akses peneliti.'], 403);
+            return new JsonResponse(['data' => null, 'message' => 'Pemilik API key tidak memiliki akses data penelitian.'], 403);
         }
 
         if ($requiredScope && !in_array($requiredScope, $apiKey->scopes ?? [], true)) {

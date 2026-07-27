@@ -129,7 +129,22 @@ final class ResearchDownloadTest extends TestCase
         $this->withHeader('X-API-Key', $wargaKey)
             ->getJson('/api/v1/predictions/daily')
             ->assertForbidden()
-            ->assertJsonPath('message', 'Pemilik API key tidak memiliki akses peneliti.');
+            ->assertJsonPath('message', 'Pemilik API key tidak memiliki akses data penelitian.');
+    }
+
+    /**
+     * BPBD Provinsi boleh MEMBUAT API key (routes grup role:peneliti,bpbd_provinsi,admin
+     * + canGenerateApiKey), jadi middleware wajib mengizinkannya MEMAKAI key tersebut.
+     * Regresi: dulu whitelist hanya ['peneliti','admin'] sehingga key mereka mati sejak lahir.
+     */
+    public function test_bpbd_provinsi_api_key_is_accepted_by_middleware(): void
+    {
+        [$provinsiKey] = $this->makeApiKey($this->makeUser('bpbd_provinsi'), ['predictions:read']);
+
+        $this->withHeader('X-API-Key', $provinsiKey)
+            ->getJson('/api/v1/predictions/daily?per_page=1')
+            ->assertOk()
+            ->assertJsonStructure(['data', 'meta']);
     }
 
     public function test_usage_is_counted_and_authorization_apikey_header_works(): void

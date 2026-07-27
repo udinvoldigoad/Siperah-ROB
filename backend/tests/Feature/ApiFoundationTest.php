@@ -126,6 +126,9 @@ final class ApiFoundationTest extends TestCase
             ->assertJsonPath('data.is_monitored', true)
             ->assertJsonPath('data.monitoring_status', 'inside_monitoring_area')
             ->assertJsonPath('data.status_label', 'Masuk wilayah pantauan rob')
+            // Regresi: dulu membaca kolom created_at yang tak ada di tabel
+            // predictions sehingga generated_at SELALU null.
+            ->assertJsonPath('data.generated_at', fn ($value) => is_string($value) && $value !== '')
             ->assertJsonFragment(['report_code' => $reportCode]);
     }
 

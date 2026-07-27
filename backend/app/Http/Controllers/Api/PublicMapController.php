@@ -546,7 +546,11 @@ final class PublicMapController
                 'model_version' => $prediction?->model_version,
                 'confidence_score' => $prediction?->confidence_score,
                 'data_source' => $prediction?->data_source,
-                'generated_at' => $prediction?->created_at?->toIso8601String(),
+                // Tabel predictions tidak punya kolom created_at (timestamps=false);
+                // kolom waktu yang benar adalah generated_at (string timestamptz).
+                'generated_at' => $prediction?->generated_at
+                    ? CarbonImmutable::parse($prediction->generated_at)->toIso8601String()
+                    : null,
                 // Status kesegaran prediksi: fresh | stale | unavailable.
                 'prediction_status' => $predictionData['status'],
                 'last_generated_at' => $predictionData['last_generated_at'],
