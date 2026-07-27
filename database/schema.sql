@@ -145,3 +145,11 @@ create table audit_logs (
 create index reports_coordinates_idx on ground_truth_reports (latitude, longitude);
 create index predictions_date_idx on predictions (prediction_date, risk_class);
 create index audit_logs_action_idx on audit_logs (action, outcome, created_at);
+
+-- Postgres tidak membuat index otomatis untuk foreign key. Index di bawah
+-- memetakan pola query nyata: riwayat laporan per warga, antrean per status,
+-- join/filter per wilayah, dan statistik pemakaian API per pengguna.
+create index if not exists reports_user_created_idx on ground_truth_reports (user_id, created_at);
+create index if not exists reports_status_created_idx on ground_truth_reports (status, created_at);
+create index if not exists reports_region_idx on ground_truth_reports (region_id);
+create index if not exists audit_logs_actor_idx on audit_logs (actor_user_id, created_at);
