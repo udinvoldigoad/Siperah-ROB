@@ -22,29 +22,29 @@ export function OAuthCallbackPage() {
           const user = res.data;
           if (user.status === "menunggu" || user.status === "nonaktif" || user.status === "ditolak") {
             localStorage.removeItem("siperah-token");
-            window.location.href = `/#/login?error=${user.status}`;
+            window.location.hash = `#/login?error=${user.status}`;
             return;
           }
           localStorage.setItem("siperah-user", JSON.stringify(user));
-          window.location.href = `/${dashboardHashForRole(user.role)}`;
+          window.location.hash = dashboardHashForRole(user.role);
         })
         .catch((err: any) => {
           console.error(err);
           localStorage.removeItem("siperah-token");
           
           if (err.status === 403 && err.body?.account_status) {
-             window.location.href = `/#/login?error=${err.body.account_status}`;
+             window.location.hash = `#/login?error=${err.body.account_status}`;
              return;
           }
 
           setErrorMsg("Gagal mengambil data profil.");
           setTimeout(() => {
-            window.location.href = "/#/login?error=oauth_failed";
+            window.location.hash = "#/login?error=oauth_failed";
           }, 2000);
         });
     } else {
       // Missing token, redirect to login with error
-      window.location.href = "/#/login?error=oauth_failed";
+      window.location.hash = "#/login?error=oauth_failed";
     }
   }, []);
 
