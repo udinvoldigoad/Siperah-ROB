@@ -1,51 +1,48 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Icon } from "../../shared/components/Icon";
-import { api } from "../../shared/api/client";
+import { api, ApiError } from "../../shared/api/client";
 import { dashboardHashForRole } from "../../shared/constants/roles";
 
-export function OAuthCallbackPage() {
-  const [errorMsg, setErrorMsg] = useState("");
+type ExchangeResponse = { access_token: string; user: any };
 
+export function OAuthCallbackPage() {
   useEffect(() => {
-    // Backend redirects to /#/oauth-callback?token=1|abcdef...
-    // Token lives inside the hash fragment, not window.location.search.
-    // Also check window.location.search as fallback for non-hash routing.
+    // Backend redirects to /#/oauth-callback?code=<sekali-pakai>.
+    // Yang dibawa URL hanya kode tukar, bukan token — token Sanctum baru
+    // diterima lewat body respons POST /auth/google/exchange sehingga tidak
+    // ikut mendarat di riwayat peramban.
+    // Kode ada di dalam hash fragment, bukan window.location.search;
+    // search tetap dicek sebagai fallback untuk routing non-hash.
     const hashQuery = window.location.hash.split("?")[1] || "";
     const params = new URLSearchParams(hashQuery || window.location.search);
-    const token = params.get("token");
+    const code = params.get("code");
 
-    if (token) {
-      localStorage.setItem("siperah-token", token);
-      
-      api<{data: any}>("/auth/me")
-        .then(res => {
-          const user = res.data;
-          if (user.status === "menunggu" || user.status === "nonaktif" || user.status === "ditolak") {
-            localStorage.removeItem("siperah-token");
-            window.location.hash = `#/login?error=${user.status}`;
-            return;
-          }
-          localStorage.setItem("siperah-user", JSON.stringify(user));
-          window.location.hash = dashboardHashForRole(user.role);
-        })
-        .catch((err: any) => {
-          console.error(err);
-          localStorage.removeItem("siperah-token");
-          
-          if (err.status === 403 && err.body?.account_status) {
-             window.location.hash = `#/login?error=${err.body.account_status}`;
-             return;
-          }
-
-          setErrorMsg("Gagal mengambil data profil.");
-          setTimeout(() => {
-            window.location.hash = "#/login?error=oauth_failed";
-          }, 2000);
-        });
-    } else {
-      // Missing token, redirect to login with error
+    if (!code) {
       window.location.hash = "#/login?error=oauth_failed";
+      return;
     }
+
+    api<ExchangeResponse>("/auth/google/exchange", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    })
+      .then((res) => {
+        localStorage.setItem("siperah-token", res.access_token);
+        localStorage.setItem("siperah-user", JSON.stringify(res.user));
+        window.location.hash = dashboardHashForRole(res.user.role);
+      })
+      .catch((err: unknown) => {
+        console.error(err);
+        localStorage.removeItem("siperah-token");
+
+        // Akun belum aktif → panel status di halaman login (bukan toast generik).
+        if (err instanceof ApiError && err.status === 403 && err.body?.account_status) {
+          window.location.hash = `#/login?error=${err.body.account_status}`;
+          return;
+        }
+
+        window.location.hash = "#/login?error=oauth_failed";
+      });
   }, []);
 
   return (

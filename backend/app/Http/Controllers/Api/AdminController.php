@@ -80,17 +80,20 @@ final class AdminController
     public function storeUser(StoreAdminUserRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $user = User::create([
+        $user = new User([
             'id' => (string) Str::uuid(),
             'name' => $data['name'],
             'email' => $data['email'],
             'password_hash' => Hash::make($data['password']),
             'phone_number' => $data['phone_number'] ?? null,
-            'role' => $data['role'],
             'institution' => $data['institution'] ?? null,
             'region_id' => $data['region_id'] ?? null,
-            'status' => $data['status'],
         ]);
+        // Di luar $fillable: hanya admin (route ini) yang boleh menentukan peran
+        // & status, dan nilainya sudah dibatasi `in:` oleh StoreAdminUserRequest.
+        $user->role = $data['role'];
+        $user->status = $data['status'];
+        $user->save();
 
         $this->audit->write($request, 'create_user', 'success', "users:{$user->id}", [
             'email' => $user->email,
@@ -105,7 +108,8 @@ final class AdminController
     public function approveUser(Request $request, string $user): JsonResponse
     {
         $userData = User::findOrFail($user);
-        $userData->update(['status' => 'aktif']);
+        $userData->status = 'aktif';
+        $userData->save();
 
         $this->audit->write($request, 'approve_user', 'success', "users:{$userData->id}", [
             'email' => $userData->email,
@@ -118,7 +122,8 @@ final class AdminController
     public function rejectUser(Request $request, string $user): JsonResponse
     {
         $userData = User::findOrFail($user);
-        $userData->update(['status' => 'ditolak']);
+        $userData->status = 'ditolak';
+        $userData->save();
         $userData->tokens()->delete();
 
         $this->audit->write($request, 'reject_user', 'success', "users:{$userData->id}", [
@@ -158,7 +163,17 @@ final class AdminController
             422,
             'Admin tidak dapat menurunkan role atau menonaktifkan akunnya sendiri.',
         );
-        $userData->update($data);
+        // `role`/`status` di luar $fillable, jadi `fill()` akan mengabaikannya —
+        // disetel eksplisit di sini (nilai sudah dibatasi `in:` oleh
+        // UpdateAdminUserRequest) agar hanya route admin ini yang bisa mengubah.
+        $userData->fill($data);
+        if (array_key_exists('role', $data)) {
+            $userData->role = $data['role'];
+        }
+        if (array_key_exists('status', $data)) {
+            $userData->status = $data['status'];
+        }
+        $userData->save();
 
         if (in_array($userData->status, ['nonaktif', 'ditolak'], true)) {
             $userData->tokens()->delete();

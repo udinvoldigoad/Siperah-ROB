@@ -42,7 +42,7 @@ final class ApiFoundationTest extends TestCase
     {
         foreach (['menunggu', 'nonaktif', 'ditolak'] as $status) {
             $email = Str::uuid().'@example.test';
-            User::create([
+            User::forceCreate([
                 'id' => (string) Str::uuid(),
                 'name' => 'Status Test',
                 'email' => $email,
@@ -98,7 +98,7 @@ final class ApiFoundationTest extends TestCase
             'source_reference' => 'mode-awam-inside-test',
             'provenance_status' => 'demo',
         ]);
-        $reporter = User::create([
+        $reporter = User::forceCreate([
             'id' => (string) Str::uuid(),
             'name' => 'Mode Awam Reporter',
             'email' => Str::uuid().'@example.test',
@@ -169,7 +169,7 @@ final class ApiFoundationTest extends TestCase
 
     public function test_valid_scoped_api_key_can_access_research_endpoint(): void
     {
-        $user = User::create([
+        $user = User::forceCreate([
             'id' => (string) Str::uuid(), 'name' => 'Integration Researcher',
             'email' => Str::uuid().'@example.test', 'role' => 'peneliti', 'status' => 'aktif',
         ]);
@@ -189,7 +189,7 @@ final class ApiFoundationTest extends TestCase
 
     public function test_notification_settings_accept_frontend_time_and_event_contract(): void
     {
-        $user = User::create([
+        $user = User::forceCreate([
             'id' => (string) Str::uuid(), 'name' => 'Notification User',
             'email' => Str::uuid().'@example.test', 'role' => 'warga', 'status' => 'aktif',
         ]);
@@ -204,7 +204,7 @@ final class ApiFoundationTest extends TestCase
 
     public function test_inactive_user_token_is_rejected(): void
     {
-        $user = User::create([
+        $user = User::forceCreate([
             'id' => (string) Str::uuid(), 'name' => 'Inactive User',
             'email' => Str::uuid().'@example.test', 'role' => 'warga', 'status' => 'nonaktif',
         ]);
@@ -810,7 +810,7 @@ final class ApiFoundationTest extends TestCase
 
     private function createUser(string $role, ?string $regionId = null): User
     {
-        return User::create([
+        return User::forceCreate([
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Test',
             'email' => Str::uuid().'@example.test',

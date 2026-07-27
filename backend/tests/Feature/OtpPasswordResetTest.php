@@ -30,7 +30,7 @@ final class OtpPasswordResetTest extends TestCase
 
     private function makeUser(string $email, string $password = 'sandi-lama'): User
     {
-        return User::create([
+        return User::forceCreate([
             'id' => (string) Str::uuid(),
             'name' => 'OTP Test',
             'email' => $email,

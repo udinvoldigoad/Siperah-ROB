@@ -15,8 +15,14 @@
 >
 > 6. ✅ **Privasi koordinat pelapor** (`efa3118`) — pembulatan 3 desimal fail-safe di seluruh jalur publik.
 >
+> 7. ✅ **Hardening konfigurasi & mass assignment** — `role`/`status`/`google_id` keluar dari `$fillable` User (disetel eksplisit di controller berwenang) + `.env.example` default `APP_DEBUG=false` & CORS tak lagi `*`.
+>
+> 8. ✅ **Kebijakan akun Google OAuth** — signup Google ikut antrean approval (`menunggu`), gerbang status + audit log disamakan dengan login email-password, ditutup `GoogleOAuthTest`.
+>
+> 9. ✅ **Token OAuth keluar dari URL** — redirect membawa kode sekali pakai (TTL 120 dtk, hash di cache); token Sanctum hanya lewat body `POST /auth/google/exchange`.
+>
 > **Sisa prioritas 🔴:** timezone UTC/WIB · pagination `provinceForecast`.
-> Suite backend: **135/135 hijau**.
+> Suite backend: **144/144 hijau**.
 
 ---
 
@@ -148,15 +154,12 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 - [x] ✅ 🟠 **Forgot-password membocorkan keberadaan email (user enumeration)** — SELESAI (`b1908f9`): respons seragam di sendOtp & resetWithOtp (terverifikasi live).
 - [x] ✅ 🟠 **OTP disimpan plaintext di DB & ditulis ke log aplikasi** — SELESAI (`b1908f9`): kolom `otp` diisi `null`, `Log::info` OTP dihapus, verifikasi via hash `token`.
 - [x] ✅ 🟠 **Reset kata sandi tidak mencabut token/sesi Sanctum** — SELESAI (`b1908f9`): `$user->tokens()->delete()` setelah reset.
-- [ ] 🟠 **Token Sanctum dikirim lewat query string URL pada callback Google OAuth** — `backend/app/Http/Controllers/Api/GoogleAuthController.php:54`
-  `?token=...` bocor ke history/log/Referer. → Kode satu-kali via POST, atau cookie HttpOnly, atau fragment `#`.
-- [ ] 🟠 **Callback Google OAuth abaikan status akun (signup auto-aktif, lewati approval)** — `backend/app/Http/Controllers/Api/GoogleAuthController.php:28`
-  Beda dg login email/password yang blokir status ≠ aktif. → Terapkan cek status + samakan kebijakan approval.
+- [x] ✅ 🟠 **Token Sanctum dikirim lewat query string URL pada callback Google OAuth** — SELESAI: callback kini meredirect `?code=<sekali-pakai>` (acak 64 char, disimpan sebagai hash SHA-256 di cache, TTL 120 detik, hangus lewat `Cache::pull`). SPA menukarnya di `POST /auth/google/exchange` (throttle 10/menit) dan menerima token di **body** respons; token, `last_login_at`, & audit sukses pindah ke titik tukar itu, plus cek ulang status akun di sana. 3 tes baru mengunci: URL tak pernah memuat token, kode hanya sah sekali, dan akun yang dinonaktifkan setelah redirect tetap ditolak 403.
+- [x] ✅ 🟠 **Callback Google OAuth abaikan status akun (signup auto-aktif, lewati approval)** — SELESAI: signup Google kini `warga` + **`menunggu`** (sama dengan `/auth/register`), gerbang status tetap menolak sebelum token terbit, dan alurnya menulis audit log (`register` success / `login` success·denied, `provider: google`) seperti login email-password. `GoogleOAuthTest` (3 tes) mengunci: signup baru → `?error=menunggu` tanpa token, akun aktif → token + `google_id` tertaut, ketiga status non-aktif → ditolak & teraudit.
+  Sisa terkait (belum dikerjakan): callback belum memeriksa `email_verified` dari Google sebelum menautkan akun berdasarkan email.
 - [x] ✅ 🟠 **Koordinat presisi penuh pelapor bocor di endpoint publik** — SELESAI (`efa3118`): `ReportResource` membulatkan 3 desimal secara **default**, presisi penuh hanya bila `$request->user()` ada → endpoint publik baru otomatis aman. Titik `/public/map` ikut dibulatkan. Dokumen kontrak API diperbarui.
-- [ ] 🟡 **Kolom `role`/`status`/`google_id` ada di `$fillable` User (risiko laten mass assignment)** — `backend/app/Models/User.php:21`
-  Belum ada exploit aktif, tapi satu endpoint lalai = eskalasi hak. → Keluarkan dari `$fillable`, set eksplisit.
-- [ ] 🟡 ⚠️ **`APP_DEBUG=true` default di `.env.example` (+ baris CORS malformed)** — `backend/.env.example:4` *(PLAUSIBLE — mitigasi bawaan `config/cors.php` aman)*
-  Salin apa adanya ke produksi = stack trace bocor. → Default `APP_DEBUG=false`, perbaiki baris CORS.
+- [x] ✅ 🟡 **Kolom `role`/`status`/`google_id` ada di `$fillable` User (risiko laten mass assignment)** — SELESAI: ketiganya dikeluarkan dari `$fillable`; Auth/Admin/GoogleAuth controller menyetelnya eksplisit (`$user->role = ...`), fixture test pakai `User::forceCreate()`. `UserMassAssignmentTest` mengunci invarian (`isFillable()` false + `fill()` mengabaikan) untuk ketiga kolom.
+- [x] ✅ 🟡 **`APP_DEBUG=true` default di `.env.example` (+ baris CORS malformed)** — SELESAI: default `APP_DEBUG=false` (+ catatan setel `true` hanya di dev lokal); `CORS_ALLOWED_ORIGINS=*` diganti contoh terkomentari agar `config/cors.php` memakai default aman (APP_URL) — termasuk peringatan bahwa nilai kosong justru menimpa default dengan daftar kosong.
 
 ## 8. 🧠 Logika Bisnis & Korektness (11)
 
@@ -185,8 +188,8 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 ## 9. 🧪 Testing & Reliabilitas (9)
 
 - [x] ✅ 🔴 **Alur reset password OTP tidak punya test sama sekali** — SELESAI (`b1908f9`): `OtpPasswordResetTest` 6 tes (hash-only, valid reset + cabut token, wrong→attempts, lockout, expired, anti-enumeration).
-- [ ] 🔴 **Login Google OAuth tidak teruji (cabang error & penautan by-email)** — `backend/app/Http/Controllers/Api/GoogleAuthController.php:23`
-  Auto-aktif, terbit token, tautan by-email berisiko takeover. → Mock Socialite, uji 3 cabang.
+- [ ] 🔴 **Login Google OAuth tidak teruji (cabang error & penautan by-email)** — `backend/app/Http/Controllers/Api/GoogleAuthController.php:23` *(SEBAGIAN — `GoogleOAuthTest` (6 tes) menutup signup baru, penautan by-email, 3 status non-aktif, serta seluruh alur kode-tukar; stub Socialite via `Socialite::extend()`, tanpa Mockery)*
+  Tersisa: cabang `catch` (`?error=google_auth_failed`) dan penolakan email Google yang belum terverifikasi.
 - [ ] 🔴 **Seluruh pipeline ML Python tanpa test; `ml:predict` hanya uji wrapper PHP dg stub** — `backend/tests/Feature/DataImportPipelineTest.php:128`
   `main.py`/`feature_engineering`/`predict_forecast`/`labeler`/`PredictionContract` tanpa pytest. → Suite pytest di `ml-api` + jalankan pada PR `ml-api/**`.
 - [ ] 🟠 **CI ML hanya jalan terjadwal ke DB produksi; tanpa validasi pra-merge; cek konektivitas menelan kegagalan** — `.github/workflows/ml-predict.yml:30`

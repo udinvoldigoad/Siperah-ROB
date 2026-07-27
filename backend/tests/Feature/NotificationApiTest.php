@@ -150,7 +150,7 @@ final class NotificationApiTest extends TestCase
 
     private function makeUser(): User
     {
-        return User::create([
+        return User::forceCreate([
             'id' => (string) Str::uuid(),
             'name' => 'Notif Api Test',
             'email' => Str::uuid().'@example.test',

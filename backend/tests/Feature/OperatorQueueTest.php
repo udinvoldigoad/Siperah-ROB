@@ -194,7 +194,7 @@ final class OperatorQueueTest extends TestCase
 
     private function makeUser(string $role, ?string $regionId): User
     {
-        return User::create([
+        return User::forceCreate([
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Antrean Test',
             'email' => Str::uuid().'@example.test',

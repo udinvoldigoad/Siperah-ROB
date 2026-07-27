@@ -157,7 +157,7 @@ final class PublicMapTest extends TestCase
 
     private function makeValidatedReport(Region $region): GroundTruthReport
     {
-        $reporter = User::create([
+        $reporter = User::forceCreate([
             'id' => (string) Str::uuid(),
             'name' => 'Pelapor Peta Test',
             'email' => Str::uuid().'@example.test',

@@ -65,7 +65,7 @@ final class ReportCoordinatePrivacyTest extends TestCase
     public function test_authenticated_operator_still_receives_precise_coordinates(): void
     {
         [$region, $report] = $this->makeRegionWithReport();
-        $admin = User::create([
+        $admin = User::forceCreate([
             'id' => (string) Str::uuid(),
             'name' => 'Admin Privasi Test',
             'email' => Str::uuid().'@example.test',
@@ -98,7 +98,7 @@ final class ReportCoordinatePrivacyTest extends TestCase
         );
         $region = Region::findOrFail($id);
 
-        $reporter = User::create([
+        $reporter = User::forceCreate([
             'id' => (string) Str::uuid(),
             'name' => 'Pelapor Privasi',
             'email' => Str::uuid().'@example.test',

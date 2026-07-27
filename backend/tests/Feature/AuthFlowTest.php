@@ -167,7 +167,7 @@ final class AuthFlowTest extends TestCase
 
     private function makeUser(string $role, string $email): User
     {
-        return User::create([
+        return User::forceCreate([
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Auth Test',
             'email' => $email,

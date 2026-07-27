@@ -18,17 +18,24 @@ class User extends Authenticatable
     public $incrementing = false;
     protected $keyType = 'string';
 
+    /**
+     * Kolom yang aman diisi massal dari input pengguna.
+     *
+     * `role`, `status`, dan `google_id` SENGAJA tidak ada di sini: ketiganya
+     * menentukan hak akses (eskalasi peran, lewati approval, pembajakan akun
+     * lewat penautan OAuth). Endpoint yang memang berwenang mengubahnya harus
+     * menyetel atribut itu secara eksplisit (`$user->role = ...`), sehingga
+     * satu `fill()`/`update($request->all())` yang lalai tidak bisa menaikkan
+     * hak akses secara diam-diam.
+     */
     protected $fillable = [
         'id',
         'name',
         'email',
-        'google_id',
         'password_hash',
         'phone_number',
-        'role',
         'institution',
         'region_id',
-        'status',
         'last_login_at'
     ];
 

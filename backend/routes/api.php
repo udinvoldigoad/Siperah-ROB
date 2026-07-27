@@ -18,6 +18,8 @@ Route::post('/auth/login', [AuthController::class, 'login'])->middleware('thrott
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:registration');
 Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect']);
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
+// Penukaran kode sekali pakai → token Sanctum (token tidak pernah lewat URL).
+Route::post('/auth/google/exchange', [GoogleAuthController::class, 'exchange'])->middleware('throttle:10,1');
 Route::post('/auth/forgot-password', [\App\Http\Controllers\Api\PasswordResetController::class, 'sendOtp'])->middleware('throttle:6,1');
 Route::post('/auth/reset-password', [\App\Http\Controllers\Api\PasswordResetController::class, 'resetWithOtp'])->middleware('throttle:6,1');
 

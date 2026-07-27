@@ -69,7 +69,7 @@ final class AuthController
     {
         $data = $request->validated();
 
-        $user = User::create([
+        $user = new User([
             'id' => (string) Str::uuid(),
             'name' => $data['name'],
             'email' => $data['email'],
@@ -77,9 +77,12 @@ final class AuthController
             'phone_number' => $data['phone_number'] ?? null,
             'institution' => $data['institution'] ?? null,
             'region_id' => $data['region_id'] ?? null,
-            'role' => 'warga', // Default to warga, admin must upgrade
-            'status' => 'menunggu', // Default to pending approval
         ]);
+        // Di luar $fillable — disetel eksplisit agar payload registrasi tidak
+        // pernah bisa memilih peran atau melewati approval admin.
+        $user->role = 'warga'; // Default to warga, admin must upgrade
+        $user->status = 'menunggu'; // Default to pending approval
+        $user->save();
 
         $this->audit->write($request, 'register', 'success', $user->email, [
             'actor_name' => $user->name,

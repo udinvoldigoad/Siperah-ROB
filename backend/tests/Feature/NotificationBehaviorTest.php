@@ -110,7 +110,7 @@ final class NotificationBehaviorTest extends TestCase
 
     private function makeUser(string $role, ?string $regionId = null): User
     {
-        return User::create([
+        return User::forceCreate([
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Notif Test',
             'email' => Str::uuid().'@example.test',
