@@ -7,8 +7,11 @@ export function OAuthCallbackPage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    // URL will be like /oauth-callback?token=1|abcdef...
-    const params = new URLSearchParams(window.location.search);
+    // Backend redirects to /#/oauth-callback?token=1|abcdef...
+    // Token lives inside the hash fragment, not window.location.search.
+    // Also check window.location.search as fallback for non-hash routing.
+    const hashQuery = window.location.hash.split("?")[1] || "";
+    const params = new URLSearchParams(hashQuery || window.location.search);
     const token = params.get("token");
 
     if (token) {
