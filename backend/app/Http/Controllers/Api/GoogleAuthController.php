@@ -22,6 +22,8 @@ class GoogleAuthController
      */
     public function callback()
     {
+        $frontendUrl = rtrim(config('services.frontend.url', 'http://localhost:5173'), '/');
+
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
 
@@ -44,21 +46,35 @@ class GoogleAuthController
                 }
             }
 
+            // Cek status user sebelum buat token — user nonaktif/ditolak/menunggu
+            // tidak boleh login, langsung redirect dengan pesan sesuai status.
+            if ($user->status !== 'aktif') {
+                return redirect($frontendUrl . '/#/login?error=' . $user->status);
+            }
+
             // Create Sanctum token
             $token = $user->createToken('auth_token')->plainTextToken;
             $user->update(['last_login_at' => now()]);
 
             // Pass the token to the frontend (which is likely hosted on a different port or same domain).
             // We redirect back to the frontend's OAuth callback page with the token.
-            $frontendUrl = config('services.frontend.url');
-            return redirect($frontendUrl . '/oauth-callback?token=' . $token);
+            return redirect(
+                $frontendUrl . '/#/oauth-callback?token=' . urlencode($token)
+            );
 
         } catch (\Exception $e) {
-            \Log::error('Google Auth Error: ' . $e->getMessage());
-            $frontendUrl = config('services.frontend.url');
+            \Log::error('Google Auth Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'redirect_uri' => config('services.google.redirect'),
+                'client_id_set' => !empty(config('services.google.client_id')),
+                'client_secret_set' => !empty(config('services.google.client_secret')),
+                'frontend_url' => $frontendUrl,
+            ]);
             // Router frontend berbasis hash — path "/login?..." tidak pernah
             // dibaca; harus "/#/login?..." agar pesan errornya tampil.
             return redirect($frontendUrl . '/#/login?error=google_auth_failed');
         }
     }
 }
+

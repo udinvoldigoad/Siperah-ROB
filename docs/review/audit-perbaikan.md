@@ -13,8 +13,10 @@
 >
 > 5. ✅ **Index DB** (`1d7b36e`) — 4 index komposit (FK & kolom filter) via migrasi idempoten + `schema.sql`.
 >
-> **Sisa prioritas 🔴:** timezone UTC/WIB · koordinat pelapor di endpoint publik · pagination `provinceForecast`.
-> Suite backend: **132/132 hijau**.
+> 6. ✅ **Privasi koordinat pelapor** (`efa3118`) — pembulatan 3 desimal fail-safe di seluruh jalur publik.
+>
+> **Sisa prioritas 🔴:** timezone UTC/WIB · pagination `provinceForecast`.
+> Suite backend: **135/135 hijau**.
 
 ---
 
@@ -38,7 +40,7 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 - [x] ✅ 🔴 **Tak ada index pada `ground_truth_reports.status`, FK `region_id`, `audit_logs.actor_user_id`** — SELESAI (`1d7b36e`): 4 index komposit sesuai pola query nyata, via migrasi idempoten + `schema.sql`.
 - [ ] 🔴 **Off-by-one hari: peta/dashboard/Mode Awam anchor UTC-`today()` tapi notif high-risk pakai WIB** — `backend/app/Http/Controllers/Api/PublicMapController.php:65,550`
 - [x] ✅ 🔴 **API key buatan BPBD Provinsi ditolak middleware 403 (mati sejak lahir)** — SELESAI (`654b183`): whitelist diselaraskan + test regresi.
-- [ ] 🔴 **Koordinat presisi penuh pelapor bocor di endpoint publik (jalur API v1 sudah dibulatkan)** — `backend/app/Http/Controllers/Api/PublicMapController.php:116`, `ReportResource.php:33-34`
+- [x] ✅ 🔴 **Koordinat presisi penuh pelapor bocor di endpoint publik** — SELESAI (`efa3118`): pembulatan 3 desimal fail-safe (default aman) di `/public/map` & `/public/mode-awam`; pihak berwenang tetap presisi. 3 test mengunci dua arah.
 - [ ] 🔴 **`provinceForecast` kembalikan seluruh prediksi 30 hari tanpa pagination di endpoint publik** — `backend/app/Http/Controllers/Api/PublicMapController.php:562`
 
 ## 3. ⚡ Quick Wins (kecil, berdampak besar)
@@ -150,8 +152,7 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
   `?token=...` bocor ke history/log/Referer. → Kode satu-kali via POST, atau cookie HttpOnly, atau fragment `#`.
 - [ ] 🟠 **Callback Google OAuth abaikan status akun (signup auto-aktif, lewati approval)** — `backend/app/Http/Controllers/Api/GoogleAuthController.php:28`
   Beda dg login email/password yang blokir status ≠ aktif. → Terapkan cek status + samakan kebijakan approval.
-- [ ] 🟠 **Koordinat presisi penuh pelapor bocor di endpoint publik (jalur API v1 sudah dibulatkan)** — `backend/app/Http/Controllers/Api/PublicMapController.php:116`
-  `/public/map` & `/public/mode-awam` (`ReportResource:33-34`) lat/long mentah. → Bulatkan 3 desimal / resource publik ringkas.
+- [x] ✅ 🟠 **Koordinat presisi penuh pelapor bocor di endpoint publik** — SELESAI (`efa3118`): `ReportResource` membulatkan 3 desimal secara **default**, presisi penuh hanya bila `$request->user()` ada → endpoint publik baru otomatis aman. Titik `/public/map` ikut dibulatkan. Dokumen kontrak API diperbarui.
 - [ ] 🟡 **Kolom `role`/`status`/`google_id` ada di `$fillable` User (risiko laten mass assignment)** — `backend/app/Models/User.php:21`
   Belum ada exploit aktif, tapi satu endpoint lalai = eskalasi hak. → Keluarkan dari `$fillable`, set eksplisit.
 - [ ] 🟡 ⚠️ **`APP_DEBUG=true` default di `.env.example` (+ baris CORS malformed)** — `backend/.env.example:4` *(PLAUSIBLE — mitigasi bawaan `config/cors.php` aman)*
