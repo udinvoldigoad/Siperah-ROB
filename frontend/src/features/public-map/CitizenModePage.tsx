@@ -176,7 +176,7 @@ function WilayahPicker({ options, currentLocation, onSelectWilayah, onRequestGps
 
 const WILAYAH_PICKER_STYLES = `
   .wilayah-picker { position: relative; min-width: 0; }
-  .wilayah-picker.hero { max-width: 320px; width: 100%; }
+  .wilayah-picker.hero { max-width: 320px; width: 100%; flex: 1 1 240px; }
   .wilayah-picker.mobile { width: 100%; }
   .wilayah-picker.mobile .wilayah-trigger { background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.28); color: #fff; }
   .wilayah-trigger {
@@ -255,14 +255,15 @@ function CitizenModeDesktop({
         ${WILAYAH_PICKER_STYLES}
         .citizen-mode-layout { grid-template-columns: minmax(0, 1fr) 340px; max-width: 1280px; padding-top: 24px; }
         .citizen-status-card { border-radius: 16px !important; padding: 34px !important; }
-        .citizen-location-controls { align-items: center; display: flex; gap: 16px; justify-content: space-between; margin-bottom: 28px; }
-        .citizen-location-name { align-items: center; display: flex; font-size: .9rem; font-weight: 650; gap: 8px; min-width: 0; }
+        .citizen-location-controls { align-items: center; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; margin-bottom: 28px; }
+        .citizen-location-name { align-items: center; display: flex; font-size: .9rem; font-weight: 650; gap: 8px; min-width: 0; flex: 1 1 auto; }
         .citizen-location-name span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .citizen-location-controls select { background: rgba(255,255,255,.96); flex: 0 0 auto; max-width: 300px; }
         .citizen-status-title { font-size: clamp(2.4rem, 5vw, 3.5rem) !important; }
         .citizen-status-metrics { border-top: 1px solid rgba(255,255,255,.22); display: grid; gap: 12px; grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 30px; padding-top: 22px; }
         .citizen-status-metric { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.16); border-radius: 12px; min-width: 0; padding: 16px; }
-        .citizen-forecast-grid { display: grid; gap: 10px; grid-template-columns: repeat(7,minmax(84px,1fr)); overflow-x: auto; padding: 24px; }
+        .citizen-forecast-grid { display: grid; gap: 10px; grid-template-columns: repeat(7,minmax(84px,1fr)); overflow-x: auto; padding: 24px; -ms-overflow-style: none; scrollbar-width: none; }
+        .citizen-forecast-grid::-webkit-scrollbar { display: none; }
         .citizen-forecast-day { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 14px 8px; }
         .citizen-recommendations { display: grid; gap: 10px !important; }
         .citizen-action-card { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px !important; padding: 14px; }
@@ -271,6 +272,24 @@ function CitizenModeDesktop({
         .citizen-model-row { align-items: flex-start; border-bottom: 1px solid var(--line); display: grid !important; gap: 10px; grid-template-columns: 105px 1fr; padding: 9px 0; }
         .citizen-model-row:last-child { border-bottom: 0; }
         .citizen-model-row strong { text-align: right; }
+
+        @media (max-width: 1080px) {
+          .citizen-mode-layout {
+            grid-template-columns: 1fr !important;
+            gap: 24px;
+          }
+          .citizen-status-card {
+            padding: 24px !important;
+          }
+          .citizen-status-metrics {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+        }
+        @media (max-width: 640px) {
+          .citizen-status-metrics {
+            grid-template-columns: 1fr !important;
+          }
+        }
       `}</style>
       {error && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="alert" style={{ marginBottom: 24, borderLeftColor: "var(--critical)" }}>

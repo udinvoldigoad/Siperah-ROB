@@ -941,12 +941,12 @@ export function PublicMapPage() {
         color: inherit;
       }
 
-      /* Layout 1 kolom mulai dari tablet (<=1024px), disamakan dengan breakpoint
-         sidebar di tokens.css. Di 769-1024px layout lama (1fr 340px) menyisakan
+      /* Layout 1 kolom mulai dari tablet (<=1080px), disamakan dengan breakpoint
+         sidebar di tokens.css. Di 769-1080px layout lama (1fr 340px) menyisakan
          peta hanya ~460px sementara panel mengambil 340px — sempit. Blok ini
          SENGAJA hanya memuat aturan tingkat layout; penyesuaian tipografi mungil
          khas ponsel tetap di blok <=768px agar tak ikut mengecil di tablet. */
-      @media(max-width: 1024px) {
+      @media(max-width: 1080px) {
         .public-map-layout {
           grid-template-columns: 1fr;
           gap: 16px;

@@ -136,6 +136,10 @@ export function OnboardingPage() {
             .faq-a-text { color: #475569; }
             :root[data-theme="dark"] .faq-a-text { color: #cbd5e1; }
             
+            @media(max-width:1080px){ 
+              .citizen-guide-grid,.citizen-report-flow,.citizen-faq-grid{grid-template-columns:1fr!important;gap:32px!important}
+              .citizen-hero-metrics{grid-template-columns:repeat(2, minmax(0, 1fr))!important}
+            }
             @media(max-width:768px){ 
               .citizen-guide-grid,.citizen-report-flow,.citizen-faq-grid{grid-template-columns:1fr!important;gap:32px!important}
               .citizen-map-frame{min-height:300px}

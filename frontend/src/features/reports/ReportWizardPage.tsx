@@ -329,7 +329,7 @@ export function ReportWizardPage() {
         .wizard-layout { display: grid; grid-template-columns: 1.5fr 400px; gap: 32px; align-items: start; justify-content: center; }
         .severity-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
         .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        @media (max-width: 992px) {
+        @media (max-width: 1080px) {
           .wizard-layout { grid-template-columns: 1fr; }
         }
         @media (max-width: 600px) {
