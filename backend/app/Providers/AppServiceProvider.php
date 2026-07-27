@@ -38,10 +38,10 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('registration', fn (Request $request) => Limit::perHour(5)->by($request->ip()));
 
-        // Endpoint publik (read) — configurable via env agar bisa disetel untuk
-        // trafik production tanpa deploy ulang. Default lebih longgar karena
-        // response ter-cache & banyak warga pesisir berbagi IP di balik NAT ISP.
-        RateLimiter::for('public', fn (Request $request) => Limit::perMinute((int) env('PUBLIC_RATE_LIMIT', 180))
+        // Endpoint publik (read) — configurable via config('limits.*') agar tetap
+        // benar saat config:cache (ubah: .env + `php artisan config:cache`). Default
+        // longgar karena response ter-cache & banyak warga berbagi IP di balik NAT ISP.
+        RateLimiter::for('public', fn (Request $request) => Limit::perMinute((int) config('limits.public_per_minute'))
             ->by($request->ip())
             ->response(fn (Request $request, array $headers) => response()->json([
                 'message' => 'Terlalu banyak permintaan. Coba lagi sebentar.',
@@ -49,16 +49,16 @@ class AppServiceProvider extends ServiceProvider
             ], 429, $headers)));
 
         // Export peta (stream CSV, lebih berat) — batas lebih ketat & terpisah.
-        RateLimiter::for('public-export', fn (Request $request) => Limit::perMinute((int) env('PUBLIC_EXPORT_RATE_LIMIT', 20))
+        RateLimiter::for('public-export', fn (Request $request) => Limit::perMinute((int) config('limits.public_export_per_minute'))
             ->by($request->ip())
             ->response(fn (Request $request, array $headers) => response()->json([
                 'message' => 'Terlalu banyak permintaan export. Coba lagi sebentar.',
                 'retry_after' => (int) ($headers['Retry-After'] ?? 60),
             ], 429, $headers)));
 
-        // API key v1: configurable via env (default 120/menit) per kunci
-        // (fallback ke IP bila belum terautentikasi). Bisa disetel tanpa deploy ulang.
-        $apiRateLimit = (int) env('API_RATE_LIMIT', 120);
+        // API key v1: configurable via config('limits.api_per_minute') per kunci
+        // (fallback ke IP bila belum terautentikasi). Ubah: .env + config:cache.
+        $apiRateLimit = (int) config('limits.api_per_minute');
         RateLimiter::for('api-key', fn (Request $request) => Limit::perMinute($apiRateLimit)
             ->by((string) ($request->attributes->get('api_key_id') ?? $request->ip()))
             ->response(fn (Request $request, array $headers) => response()->json([

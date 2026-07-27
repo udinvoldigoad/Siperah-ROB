@@ -343,7 +343,7 @@ final class ResearchController
 
     public function apiReference(): JsonResponse
     {
-        $apiRateLimit = (int) env('API_RATE_LIMIT', 120);
+        $apiRateLimit = (int) config('limits.api_per_minute');
 
         return response()->json(['data' => [
             'base_path' => '/api/v1',

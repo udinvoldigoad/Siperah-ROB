@@ -13,7 +13,7 @@ final class PruneAuditLogs extends Command
 
     public function handle(): int
     {
-        $days = (int) ($this->option('days') ?: env('AUDIT_RETENTION_DAYS', 365));
+        $days = (int) ($this->option('days') ?: config('limits.audit_retention_days'));
         if ($days < 30) {
             $this->error('Retensi audit minimal 30 hari agar tidak menghapus jejak operasional terlalu agresif.');
             return self::FAILURE;
