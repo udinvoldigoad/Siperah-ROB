@@ -221,16 +221,24 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
       <div className="app-main">
         <div className="app-topbar">
           <div className="breadcrumb" style={{ display: "flex", alignItems: "center" }}>
-            <button 
+            <button
               className="mobile-menu-toggle"
               onClick={() => setMobileSidebarOpen(true)}
               aria-label="Buka Menu"
             >
               <Icon name="menu" />
             </button>
-            <Icon name="dashboard" style={{ fontSize: "16px", color: "var(--tx2)" }} />
-            <span className="breadcrumb-sep"><Icon name="chevron_right" style={{ fontSize: "10px" }} /></span>
-            <span className="breadcrumb-current">{title}</span>
+            {/* Halaman yang mengirim `breadcrumbs` menampilkan jejak aslinya;
+                sisanya tetap memakai jejak bawaan "beranda › judul". */}
+            {breadcrumbs && breadcrumbs.length > 0 ? (
+              <Breadcrumbs items={breadcrumbs} />
+            ) : (
+              <>
+                <Icon name="dashboard" style={{ fontSize: "16px", color: "var(--tx2)" }} />
+                <span className="breadcrumb-sep"><Icon name="chevron_right" style={{ fontSize: "10px" }} /></span>
+                <span className="breadcrumb-current">{title}</span>
+              </>
+            )}
           </div>
           
           <div className="topbar-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -295,6 +303,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         >
+          {subtitle && <p className="app-subtitle">{subtitle}</p>}
           {children}
         </motion.div>
       </div>

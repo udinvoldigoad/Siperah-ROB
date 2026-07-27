@@ -1351,6 +1351,12 @@ code {
       padding-left: 12px !important;
       padding-right: 12px !important;
     }
+    /* Padding samping .app-content dinolkan di atas, jadi subjudul (anak
+       langsung, bukan .stack/.content) harus diberi jarak tepi sendiri. */
+    .app-content > .app-subtitle {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
   }
   
   @media (min-width: 769px) {
@@ -1692,6 +1698,40 @@ code {
   color: var(--tx2);
 }
 
+/* Komponen Breadcrumbs saat dirender DI DALAM topbar: buang margin blok
+   (dirancang untuk area konten) dan samakan ukurannya dengan jejak bawaan.
+   Topbar tingginya tetap 52px, jadi jejak panjang dipotong ellipsis alih-alih
+   dibungkus ke baris kedua. */
+.app-topbar .breadcrumb {
+  min-width: 0;
+}
+.app-topbar .breadcrumbs {
+  margin-bottom: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.app-topbar .breadcrumbs ol {
+  flex-wrap: nowrap;
+}
+.app-topbar .breadcrumbs li {
+  font-size: 13px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.app-topbar .breadcrumbs li:last-child span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-topbar .breadcrumbs span {
+  color: var(--tx2);
+  font-weight: 500;
+}
+.app-topbar .breadcrumbs .material-symbols-outlined {
+  font-size: 12px;
+  color: var(--tx3);
+  flex-shrink: 0;
+}
+
 .topbar-actions {
   display: flex;
   align-items: center;
@@ -1716,6 +1756,16 @@ code {
 .app-content {
   padding: 20px;
   flex: 1;
+}
+
+/* Subjudul halaman: kalimat pengantar dari prop `subtitle` AppShell, tepat di
+   atas konten. Lebar dibatasi agar tetap enak dibaca di layar lebar. */
+.app-subtitle {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin: 0 0 16px;
+  max-width: 70ch;
 }
 
 .alert-banner {

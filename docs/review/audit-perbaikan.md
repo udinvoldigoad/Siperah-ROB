@@ -66,8 +66,7 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 
 ## 4. 🎨 UI/UX & Desain (14)
 
-- [ ] 🔴 **AppShell mengabaikan prop `breadcrumbs` & `subtitle`** — `frontend/src/shared/components/AppShell.tsx:34`
-  Mengimpor `Breadcrumbs` & mendestruktur `subtitle`/`breadcrumbs` tapi tak pernah dirender; topbar hanya breadcrumb hardcoded. Banyak halaman (ReportWizard, NotificationSettings, dll) kirim prop yang hilang diam-diam. → Render `<Breadcrumbs items={breadcrumbs}/>` + `subtitle`, atau hapus prop.
+- [x] ✅ 🔴 **AppShell mengabaikan prop `breadcrumbs` & `subtitle`** — SELESAI: keduanya kini dirender. `breadcrumbs` menggantikan jejak hardcoded di topbar (fallback ke "beranda › judul" untuk halaman yang tak mengirimnya, dengan `nowrap` + ellipsis agar topbar 52px tak melar); `subtitle` tampil sebagai `.app-subtitle` di atas konten, lengkap dengan padding tepi khusus mobile karena `.app-content` kehilangan padding samping di <768px. Perubahan terbatas di `AppShell.tsx` + `tokens.css` — 8 halaman pemanggil tak disentuh. Diverifikasi lewat spec Playwright sementara (wizard/riwayat, desktop & 390px) lalu spec-nya dihapus.
 - [ ] 🔴 **Tombol Dashboard di landing salah rute utk operator/provinsi** — `frontend/src/app/PortalPage.tsx:60`
   `roleMap` pakai kunci `operator_kabkota`/`operator_provinsi` yang tak ada (peran nyata `bpbd_operator`/`bpbd_provinsi`) → `undefined` → jatuh ke `#/login`. → Pakai `dashboardHashForRole()`.
 - [ ] 🔴 **Chip Wilayah Pantau tak terbaca (dark mode): `--brand` hitam, `--brand-soft` tak ada** — `frontend/src/features/notifications/NotificationSettingsPage.tsx:211`
