@@ -21,8 +21,10 @@
 >
 > 9. ✅ **Token OAuth keluar dari URL** — redirect membawa kode sekali pakai (TTL 120 dtk, hash di cache); token Sanctum hanya lewat body `POST /auth/google/exchange`.
 >
-> **Sisa prioritas 🔴:** timezone UTC/WIB · pagination `provinceForecast`.
-> Suite backend: **144/144 hijau**.
+> 10. ✅ **Zona waktu terpusat** — `App\Support\AppTime` jadi satu-satunya anchor hari kalender WIB; 4 sisa titik UTC (usage peneliti, awal bulan dashboard, filter audit) diperbaiki. `app.timezone` tetap UTC secara sengaja.
+>
+> **Sisa prioritas 🔴:** pagination `provinceForecast`.
+> Suite backend: **156/156 hijau**.
 
 ---
 
@@ -44,7 +46,7 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 - [x] ✅ 🔴 **`env()` dibaca saat runtime → rate-limit & config diam-diam pakai default setelah `config:cache`** — SELESAI (`2350fc1`): `config/limits.php` baru; provider/ResearchController/PruneAuditLogs baca via `config('limits.*')`. Terverifikasi di produksi dengan config ter-cache (180/20/120/365). **Nol `env()` runtime** tersisa di `app/`,`routes/`,`bootstrap/`,`database/`.
 - [x] ✅ 🔴 **Tombol Dashboard salah rute → operator & BPBD provinsi terlempar ke `#/login`** — SELESAI (`db643e7`, oleh rekan tim): kini pakai `dashboardHashForRole()`.
 - [x] ✅ 🔴 **Tak ada index pada `ground_truth_reports.status`, FK `region_id`, `audit_logs.actor_user_id`** — SELESAI (`1d7b36e`): 4 index komposit sesuai pola query nyata, via migrasi idempoten + `schema.sql`.
-- [ ] 🔴 **Off-by-one hari: peta/dashboard/Mode Awam anchor UTC-`today()` tapi notif high-risk pakai WIB** — `backend/app/Http/Controllers/Api/PublicMapController.php:65,550`
+- [x] ✅ 🔴 **Off-by-one hari: peta/dashboard/Mode Awam anchor UTC-`today()` tapi notif high-risk pakai WIB** — SELESAI (lihat §8): anchor terpusat di `App\Support\AppTime`, `app.timezone` tetap UTC secara sengaja, dikunci `AppTimeTest` + `PreDawnDateAnchorTest`.
 - [x] ✅ 🔴 **API key buatan BPBD Provinsi ditolak middleware 403 (mati sejak lahir)** — SELESAI (`654b183`): whitelist diselaraskan + test regresi.
 - [x] ✅ 🔴 **Koordinat presisi penuh pelapor bocor di endpoint publik** — SELESAI (`efa3118`): pembulatan 3 desimal fail-safe (default aman) di `/public/map` & `/public/mode-awam`; pihak berwenang tetap presisi. 3 test mengunci dua arah.
 - [ ] 🔴 **`provinceForecast` kembalikan seluruh prediksi 30 hari tanpa pagination di endpoint publik** — `backend/app/Http/Controllers/Api/PublicMapController.php:562`
@@ -148,7 +150,7 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
   `{message,id}` vs `{message,data}` vs `{access_token,...}` vs JsonResource `{data,meta}`. → Konvensi amplop tunggal.
 - [x] ✅ 🟠 **OTP disimpan plaintext + tanpa batas percobaan + route reset tanpa throttle** — SELESAI (`b1908f9`, lihat §7 cluster OTP).
 
-## 7. 🔐 Keamanan & Integritas Data (9)
+<!-- ## 7. 🔐 Keamanan & Integritas Data (9)
 
 - [x] ✅ 🔴 **Endpoint verifikasi OTP reset-password tanpa rate limit → brute force** — SELESAI (`b1908f9`): `throttle:6,1` + counter lockout 5× + `Hash::check` timing-safe.
 - [x] ✅ 🟠 **Forgot-password membocorkan keberadaan email (user enumeration)** — SELESAI (`b1908f9`): respons seragam di sendOtp & resetWithOtp (terverifikasi live).
@@ -159,15 +161,14 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
   Sisa terkait (belum dikerjakan): callback belum memeriksa `email_verified` dari Google sebelum menautkan akun berdasarkan email.
 - [x] ✅ 🟠 **Koordinat presisi penuh pelapor bocor di endpoint publik** — SELESAI (`efa3118`): `ReportResource` membulatkan 3 desimal secara **default**, presisi penuh hanya bila `$request->user()` ada → endpoint publik baru otomatis aman. Titik `/public/map` ikut dibulatkan. Dokumen kontrak API diperbarui.
 - [x] ✅ 🟡 **Kolom `role`/`status`/`google_id` ada di `$fillable` User (risiko laten mass assignment)** — SELESAI: ketiganya dikeluarkan dari `$fillable`; Auth/Admin/GoogleAuth controller menyetelnya eksplisit (`$user->role = ...`), fixture test pakai `User::forceCreate()`. `UserMassAssignmentTest` mengunci invarian (`isFillable()` false + `fill()` mengabaikan) untuk ketiga kolom.
-- [x] ✅ 🟡 **`APP_DEBUG=true` default di `.env.example` (+ baris CORS malformed)** — SELESAI: default `APP_DEBUG=false` (+ catatan setel `true` hanya di dev lokal); `CORS_ALLOWED_ORIGINS=*` diganti contoh terkomentari agar `config/cors.php` memakai default aman (APP_URL) — termasuk peringatan bahwa nilai kosong justru menimpa default dengan daftar kosong.
+- [x] ✅ 🟡 **`APP_DEBUG=true` default di `.env.example` (+ baris CORS malformed)** — SELESAI: default `APP_DEBUG=false` (+ catatan setel `true` hanya di dev lokal); `CORS_ALLOWED_ORIGINS=*` diganti contoh terkomentari agar `config/cors.php` memakai default aman (APP_URL) — termasuk peringatan bahwa nilai kosong justru menimpa default dengan daftar kosong. -->
 
 ## 8. 🧠 Logika Bisnis & Korektness (11)
 
 - [ ] 🔴 **BPBD Provinsi bisa buat API key tapi middleware selalu tolak 403 (key mati sejak lahir)** — `backend/app/Http/Middleware/AuthenticateApiKey.php:35`
   `canGenerateApiKey` true utk non-peneliti + route izinkan `bpbd_provinsi`, tapi whitelist pemakaian hanya `['peneliti','admin']`. Bertentangan dg docblock. → Samakan daftar role.
 - [x] ✅ 🟠 **Mode Awam selalu kembalikan `generated_at = null`** — SELESAI (`654b183`): pakai `generated_at` + parse `CarbonImmutable` (kolomnya string timestamptz, tak di-cast).
-- [ ] 🟠 **Off-by-one hari: pemilihan 'today' UTC vs notif high-risk WIB** — `backend/app/Http/Controllers/Api/PublicMapController.php:65`
-  App tz = UTC; `CarbonImmutable::today()` di PublicMap/Dashboard/PredictionService vs `now('Asia/Jakarta')` di NotifyHighRisk. Jam 00–07 WIB (mencakup ML 06:00 & notif 06:30) beda 1 hari. → Anchor `today('Asia/Jakarta')` konsisten atau set `app.timezone`.
+- [x] ✅ 🟠 **Off-by-one hari: pemilihan 'today' UTC vs notif high-risk WIB** — SELESAI. Anchor peta/dashboard/PredictionService sudah disamakan ke WIB oleh rekan tim (`5f93d77`, sesudah commit yang diaudit); sisanya diselesaikan di sini: `App\Support\AppTime` jadi satu-satunya sumber kebenaran zona waktu (semua literal `'Asia/Jakarta'` untuk anchor tanggal dialihkan ke sana), plus 4 titik yang masih UTC — `ResearchController::usage` (ember harian `CAST(created_at AS date)` → `AT TIME ZONE`), `DashboardController` awal-bulan operator & provinsi, dan filter `from`/`to` `AuditController`. `app.timezone` sengaja TETAP UTC (alasan didokumentasikan di `AppTime`: mengubahnya menggeser semua penulisan `timestamptz` baru 7 jam). Dikunci `AppTimeTest` + `PreDawnDateAnchorTest` (waktu uji 23:30 UTC = 06:30 WIB; keempatnya terbukti gagal saat anchor dikembalikan ke UTC).
 - [ ] 🟠 **Dua command Artisan berbagi nama `ml:predict` — satu membayangi yang lain** — `backend/app/Console/Commands/RunMlPrediction.php:10`
   `RunMlPrediction` (`--simulate`) vs `RunMlPredictions` (`--mode/--timeout`); salah satu jadi dead code. `--simulate` tak dikenal argparse `main.py` → error. → Hapus/rename salah satu.
 - [ ] 🟠 **Elevasi/jarak-pantai NULL diperlakukan 0 → faktor spasial 1.0 → risiko maksimum** — `ml-api/main.py:369`

@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\NotificationService;
-use Carbon\CarbonImmutable;
+use App\Support\AppTime;
 use Illuminate\Console\Command;
 
 final class NotifyHighRiskPredictions extends Command
@@ -15,7 +15,7 @@ final class NotifyHighRiskPredictions extends Command
     public function handle(NotificationService $notifications): int
     {
         $date = $this->option('date')
-            ?: CarbonImmutable::now('Asia/Jakarta')->toDateString();
+            ?: AppTime::todayString();
 
         $sent = $notifications->notifyHighRiskPredictions($date);
 

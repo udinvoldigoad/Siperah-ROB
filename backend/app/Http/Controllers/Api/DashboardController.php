@@ -6,12 +6,11 @@ use App\Models\GroundTruthReport;
 use App\Services\AuditService;
 use App\Services\RegionMonitoringService;
 use App\Services\ReportAccessService;
+use App\Support\AppTime;
 use App\Support\CsvWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
-use Carbon\CarbonImmutable;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class DashboardController
@@ -50,7 +49,7 @@ final class DashboardController
         // TERDEKAT yang akan datang (>= hari ini), fallback ke tanggal terbaru.
         $latestPredictionDate = DB::table('predictions')
             ->whereIn('region_id', $regionIds)
-            ->whereDate('prediction_date', '>=', CarbonImmutable::today('Asia/Jakarta'))
+            ->whereDate('prediction_date', '>=', AppTime::today())
             ->min('prediction_date')
             ?: DB::table('predictions')
                 ->whereIn('region_id', $regionIds)
@@ -69,7 +68,10 @@ final class DashboardController
             ->whereIn('status', ['menunggu', 'perlu_review'])
             ->count();
 
-        $startOfMonth = Carbon::now('Asia/Jakarta')->startOfMonth();
+        // Awal bulan WIB dikonversi ke UTC. Carbon ber-offset +07 saja tidak
+        // cukup: binding query di-format tanpa offset, jadi tengah malam WIB
+        // akan dibaca Postgres (sesi UTC) sebagai tengah malam UTC.
+        $startOfMonth = AppTime::startOfMonthUtc();
         $monthlyValidations = $this->reports->accessible($user)
             ->where('status', 'divalidasi')
             ->where('validated_at', '>=', $startOfMonth)
@@ -163,8 +165,11 @@ final class DashboardController
                 ->sum('regions.population');
         }
 
-        $startOfMonth = $selectedMonth ? Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth() : Carbon::now('Asia/Jakarta')->startOfMonth();
-        $endOfMonth = (clone $startOfMonth)->endOfMonth();
+        // validated_at bertipe timestamptz: batas bulannya harus tengah malam
+        // WIB (dikonversi UTC), bukan tengah malam UTC — kalau tidak, laporan
+        // yang divalidasi 00:00–07:00 WIB tanggal 1 masuk hitungan bulan lalu.
+        $startOfMonth = AppTime::startOfMonthUtc($selectedMonth);
+        $endOfMonth = AppTime::endOfMonthUtc($selectedMonth);
         $validatedThisMonth = DB::table('ground_truth_reports')
             ->join('regions', 'ground_truth_reports.region_id', '=', 'regions.id')
             ->where('status', 'divalidasi')
@@ -178,8 +183,8 @@ final class DashboardController
         // peluang rob harian; jumlah kelurahan Tinggi/Sangat Tinggi ikut dikirim
         // sebagai pelengkap. Anchor ke hari ini karena ini forecast — bukan
         // mundur dari tanggal prediksi terjauh.
-        $trendStart = Carbon::now('Asia/Jakarta')->toDateString();
-        $trendEnd = Carbon::now('Asia/Jakarta')->addDays(29)->toDateString();
+        $trendStart = AppTime::todayString();
+        $trendEnd = AppTime::today()->addDays(29)->toDateString();
         $trend = DB::table('predictions')
             ->join('regions', 'predictions.region_id', '=', 'regions.id')
             ->selectRaw("
@@ -352,8 +357,10 @@ final class DashboardController
                 $this->applyMonitoredRegionFilter($query, 'regions');
             })
             ->when($selectedMonth, function ($query, string $month): void {
-                $start = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
-                $end = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
+                // prediction_date bertipe `date` → bandingkan sebagai tanggal
+                // kalender, bukan instan (lihat catatan di AppTime).
+                $start = AppTime::monthStartDate($month);
+                $end = AppTime::monthEndDate($month);
                 $query->whereBetween('predictions.prediction_date', [$start, $end]);
             })
             ->when($selectedRegency, fn ($query, string $regency) => $this->applyRegencyFilter($query, $regency, 'regions'));
@@ -363,7 +370,7 @@ final class DashboardController
         // dataset. Fallback ke tanggal terbaru bila tak ada prediksi mendatang
         // (mis. hanya tersisa data historis).
         $upcoming = (clone $base())
-            ->whereDate('predictions.prediction_date', '>=', CarbonImmutable::today('Asia/Jakarta'))
+            ->whereDate('predictions.prediction_date', '>=', AppTime::today())
             ->min('predictions.prediction_date');
 
         return $upcoming ?: $base()->max('predictions.prediction_date');

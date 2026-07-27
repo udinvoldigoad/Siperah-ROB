@@ -12,6 +12,7 @@ use App\Models\TidalStation;
 use App\Services\PredictionService;
 use App\Services\RegionLocator;
 use App\Services\RegionMonitoringService;
+use App\Support\AppTime;
 use App\Support\CsvWriter;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
@@ -62,7 +63,7 @@ final class PublicMapController
             $query->whereDate('prediction_date', $filters['date']);
         } else {
             $latestDate = (clone $query)
-                ->whereDate('prediction_date', '>=', CarbonImmutable::today('Asia/Jakarta'))
+                ->whereDate('prediction_date', '>=', AppTime::today())
                 ->min('prediction_date');
             $latestDate ??= (clone $query)->max('prediction_date');
             if ($latestDate) {
@@ -394,7 +395,7 @@ final class PublicMapController
             // datang (aturan yang sama dengan peta). Sebelumnya orderBy desc
             // tanpa filter membuat halaman pertama berisi H+30 — konsumen
             // (mis. metrik OnboardingPage) menampilkannya sebagai "saat ini".
-            $nearest = Prediction::whereDate('prediction_date', '>=', \Carbon\CarbonImmutable::today('Asia/Jakarta'))
+            $nearest = Prediction::whereDate('prediction_date', '>=', AppTime::today())
                 ->min('prediction_date') ?: Prediction::max('prediction_date');
             if ($nearest) {
                 $query->whereDate('prediction_date', $nearest);
@@ -571,7 +572,7 @@ final class PublicMapController
             'regency' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $window = \App\Support\ForecastWindow::thirtyDaysFrom(CarbonImmutable::today('Asia/Jakarta'));
+        $window = \App\Support\ForecastWindow::thirtyDaysFrom(AppTime::today());
 
         $query = Prediction::with('region')
             ->whereBetween('prediction_date', [

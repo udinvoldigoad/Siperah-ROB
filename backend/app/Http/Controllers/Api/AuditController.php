@@ -6,8 +6,8 @@ use App\Http\Resources\AuditLogResource;
 use App\Models\AuditLog;
 use App\Http\Requests\AuditLogRequest;
 use App\Services\AuditService;
+use App\Support\AppTime;
 use App\Support\CsvWriter;
-use Carbon\CarbonImmutable;
 
 final class AuditController
 {
@@ -34,12 +34,15 @@ final class AuditController
             $query->where('actor_user_id', $filters['user_id']);
         }
 
+        // Admin memilih tanggal dalam WIB, tapi created_at disimpan UTC —
+        // batas harinya harus digeser, kalau tidak rentang "1–2 Juli" ikut
+        // memuat 07:00 WIB tanggal 1 s/d 07:00 WIB tanggal 3.
         if (!empty($filters['from'])) {
-            $query->where('created_at', '>=', $filters['from']);
+            $query->where('created_at', '>=', AppTime::startOfDayUtc($filters['from']));
         }
 
         if (!empty($filters['to'])) {
-            $query->where('created_at', '<=', CarbonImmutable::parse($filters['to'])->endOfDay());
+            $query->where('created_at', '<=', AppTime::endOfDayUtc($filters['to']));
         }
 
         if (!empty($filters['search'])) {

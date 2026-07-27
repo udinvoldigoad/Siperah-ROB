@@ -8,8 +8,8 @@ use App\Models\ApiAccessRequest;
 use App\Models\ApiKey;
 use App\Models\Dataset;
 use App\Services\AuditService;
+use App\Support\AppTime;
 use App\Support\CsvWriter;
-use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -252,14 +252,12 @@ final class ResearchController
     {
         $user = $request->user();
 
-        // Batas "hari ini" & "bulan ini" mengikuti zona waktu Asia/Jakarta (WIB),
-        // lalu dikonversi ke UTC karena kolom created_at disimpan UTC (app tz = UTC).
-        // Tanpa ini, panggilan pagi WIB (mis. 06:00 = 23:00 UTC hari sebelumnya)
-        // salah terhitung ke hari yang keliru.
-        $tz = 'Asia/Jakarta';
-        $startOfTodayWib = Carbon::now($tz)->startOfDay()->utc();
-        $endOfTodayWib = Carbon::now($tz)->endOfDay()->utc();
-        $startOfMonthWib = Carbon::now($tz)->startOfMonth()->utc();
+        // Batas "hari ini" & "bulan ini" mengikuti WIB lalu dikonversi ke UTC
+        // karena kolom created_at disimpan UTC. Tanpa ini, panggilan pagi WIB
+        // (mis. 06:00 = 23:00 UTC hari sebelumnya) terhitung ke hari yang keliru.
+        $startOfTodayWib = AppTime::startOfDayUtc();
+        $endOfTodayWib = AppTime::endOfDayUtc();
+        $startOfMonthWib = AppTime::startOfMonthUtc();
 
         return response()->json(['data' => [
             'dataset_count' => Dataset::count(),
@@ -287,7 +285,11 @@ final class ResearchController
     public function usage(Request $request): JsonResponse
     {
         $user = $request->user();
-        $since = now()->subDays(29)->startOfDay();
+        // Jendela & ember harian memakai hari kalender WIB, konsisten dengan
+        // stats() di atas — kalau tidak, satu respons bisa memuat "hari ini"
+        // versi WIB berdampingan dengan grafik ber-ember UTC.
+        $firstDay = AppTime::today()->subDays(29);
+        $since = AppTime::startOfDayUtc($firstDay->toDateString());
 
         $baseQuery = fn () => DB::table('audit_logs')
             ->where('action', 'api_key_request')
@@ -310,12 +312,15 @@ final class ResearchController
                 'failed' => (int) $row->failed,
             ]);
 
-        // Total per hari (untuk grafik tren)
+        // Total per hari (untuk grafik tren). Pengelompokan WAJIB lewat
+        // sqlDateInWib(): `CAST(created_at AS date)` polos memakai zona sesi DB
+        // (UTC), jadi lalu lintas 00:00–07:00 WIB masuk ember hari sebelumnya.
+        $dayExpression = AppTime::sqlDateInWib('created_at');
         $perDay = (clone $baseQuery())
-            ->selectRaw('CAST(created_at AS date) AS day')
+            ->selectRaw("{$dayExpression} AS day")
             ->selectRaw('COUNT(*) AS total')
             ->selectRaw("SUM(CASE WHEN outcome <> 'success' THEN 1 ELSE 0 END) AS failed")
-            ->groupByRaw('CAST(created_at AS date)')
+            ->groupByRaw($dayExpression)
             ->orderBy('day')
             ->get()
             ->keyBy(fn ($row) => (string) $row->day);
@@ -323,7 +328,7 @@ final class ResearchController
         // Isi hari kosong dengan nol supaya grafik kontinu
         $series = [];
         for ($i = 0; $i < 30; $i++) {
-            $date = now()->subDays(29 - $i)->toDateString();
+            $date = $firstDay->addDays($i)->toDateString();
             $row = $perDay->get($date);
             $series[] = [
                 'day' => $date,
@@ -334,7 +339,8 @@ final class ResearchController
 
         return response()->json(['data' => [
             'window_days' => 30,
-            'since' => $since->toDateString(),
+            // Tanggal WIB, bukan $since (instan UTC yang jatuh di hari sebelumnya).
+            'since' => $firstDay->toDateString(),
             'total_calls' => $perEndpoint->sum('total'),
             'per_endpoint' => $perEndpoint->values(),
             'per_day' => $series,
