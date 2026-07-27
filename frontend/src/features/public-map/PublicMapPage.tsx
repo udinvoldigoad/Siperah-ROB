@@ -941,17 +941,24 @@ export function PublicMapPage() {
         color: inherit;
       }
 
-      @media(max-width: 768px) {
+      /* Layout 1 kolom mulai dari tablet (<=1024px), disamakan dengan breakpoint
+         sidebar di tokens.css. Di 769-1024px layout lama (1fr 340px) menyisakan
+         peta hanya ~460px sementara panel mengambil 340px — sempit. Blok ini
+         SENGAJA hanya memuat aturan tingkat layout; penyesuaian tipografi mungil
+         khas ponsel tetap di blok <=768px agar tak ikut mengecil di tablet. */
+      @media(max-width: 1024px) {
         .public-map-layout {
           grid-template-columns: 1fr;
           gap: 16px;
         }
 
-        /* Mobile: peringatan naik ke atas peta (elemen pertama di grid 1 kolom),
-           salinan di kolom kanan disembunyikan agar tidak dobel. */
+        /* Grid jadi 1 kolom: peringatan naik ke atas peta, salinan kolom kanan
+           disembunyikan agar tidak tampil dobel. */
         .map-warnings-mobile { display: grid; gap: 12px; }
         .map-warnings-desktop { display: none; }
+      }
 
+      @media(max-width: 768px) {
         /* Ketiga filter tampil sejajar 3 kolom rapat di atas peta (tanpa tombol
            ringkas): hemat ruang vertikal & langsung terlihat. Baris label diberi
            tinggi tetap agar label 1–2 baris tak menggeser sejajarnya kontrol. */
