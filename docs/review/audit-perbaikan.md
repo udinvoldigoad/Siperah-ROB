@@ -8,8 +8,11 @@
 > **Progres (2026-07-26):**
 > 1. ✅ Cluster keamanan **OTP reset kata sandi** (`b1908f9`) — throttle, `Hash::check` timing-safe, stop plaintext/log, lockout 5×, cabut token Sanctum, respons anti-enumeration, From email default, + 6 test baru.
 > 2. ✅ **`env()` runtime → `config/limits.php`** (`2350fc1`) — rate-limit & retensi kini benar-benar terbaca saat `config:cache`; terverifikasi di produksi.
+> 3. ✅ **roleMap dashboard** (`db643e7`, rekan tim) — operator/provinsi tak lagi terlempar ke login.
+> 4. ✅ **API key BPBD Provinsi + `generated_at` Mode Awam** (`654b183`) — whitelist middleware diselaraskan; `generated_at` terisi (terverifikasi live).
 >
-> Item terkait ditandai ✅ di bawah. Sisa prioritas 🔴: roleMap salah rute, index DB, timezone UTC/WIB, API key BPBD Provinsi, koordinat publik, pagination provinceForecast.
+> **Sisa prioritas 🔴:** index DB · timezone UTC/WIB · koordinat pelapor di endpoint publik · pagination `provinceForecast`.
+> Suite backend: **132/132 hijau**.
 
 ---
 
@@ -29,10 +32,10 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 
 - [x] ✅ 🔴 **OTP reset-password tanpa throttle + plaintext + banding non-timing-safe → account takeover** — SELESAI (`b1908f9`) — `backend/routes/api.php:22`, `backend/app/Http/Controllers/Api/PasswordResetController.php`
 - [x] ✅ 🔴 **`env()` dibaca saat runtime → rate-limit & config diam-diam pakai default setelah `config:cache`** — SELESAI (`2350fc1`): `config/limits.php` baru; provider/ResearchController/PruneAuditLogs baca via `config('limits.*')`. Terverifikasi di produksi dengan config ter-cache (180/20/120/365). **Nol `env()` runtime** tersisa di `app/`,`routes/`,`bootstrap/`,`database/`.
-- [ ] 🔴 **Tombol Dashboard salah rute → operator & BPBD provinsi terlempar ke `#/login`** — `frontend/src/app/PortalPage.tsx:60`
+- [x] ✅ 🔴 **Tombol Dashboard salah rute → operator & BPBD provinsi terlempar ke `#/login`** — SELESAI (`db643e7`, oleh rekan tim): kini pakai `dashboardHashForRole()`.
 - [ ] 🔴 **Tak ada index pada `ground_truth_reports.status`, FK `region_id`, `audit_logs.actor_user_id` → query berat lambat di skala** — `database/schema.sql:67`
 - [ ] 🔴 **Off-by-one hari: peta/dashboard/Mode Awam anchor UTC-`today()` tapi notif high-risk pakai WIB** — `backend/app/Http/Controllers/Api/PublicMapController.php:65,550`
-- [ ] 🔴 **API key buatan BPBD Provinsi ditolak middleware 403 (mati sejak lahir), bertentangan dg route & dokumentasi** — `backend/app/Http/Middleware/AuthenticateApiKey.php:35`
+- [x] ✅ 🔴 **API key buatan BPBD Provinsi ditolak middleware 403 (mati sejak lahir)** — SELESAI (`654b183`): whitelist diselaraskan + test regresi.
 - [ ] 🔴 **Koordinat presisi penuh pelapor bocor di endpoint publik (jalur API v1 sudah dibulatkan)** — `backend/app/Http/Controllers/Api/PublicMapController.php:116`, `ReportResource.php:33-34`
 - [ ] 🔴 **`provinceForecast` kembalikan seluruh prediksi 30 hari tanpa pagination di endpoint publik** — `backend/app/Http/Controllers/Api/PublicMapController.php:562`
 
@@ -41,6 +44,8 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 - [ ] **Fix `roleMap` → pakai `dashboardHashForRole(user.role)`** — `frontend/src/app/PortalPage.tsx:60`
 - [ ] **Ganti `var(--brand)`/`--brand-soft`/`--success` → `var(--accent)`/`--accent-soft`/`--low`** — `NotificationSettingsPage.tsx:211`, `ReportHistoryPage.tsx:129`, `tokens.css`
 - [x] ✅ **Hapus `Log::info` OTP plaintext + pasang `throttle:6,1` di route reset-password** — SELESAI (`b1908f9`)
+- [x] ✅ **Fix `roleMap` → `dashboardHashForRole()`** — SELESAI (`db643e7`, rekan tim)
+- [x] ✅ **`$prediction?->created_at` → `->generated_at`** — SELESAI (`654b183`), terverifikasi live (bukan `null` lagi)
 - [ ] **`$prediction?->created_at` → `->generated_at`** (Mode Awam `generated_at` selalu `null`) — `PublicMapController.php:532`
 - [ ] **`setWaterHeight("")` (bukan `"45"`) setelah submit** — `ReportWizardPage.tsx:217`
 - [ ] **`.btn:disabled { cursor: not-allowed }`** (sisakan `wait` khusus loading) — `tokens.css:211`
@@ -154,8 +159,7 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 
 - [ ] 🔴 **BPBD Provinsi bisa buat API key tapi middleware selalu tolak 403 (key mati sejak lahir)** — `backend/app/Http/Middleware/AuthenticateApiKey.php:35`
   `canGenerateApiKey` true utk non-peneliti + route izinkan `bpbd_provinsi`, tapi whitelist pemakaian hanya `['peneliti','admin']`. Bertentangan dg docblock. → Samakan daftar role.
-- [ ] 🟠 **Mode Awam selalu kembalikan `generated_at = null` (baca kolom yang tak ada)** — `backend/app/Http/Controllers/Api/PublicMapController.php:532`
-  `$prediction?->created_at` — tabel `predictions` tak punya `created_at` (kolom benar `generated_at`). → Ganti ke `->generated_at`.
+- [x] ✅ 🟠 **Mode Awam selalu kembalikan `generated_at = null`** — SELESAI (`654b183`): pakai `generated_at` + parse `CarbonImmutable` (kolomnya string timestamptz, tak di-cast).
 - [ ] 🟠 **Off-by-one hari: pemilihan 'today' UTC vs notif high-risk WIB** — `backend/app/Http/Controllers/Api/PublicMapController.php:65`
   App tz = UTC; `CarbonImmutable::today()` di PublicMap/Dashboard/PredictionService vs `now('Asia/Jakarta')` di NotifyHighRisk. Jam 00–07 WIB (mencakup ML 06:00 & notif 06:30) beda 1 hari. → Anchor `today('Asia/Jakarta')` konsisten atau set `app.timezone`.
 - [ ] 🟠 **Dua command Artisan berbagi nama `ml:predict` — satu membayangi yang lain** — `backend/app/Console/Commands/RunMlPrediction.php:10`
