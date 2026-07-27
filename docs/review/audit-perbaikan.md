@@ -5,7 +5,11 @@
 > **Legenda severity:** 🔴 tinggi · 🟠 sedang · 🟡 rendah
 > Catatan: dokumen ini dihasilkan otomatis lalu diverifikasi; tetap sanity-check tiap item sebelum dieksekusi.
 >
-> **Progres:** cluster keamanan **OTP reset kata sandi** sudah diperbaiki & di-deploy (commit `b1908f9`, 2026-07-26): throttle, `Hash::check` timing-safe, stop plaintext/log, lockout 5×, cabut token Sanctum, respons anti-enumeration, From email default, + 6 test baru. Item terkait ditandai ✅ di bawah.
+> **Progres (2026-07-26):**
+> 1. ✅ Cluster keamanan **OTP reset kata sandi** (`b1908f9`) — throttle, `Hash::check` timing-safe, stop plaintext/log, lockout 5×, cabut token Sanctum, respons anti-enumeration, From email default, + 6 test baru.
+> 2. ✅ **`env()` runtime → `config/limits.php`** (`2350fc1`) — rate-limit & retensi kini benar-benar terbaca saat `config:cache`; terverifikasi di produksi.
+>
+> Item terkait ditandai ✅ di bawah. Sisa prioritas 🔴: roleMap salah rute, index DB, timezone UTC/WIB, API key BPBD Provinsi, koordinat publik, pagination provinceForecast.
 
 ---
 
@@ -24,7 +28,7 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 ## 2. 🎯 TOP Prioritas (kerjakan dulu)
 
 - [x] ✅ 🔴 **OTP reset-password tanpa throttle + plaintext + banding non-timing-safe → account takeover** — SELESAI (`b1908f9`) — `backend/routes/api.php:22`, `backend/app/Http/Controllers/Api/PasswordResetController.php`
-- [ ] 🔴 **`env()` dibaca saat runtime → rate-limit & config diam-diam pakai default setelah `config:cache`** — `backend/app/Providers/AppServiceProvider.php:44,52,61` (+ `ResearchController.php:346`, `PruneAuditLogs.php:16`)
+- [x] ✅ 🔴 **`env()` dibaca saat runtime → rate-limit & config diam-diam pakai default setelah `config:cache`** — SELESAI (`2350fc1`): `config/limits.php` baru; provider/ResearchController/PruneAuditLogs baca via `config('limits.*')`. Terverifikasi di produksi dengan config ter-cache (180/20/120/365). **Nol `env()` runtime** tersisa di `app/`,`routes/`,`bootstrap/`,`database/`.
 - [ ] 🔴 **Tombol Dashboard salah rute → operator & BPBD provinsi terlempar ke `#/login`** — `frontend/src/app/PortalPage.tsx:60`
 - [ ] 🔴 **Tak ada index pada `ground_truth_reports.status`, FK `region_id`, `audit_logs.actor_user_id` → query berat lambat di skala** — `database/schema.sql:67`
 - [ ] 🔴 **Off-by-one hari: peta/dashboard/Mode Awam anchor UTC-`today()` tapi notif high-risk pakai WIB** — `backend/app/Http/Controllers/Api/PublicMapController.php:65,550`
@@ -105,8 +109,7 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 
 ## 6. 🛠️ Backend (Laravel) (13)
 
-- [ ] 🔴 **`env()` dipakai saat runtime → nilai `.env` diabaikan setelah `config:cache`** — `backend/app/Providers/AppServiceProvider.php:61`
-  Rate-limit (44,52,61), `ResearchController:346`, `PruneAuditLogs:16` diam-diam jatuh ke default. → Pindah ke `config/*.php`, baca via `config()`.
+- [x] ✅ 🔴 **`env()` dipakai saat runtime → nilai `.env` diabaikan setelah `config:cache`** — SELESAI (`2350fc1`): semua pindah ke `config/limits.php`.
 - [ ] 🔴 **Tak ada index pada `ground_truth_reports.status`, FK `region_id`, `audit_logs.actor_user_id`** — `database/schema.sql:67`
   Kolom status difilter di hampir semua query berat; Postgres tak buat index FK otomatis. → Migrasi index (komposit `status,region_id,created_at`; `actor_user_id,created_at`).
 - [ ] 🔴 **N+1 count query per dataset di `ResearchController::stats` & `datasets`** — `backend/app/Http/Controllers/Api/ResearchController.php:268`
