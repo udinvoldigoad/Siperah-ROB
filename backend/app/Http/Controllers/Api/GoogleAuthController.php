@@ -50,8 +50,11 @@ class GoogleAuthController
 
             // Pass the token to the frontend (which is likely hosted on a different port or same domain).
             // We redirect back to the frontend's OAuth callback page with the token.
-            $frontendUrl = config('services.frontend.url');
-            return redirect($frontendUrl . '/oauth-callback?token=' . $token);
+            $frontendUrl = rtrim(config('services.frontend.url'), '/');
+
+            return redirect(
+                $frontendUrl . '/#/oauth-callback?token=' . urlencode($token)
+            );
 
         } catch (\Exception $e) {
             \Log::error('Google Auth Error: ' . $e->getMessage());

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon } from "../../shared/components/Icon";
-import { api, ApiError } from "../../shared/api/client";
+import { api, apiUrl, ApiError } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { dashboardHashForRole } from "../../shared/constants/roles";
 import { motion, AnimatePresence } from "framer-motion";
@@ -289,7 +289,7 @@ export function LoginPage() {
 
                 <a 
                   className="google-btn"
-                  href="/api/auth/google/redirect"
+                  href={apiUrl("/api/auth/google/redirect")}
                   style={{ width: "100%", background: "var(--surface)", color: "var(--ink)", padding: "14px", borderRadius: 8, fontSize: "15px", fontWeight: 600, border: "1px solid var(--line)", display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", cursor: "pointer", textDecoration: "none", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", transition: "all 0.2s" }}
                 >
                 <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
