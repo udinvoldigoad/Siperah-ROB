@@ -87,11 +87,12 @@ final class AuthFlowTest extends TestCase
             ->assertJsonPath('message', 'Email atau password salah');
     }
 
-    public function test_register_creates_active_warga_that_can_login_immediately(): void
+    public function test_register_requires_email_verification_before_login(): void
     {
         $email = Str::uuid().'@example.test';
 
-        // Kebijakan produk: pendaftaran mandiri tak lagi antre persetujuan admin.
+        // Pendaftaran mandiri tak butuh persetujuan admin (status langsung
+        // 'aktif'), tapi kepemilikan email wajib dibuktikan lewat OTP dulu.
         $this->postJson('/api/auth/register', [
             'name' => 'Warga Baru',
             'email' => $email,
@@ -100,16 +101,19 @@ final class AuthFlowTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('user.role', 'warga')
             ->assertJsonPath('user.status', 'aktif')
-            // Registrasi tetap TIDAK menerbitkan token; pengguna login sendiri.
+            ->assertJsonPath('requires_email_verification', true)
             ->assertJsonMissingPath('access_token');
 
         $this->assertDatabaseHas('users', ['email' => $email, 'role' => 'warga', 'status' => 'aktif']);
+        $this->assertNull(User::where('email', $email)->value('email_verified_at'));
+        $this->assertDatabaseHas('email_verification_tokens', ['email' => $email]);
 
+        // Belum terverifikasi -> ditolak, dengan penanda khusus supaya UI bisa
+        // menampilkan form OTP alih-alih pesan "tunggu admin".
         $this->app['auth']->forgetGuards();
         $this->postJson('/api/auth/login', ['email' => $email, 'password' => 'password123'])
-            ->assertOk()
-            ->assertJsonPath('user.role', 'warga')
-            ->assertJsonStructure(['access_token']);
+            ->assertStatus(403)
+            ->assertJsonPath('requires_email_verification', true);
     }
 
     public function test_register_ignores_role_and_status_escalation_attempt(): void
@@ -124,9 +128,10 @@ final class AuthFlowTest extends TestCase
             'status' => 'nonaktif',
         ])->assertCreated();
 
-        // Akun aktif itu memang kebijakan barunya; yang dikunci di sini adalah
-        // payload TIDAK boleh menentukan peran (maupun status) miliknya sendiri.
+        // Yang dikunci: payload TIDAK boleh menentukan peran (maupun status)
+        // miliknya sendiri, dan tak bisa melewati verifikasi email.
         $this->assertDatabaseHas('users', ['email' => $email, 'role' => 'warga', 'status' => 'aktif']);
+        $this->assertNull(User::where('email', $email)->value('email_verified_at'));
     }
 
     public function test_register_rejects_duplicate_email_and_short_password(): void
@@ -177,6 +182,7 @@ final class AuthFlowTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Auth Test',
             'email' => $email,
+            'email_verified_at' => now(),
             'password_hash' => bcrypt('password123'),
             'role' => $role,
             'status' => 'aktif',

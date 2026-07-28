@@ -201,6 +201,7 @@ final class ResearchDownloadTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Riset Test',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => $role,
             'status' => $status,
         ]);

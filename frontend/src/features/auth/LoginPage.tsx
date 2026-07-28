@@ -20,7 +20,11 @@ interface LoginResponse {
 
 export function LoginPage() {
   const toast = useToast();
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register" | "verify">("login");
+  // Email yang sedang menunggu verifikasi OTP (dari registrasi ATAU dari
+  // login yang ditolak karena belum terverifikasi).
+  const [verifyEmail, setVerifyEmail] = useState("");
+  const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loginNotice, setLoginNotice] = useState<{ message: string; status?: string } | null>(null);
 
@@ -81,7 +85,14 @@ export function LoginPage() {
     } catch (err: any) {
       // Akun belum aktif (menunggu/nonaktif/ditolak) → tampilkan panel status
       // yang jelas & persisten, bukan sekadar toast sesaat.
-      if (err instanceof ApiError && err.status === 403 && err.body?.account_status) {
+      // Belum verifikasi email punya jalan keluar sendiri (masukkan OTP),
+      // jadi jangan disamakan dengan panel status "tunggu admin".
+      if (err instanceof ApiError && err.status === 403 && err.body?.requires_email_verification) {
+        setVerifyEmail(email);
+        setOtp("");
+        setMode("verify");
+        toast.info("Email Anda belum diverifikasi. Masukkan kode yang kami kirim.");
+      } else if (err instanceof ApiError && err.status === 403 && err.body?.account_status) {
         setLoginNotice({ message: err.message, status: err.body.account_status });
       } else {
         toast.error(err.message || "Gagal masuk. Silakan cek kredensial Anda.");
@@ -109,12 +120,54 @@ export function LoginPage() {
         }),
       });
 
-      toast.success("Pendaftaran berhasil! Akun Anda langsung aktif — silakan masuk.");
-      setMode("login");
+      toast.success("Kode verifikasi 6 digit telah dikirim ke email Anda.");
+      setVerifyEmail(regEmail);
       setEmail(regEmail);
       setPassword("");
+      setOtp("");
+      setMode("verify");
     } catch (err: any) {
       toast.error(err.message || "Pendaftaran gagal. Coba lagi.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.trim().length !== 6) {
+      toast.error("Kode verifikasi terdiri dari 6 digit.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await api("/auth/verify-email", {
+        method: "POST",
+        body: JSON.stringify({ email: verifyEmail, otp: otp.trim() }),
+      });
+      toast.success("Email terverifikasi. Silakan masuk.");
+      setMode("login");
+      setEmail(verifyEmail);
+      setOtp("");
+    } catch (err: any) {
+      toast.error(err.message || "Kode verifikasi salah atau kedaluwarsa.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setIsLoading(true);
+    try {
+      await api("/auth/resend-verification", {
+        method: "POST",
+        body: JSON.stringify({ email: verifyEmail }),
+      });
+      // Pesan backend sengaja generik (anti-enumeration) — diteruskan apa adanya.
+      toast.info("Jika email tersebut belum terverifikasi, kode baru telah dikirim.");
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengirim ulang kode.");
     } finally {
       setIsLoading(false);
     }
@@ -209,7 +262,7 @@ export function LoginPage() {
 
 
           <AnimatePresence mode="wait">
-            {mode === "login" ? (
+            {mode === "verify" ? null : mode === "login" ? (
               <motion.form 
                 key="login"
                 initial={{ opacity: 0 }}
@@ -347,7 +400,7 @@ export function LoginPage() {
               >
                 <div className="auth-header-text" style={{ marginBottom: "32px" }}>
                   <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 12px", color: "var(--ink)" }}>Buat Akun Baru</h2>
-                  <p style={{ color: "var(--ink-soft)", fontSize: "1rem", lineHeight: "1.6", margin: 0 }}>Daftar sebagai warga untuk berpartisipasi melaporkan kejadian rob. Akun Anda akan direview oleh admin setelah mendaftar.</p>
+                  <p style={{ color: "var(--ink-soft)", fontSize: "1rem", lineHeight: "1.6", margin: 0 }}>Daftar sebagai warga untuk berpartisipasi melaporkan kejadian rob. Kami akan mengirim kode verifikasi ke email Anda.</p>
                 </div>
 
                 <div style={{ marginBottom: "24px", padding: "12px 16px", borderRadius: "10px", background: "var(--surface-soft)", border: "1px solid var(--line)", fontSize: "13px", color: "var(--ink-soft)", display: "flex", gap: "12px", alignItems: "flex-start" }}>
@@ -356,9 +409,12 @@ export function LoginPage() {
                 </div>
 
                 <div style={{ marginBottom: "20px" }}>
-                  <label style={labelStyle}>Nama Lengkap</label>
+                  <label style={labelStyle} htmlFor="reg-name">Nama Lengkap</label>
                   <input
+                    id="reg-name"
+                    name="name"
                     type="text"
+                    autoComplete="name"
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     style={inputStyle}
@@ -431,6 +487,68 @@ export function LoginPage() {
               </motion.form>
             )}
           </AnimatePresence>
+
+          {mode === "verify" && (
+            <form onSubmit={handleVerifyOtp}>
+              <div className="auth-header-text" style={{ marginBottom: "32px" }}>
+                <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 8px", color: "var(--ink)" }}>Verifikasi email</h2>
+                <p style={{ color: "var(--ink-soft)", fontSize: "0.95rem", margin: 0 }}>
+                  Kami mengirim kode 6 digit ke <strong style={{ color: "var(--ink)" }}>{verifyEmail}</strong>. Masukkan kodenya untuk mengaktifkan akun.
+                </p>
+              </div>
+
+              <div style={{ marginBottom: "24px" }}>
+                <label style={labelStyle} htmlFor="otp">Kode Verifikasi</label>
+                <input
+                  id="otp"
+                  name="otp"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  placeholder="123456"
+                  autoFocus
+                  style={{ ...inputStyle, letterSpacing: "0.5em", textAlign: "center", fontSize: "20px", fontWeight: 700 }}
+                />
+              </div>
+
+              <button
+                className="btn solid"
+                type="submit"
+                style={{ width: "100%", background: "var(--accent)", color: "#fff", padding: "14px", borderRadius: "10px", fontSize: "15px", fontWeight: 600, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", cursor: "pointer" }}
+                disabled={isLoading}
+                data-loading={isLoading || undefined}
+              >
+                {isLoading ? "Memverifikasi..." : "Verifikasi & Aktifkan"}
+              </button>
+
+              <div style={{ marginTop: "24px", textAlign: "center", fontSize: "14px", color: "var(--ink-soft)" }}>
+                <span className="or-text">Tidak menerima kode?</span>{" "}
+                <button
+                  type="button"
+                  className="link-btn"
+                  onClick={handleResendOtp}
+                  disabled={isLoading}
+                  style={{ background: "none", border: "none", color: "var(--accent)", fontWeight: 600, cursor: "pointer", padding: 0 }}
+                >
+                  Kirim ulang
+                </button>
+              </div>
+
+              <div style={{ marginTop: "16px", textAlign: "center", fontSize: "14px", color: "var(--ink-soft)" }}>
+                <button
+                  type="button"
+                  className="link-btn"
+                  onClick={() => setMode("login")}
+                  style={{ background: "none", border: "none", color: "var(--ink-soft)", fontWeight: 600, cursor: "pointer", padding: 0 }}
+                >
+                  Kembali ke halaman masuk
+                </button>
+              </div>
+            </form>
+          )}
         </motion.div>
       </section>
       <style>{`

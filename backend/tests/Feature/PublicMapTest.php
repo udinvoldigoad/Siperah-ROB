@@ -161,6 +161,7 @@ final class PublicMapTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => 'Pelapor Peta Test',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => 'warga',
             'status' => 'aktif',
         ]);

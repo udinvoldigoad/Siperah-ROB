@@ -46,6 +46,7 @@ final class ApiFoundationTest extends TestCase
                 'id' => (string) Str::uuid(),
                 'name' => 'Status Test',
                 'email' => $email,
+                'email_verified_at' => now(),
                 'password_hash' => bcrypt('password123'),
                 'role' => 'warga',
                 'status' => $status,
@@ -102,6 +103,7 @@ final class ApiFoundationTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => 'Mode Awam Reporter',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => 'warga',
             'status' => 'aktif',
         ]);
@@ -172,6 +174,7 @@ final class ApiFoundationTest extends TestCase
         $user = User::forceCreate([
             'id' => (string) Str::uuid(), 'name' => 'Integration Researcher',
             'email' => Str::uuid().'@example.test', 'role' => 'peneliti', 'status' => 'aktif',
+            'email_verified_at' => now(),
         ]);
         $rawKey = 'spr_'.Str::random(40);
         ApiKey::create([
@@ -192,6 +195,7 @@ final class ApiFoundationTest extends TestCase
         $user = User::forceCreate([
             'id' => (string) Str::uuid(), 'name' => 'Notification User',
             'email' => Str::uuid().'@example.test', 'role' => 'warga', 'status' => 'aktif',
+            'email_verified_at' => now(),
         ]);
         $this->actingAs($user);
 
@@ -207,6 +211,7 @@ final class ApiFoundationTest extends TestCase
         $user = User::forceCreate([
             'id' => (string) Str::uuid(), 'name' => 'Inactive User',
             'email' => Str::uuid().'@example.test', 'role' => 'warga', 'status' => 'nonaktif',
+            'email_verified_at' => now(),
         ]);
         $this->actingAs($user);
 
@@ -831,6 +836,7 @@ final class ApiFoundationTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Test',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => $role,
             'status' => 'aktif',
             'region_id' => $regionId,

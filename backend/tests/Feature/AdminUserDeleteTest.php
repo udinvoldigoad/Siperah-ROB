@@ -72,6 +72,7 @@ final class AdminUserDeleteTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Delete Test',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => $role,
             'status' => $status,
         ]);

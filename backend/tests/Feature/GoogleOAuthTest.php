@@ -229,6 +229,7 @@ final class GoogleOAuthTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => 'Google OAuth Test',
             'email' => $email,
+            'email_verified_at' => now(),
             'password_hash' => bcrypt('password123'),
             'role' => 'warga',
             'status' => $status,

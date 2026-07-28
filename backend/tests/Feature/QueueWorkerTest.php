@@ -63,6 +63,7 @@ final class QueueWorkerTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Queue Test',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => $role,
             'status' => 'aktif',
             'region_id' => $regionId,

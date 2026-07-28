@@ -41,7 +41,22 @@ class GoogleAuthController
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
 
-            $user = User::where('google_id', $googleUser->id)->orWhere('email', $googleUser->email)->first();
+            // withTrashed WAJIB: akun yang dihapus admin disembunyikan global
+            // scope soft-delete, sehingga pencarian biasa mengembalikan null dan
+            // alur di bawah mencoba INSERT email yang sebenarnya masih ada —
+            // index unik `users_email_key` menolaknya (23505) dan pengguna cuma
+            // melihat "Gagal masuk dengan Google" tanpa penjelasan.
+            $user = User::withTrashed()
+                ->where(fn ($query) => $query
+                    ->where('google_id', $googleUser->id)
+                    ->orWhere('email', $googleUser->email))
+                ->first();
+
+            // Profil Google terverifikasi = kepemilikan terbukti, jadi akun boleh
+            // dipulihkan — tapi kembali ke antrean persetujuan admin.
+            if ($user && $user->trashed()) {
+                AuthController::restoreDeletedAccount($request, $user, $this->audit);
+            }
 
             if (!$user) {
                 // Pendaftaran lewat Google = pendaftaran biasa, hanya beda cara
@@ -58,6 +73,10 @@ class GoogleAuthController
                 // (profil Google terverifikasi), bukan dari payload request.
                 $user->google_id = $googleUser->id;
                 $user->role = 'warga';
+                // TIDAK perlu OTP: Google sudah membuktikan kepemilikan email
+                // ini, jadi memaksa verifikasi ulang hanya menambah hambatan
+                // tanpa menambah jaminan apa pun.
+                $user->email_verified_at = now();
                 $user->status = 'aktif';
                 $user->save();
 
@@ -69,8 +88,12 @@ class GoogleAuthController
                 ]);
             } else {
                 // Update existing user with google_id if not present
-                if (!$user->google_id) {
+                if (!$user->google_id || $user->email_verified_at === null) {
                     $user->google_id = $googleUser->id;
+                    // Menautkan Google membuktikan kepemilikan email yang sama,
+                    // jadi verifikasi yang tertunda ikut selesai. `status` TIDAK
+                    // disentuh — akun yang ditahan/ditolak admin tetap tertahan.
+                    $user->email_verified_at ??= now();
                     $user->save();
                 }
             }

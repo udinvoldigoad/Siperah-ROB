@@ -136,6 +136,7 @@ final class RbacNegativePathTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Rbac Test',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => $role,
             'status' => $status,
         ]);

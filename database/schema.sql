@@ -11,6 +11,7 @@ create table users (
   id uuid primary key,
   name varchar(150) not null,
   email varchar(150) unique not null,
+  email_verified_at timestamptz,
   password_hash varchar(255),
   phone_number varchar(30),
   role user_role not null,
@@ -105,6 +106,14 @@ create table datasets (
   csv_url text,
   json_url text,
   visibility varchar(40) not null default 'peneliti'
+);
+
+create table email_verification_tokens (
+  email varchar(255) primary key,
+  token varchar(255) not null,
+  attempts smallint not null default 0,
+  expires_at timestamptz not null,
+  created_at timestamptz
 );
 
 create table api_keys (

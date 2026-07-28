@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:registration');
+Route::post('/auth/verify-email', [AuthController::class, 'verifyEmail'])->middleware('throttle:6,1');
+Route::post('/auth/resend-verification', [AuthController::class, 'resendEmailVerification'])->middleware('throttle:6,1');
 Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect']);
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 // Penukaran kode sekali pakai → token Sanctum (token tidak pernah lewat URL).

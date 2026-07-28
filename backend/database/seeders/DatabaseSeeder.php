@@ -316,7 +316,13 @@ final class DatabaseSeeder extends Seeder
         foreach ($users as $u) {
             DB::table('users')->updateOrInsert(
                 ['id' => $u['id']],
-                array_merge($u, ['created_at' => now(), 'updated_at' => now()]),
+                // Akun demo dianggap sudah terverifikasi — verifikasi email hanya
+                // berlaku untuk pendaftaran mandiri, bukan akun yang disemai.
+                array_merge($u, [
+                    'email_verified_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]),
             );
         }
 

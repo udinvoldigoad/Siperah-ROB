@@ -113,6 +113,7 @@ final class NotificationBehaviorTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Notif Test',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => $role,
             'status' => 'aktif',
             'region_id' => $regionId,

@@ -69,6 +69,7 @@ final class ReportCoordinatePrivacyTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => 'Admin Privasi Test',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => 'admin',
             'status' => 'aktif',
         ]);
@@ -102,6 +103,7 @@ final class ReportCoordinatePrivacyTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => 'Pelapor Privasi',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => 'warga',
             'status' => 'aktif',
         ]);
