@@ -23,8 +23,6 @@ interface UserData {
 
 const ROLE_OPTIONS = [
   { v: "warga", l: "Warga" },
-  { v: "bpbd_operator", l: "BPBD Operator" },
-  { v: "bpbd_provinsi", l: "BPBD Provinsi" },
   { v: "peneliti", l: "Peneliti" },
   { v: "admin", l: "Admin" },
 ] as const;
@@ -744,8 +742,6 @@ export function AdminUsersPage() {
                       <div className="admin-role-pills">
                         {[
                           { v: "warga", l: "Warga" },
-                          { v: "bpbd_operator", l: "BPBD Operator" },
-                          { v: "bpbd_provinsi", l: "BPBD Provinsi" },
                           { v: "peneliti", l: "Peneliti" },
                           { v: "admin", l: "Admin" },
                         ].map((opt) => (
@@ -785,7 +781,7 @@ export function AdminUsersPage() {
                       </div>
                     ) : (
                       <div className="admin-field">
-                        <label><Icon name="pin_drop" /> Wilayah / kabupaten terpantau{newUser.role === "bpbd_operator" ? "" : " (opsional)"}</label>
+                        <label><Icon name="pin_drop" /> Wilayah / kabupaten terpantau (opsional)</label>
                         <RegionCombobox
                           value={newUser.region_id}
                           options={regions}
@@ -798,11 +794,7 @@ export function AdminUsersPage() {
                   <div className="admin-create-footer">
                     <span className="admin-create-hint">
                       <Icon name="info" />
-                      {newUser.role === "peneliti"
-                        ? "Peneliti wajib mengisi instansi agar workflow perizinan jelas."
-                        : newUser.role === "bpbd_operator"
-                        ? "Operator BPBD wajib memilih wilayah kerja yang dipantau."
-                        : "Pilih wilayah pantauan bila relevan untuk akun ini."}
+                      {"Pilih wilayah pantauan bila relevan untuk akun ini."}
                     </span>
                     <button type="submit" className="btn primary" disabled={isCreating} data-loading={isCreating || undefined}><Icon name="save" /> {isCreating ? "Menyimpan..." : "Simpan Pengguna"}</button>
                   </div>
@@ -989,7 +981,7 @@ export function AdminUsersPage() {
                         </div>
                       ) : (
                         <div className="admin-field span-2">
-                          <label><Icon name="pin_drop" /> Wilayah / kabupaten terpantau{editDraft.role === "bpbd_operator" ? "" : " (opsional)"}</label>
+                          <label><Icon name="pin_drop" /> Wilayah / kabupaten terpantau (opsional)</label>
                           <RegionCombobox
                             value={editDraft.region_id}
                             options={regions}
@@ -1034,8 +1026,6 @@ export function AdminUsersPage() {
             >
               <option value="">Semua Role</option>
               <option value="admin">Admin</option>
-              <option value="bpbd_operator">BPBD Operator</option>
-              <option value="bpbd_provinsi">BPBD Provinsi</option>
               <option value="peneliti">Peneliti</option>
               <option value="warga">Warga</option>
             </select>

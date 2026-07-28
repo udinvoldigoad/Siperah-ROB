@@ -51,21 +51,21 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/reports/{report}', [ReportController::class, 'show']);
     Route::post('/reports', [ReportController::class, 'store'])->middleware('throttle:10,1');
 
-    // BPBD & Admin — validasi laporan + dashboard
-    Route::middleware('role:bpbd_operator,bpbd_provinsi,admin')->group(function () {
+    // Admin — validasi laporan + dashboard
+    Route::middleware('role:admin')->group(function () {
         Route::post('/reports/{report}/validate', [ReportController::class, 'validateReport']);
         Route::post('/reports/{report}/reject', [ReportController::class, 'rejectReport']);
         Route::patch('/reports/{report}/status', [ReportController::class, 'updateStatus']);
     });
 
     Route::get('/dashboard/operator/summary', [DashboardController::class, 'operatorSummary'])
-        ->middleware('role:bpbd_operator,admin');
+        ->middleware('role:admin');
     Route::get('/dashboard/operator/reports/export', [DashboardController::class, 'operatorReportsExport'])
-        ->middleware('role:bpbd_operator,admin');
+        ->middleware('role:admin');
     Route::get('/dashboard/province/summary', [DashboardController::class, 'provinceSummary'])
-        ->middleware('role:bpbd_provinsi,admin');
+        ->middleware('role:admin');
     Route::get('/dashboard/province/export', [DashboardController::class, 'provinceExport'])
-        ->middleware('role:bpbd_provinsi,admin');
+        ->middleware('role:admin');
 
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/users', [AdminController::class, 'users']);
@@ -82,7 +82,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/admin/audit-logs', [AuditController::class, 'index']);
     });
 
-    Route::middleware('role:peneliti,bpbd_provinsi,admin')->group(function () {
+    Route::middleware('role:peneliti,admin')->group(function () {
         Route::get('/research/datasets', [ResearchController::class, 'datasets']);
         Route::get('/research/datasets/{dataset}/download', [ResearchController::class, 'downloadDataset']);
         Route::get('/research/stats', [ResearchController::class, 'stats']);

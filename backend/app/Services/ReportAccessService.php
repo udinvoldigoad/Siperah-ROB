@@ -15,35 +15,16 @@ final class ReportAccessService
 
         return match ($user->role) {
             'warga' => $query->where('user_id', $user->id),
-            'bpbd_operator' => $query->where(function (Builder $reports) use ($user): void {
-                $regency = $this->operatorRegency($user);
-                $reports->whereHas('region', function (Builder $q) use ($regency): void {
-                    $q->whereRaw(
-                        "REGEXP_REPLACE(LOWER(TRIM(regency)), '^(kabupaten|kota)\\s+', '') = ?",
-                        [$regency],
-                    );
-                });
-            }),
-            'bpbd_provinsi', 'admin' => $query,
+            'peneliti', 'admin' => $query,
             default => abort(403, 'Role ini tidak memiliki akses ke laporan ground truth.'),
         };
     }
 
     public function authorizeView(User $user, GroundTruthReport $report): void
     {
-        if (in_array($user->role, ['bpbd_provinsi', 'admin'], true)) return;
+        if (in_array($user->role, ['peneliti', 'admin'], true)) return;
         if ($user->role === 'warga') {
             abort_unless($report->user_id === $user->id, 403, 'Anda hanya dapat mengakses laporan sendiri.');
-            return;
-        }
-        if ($user->role === 'bpbd_operator') {
-            $report->loadMissing('region');
-
-            abort_unless(
-                $this->normalizeRegency((string) $report->region?->regency) === $this->operatorRegency($user),
-                403,
-                'Laporan berada di luar wilayah kerja Anda.',
-            );
             return;
         }
         abort(403, 'Role ini tidak memiliki akses ke laporan ground truth.');
@@ -51,7 +32,7 @@ final class ReportAccessService
 
     public function authorizeReview(User $user, GroundTruthReport $report): void
     {
-        abort_unless(in_array($user->role, ['bpbd_operator', 'bpbd_provinsi', 'admin'], true), 403);
+        abort_unless(in_array($user->role, ['admin'], true), 403);
         $this->authorizeView($user, $report);
         abort_unless(
             in_array($report->status, ['menunggu', 'perlu_review'], true),

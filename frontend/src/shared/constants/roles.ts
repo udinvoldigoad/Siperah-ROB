@@ -1,13 +1,9 @@
 /**
  * Sumber tunggal label peran pengguna. Dipakai sidebar akun, manajemen
- * pengguna, dan audit log agar peran yang sama tampil sama di semua halaman
- * (sebelumnya AppShell pakai "Operator BPBD" sementara halaman lain pakai
- * ".replace()" ad-hoc yang menghasilkan "BPBD operator" — beda urutan & huruf).
+ * pengguna, dan audit log agar peran yang sama tampil sama di semua halaman.
  */
 export const roleLabels: Record<string, string> = {
   warga: "Warga",
-  bpbd_operator: "Operator BPBD",
-  bpbd_provinsi: "BPBD Provinsi",
   admin: "Admin Sistem",
   peneliti: "Peneliti",
   // AuditService menulis actor_role 'guest' untuk aksi tanpa login
@@ -30,10 +26,6 @@ export function dashboardHashForRole(role: string | null | undefined): string {
   switch (role) {
     case "admin":
       return "#/admin";
-    case "bpbd_operator":
-      return "#/operator";
-    case "bpbd_provinsi":
-      return "#/province";
     case "peneliti":
       return "#/research";
     case "warga":

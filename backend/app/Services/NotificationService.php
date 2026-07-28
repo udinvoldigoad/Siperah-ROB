@@ -58,25 +58,10 @@ final class NotificationService
 
         $recipients = User::query()
             ->where('status', 'aktif')
-            ->whereIn('role', ['bpbd_operator', 'bpbd_provinsi', 'admin'])
+            ->whereIn('role', ['admin'])
             ->get()
             ->filter(function (User $user) use ($region, $isWithinMonitoringArea): bool {
-                if (in_array($user->role, ['bpbd_provinsi', 'admin'], true)) {
-                    return true;
-                }
-
-                if (!$isWithinMonitoringArea) {
-                    return true;
-                }
-
-                if (!$user->region_id || !$region) {
-                    return false;
-                }
-
-                return DB::table('regions')
-                    ->where('id', $user->region_id)
-                    ->where('regency', $region->regency)
-                    ->exists();
+                return true;
             });
 
         foreach ($recipients as $recipient) {
@@ -110,21 +95,10 @@ final class NotificationService
 
         $recipients = User::query()
             ->where('status', 'aktif')
-            ->whereIn('role', ['bpbd_operator', 'bpbd_provinsi', 'admin'])
+            ->whereIn('role', ['admin'])
             ->get()
             ->filter(function (User $user) use ($region, $report): bool {
-                if (in_array($user->role, ['bpbd_provinsi', 'admin'], true)) {
-                    return true;
-                }
-
-                if (!$user->region_id || !$region) {
-                    return $report->status === 'perlu_review';
-                }
-
-                return DB::table('regions')
-                    ->where('id', $user->region_id)
-                    ->where('regency', $region->regency)
-                    ->exists();
+                return true;
             });
 
         foreach ($recipients as $recipient) {
@@ -178,15 +152,7 @@ final class NotificationService
             }
 
             $scoped = $predictions;
-            if ($recipient->role === 'bpbd_operator') {
-                $regency = $recipient->region_id
-                    ? DB::table('regions')->where('id', $recipient->region_id)->value('regency')
-                    : null;
-                if (!$regency) {
-                    continue;
-                }
-                $scoped = $predictions->filter(fn (Prediction $prediction) => $prediction->region->regency === $regency);
-            } elseif (in_array($recipient->role, ['warga', 'peneliti'], true)) {
+            if (in_array($recipient->role, ['warga', 'peneliti'], true)) {
                 $monitored = $settings->monitored_regions ?? [];
                 if ($monitored !== []) {
                     $scoped = $predictions->filter(fn (Prediction $prediction) => $this->matchesMonitoredRegions($prediction->region, $monitored));

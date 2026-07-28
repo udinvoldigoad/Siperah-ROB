@@ -16,7 +16,7 @@ final class AuditLogRequest extends FormRequest
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date'],
             'user_id' => ['nullable', 'uuid', 'exists:users,id'],
-            'actor_role' => ['nullable', 'string', 'in:warga,bpbd_operator,bpbd_provinsi,peneliti,admin,guest'],
+            'actor_role' => ['nullable', 'string', 'in:warga,peneliti,admin,guest'],
             'format' => ['nullable', 'in:json,csv'],
             'per_page' => ['nullable', 'integer', 'between:1,200'],
         ];

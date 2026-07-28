@@ -808,7 +808,7 @@ export function PortalPage() {
           </a>
         <nav className="nav-links-wrap">
           <a href="#/map">Peta Risiko</a>
-          {currentRole !== "bpbd_provinsi" && <a href="#/awam">Mode Awam</a>}
+          <a href="#/awam">Mode Awam</a>
           <a href="#panduan">Panduan</a>
         </nav>
         <div className="header-actions">
@@ -858,9 +858,9 @@ export function PortalPage() {
           <a className="btn-hero-primary" href="#/map">
             Buka Peta Risiko
           </a>
-          {currentRole !== "bpbd_provinsi" && <a className="btn-hero-secondary" href="#/awam">
+          <a className="btn-hero-secondary" href="#/awam">
             Akses Mode Awam
-          </a>}
+          </a>
         </motion.div>
       </section>
 

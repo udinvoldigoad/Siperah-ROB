@@ -1,4 +1,4 @@
-export type Role = "warga" | "bpbd_operator" | "bpbd_provinsi" | "peneliti" | "admin";
+export type Role = "warga" | "peneliti" | "admin";
 export type RiskClass = "rendah" | "sedang" | "tinggi" | "sangat_tinggi";
 export type ReportStatus = "menunggu" | "divalidasi" | "ditolak" | "duplikat" | "perlu_review";
 

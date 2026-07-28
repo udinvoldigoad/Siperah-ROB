@@ -275,7 +275,7 @@ final class AdminController
         // Hormati filter yang sedang aktif di halaman admin — tanpa ini tombol
         // "Export" yang berada tepat di atas bar filter mengekspor SEMUA user.
         $filters = $request->validate([
-            'role' => ['nullable', 'string', 'in:admin,bpbd_provinsi,bpbd_operator,peneliti,warga'],
+            'role' => ['nullable', 'string', 'in:admin,peneliti,warga'],
             'status' => ['nullable', 'string', 'in:aktif,menunggu,nonaktif,ditolak'],
             'search' => ['nullable', 'string', 'max:100'],
         ]);
