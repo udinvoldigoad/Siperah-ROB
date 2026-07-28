@@ -159,29 +159,31 @@ final class PublicMapController
             return ['type' => 'FeatureCollection', 'features' => []];
         }
 
-        $features = TidalStation::query()
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->where('status', 'active')
-            ->limit(50)
-            ->get()
-            ->map(fn (TidalStation $station): array => [
-                'type' => 'Feature',
-                'id' => $station->id,
-                'geometry' => [
-                    'type' => 'Point',
-                    'coordinates' => [(float) $station->longitude, (float) $station->latitude],
-                ],
-                'properties' => [
-                    'code' => $station->code,
-                    'name' => $station->name,
-                    'source' => $station->source,
-                    'provenance_status' => $station->provenance_status,
-                    'coverage_radius_km' => $station->coverage_radius_km,
-                ],
-            ])->values()->all();
+        return Cache::remember('public-map:tidal-stations', 60 * 60 * 24, function () {
+            $features = TidalStation::query()
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->where('status', 'active')
+                ->limit(50)
+                ->get()
+                ->map(fn (TidalStation $station): array => [
+                    'type' => 'Feature',
+                    'id' => $station->id,
+                    'geometry' => [
+                        'type' => 'Point',
+                        'coordinates' => [(float) $station->longitude, (float) $station->latitude],
+                    ],
+                    'properties' => [
+                        'code' => $station->code,
+                        'name' => $station->name,
+                        'source' => $station->source,
+                        'provenance_status' => $station->provenance_status,
+                        'coverage_radius_km' => $station->coverage_radius_km,
+                    ],
+                ])->values()->all();
 
-        return ['type' => 'FeatureCollection', 'features' => $features];
+            return ['type' => 'FeatureCollection', 'features' => $features];
+        });
     }
 
     private function coastlineFeatures(): array
@@ -190,46 +192,48 @@ final class PublicMapController
             return ['type' => 'FeatureCollection', 'features' => []];
         }
 
-        try {
-            if ($this->usesPostgisGeometry('coastlines', 'geometry')) {
-                $geometrySelect = DB::raw('ST_AsGeoJSON(ST_SimplifyPreserveTopology(geometry, 0.0002), 5) as geometry_json');
-            } elseif ($this->hasPostgis()) {
-                // Kolomnya jsonb, tetapi PostGIS tetap bisa menyederhanakannya on-the-fly.
-                $geometrySelect = DB::raw('ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_GeomFromGeoJSON(geometry_geojson::text), 0.0002), 5) as geometry_json');
-            } else {
-                $geometrySelect = 'geometry_geojson as geometry_json';
+        return Cache::remember('public-map:coastlines', 60 * 60 * 24, function () {
+            try {
+                if ($this->usesPostgisGeometry('coastlines', 'geometry')) {
+                    $geometrySelect = DB::raw('ST_AsGeoJSON(ST_SimplifyPreserveTopology(geometry, 0.0002), 5) as geometry_json');
+                } elseif ($this->hasPostgis()) {
+                    // Kolomnya jsonb, tetapi PostGIS tetap bisa menyederhanakannya on-the-fly.
+                    $geometrySelect = DB::raw('ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_GeomFromGeoJSON(geometry_geojson::text), 0.0002), 5) as geometry_json');
+                } else {
+                    $geometrySelect = 'geometry_geojson as geometry_json';
+                }
+
+                $features = DB::table('coastlines')
+                    ->select(['id', 'shoreline_type', 'source_year', 'source', 'source_reference', $geometrySelect])
+                    ->limit(100)
+                    ->get()
+                    ->map(function ($row): ?array {
+                        $geometry = is_string($row->geometry_json) ? json_decode($row->geometry_json, true) : $row->geometry_json;
+                        if (!$geometry) {
+                            return null;
+                        }
+
+                        return [
+                            'type' => 'Feature',
+                            'id' => $row->id,
+                            'geometry' => $geometry,
+                            'properties' => [
+                                'shoreline_type' => $row->shoreline_type,
+                                'source_year' => $row->source_year,
+                                'source' => $row->source,
+                                'source_reference' => $row->source_reference,
+                            ],
+                        ];
+                    })
+                    ->filter()
+                    ->values()
+                    ->all();
+            } catch (\Throwable) {
+                $features = [];
             }
 
-            $features = DB::table('coastlines')
-                ->select(['id', 'shoreline_type', 'source_year', 'source', 'source_reference', $geometrySelect])
-                ->limit(100)
-                ->get()
-                ->map(function ($row): ?array {
-                    $geometry = is_string($row->geometry_json) ? json_decode($row->geometry_json, true) : $row->geometry_json;
-                    if (!$geometry) {
-                        return null;
-                    }
-
-                    return [
-                        'type' => 'Feature',
-                        'id' => $row->id,
-                        'geometry' => $geometry,
-                        'properties' => [
-                            'shoreline_type' => $row->shoreline_type,
-                            'source_year' => $row->source_year,
-                            'source' => $row->source,
-                            'source_reference' => $row->source_reference,
-                        ],
-                    ];
-                })
-                ->filter()
-                ->values()
-                ->all();
-        } catch (\Throwable) {
-            $features = [];
-        }
-
-        return ['type' => 'FeatureCollection', 'features' => $features];
+            return ['type' => 'FeatureCollection', 'features' => $features];
+        });
     }
 
     private function activeWarning($predictions): ?array
@@ -303,23 +307,25 @@ final class PublicMapController
             return [];
         }
 
-        if ($this->usesPostgisGeometry('regions', 'geometry')) {
-            // Simplifikasi ~22 m + presisi 5 desimal (~1 m): tak terlihat pada
-            // zoom peta publik, tetapi memangkas ukuran GeoJSON belasan kali.
-            return DB::table('regions')
-                ->whereIn('id', $regionIds)
-                ->select('id', DB::raw('ST_AsGeoJSON(ST_SimplifyPreserveTopology(geometry, 0.0002), 5) as geojson'))
-                ->pluck('geojson', 'id')
-                ->map(fn (string $geometry) => json_decode($geometry, true))
+        return Cache::remember('public-map:geometries:'.md5(json_encode($regionIds)), 60 * 60 * 24, function () use ($regionIds) {
+            if ($this->usesPostgisGeometry('regions', 'geometry')) {
+                // Simplifikasi ~22 m + presisi 5 desimal (~1 m): tak terlihat pada
+                // zoom peta publik, tetapi memangkas ukuran GeoJSON belasan kali.
+                return DB::table('regions')
+                    ->whereIn('id', $regionIds)
+                    ->select('id', DB::raw('ST_AsGeoJSON(ST_SimplifyPreserveTopology(geometry, 0.0002), 5) as geojson'))
+                    ->pluck('geojson', 'id')
+                    ->map(fn (string $geometry) => json_decode($geometry, true))
+                    ->filter()
+                    ->all();
+            }
+
+            return Region::whereIn('id', $regionIds)
+                ->get(['id', 'geometry'])
+                ->mapWithKeys(fn (Region $region) => [$region->id => $this->decodeGeometry($region->geometry)])
                 ->filter()
                 ->all();
-        }
-
-        return Region::whereIn('id', $regionIds)
-            ->get(['id', 'geometry'])
-            ->mapWithKeys(fn (Region $region) => [$region->id => $this->decodeGeometry($region->geometry)])
-            ->filter()
-            ->all();
+        });
     }
 
     private function usesPostgisGeometry(string $table, string $column): bool
