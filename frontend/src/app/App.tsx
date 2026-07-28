@@ -15,6 +15,7 @@ import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
 // LoginPage & PortalPage tetap eager karena jadi titik masuk paling umum.
 const AuditLogPage = lazy(() => import("../features/admin/AuditLogPage").then(m => ({ default: m.AuditLogPage })));
 const AdminUsersPage = lazy(() => import("../features/admin/AdminUsersPage").then(m => ({ default: m.AdminUsersPage })));
+const OperatorDashboardPage = lazy(() => import("../features/dashboards/OperatorDashboardPage").then(m => ({ default: m.OperatorDashboardPage })));
 const NotificationSettingsPage = lazy(() => import("../features/notifications/NotificationSettingsPage").then(m => ({ default: m.NotificationSettingsPage })));
 const PublicMapPage = lazy(() => import("../features/public-map/PublicMapPage").then(m => ({ default: m.PublicMapPage })));
 const OnboardingPage = lazy(() => import("../features/public-map/OnboardingPage").then(m => ({ default: m.OnboardingPage })));
@@ -75,6 +76,8 @@ function routeComponent(route: string) {
   if (route === "onboarding") return <OnboardingPage />;
   if (route === "reports") return <ReportWizardPage />;
   if (route === "history") return <ReportHistoryPage />;
+  if (route.startsWith("operator/reports/")) return <ReportDetailPage reportId={route.replace("operator/reports/", "")} />;
+  if (route === "operator") return <OperatorDashboardPage />;
   if (route === "research") return <ResearchPortalPage />;
   if (route === "notifications") return <NotificationSettingsPage />;
   if (route === "admin") return <AdminUsersPage />;
