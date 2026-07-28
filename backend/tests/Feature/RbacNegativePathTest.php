@@ -24,16 +24,22 @@ final class RbacNegativePathTest extends TestCase
     private const ROLE_MATRIX = [
         '/api/admin/users' => ['admin'],
         '/api/admin/audit-logs' => ['admin'],
-        '/api/dashboard/operator/summary' => ['bpbd_operator', 'admin'],
-        '/api/dashboard/operator/reports/export' => ['bpbd_operator', 'admin'],
-        '/api/dashboard/province/summary' => ['bpbd_provinsi', 'admin'],
-        '/api/dashboard/province/export' => ['bpbd_provinsi', 'admin'],
-        '/api/research/datasets' => ['peneliti', 'bpbd_provinsi', 'admin'],
-        '/api/research/stats' => ['peneliti', 'bpbd_provinsi', 'admin'],
-        '/api/research/api-keys' => ['peneliti', 'bpbd_provinsi', 'admin'],
+        // Dashboard operator & provinsi kini admin-only (peran BPBD dihapus
+        // pada penyederhanaan 5→3; endpoint-nya sendiri dipertahankan).
+        '/api/dashboard/operator/summary' => ['admin'],
+        '/api/dashboard/operator/reports/export' => ['admin'],
+        '/api/dashboard/province/summary' => ['admin'],
+        '/api/dashboard/province/export' => ['admin'],
+        '/api/research/datasets' => ['peneliti', 'admin'],
+        '/api/research/stats' => ['peneliti', 'admin'],
+        '/api/research/api-keys' => ['peneliti', 'admin'],
+        // Laporan ground truth mentah memuat identitas & koordinat presisi
+        // penuh pelapor — peneliti sengaja TIDAK diberi akses (pakai
+        // /research/datasets yang sudah dianonimkan).
+        '/api/reports' => ['warga', 'admin'],
     ];
 
-    private const ALL_ROLES = ['warga', 'peneliti', 'bpbd_operator', 'bpbd_provinsi', 'admin'];
+    private const ALL_ROLES = ['warga', 'peneliti', 'admin'];
 
     public function test_role_guarded_endpoints_reject_every_other_role_with_403(): void
     {
@@ -130,6 +136,7 @@ final class RbacNegativePathTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Rbac Test',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => $role,
             'status' => $status,
         ]);

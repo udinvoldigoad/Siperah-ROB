@@ -34,6 +34,7 @@ final class OtpPasswordResetTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => 'OTP Test',
             'email' => $email,
+            'email_verified_at' => now(),
             'password_hash' => Hash::make($password),
             'role' => 'warga',
             'status' => 'aktif',

@@ -56,7 +56,7 @@ final class AdminUserDeleteTest extends TestCase
     {
         $target = $this->makeUser('warga');
 
-        foreach (['warga', 'peneliti', 'bpbd_operator', 'bpbd_provinsi'] as $role) {
+        foreach (['warga', 'peneliti'] as $role) {
             $this->app['auth']->forgetGuards();
             $this->actingAs($this->makeUser($role))
                 ->deleteJson("/api/admin/users/{$target->id}")
@@ -72,6 +72,7 @@ final class AdminUserDeleteTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Delete Test',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => $role,
             'status' => $status,
         ]);

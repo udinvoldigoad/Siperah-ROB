@@ -133,15 +133,17 @@ final class ResearchDownloadTest extends TestCase
     }
 
     /**
-     * BPBD Provinsi boleh MEMBUAT API key (routes grup role:peneliti,bpbd_provinsi,admin
-     * + canGenerateApiKey), jadi middleware wajib mengizinkannya MEMAKAI key tersebut.
-     * Regresi: dulu whitelist hanya ['peneliti','admin'] sehingga key mereka mati sejak lahir.
+     * Admin boleh MEMBUAT API key (routes grup role:peneliti,admin +
+     * canGenerateApiKey), jadi middleware wajib mengizinkannya MEMAKAI key itu.
+     * Test ini menjaga whitelist middleware tetap SELARAS dengan daftar peran
+     * yang boleh membuat key — dulu keduanya sempat berbeda sehingga key milik
+     * satu peran mati sejak lahir.
      */
-    public function test_bpbd_provinsi_api_key_is_accepted_by_middleware(): void
+    public function test_admin_api_key_is_accepted_by_middleware(): void
     {
-        [$provinsiKey] = $this->makeApiKey($this->makeUser('bpbd_provinsi'), ['predictions:read']);
+        [$adminKey] = $this->makeApiKey($this->makeUser('admin'), ['predictions:read']);
 
-        $this->withHeader('X-API-Key', $provinsiKey)
+        $this->withHeader('X-API-Key', $adminKey)
             ->getJson('/api/v1/predictions/daily?per_page=1')
             ->assertOk()
             ->assertJsonStructure(['data', 'meta']);
@@ -199,6 +201,7 @@ final class ResearchDownloadTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Riset Test',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => $role,
             'status' => $status,
         ]);

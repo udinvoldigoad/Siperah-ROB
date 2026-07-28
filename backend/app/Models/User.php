@@ -42,6 +42,7 @@ class User extends Authenticatable
     protected $hidden = ['password_hash'];
 
     protected $casts = [
+        'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
     ];
 

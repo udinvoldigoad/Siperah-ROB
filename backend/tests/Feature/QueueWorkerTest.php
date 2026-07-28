@@ -29,7 +29,7 @@ final class QueueWorkerTest extends TestCase
         $jobsBefore = 0;
 
         $region = $this->insertRegion();
-        $operator = $this->makeUser('bpbd_operator', $region->id);
+        $operator = $this->makeUser('admin', $region->id);
         $report = $this->makeReport($this->makeUser('warga'), $region);
 
         app(NotificationService::class)->notifyNewReportForReview($report);
@@ -63,6 +63,7 @@ final class QueueWorkerTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => Str::headline($role).' Queue Test',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => $role,
             'status' => 'aktif',
             'region_id' => $regionId,

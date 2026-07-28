@@ -44,19 +44,25 @@ async function createPendingUser(page: Page, token: string, label: string): Prom
   return { name, email };
 }
 
-test("registrasi mandiri langsung aktif dan bisa login tanpa approval", async ({ page }) => {
+test("registrasi mandiri tak butuh approval admin, tapi wajib verifikasi email", async ({ page }) => {
   const email = `e2e-selfreg-${Date.now()}@example.test`;
   const register = await page.request.post("/api/auth/register", {
     data: { name: `E2E SelfReg ${Date.now()}`, email, password: "password123" },
   });
   expect(register.status()).toBe(201);
-  expect((await register.json()).user.status).toBe("aktif");
+
+  const body = await register.json();
+  // Tak ada antrean admin: statusnya langsung 'aktif'...
+  expect(body.user.status).toBe("aktif");
+  expect(body.user.role).toBe("warga");
+  // ...tapi login tetap tertahan sampai kepemilikan email dibuktikan.
+  expect(body.requires_email_verification).toBe(true);
 
   const login = await page.request.post("/api/auth/login", {
     data: { email, password: "password123" },
   });
-  expect(login.status(), "akun hasil registrasi harus langsung bisa login").toBe(200);
-  expect((await login.json()).user.role).toBe("warga");
+  expect(login.status()).toBe(403);
+  expect((await login.json()).requires_email_verification).toBe(true);
 });
 
 test("admin approve, reject, dan nonaktifkan user", async ({ page }) => {

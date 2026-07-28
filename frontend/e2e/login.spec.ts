@@ -2,10 +2,10 @@ import { expect, test } from "@playwright/test";
 import { SEED_USERS, loginViaUi } from "./helpers";
 
 // P1 6.2: login semua role lewat UI -> redirect ke dashboard yang benar.
+// Hanya 3 peran sejak penyederhanaan; tujuan tiap peran mengikuti
+// dashboardHashForRole() di shared/constants/roles.ts.
 const REDIRECTS: Array<{ role: keyof typeof SEED_USERS; hash: string }> = [
-  { role: "warga", hash: "#/" },
-  { role: "operator", hash: "#/operator" },
-  { role: "provinsi", hash: "#/province" },
+  { role: "warga", hash: "#/map" },
   { role: "peneliti", hash: "#/research" },
   { role: "admin", hash: "#/admin" },
 ];

@@ -214,9 +214,9 @@ export function ResearchPortalPage() {
         setApiReference(refRes.data);
         setPermit(permitRes.data);
       } else {
-        // admin/bpbd_provinsi juga boleh membaca /research/stats — dulu KPI
-        // mereka dihitung dari 10 baris halaman aktif dan unduhan/API dibiarkan
-        // "0" hardcoded seolah fakta.
+        // admin juga boleh membaca /research/stats — dulu KPI mereka dihitung
+        // dari 10 baris halaman aktif dan unduhan/API dibiarkan "0" hardcoded
+        // seolah fakta.
         const statsRes = await api<ResearchStatsResponse>("/research/stats");
         setStats(statsRes.data);
       }

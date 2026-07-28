@@ -132,6 +132,7 @@ final class ReportSubmissionTest extends TestCase
             'id' => (string) Str::uuid(),
             'name' => 'Pelapor Foto Test',
             'email' => Str::uuid().'@example.test',
+            'email_verified_at' => now(),
             'role' => 'warga',
             'status' => 'aktif',
         ]);

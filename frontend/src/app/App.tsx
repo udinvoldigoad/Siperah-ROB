@@ -5,7 +5,7 @@ import { navItems } from "./navigation";
 import { ToastProvider } from "../shared/components/Toast";
 import { ErrorBoundary } from "../shared/components/ErrorBoundary";
 import { PageFallback } from "../shared/components/PageFallback";
-import { getCurrentUser, isLoggedIn } from "../shared/auth/session";
+import { SESSION_CHANGED_EVENT, getCurrentUser, getToken, isLoggedIn, verifySession } from "../shared/auth/session";
 
 import { OAuthCallbackPage } from "../features/auth/OAuthCallbackPage";
 import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
@@ -41,6 +41,20 @@ function currentRoute() {
  * `window.location`. Mutasinya dilakukan di `useEffect` (lihat App), karena
  * mengubah hash saat render memicu render ulang di tengah render.
  */
+/**
+ * Apakah rute ini hanya untuk peran tertentu? Rute seperti itu TIDAK boleh
+ * dirender sebelum sesi diverifikasi ke server — kalau tidak, peran palsu di
+ * localStorage sempat menampilkan halaman admin selama satu round-trip.
+ * Rute publik (punya "guest") tetap tampil seketika.
+ */
+function routeNeedsVerifiedRole(route: string): boolean {
+  const baseRoute = route.split("/")[0];
+  if (baseRoute === "reports") return true;
+
+  const navItem = navItems.find(item => item.href === `#/${baseRoute}`);
+  return !!navItem?.roles && !navItem.roles.includes("guest");
+}
+
 function guardRedirect(route: string): string | null {
   if (route === "reset-password") return "#/forgot-password";
 
@@ -87,14 +101,40 @@ function routeComponent(route: string) {
 
 export function App() {
   const [route, setRoute] = useState(currentRoute);
+  // "checking" hanya saat ada token yang perlu dikonfirmasi ke server.
+  const [isVerifying, setIsVerifying] = useState(() => !!getToken());
+  // Sesi disimpan di localStorage (bukan state React), jadi perubahannya tak
+  // otomatis memicu render. Counter ini yang menyegarkan seluruh pohon saat
+  // `/auth/me` menimpa peran yang dipalsukan.
+  const [, bumpSession] = useState(0);
 
   useEffect(() => {
     const syncRoute = () => setRoute(currentRoute());
+    const onSessionChange = () => bumpSession(value => value + 1);
     window.addEventListener("hashchange", syncRoute);
-    return () => window.removeEventListener("hashchange", syncRoute);
+    window.addEventListener(SESSION_CHANGED_EVENT, onSessionChange);
+    return () => {
+      window.removeEventListener("hashchange", syncRoute);
+      window.removeEventListener(SESSION_CHANGED_EVENT, onSessionChange);
+    };
   }, []);
 
-  const redirectTo = guardRedirect(route);
+  // Konfirmasi identitas sekali di awal: peran yang dipakai UI harus datang
+  // dari server, bukan dari nilai yang bisa diketik ulang di DevTools.
+  useEffect(() => {
+    if (!getToken()) {
+      setIsVerifying(false);
+      return;
+    }
+    let alive = true;
+    verifySession().finally(() => {
+      if (alive) setIsVerifying(false);
+    });
+    return () => { alive = false; };
+  }, []);
+
+  const awaitingVerification = isVerifying && routeNeedsVerifiedRole(route);
+  const redirectTo = awaitingVerification ? null : guardRedirect(route);
 
   // `route` ikut jadi dependensi: dua rute terlarang berbeda bisa menghasilkan
   // tujuan yang sama (mis. sama-sama "#/login"), dan tanpa itu efeknya tak
@@ -108,9 +148,10 @@ export function App() {
       {/* key={route} agar error di satu halaman otomatis pulih saat pindah rute */}
       <ErrorBoundary key={route}>
         <Suspense fallback={<PageFallback />}>
-          {/* Selagi menunggu efek redirect berjalan, tampilkan placeholder —
-              jangan render halaman yang memang tak boleh dilihat. */}
-          {redirectTo ? <PageFallback /> : routeComponent(route)}
+          {/* Placeholder dipakai untuk DUA keadaan: menunggu efek redirect
+              berjalan, dan menunggu verifikasi sesi selesai. Keduanya sama-sama
+              berarti "belum boleh merender halaman ini". */}
+          {redirectTo || awaitingVerification ? <PageFallback /> : routeComponent(route)}
         </Suspense>
       </ErrorBoundary>
     </ToastProvider>
