@@ -161,8 +161,8 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
             </div>
           </section>
           <div className="actions detail-actions" style={{ marginTop: 4 }}>
-            <button className="btn primary" type="button" disabled={isSaving} onClick={() => saveStatus("divalidasi")}>Validasi laporan</button>
-            <button className="btn secondary" type="button" disabled={isSaving} onClick={() => setRejectOpen(true)} style={{ color: "var(--critical)" }}>Tolak</button>
+            <button className="btn primary" type="button" disabled={isSaving} data-loading={isSaving || undefined} onClick={() => saveStatus("divalidasi")}>Validasi laporan</button>
+            <button className="btn secondary" type="button" disabled={isSaving} data-loading={isSaving || undefined} onClick={() => setRejectOpen(true)} style={{ color: "var(--critical)" }}>Tolak</button>
             <a className="btn secondary" href="#/operator">Kembali</a>
           </div>
         </section>

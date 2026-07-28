@@ -306,24 +306,33 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, user
 
         if (!showBadges || !viewBounds.contains(center)) return;
 
-        // B. Badge titik, klik untuk memilih wilayah di panel samping
-        const el = document.createElement("div");
+        // B. Badge titik, klik untuk memilih wilayah di panel samping.
+        // <button> asli, bukan div ber-role=button: dulu badge ini bisa
+        // di-fokus lewat Tab tapi Enter/Space tidak melakukan apa pun karena
+        // hanya listener click yang terpasang. Tombol native memberi aktivasi
+        // keyboard & semantik fokus tanpa handler tambahan.
+        const el = document.createElement("button");
+        el.type = "button";
         el.className = "map-risk-badge";
         el.style.color = color;
         el.textContent = String(Math.round(Number(feature.properties.risk_probability ?? 0)));
-        el.setAttribute("role", "button");
-        el.setAttribute("tabindex", "0");
-        el.setAttribute("aria-label", `${feature.properties.village ?? "Wilayah pesisir"}: risiko ${riskText(risk)}`);
         el.addEventListener("click", (event) => {
           event.stopPropagation();
           onSelectFeatureRef.current(feature);
         });
 
-        predictionMarkers.current.push(
-          new maplibregl.Marker({ element: el })
-            .setLngLat(center)
-            .addTo(instance)
+        const marker = new maplibregl.Marker({ element: el }).setLngLat(center).addTo(instance);
+
+        // WAJIB setelah addTo(): maplibre menimpa aria-label elemen dengan
+        // "Map marker" di dalam addTo(), sehingga label deskriptif yang
+        // dipasang sebelumnya hilang dan semua badge terbaca sama oleh
+        // pembaca layar.
+        el.setAttribute(
+          "aria-label",
+          `${feature.properties.village ?? "Wilayah pesisir"}: risiko ${riskText(risk)}`,
         );
+
+        predictionMarkers.current.push(marker);
       });
       }
 
@@ -925,20 +934,30 @@ export function PublicMapPage() {
         70% { box-shadow: 0 1px 4px rgba(15,23,42,.4), 0 0 0 16px rgba(37,99,235,0); }
         100% { box-shadow: 0 1px 4px rgba(15,23,42,.4), 0 0 0 0 rgba(37,99,235,0); }
       }
+      /* Elemennya <button> asli — reset gaya bawaan browser (padding, font,
+         appearance) supaya lingkaran 30px-nya tetap presisi. */
       .map-risk-badge {
         align-items: center;
+        appearance: none;
         background: #fff;
         border: 2px solid currentColor;
         border-radius: 999px;
         box-shadow: 0 2px 6px rgba(15, 23, 42, .3);
         cursor: pointer;
         display: flex;
+        font: inherit;
         font-size: 0.8rem;
         font-weight: 850;
         height: 30px;
         justify-content: center;
+        line-height: 1;
+        padding: 0;
         width: 30px;
         color: inherit;
+      }
+      .map-risk-badge:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
       }
 
       /* Layout 1 kolom mulai dari tablet (<=1080px), disamakan dengan breakpoint
@@ -1058,7 +1077,8 @@ export function PublicMapPage() {
       }
     `}</style>
     <motion.div variants={containerVariants} initial="hidden" animate="show" className="stack" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-      <motion.p variants={itemVariants} style={{ margin: 0, color: "var(--ink-soft)", fontSize: 14 }}>Pantau prediksi risiko banjir rob per wilayah pesisir Provinsi Lampung.</motion.p>
+      {/* Kalimat pengantar dirender AppShell dari prop `subtitle` — jangan
+          ditulis ulang di sini (dulu prop-nya diabaikan, sekarang tidak). */}
       {error && <div className="alert" style={{ borderLeftColor: "var(--critical)" }}>{error}</div>}
       <motion.div variants={itemVariants} className="public-map-layout">
         <div className="map-warnings-mobile">{warningPanels}</div>
@@ -1152,7 +1172,7 @@ export function PublicMapPage() {
               <strong>Legenda risiko</strong>
               {Object.entries(riskLabels).map(([risk, label]) => <span key={risk}><i className={`dot ${riskDotClass[risk]}`} />{label}</span>)}
             </div>
-            {loading && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(255,255,255,.6)", fontWeight: 700 }}>Memuat peta.</div>}
+            {loading && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "var(--scrim)", color: "var(--ink)", fontWeight: 700 }}>Memuat peta.</div>}
           </div>
         </div>
         <aside className="stack" style={{ gap: 14 }}>
@@ -1181,7 +1201,7 @@ export function PublicMapPage() {
             {selectedFeature && <div style={{ padding: "16px 20px", display: "grid", gap: 12 }}>
               <div className="info-item"><Icon name="insights" /><div><strong>Probabilitas</strong><p>{Math.round(Number(selectedFeature.properties.risk_probability ?? 0))}%</p></div></div>
               <div className="info-item"><Icon name="groups" /><div><strong>Populasi risiko</strong><p>{typeof selectedPopulation === "number" && selectedPopulation > 0 ? `${numberFormatter.format(selectedPopulation)} jiwa` : "Data belum tersedia"}</p></div></div>
-              <button type="button" className="btn secondary" onClick={detectLocation} disabled={locating} style={{ justifyContent: "center" }}>
+              <button type="button" className="btn secondary" onClick={detectLocation} disabled={locating} data-loading={locating || undefined} style={{ justifyContent: "center" }}>
                 <Icon name="my_location" /> {locating ? "Mendeteksi lokasi…" : "Deteksi lokasi saya"}
               </button>
               {locError && <p style={{ margin: "-4px 0 0", fontSize: 12, color: "var(--critical)" }}>{locError}</p>}

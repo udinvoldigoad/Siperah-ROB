@@ -470,8 +470,8 @@ export function ResearchPortalPage() {
                 </label>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "14px 20px", borderTop: "1px solid var(--line)" }}>
-                <button type="button" className="btn secondary" style={{ fontSize: 13 }} disabled={permitSubmitting} onClick={() => setIsPermitFormOpen(false)}>Batal</button>
-                <button type="button" className="btn primary" style={{ fontSize: 13 }} disabled={permitSubmitting} onClick={handleSubmitPermit}>
+                <button type="button" className="btn secondary" style={{ fontSize: 13 }} disabled={permitSubmitting} data-loading={permitSubmitting || undefined} onClick={() => setIsPermitFormOpen(false)}>Batal</button>
+                <button type="button" className="btn primary" style={{ fontSize: 13 }} disabled={permitSubmitting} data-loading={permitSubmitting || undefined} onClick={handleSubmitPermit}>
                   <Icon name="send" style={{ fontSize: 16 }} /> {permitSubmitting ? "Mengirim…" : "Kirim Permohonan"}
                 </button>
               </div>

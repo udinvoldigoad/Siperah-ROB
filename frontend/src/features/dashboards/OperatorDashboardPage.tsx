@@ -4,6 +4,7 @@ import { useToast } from "../../shared/components/Toast";
 import { fetchOperatorReports, severityLabels, updateOperatorReportStatus, type OperatorReport, type ReportSeverity } from "../reports/reportData";
 import { api, apiBase } from "../../shared/api/client";
 import { Icon } from "../../shared/components/Icon";
+import { LoadingBlock } from "../../shared/components/LoadingBlock";
 import { motion, AnimatePresence } from "framer-motion";
 
 const containerVariants: any = {
@@ -60,7 +61,13 @@ export function OperatorDashboardPage() {
   const queueRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
 
+  // Penanda urutan request: polling 30 detik bisa bertabrakan dengan aksi
+  // pengguna (ganti halaman/filter). Tanpa ini respons polling yang datang
+  // belakangan menimpa halaman yang baru saja dibuka operator.
+  const loadSeqRef = useRef(0);
+
   const loadReports = async (targetPage = page, options: { silent?: boolean } = {}) => {
+    const seq = ++loadSeqRef.current;
     // silent: dipakai polling — refresh data tanpa mem-flash "Memuat laporan..."
     // dan tanpa menghilangkan blok paginasi tiap 30 detik.
     if (!options.silent) setIsLoading(true);
@@ -70,6 +77,9 @@ export function OperatorDashboardPage() {
         fetchOperatorReports(targetPage, 20, { severity: severityFilter, slaOverdue, status: statusFilter }),
         api<OperatorSummaryResponse>("/dashboard/operator/summary"),
       ]);
+
+      // Hasil usang — jangan sentuh state maupun baseline notifikasi.
+      if (seq !== loadSeqRef.current) return;
 
       // Alert laporan baru: bila jumlah antrean bertambah sejak polling terakhir
       // (bukan pemuatan pertama), beri tahu operator tanpa refresh manual.
@@ -88,10 +98,11 @@ export function OperatorDashboardPage() {
       setPage(data.currentPage);
       setPageMeta({ currentPage: data.currentPage, lastPage: data.lastPage, total: data.total, from: data.from, to: data.to });
       setSummary(summaryRes.data);
-    } catch (err: any) {
-      toast.error(err.message || "Gagal memuat antrean laporan.");
+    } catch (err: unknown) {
+      if (seq !== loadSeqRef.current) return;
+      toast.error(err instanceof Error ? err.message : "Gagal memuat antrean laporan.");
     } finally {
-      setIsLoading(false);
+      if (seq === loadSeqRef.current) setIsLoading(false);
     }
   };
 
@@ -353,7 +364,11 @@ export function OperatorDashboardPage() {
 
             <div className="report-list" style={{ border: "none", borderRadius: 0, maxHeight: "500px", overflowY: "auto" }}>
               {isLoading ? (
-                <div style={{ padding: "32px", textAlign: "center", color: "var(--ink-soft)" }}>Memuat laporan...</div>
+                // Skeleton, sama seperti Admin/Riwayat/Audit — teks "Memuat…"
+                // membuat daftar melompat tinggi begitu data datang.
+                <div style={{ padding: "8px 16px" }}>
+                  <LoadingBlock rows={5} rowHeight={72} label="Memuat laporan…" />
+                </div>
               ) : reports.length === 0 ? (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="report-empty" style={{ textAlign: "center", padding: "64px 20px" }}>
                   {/* Pesan dibedakan per konteks — "Antrean Bersih" untuk hasil

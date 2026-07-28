@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { api, apiUrl } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
@@ -121,7 +121,14 @@ export function ProvinceDashboardPage() {
   const [trendHoverIdx, setTrendHoverIdx] = useState<number | null>(null);
   const trendSvgRef = useRef<SVGSVGElement>(null);
 
-  const fetchDashboardData = async () => {
+  // Penanda urutan request: ganti bulan/kabupaten cepat menembakkan beberapa
+  // fetch sekaligus, dan yang lebih lambat bisa mendarat BELAKANGAN sehingga
+  // menimpa hasil filter yang sedang aktif. Hanya respons dari request terakhir
+  // yang boleh menulis state. Pola yang sama dipakai AdminUsersPage.
+  const fetchSeqRef = useRef(0);
+
+  const fetchDashboardData = useCallback(async () => {
+    const seq = ++fetchSeqRef.current;
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
@@ -129,23 +136,28 @@ export function ProvinceDashboardPage() {
       if (selectedRegency !== "all") params.set("regency", selectedRegency);
       const query = params.toString() ? `?${params.toString()}` : "";
       const summaryRes = await api<SummaryResponse>(`/dashboard/province/summary${query}`);
+      if (seq !== fetchSeqRef.current) return;
       setSummary(summaryRes.data);
 
       // Prediksi terbaru untuk fallback tabel "10 kelurahan terdampak" bila
       // top_impacted kosong. Grafik tren TIDAK lagi pakai ini (lihat trendData).
       const predRes = await api<PredictionListResponse>(`/public/predictions?per_page=1000`);
+      if (seq !== fetchSeqRef.current) return;
       setPredictions(predRes.data);
 
-    } catch (err: any) {
-      toast.error(err.message || "Gagal memuat data ringkasan provinsi.");
+    } catch (err: unknown) {
+      if (seq !== fetchSeqRef.current) return;
+      toast.error(err instanceof Error ? err.message : "Gagal memuat data ringkasan provinsi.");
     } finally {
-      setIsLoading(false);
+      // Spinner hanya dimatikan oleh request terakhir; kalau tidak, request lama
+      // yang selesai duluan membuat UI tampak siap padahal data baru masih jalan.
+      if (seq === fetchSeqRef.current) setIsLoading(false);
     }
-  };
+  }, [selectedMonth, selectedRegency]);
 
   useEffect(() => {
     fetchDashboardData();
-  }, [selectedMonth, selectedRegency]);
+  }, [fetchDashboardData]);
 
   const handleProvinceExport = async () => {
     try {

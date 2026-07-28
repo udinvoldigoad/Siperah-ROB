@@ -35,6 +35,62 @@ function currentRoute() {
   return (window.location.hash.replace("#/", "") || "").split("?")[0];
 }
 
+/**
+ * Rute tujuan bila pengguna tak berhak membuka `route`; null berarti boleh
+ * lanjut. Fungsi ini MURNI menghitung — tidak pernah menyentuh
+ * `window.location`. Mutasinya dilakukan di `useEffect` (lihat App), karena
+ * mengubah hash saat render memicu render ulang di tengah render.
+ */
+function guardRedirect(route: string): string | null {
+  if (route === "reset-password") return "#/forgot-password";
+
+  let user: { role: string } | null = null;
+  try {
+    const userStr = localStorage.getItem("siperah-user");
+    if (userStr) user = JSON.parse(userStr);
+  } catch {}
+
+  const isUserLoggedIn = !!localStorage.getItem("siperah-token") && !!user;
+
+  const baseRoute = route.split("/")[0];
+  const navItem = navItems.find(item => item.href === `#/${baseRoute}`);
+
+  // Melapor genangan terbuka untuk SEMUA pengguna yang sudah login (termasuk
+  // petugas BPBD, demi pelaporan darurat) — beda dari menu "Lapor" di nav yang
+  // sengaja tetap khusus warga. Tamu diarahkan login lebih dulu.
+  if (baseRoute === "reports") {
+    return isUserLoggedIn ? null : "#/login";
+  }
+
+  if (navItem?.roles) {
+    if (!isUserLoggedIn || !user) {
+      return navItem.roles.includes("guest") ? null : "#/login";
+    }
+    if (!navItem.roles.includes(user.role)) return "#/";
+  }
+
+  return null;
+}
+
+function routeComponent(route: string) {
+  if (route === "login") return <LoginPage />;
+  if (route === "forgot-password") return <ForgotPasswordPage />;
+  if (route === "oauth-callback") return <OAuthCallbackPage />;
+  if (route === "map") return <PublicMapPage />;
+  if (route === "awam") return <CitizenModePage />;
+  if (route === "onboarding") return <OnboardingPage />;
+  if (route === "reports") return <ReportWizardPage />;
+  if (route === "history") return <ReportHistoryPage />;
+  if (route.startsWith("operator/reports/")) return <ReportDetailPage reportId={route.replace("operator/reports/", "")} />;
+  if (route === "operator") return <OperatorDashboardPage />;
+  if (route === "province") return <ProvinceDashboardPage />;
+  if (route === "research") return <ResearchPortalPage />;
+  if (route === "notifications") return <NotificationSettingsPage />;
+  if (route === "admin") return <AdminUsersPage />;
+  if (route === "audit") return <AuditLogPage />;
+  return <PortalPage />;
+}
+
 export function App() {
   const [route, setRoute] = useState(currentRoute);
 
@@ -44,66 +100,23 @@ export function App() {
     return () => window.removeEventListener("hashchange", syncRoute);
   }, []);
 
-  const renderRoute = () => {
-    let user: { role: string } | null = null;
-    try {
-      const userStr = localStorage.getItem("siperah-user");
-      if (userStr) user = JSON.parse(userStr);
-    } catch {}
+  const redirectTo = guardRedirect(route);
 
-    const isUserLoggedIn = !!localStorage.getItem("siperah-token") && !!user;
-
-    const baseRoute = route.split("/")[0];
-    const navItem = navItems.find(item => item.href === `#/${baseRoute}`);
-    
-    // Melapor genangan terbuka untuk SEMUA pengguna yang sudah login (termasuk
-    // petugas BPBD, demi pelaporan darurat) — beda dari menu "Lapor" di nav yang
-    // sengaja tetap khusus warga. Tamu diarahkan login lebih dulu.
-    if (baseRoute === "reports") {
-      if (!isUserLoggedIn) {
-        window.location.hash = "#/login";
-        return null;
-      }
-    } else if (navItem && navItem.roles) {
-      if (!isUserLoggedIn || !user) {
-        if (!navItem.roles.includes("guest")) {
-          window.location.hash = "#/login";
-          return null;
-        }
-      } else if (!navItem.roles.includes(user.role)) {
-        window.location.hash = "#/";
-        return null;
-      }
-    }
-
-    let Component;
-    if (route === "login") Component = <LoginPage />;
-    else if (route === "forgot-password") Component = <ForgotPasswordPage />;
-    else if (route === "reset-password") { window.location.hash = "#/forgot-password"; return null; }
-    else if (route === "oauth-callback") Component = <OAuthCallbackPage />;
-    else if (route === "map") Component = <PublicMapPage />;
-    else if (route === "awam") Component = <CitizenModePage />;
-    else if (route === "onboarding") Component = <OnboardingPage />;
-    else if (route === "reports") Component = <ReportWizardPage />;
-    else if (route === "history") Component = <ReportHistoryPage />;
-    else if (route.startsWith("operator/reports/")) Component = <ReportDetailPage reportId={route.replace("operator/reports/", "")} />;
-    else if (route === "operator") Component = <OperatorDashboardPage />;
-    else if (route === "province") Component = <ProvinceDashboardPage />;
-    else if (route === "research") Component = <ResearchPortalPage />;
-    else if (route === "notifications") Component = <NotificationSettingsPage />;
-    else if (route === "admin") Component = <AdminUsersPage />;
-    else if (route === "audit") Component = <AuditLogPage />;
-    else Component = <PortalPage />;
-
-    return Component;
-  };
+  // `route` ikut jadi dependensi: dua rute terlarang berbeda bisa menghasilkan
+  // tujuan yang sama (mis. sama-sama "#/login"), dan tanpa itu efeknya tak
+  // berjalan lagi untuk rute kedua.
+  useEffect(() => {
+    if (redirectTo) window.location.hash = redirectTo;
+  }, [redirectTo, route]);
 
   return (
     <ToastProvider>
       {/* key={route} agar error di satu halaman otomatis pulih saat pindah rute */}
       <ErrorBoundary key={route}>
         <Suspense fallback={<PageFallback />}>
-          {renderRoute()}
+          {/* Selagi menunggu efek redirect berjalan, tampilkan placeholder —
+              jangan render halaman yang memang tak boleh dilihat. */}
+          {redirectTo ? <PageFallback /> : routeComponent(route)}
         </Suspense>
       </ErrorBoundary>
     </ToastProvider>

@@ -21,21 +21,23 @@ test("admin approve, reject, dan nonaktifkan user", async ({ page }) => {
   await loginViaApi(page, SEED_USERS.admin, "#/admin");
 
   // ── Approve: user menunggu -> aktif ─────────────────────────────
+  // Badge memakai label berkapitalisasi dari shared/constants/userStatus.ts
+  // (dulu menampilkan enum mentah huruf kecil).
   const approveRow = page.locator("tr", { hasText: approveName });
   await expect(approveRow).toBeVisible();
   await approveRow.getByRole("button", { name: "Setujui" }).click();
-  await expect(approveRow.getByText("aktif", { exact: true })).toBeVisible();
+  await expect(approveRow.getByText("Aktif", { exact: true })).toBeVisible();
 
   // ── Reject: user menunggu -> ditolak (lewat modal konfirmasi) ───
   const rejectRow = page.locator("tr", { hasText: rejectName });
   await rejectRow.getByRole("button", { name: "Tolak" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Ya, tolak akun" }).click();
-  await expect(rejectRow.getByText("ditolak", { exact: true })).toBeVisible();
+  await expect(rejectRow.getByText("Ditolak", { exact: true })).toBeVisible();
 
   // ── Nonaktifkan: user aktif tadi -> nonaktif ────────────────────
   await approveRow.getByRole("button", { name: "Nonaktifkan" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Ya, nonaktifkan" }).click();
-  await expect(approveRow.getByText("nonaktif", { exact: true })).toBeVisible();
+  await expect(approveRow.getByText("Nonaktif", { exact: true })).toBeVisible();
 
   // User yang dinonaktifkan tidak bisa login lagi (403 + status akun).
   const blockedLogin = await page.request.post("/api/auth/login", {

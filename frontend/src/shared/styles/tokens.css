@@ -13,6 +13,9 @@
   --high: #f97316; /* Vibrant Orange */
   --medium: #f59e0b; /* Vibrant Amber */
   --low: #10b981; /* Vibrant Emerald */
+  /* Lapisan buram di atas konten saat memuat (mis. overlay peta). Harus ikut
+     tema — putih hardcoded menyilaukan di mode gelap. */
+  --scrim: rgba(255, 255, 255, 0.6);
   --radius: 8px; /* Soft premium corners */
   --sidebar: 280px;
   background: var(--bg);
@@ -31,6 +34,7 @@
   --ink-soft: #94a3b8; /* Slate 400 */
   --line: #334155; /* Slate 700 */
   --accent-soft: rgba(99, 102, 241, 0.15);
+  --scrim: rgba(15, 23, 42, 0.65); /* Slate 900 transparan */
 }
 
 :root[data-theme="dark"] .alert {
@@ -208,7 +212,12 @@ p { color: var(--ink-soft); line-height: 1.62; max-width: 66ch; }
 .btn.primary:hover { background: var(--accent-dark); }
 .btn.secondary { background: var(--surface); border-color: var(--line); color: var(--ink); }
 .btn.secondary:hover { background: var(--surface-soft); }
-.btn:disabled { cursor: wait; opacity: 0.62; }
+/* Mayoritas tombol disabled karena validasi belum lolos, bukan karena menunggu
+   server — kursor jam pasir membuatnya tampak seolah sedang memuat selamanya.
+   `wait` disisakan khusus tombol yang benar-benar punya aksi berjalan, ditandai
+   `data-loading` oleh komponennya. */
+.btn:disabled { cursor: not-allowed; opacity: 0.62; }
+.btn[data-loading] { cursor: wait; }
 
 .portal {
   margin: 0 auto;

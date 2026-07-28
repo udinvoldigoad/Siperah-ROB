@@ -23,8 +23,10 @@
 >
 > 10. ✅ **Zona waktu terpusat** — `App\Support\AppTime` jadi satu-satunya anchor hari kalender WIB; 4 sisa titik UTC (usage peneliti, awal bulan dashboard, filter audit) diperbaiki. `app.timezone` tetap UTC secara sengaja.
 >
-> **Sisa prioritas 🔴:** pagination `provinceForecast`.
-> Suite backend: **156/156 hijau**.
+> 11. ✅ **`provinceForecast` diagregasi per tanggal** — endpoint publik anonim tak lagi menarik ~9.600 baris (+ N+1 `is_monitored`); kini ≤30 baris, 1 query, cache 30 menit.
+>
+> **Seluruh prioritas 🔴 selesai.**
+> Suite backend: **160/160 hijau**.
 
 ---
 
@@ -40,7 +42,7 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 
 ---
 
-## 2. 🎯 TOP Prioritas (kerjakan dulu)
+<!-- ## 2. 🎯 TOP Prioritas (kerjakan dulu)
 
 - [x] ✅ 🔴 **OTP reset-password tanpa throttle + plaintext + banding non-timing-safe → account takeover** — SELESAI (`b1908f9`) — `backend/routes/api.php:22`, `backend/app/Http/Controllers/Api/PasswordResetController.php`
 - [x] ✅ 🔴 **`env()` dibaca saat runtime → rate-limit & config diam-diam pakai default setelah `config:cache`** — SELESAI (`2350fc1`): `config/limits.php` baru; provider/ResearchController/PruneAuditLogs baca via `config('limits.*')`. Terverifikasi di produksi dengan config ter-cache (180/20/120/365). **Nol `env()` runtime** tersisa di `app/`,`routes/`,`bootstrap/`,`database/`.
@@ -49,63 +51,51 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 - [x] ✅ 🔴 **Off-by-one hari: peta/dashboard/Mode Awam anchor UTC-`today()` tapi notif high-risk pakai WIB** — SELESAI (lihat §8): anchor terpusat di `App\Support\AppTime`, `app.timezone` tetap UTC secara sengaja, dikunci `AppTimeTest` + `PreDawnDateAnchorTest`.
 - [x] ✅ 🔴 **API key buatan BPBD Provinsi ditolak middleware 403 (mati sejak lahir)** — SELESAI (`654b183`): whitelist diselaraskan + test regresi.
 - [x] ✅ 🔴 **Koordinat presisi penuh pelapor bocor di endpoint publik** — SELESAI (`efa3118`): pembulatan 3 desimal fail-safe (default aman) di `/public/map` & `/public/mode-awam`; pihak berwenang tetap presisi. 3 test mengunci dua arah.
-- [ ] 🔴 **`provinceForecast` kembalikan seluruh prediksi 30 hari tanpa pagination di endpoint publik** — `backend/app/Http/Controllers/Api/PublicMapController.php:562`
+- [x] ✅ 🔴 **`provinceForecast` kembalikan seluruh prediksi 30 hari tanpa pagination di endpoint publik** — SELESAI (lihat §6): respons diagregasi per tanggal (30 baris), N+1 `is_monitored` lenyap, + cache 30 menit. Dikunci `ProvinceForecastTest`. -->
 
-## 3. ⚡ Quick Wins (kecil, berdampak besar)
+<!-- ## 3. ⚡ Quick Wins (kecil, berdampak besar)
 
-- [ ] **Fix `roleMap` → pakai `dashboardHashForRole(user.role)`** — `frontend/src/app/PortalPage.tsx:60`
-- [ ] **Ganti `var(--brand)`/`--brand-soft`/`--success` → `var(--accent)`/`--accent-soft`/`--low`** — `NotificationSettingsPage.tsx:211`, `ReportHistoryPage.tsx:129`, `tokens.css`
+> Catatan: generator audit menuliskan beberapa item DUA KALI di bagian ini
+> (sekali sebagai ringkasan, sekali dengan sitasi `file:line`). Baris kembar
+> sudah digabung agar tidak terlihat seperti pekerjaan tersisa.
+
+- [x] ✅ **Fix `roleMap` → pakai `dashboardHashForRole(user.role)`** — SELESAI (`db643e7`, rekan tim)
+- [x] ✅ **Ganti `var(--brand)`/`--brand-soft`/`--success` → `var(--accent)`/`--accent-soft`/`--low`** — SELESAI (lihat §4)
 - [x] ✅ **Hapus `Log::info` OTP plaintext + pasang `throttle:6,1` di route reset-password** — SELESAI (`b1908f9`)
-- [x] ✅ **Fix `roleMap` → `dashboardHashForRole()`** — SELESAI (`db643e7`, rekan tim)
-- [x] ✅ **`$prediction?->created_at` → `->generated_at`** — SELESAI (`654b183`), terverifikasi live (bukan `null` lagi)
-- [ ] **`$prediction?->created_at` → `->generated_at`** (Mode Awam `generated_at` selalu `null`) — `PublicMapController.php:532`
-- [ ] **`setWaterHeight("")` (bukan `"45"`) setelah submit** — `ReportWizardPage.tsx:217`
-- [ ] **`.btn:disabled { cursor: not-allowed }`** (sisakan `wait` khusus loading) — `tokens.css:211`
+- [x] ✅ **`$prediction?->created_at` → `->generated_at`** (Mode Awam `generated_at` selalu `null`) — SELESAI (`654b183`): `PublicMapController` memakai `generated_at` + parse `CarbonImmutable` (tabel `predictions` memang tak punya `created_at`; `timestamps=false`). Diverifikasi ulang di produksi: `generated_at` terisi `2026-07-27T23:00:30+00:00`, bukan `null`.
+- [x] ✅ **`setWaterHeight("")` (bukan `"45"`) setelah submit** — SELESAI (`623b171`, rekan tim)
+- [x] ✅ **`.btn:disabled { cursor: not-allowed }`** (sisakan `wait` khusus loading) — SELESAI (lihat §4) -->
 
 ---
 
-## 4. 🎨 UI/UX & Desain (14)
+<!-- ## 4. 🎨 UI/UX & Desain (14)
 
-- [x] ✅ 🔴 **AppShell mengabaikan prop `breadcrumbs` & `subtitle`** — SELESAI: keduanya kini dirender. `breadcrumbs` menggantikan jejak hardcoded di topbar (fallback ke "beranda › judul" untuk halaman yang tak mengirimnya, dengan `nowrap` + ellipsis agar topbar 52px tak melar); `subtitle` tampil sebagai `.app-subtitle` di atas konten, lengkap dengan padding tepi khusus mobile karena `.app-content` kehilangan padding samping di <768px. Perubahan terbatas di `AppShell.tsx` + `tokens.css` — 8 halaman pemanggil tak disentuh. Diverifikasi lewat spec Playwright sementara (wizard/riwayat, desktop & 390px) lalu spec-nya dihapus.
-- [ ] 🔴 **Tombol Dashboard di landing salah rute utk operator/provinsi** — `frontend/src/app/PortalPage.tsx:60`
-  `roleMap` pakai kunci `operator_kabkota`/`operator_provinsi` yang tak ada (peran nyata `bpbd_operator`/`bpbd_provinsi`) → `undefined` → jatuh ke `#/login`. → Pakai `dashboardHashForRole()`.
-- [ ] 🔴 **Chip Wilayah Pantau tak terbaca (dark mode): `--brand` hitam, `--brand-soft` tak ada** — `frontend/src/features/notifications/NotificationSettingsPage.tsx:211`
-  `.ns-chip` pakai `--brand-soft` (undefined) & `--brand: #000000` tanpa override dark. → Pakai `--accent`/`--accent-soft`.
-- [ ] 🟠 **Variabel CSS `--success` tak terdefinisi → highlight hijau hilang** — `frontend/src/features/reports/ReportHistoryPage.tsx:129`
-  Dipakai di ReportHistory & NotificationSettings; `--success` tak ada di tokens.css. → Ganti `var(--low)` (emerald sudah ada).
-- [ ] 🟠 **Kursor `wait` (jam pasir) pada SEMUA tombol disabled** — `frontend/src/shared/styles/tokens.css:211`
-  Tombol disabled karena validasi tampak seolah loading. → `cursor: not-allowed`, `wait` hanya utk `[data-loading]`.
-- [ ] 🟠 **KPI 'Menunggu Approval' admin tak pernah ter-highlight (`.metric-card.warning` tak ada)** — `frontend/src/features/admin/AdminUsersPage.tsx:607`
-  → Ganti kelas ke `medium` (amber) atau tambahkan aturan `.metric-card.warning`.
-- [ ] 🟠 **Mode Awam minta izin GPS otomatis saat halaman dibuka** — `frontend/src/features/public-map/CitizenModePage.tsx:922`
-  `useEffect(requestGpsLocation, [])` prompt izin tanpa gestur; ditolak → banner error langsung. → Tunda GPS sampai user klik tombol.
-- [ ] 🟠 **State loading tidak konsisten: teks polos vs skeleton** — `frontend/src/features/dashboards/OperatorDashboardPage.tsx:345`
-  Operator/PublicMap pakai teks; Admin/History pakai `LoadingBlock`. → Seragamkan skeleton utk daftar/tabel.
-- [ ] 🟠 **Badge risiko di peta tak bisa diaktifkan lewat keyboard** — `frontend/src/features/public-map/PublicMapPage.tsx:313`
-  `role=button` + `tabindex=0` tapi hanya listener click, tanpa keydown Enter/Space. → Tambah keydown atau pakai `<button>`.
-- [ ] 🟠 **Checkbox 'Ingat saya' di login tidak berfungsi** — `frontend/src/features/auth/LoginPage.tsx:269`
-  Tanpa `checked`/`onChange`; token selalu ke localStorage. → Hubungkan ke logika nyata atau hapus.
-- [ ] 🟠 **Toast error hilang otomatis 4 detik tanpa pause-on-hover** — `frontend/src/shared/components/Toast.tsx:42`
-  Pesan error panjang bisa lenyap sebelum terbaca. → Perpanjang/no-auto-dismiss utk error + pause saat hover.
-- [ ] 🟡 **Overlay loading peta pakai putih hardcoded (silau di dark mode)** — `frontend/src/features/public-map/PublicMapPage.tsx:1134`
-  `rgba(255,255,255,.6)`. → Pakai token surface / override tema.
-- [ ] 🟡 **Badge status pengguna menampilkan teks mentah huruf kecil** — `frontend/src/features/admin/AdminUsersPage.tsx:1040`
-  `{user.status}` mentah ('aktif'/'menunggu') vs label berkapitalisasi di tempat lain. → Buat peta label status.
-- [ ] 🟡 **Form laporan mengisi ulang tinggi air ke '45' setelah submit** — `frontend/src/features/reports/ReportWizardPage.tsx:217`
-  `setWaterHeight("45")` → laporan berikutnya auto-severity 'Parah'. → Reset ke `""`.
+- [x] ✅ 🔴 **AppShell mengabaikan prop `breadcrumbs` & `subtitle`** — SELESAI: keduanya kini dirender. `breadcrumbs` menggantikan jejak hardcoded di topbar (fallback ke "beranda › judul" untuk halaman yang tak mengirimnya, dengan `nowrap` + ellipsis agar topbar 52px tak melar); `subtitle` tampil sebagai `.app-subtitle` di atas konten, lengkap dengan padding tepi khusus mobile karena `.app-content` kehilangan padding samping di <768px. Perubahan terbatas di `AppShell.tsx` + `tokens.css` — 8 halaman pemanggil tak disentuh, **kecuali** `PublicMapPage` yang ternyata sudah menulis ulang kalimat subjudulnya sendiri sebagai `<motion.p>` sehingga tampil dobel setelah prop-nya benar-benar dirender; paragraf itu dihapus. Diverifikasi lewat spec Playwright sementara: kelima halaman ber-`subtitle` (`#/map`, `#/awam`, `#/notifications`, `#/history`, `#/reports`) menampilkan kalimatnya **tepat sekali** (hitung kemunculan di `document.body.innerText`, bukan hanya cek elemen AppShell), desktop 1280px & mobile 390px.
+- [x] ✅ 🔴 **Tombol Dashboard di landing salah rute utk operator/provinsi** — SELESAI sebelumnya oleh rekan tim (`db643e7`): `PortalPage` sudah memakai `dashboardHashForRole()`. Diverifikasi lewat e2e (operator → `#/operator`, provinsi → `#/province`).
+- [x] ✅ 🔴 **Chip Wilayah Pantau tak terbaca (dark mode): `--brand` hitam, `--brand-soft` tak ada** — SELESAI: `.ns-chip` (latar/border/teks) + ikon Wilayah Pantau pindah ke `--accent`/`--accent-soft`. Diverifikasi di dark mode: warna teks & border `rgb(99,102,241)`, latar tidak lagi transparan penuh.
+- [x] ✅ 🟠 **Variabel CSS `--success` tak terdefinisi → highlight hijau hilang** — SELESAI: kedua pemakaian (`ReportHistoryPage` badge "Pantauan ROB", ikon "Berlangganan Peristiwa") diganti `--low`. Diverifikasi warnanya kini emerald `rgb(16,185,129)`. Nol sisa `var(--success)`/`var(--brand-soft)` di codebase.
+- [x] ✅ 🟠 **Kursor `wait` (jam pasir) pada SEMUA tombol disabled** — SELESAI: `.btn:disabled` → `not-allowed`, `wait` disisakan untuk `.btn[data-loading]`. Agar aturan itu tak jadi CSS mati, `data-loading` disambungkan ke 13 tombol yang benar-benar menunggu server (submit laporan, simpan pengguna/notifikasi, approve/reject, validasi laporan, permohonan izin, deteksi lokasi) — memakai `x || undefined` supaya atributnya hilang saat idle, bukan jadi `data-loading="false"`.
+- [x] ✅ 🟠 **KPI 'Menunggu Approval' admin tak pernah ter-highlight (`.metric-card.warning` tak ada)** — SELESAI: kelas diganti ke `medium` (amber `--medium`, sudah ada di tokens.css). Diverifikasi warna angkanya benar-benar `rgb(245,158,11)` saat ada akun berstatus menunggu.
+- [x] ✅ 🟠 **Mode Awam minta izin GPS otomatis saat halaman dibuka** — SELESAI: `useEffect(requestGpsLocation, [])` dihapus. Sebagai gantinya `navigator.permissions.query({name:'geolocation'})` — query ini TIDAK memunculkan dialog — hanya melanjutkan lokasi otomatis bila izinnya sudah diberikan di kunjungan sebelumnya; pengunjung baru menunggu tombol "Gunakan lokasi perangkat". Browser tanpa Permissions API jatuh ke manual.
+- [x] ✅ 🟠 **State loading tidak konsisten: teks polos vs skeleton** — SELESAI: antrean laporan operator kini `LoadingBlock` (sama dengan Admin/Riwayat/Audit/Peneliti). Sisa teks "Memuat…" yang ada bukan daftar/tabel — overlay peta (tak bisa di-skeleton, warnanya diperbaiki di item `--scrim`) dan placeholder nilai inline di banner ProvinceDashboard/Mode Awam/Onboarding, jadi sengaja dibiarkan.
+- [x] ✅ 🟠 **Badge risiko di peta tak bisa diaktifkan lewat keyboard** — SELESAI: elemennya kini `<button>` native (bukan `div` ber-`role=button`), jadi Enter/Space bekerja tanpa handler keydown tambahan; gaya bawaan tombol direset agar lingkaran 30px tetap presisi, plus `:focus-visible`. **Temuan tambahan saat verifikasi:** `Marker.addTo()` maplibre menimpa `aria-label` elemen dengan "Map marker", sehingga SEMUA badge terbaca sama oleh pembaca layar — label deskriptif kini dipasang ulang setelah `addTo()`.
+- [x] ✅ 🟠 **Checkbox 'Ingat saya' di login tidak berfungsi** — SELESAI sebelumnya oleh rekan tim (`f910067`): checkbox dihapus beserta komentar alasannya. Diverifikasi tak ada sisa di codebase.
+- [x] ✅ 🟠 **Toast error hilang otomatis 4 detik tanpa pause-on-hover** — SELESAI: timer pindah dari provider ke tiap `ToastItem` sehingga bisa dijeda. Error kini 12 detik (sukses/info tetap 4), dan hitungan berhenti selama kursor menyentuh **atau** fokus keyboard ada di dalam toast (`onFocusCapture`, agar tab ke tombol tutup juga menjeda); sisa waktu dilanjutkan, bukan diulang, dengan lantai 2 detik supaya tak langsung lenyap saat kursor pergi.
+- [x] ✅ 🟡 **Overlay loading peta pakai putih hardcoded (silau di dark mode)** — SELESAI: token baru `--scrim` (putih 60% di terang, slate-900 65% di gelap) menggantikan `rgba(255,255,255,.6)`, plus `color: var(--ink)` agar teks "Memuat peta" ikut kontras. Putih hardcoded lain yang tersisa ada di panel hero login/lupa-sandi yang memang berlatar gelap permanen — bukan kasus yang sama.
+- [x] ✅ 🟡 **Badge status pengguna menampilkan teks mentah huruf kecil** — SELESAI: `shared/constants/userStatus.ts` baru (sejajar `roleLabels`) memetakan enum Postgres huruf kecil ke label berkapitalisasi; dipakai badge tabel **dan** dropdown filter yang sebelumnya mengulang keempat label secara hardcoded.
+- [x] ✅ 🟡 **Form laporan mengisi ulang tinggi air ke '45' setelah submit** — SELESAI sebelumnya oleh rekan tim (`623b171`): `setWaterHeight("")` + komentar alasannya. Diverifikasi masih benar. -->
 
 ## 5. ⚛️ Frontend (React/TS) (13)
 
-- [ ] 🔴 **ProvinceDashboardPage fetch tanpa guard `active`/AbortController → data bisa tertukar** — `frontend/src/features/dashboards/ProvinceDashboardPage.tsx:124`
-  Respons request lama bisa menimpa yang baru saat ganti bulan/kabupaten. → Pola `let active=true; ... return ()=>{active=false}`.
-- [ ] 🔴 **Polling 30 detik OperatorDashboard memaksa balik ke halaman 1** — `frontend/src/features/dashboards/OperatorDashboardPage.tsx:99`
-  `setInterval(loadReports(1))` menyentak operator dari halaman 2/3. → Refresh halaman aktif + guard anti-race.
-- [ ] 🟠 **App.tsx efek samping (redirect + baca localStorage) saat render** — `frontend/src/app/App.tsx:44`
-  `renderRoute()` mutasi `window.location.hash` saat render → memicu re-render. → Pindahkan guard ke `useEffect`.
-- [ ] 🟠 **CitizenMode Desktop & Mobile hampir identik, props `: any`** — `frontend/src/features/public-map/CitizenModePage.tsx:244`
+- [x] ✅ 🔴 **ProvinceDashboardPage fetch tanpa guard `active`/AbortController → data bisa tertukar** — SELESAI: penanda urutan `fetchSeqRef` (pola sama dengan `AdminUsersPage`) — hanya respons request terakhir yang boleh menulis state, termasuk `setIsLoading(false)` agar request lama tak mematikan spinner milik request baru. Diverifikasi e2e dengan menahan respons filter LAMA 4 detik; test terbukti gagal saat guard-nya sengaja dilepas.
+- [x] ✅ 🔴 **Polling 30 detik OperatorDashboard memaksa balik ke halaman 1** — SELESAI: bagian "halaman aktif" sudah diperbaiki rekan tim (`cf48255`, polling senyap memakai `pageRef.current`); **guard anti-race**-nya yang belum ada ditambahkan di sini (`loadSeqRef`), sebab polling 30 detik masih bisa mendarat setelah operator berpindah halaman/filter dan menimpanya — termasuk merusak baseline notifikasi "laporan baru".
+- [x] ✅ 🟠 **App.tsx efek samping (redirect + baca localStorage) saat render** — SELESAI: logika izin dipisah jadi `guardRedirect()` yang MURNI menghitung tujuan (tak menyentuh `window.location`), mutasi hash pindah ke `useEffect`. `route` ikut jadi dependensi karena dua rute terlarang berbeda bisa menghasilkan tujuan sama (`#/login`) sehingga efeknya tak akan berjalan lagi. Selagi redirect berjalan halaman terlarang tidak dirender (placeholder). Dikunci 3 tes e2e: tamu → `#/login`, peran salah → `#/`, `reset-password` → `#/forgot-password`.
+- [ ] 🟠 **CitizenMode Desktop & Mobile hampir identik, props `: any`** — `frontend/src/features/public-map/CitizenModePage.tsx:244` *(DITUNDA sengaja — refactor, bukan bug)*
   Duplikasi JSX (forecast/actionCards/nearby) harus diedit dua kali. → Ekstrak sub-komponen + tipe props.
-- [ ] 🟠 **Penggunaan `any` tersebar luas (Variants, catch, `api<any>`, GeoJSON)** — `frontend/src/features/admin/AuditLogPage.tsx:52`
+  **Ukuran terukur:** file 1.053 baris; `CitizenModeDesktop` ~300 baris JSX & `CitizenModeMobile` ~290 baris, 13 props identik semuanya `: any`. Ini halaman publik yang paling banyak dilihat warga dan tak punya test komponen, jadi sengaja dipisah dari batch perbaikan bug agar kegagalannya tidak menyeret 16 perbaikan lain saat revert.
+- [ ] 🟠 **Penggunaan `any` tersebar luas (Variants, catch, `api<any>`, GeoJSON)** — `frontend/src/features/admin/AuditLogPage.tsx:52` *(DITUNDA sengaja — refactor, bukan bug)*
   Melumpuhkan type-check padahal tipe konkret sudah ada. → `Variants`, tipe respons konkret, `catch(err: unknown)`.
+  **Ukuran terukur:** 54 lokasi di 14 file (10 CitizenModePage · 6 AdminUsersPage · 5 ResearchPortal · 5 OperatorDashboard · 5 ForgotPassword · 3 `client.ts` · dst). Sebagian tumpang tindih dengan item di atas, jadi paling efisien dikerjakan bersamanya.
 - [ ] 🟠 **Pencarian pengguna admin memicu request tiap ketikan (tanpa debounce)** — `frontend/src/features/admin/AdminUsersPage.tsx:982`
   → Debounce 300–400ms sebelum trigger fetch.
 - [ ] 🟠 **Boilerplate export CSV terduplikasi di 5 file, URL tidak konsisten, bypass `api()`** — `frontend/src/features/dashboards/OperatorDashboardPage.tsx:137`
@@ -130,8 +120,9 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
   `reports_user_created_idx (user_id,created_at)` · `reports_status_created_idx (status,created_at)` · `reports_region_idx (region_id)` · `audit_logs_actor_idx (actor_user_id,created_at)`.
 - [ ] 🔴 **N+1 count query per dataset di `ResearchController::stats` & `datasets`** — `backend/app/Http/Controllers/Api/ResearchController.php:268`
   1 COUNT (predictions/reports/tidal) per dataset tiap buka halaman statistik. → Hitung agregat sekali + cache.
-- [ ] 🔴 **`provinceForecast` kembalikan seluruh prediksi 30 hari tanpa pagination** — `backend/app/Http/Controllers/Api/PublicMapController.php:562`
-  Endpoint publik menarik semua wilayah × 30 hari. → Agregasi per tanggal / pagination / wajibkan filter regency.
+- [x] ✅ 🔴 **`provinceForecast` kembalikan seluruh prediksi 30 hari tanpa pagination** — SELESAI: respons kini **diagregasi per tanggal** (≤30 baris: `avg/max_probability`, `high_risk_count`, `critical_count`, `region_count`) + amplop `meta`, sejajar `trend_30_days` dashboard provinsi. Ditambah cache 30 menit.
+  **Lebih parah dari yang tercatat audit:** tiap baris lama melewati `RegionResource`, yang menghitung `is_monitored` via `predictions()->exists()` — satu permintaan **anonim** bisa memicu ~9.600 query, bukan sekadar payload besar. Terukur setelah perbaikan: **1 query** untuk 50 baris mentah.
+  Bentuk respons berubah (breaking), diambil setelah dipastikan **tak ada konsumen**: nol pemanggilan di frontend dan endpoint ini tidak tercantum di `docs/operations/api-contract.md` (kontrak itu hanya mencakup `/api/v1/*`). Dikunci `ProvinceForecastTest` (4 tes: bentuk agregat, batas jumlah query, jendela 30 hari, filter regency).
 - [ ] 🟠 **`reporter` tak di-eager-load pada `operatorReportsExport` (N+1 s/d 1000 baris)** — `backend/app/Http/Controllers/Api/DashboardController.php:244`
   `reporter?->name` lazy-load per baris padahal tak ditulis ke CSV. → Tambah `with('reporter')` atau varian summary.
 - [ ] 🟠 **N+1 loop notifikasi (settings & regency per user) di NotificationService** — `backend/app/Services/NotificationService.php:172`

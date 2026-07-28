@@ -531,7 +531,7 @@ export function ReportWizardPage() {
                 </div>
               </div>
             )}
-            <button className="btn primary" type="submit" disabled={isSubmitting} style={{ padding: "14px 24px", fontSize: 15 }}>
+            <button className="btn primary" type="submit" disabled={isSubmitting} data-loading={isSubmitting || undefined} style={{ padding: "14px 24px", fontSize: 15 }}>
               <span className={`material-symbols-outlined ${isSubmitting ? "report-spin" : ""}`} style={{ fontSize: 18 }}>{isSubmitting ? "progress_activity" : (submitError ? "refresh" : "send")}</span>
               {isSubmitting ? "Mengirim..." : (submitError ? "Kirim ulang laporan" : "Kirim laporan sekarang")}
             </button>

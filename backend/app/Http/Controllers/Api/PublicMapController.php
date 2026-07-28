@@ -14,6 +14,7 @@ use App\Services\RegionLocator;
 use App\Services\RegionMonitoringService;
 use App\Support\AppTime;
 use App\Support\CsvWriter;
+use App\Support\ForecastWindow;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -566,28 +567,70 @@ final class PublicMapController
     }
 
 
+    /**
+     * Prakiraan rob 30 hari se-provinsi, DIAGREGASI PER TANGGAL (30 baris).
+     *
+     * Dulu endpoint publik ini mengembalikan satu baris per kelurahan per hari
+     * — ~321 wilayah x 30 hari = ~9.600 baris tanpa pagination. Lebih buruk
+     * lagi, tiap baris melewati RegionResource yang menghitung `is_monitored`
+     * lewat `predictions()->exists()`, jadi satu permintaan anonim bisa memicu
+     * ribuan query. Bentuk agregat ini sejalan dengan `trend_30_days` di
+     * dashboard provinsi dan memang itu yang dibutuhkan sebuah "prakiraan
+     * provinsi": ringkasan harian, bukan daftar tiap kelurahan.
+     */
     public function provinceForecast(Request $request): JsonResponse
     {
         $filters = $request->validate([
             'regency' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $window = \App\Support\ForecastWindow::thirtyDaysFrom(AppTime::today());
+        $window = ForecastWindow::thirtyDaysFrom(AppTime::today());
+        $start = $window['start']->toDateString();
+        $end = $window['end']->toDateString();
 
-        $query = Prediction::with('region')
-            ->whereBetween('prediction_date', [
-                $window['start']->toDateString(),
-                $window['end']->toDateString(),
-            ]);
-
-        if (!empty($filters['regency'])) {
-            $query->whereHas('region', fn ($regions) => $regions->where('regency', $filters['regency']));
-        }
-
-        $predictions = $query->get();
+        // Satu baris per tanggal & tidak bergantung laporan warga, jadi aman
+        // di-cache lebih lama daripada /public/map — prediksi hanya berubah
+        // sekali sehari saat pipeline ML jalan.
+        $rows = Cache::remember(
+            'public-province-forecast:'.md5(json_encode($filters).$start),
+            now()->addMinutes(30),
+            fn (): array => DB::table('predictions')
+                ->join('regions', 'predictions.region_id', '=', 'regions.id')
+                ->selectRaw("
+                    predictions.prediction_date,
+                    COUNT(DISTINCT predictions.region_id) AS region_count,
+                    COUNT(DISTINCT CASE WHEN predictions.risk_class = 'sangat_tinggi' THEN predictions.region_id END) AS critical_count,
+                    COUNT(DISTINCT CASE WHEN predictions.risk_class IN ('tinggi', 'sangat_tinggi') THEN predictions.region_id END) AS high_risk_count,
+                    AVG(predictions.risk_probability) AS avg_probability,
+                    MAX(predictions.risk_probability) AS max_probability
+                ")
+                ->whereBetween('predictions.prediction_date', [$start, $end])
+                ->when(
+                    !empty($filters['regency']),
+                    fn ($query) => $query->where('regions.regency', $filters['regency']),
+                )
+                ->groupBy('predictions.prediction_date')
+                ->orderBy('predictions.prediction_date')
+                ->get()
+                ->map(fn ($row): array => [
+                    'prediction_date' => CarbonImmutable::parse($row->prediction_date)->toDateString(),
+                    'region_count' => (int) $row->region_count,
+                    'critical_count' => (int) $row->critical_count,
+                    'high_risk_count' => (int) $row->high_risk_count,
+                    'avg_probability' => round((float) $row->avg_probability, 2),
+                    'max_probability' => round((float) $row->max_probability, 2),
+                ])
+                ->all(),
+        );
 
         return response()->json([
-            'data' => PredictionResource::collection($predictions),
+            'data' => $rows,
+            'meta' => [
+                'start' => $start,
+                'end' => $end,
+                'regency' => $filters['regency'] ?? null,
+                'days' => count($rows),
+            ],
         ]);
     }
 

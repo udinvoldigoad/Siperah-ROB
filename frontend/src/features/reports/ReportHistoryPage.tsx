@@ -126,8 +126,10 @@ export function ReportHistoryPage() {
                     <Icon name="location_on" style={{ fontSize: 16, color: "var(--accent)" }} /> <span>{report.coordinates}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-soft)", padding: "6px 14px", borderRadius: 20 }}>
-                    <Icon name={report.isWithinMonitoringArea ? "my_location" : "location_disabled"} style={{ fontSize: 16, color: report.isWithinMonitoringArea ? "var(--success)" : "var(--ink-soft)" }} />
-                    <span style={{ color: report.isWithinMonitoringArea ? "var(--success)" : "var(--ink-soft)", fontWeight: 600 }}>{report.isWithinMonitoringArea ? "Pantauan ROB" : "Di luar area"}</span>
+                    {/* --success tak pernah ada di tokens.css sehingga highlight
+                        hijaunya hilang; emerald yang tersedia adalah --low. */}
+                    <Icon name={report.isWithinMonitoringArea ? "my_location" : "location_disabled"} style={{ fontSize: 16, color: report.isWithinMonitoringArea ? "var(--low)" : "var(--ink-soft)" }} />
+                    <span style={{ color: report.isWithinMonitoringArea ? "var(--low)" : "var(--ink-soft)", fontWeight: 600 }}>{report.isWithinMonitoringArea ? "Pantauan ROB" : "Di luar area"}</span>
                   </div>
                   {report.photos.length > 0 && (
                     <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-soft)", padding: "6px 14px", borderRadius: 20 }}>

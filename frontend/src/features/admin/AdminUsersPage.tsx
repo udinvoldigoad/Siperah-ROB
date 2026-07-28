@@ -7,6 +7,7 @@ import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
 import { EmptyState } from "../../shared/components/EmptyState";
 import { roleLabel } from "../../shared/constants/roles";
+import { userStatusLabel, userStatusOptions } from "../../shared/constants/userStatus";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface UserData {
@@ -682,7 +683,9 @@ export function AdminUsersPage() {
         <motion.div variants={itemVariants} className="metric-grid admin-kpis" style={{ marginBottom: 32 }}>
           {[
             { title: "Pengguna Aktif", val: activeCount, sub: "Dapat masuk ke dashboard", cls: "success" },
-            { title: "Menunggu Approval", val: pendingCount, sub: "Butuh validasi admin", cls: pendingCount > 0 ? "warning" : "" },
+            // "warning" tak pernah ada di tokens.css sehingga kartu ini tak
+            // pernah ter-highlight; kelas amber yang benar adalah "medium".
+            { title: "Menunggu Approval", val: pendingCount, sub: "Butuh validasi admin", cls: pendingCount > 0 ? "medium" : "" },
             { title: "Akses Ditutup", val: closedCount, sub: "Nonaktif & ditolak", cls: "" },
             { title: "Total Terdaftar", val: totalCount, sub: "Seluruh role pengguna", cls: "" }
           ].map((kpi, idx) => (
@@ -803,7 +806,7 @@ export function AdminUsersPage() {
                         ? "Operator BPBD wajib memilih wilayah kerja yang dipantau."
                         : "Pilih wilayah pantauan bila relevan untuk akun ini."}
                     </span>
-                    <button type="submit" className="btn primary" disabled={isCreating}><Icon name="save" /> {isCreating ? "Menyimpan..." : "Simpan Pengguna"}</button>
+                    <button type="submit" className="btn primary" disabled={isCreating} data-loading={isCreating || undefined}><Icon name="save" /> {isCreating ? "Menyimpan..." : "Simpan Pengguna"}</button>
                   </div>
                 </form>
               </motion.div>
@@ -908,10 +911,10 @@ export function AdminUsersPage() {
                               style={{ width: "100%", height: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 13 }}
                             />
                             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                              <button type="button" className="btn outline" disabled={isActing} style={{ color: "var(--critical)", borderColor: "var(--critical)", fontSize: 12.5 }} onClick={() => rejectApiRequest(item)}>
+                              <button type="button" className="btn outline" disabled={isActing} data-loading={isActing || undefined} style={{ color: "var(--critical)", borderColor: "var(--critical)", fontSize: 12.5 }} onClick={() => rejectApiRequest(item)}>
                                 <Icon name="close" style={{ fontSize: 16 }} /> Tolak
                               </button>
-                              <button type="button" className="btn primary" disabled={isActing} style={{ fontSize: 12.5 }} onClick={() => approveApiRequest(item)}>
+                              <button type="button" className="btn primary" disabled={isActing} data-loading={isActing || undefined} style={{ fontSize: 12.5 }} onClick={() => approveApiRequest(item)}>
                                 <Icon name="check" style={{ fontSize: 16 }} /> Setujui
                               </button>
                             </div>
@@ -1004,7 +1007,7 @@ export function AdminUsersPage() {
                         <Icon name="info" />
                         Status akun (aktif/nonaktif) diatur lewat tombol di daftar. Di sini hanya peran & wilayah/instansi.
                       </span>
-                      <button type="submit" className="btn primary" disabled={isActing}><Icon name="save" /> Simpan Perubahan</button>
+                      <button type="submit" className="btn primary" disabled={isActing} data-loading={isActing || undefined}><Icon name="save" /> Simpan Perubahan</button>
                     </div>
                   </form>
                 </motion.div>
@@ -1045,10 +1048,9 @@ export function AdminUsersPage() {
               aria-label="Filter status"
             >
               <option value="">Semua Status</option>
-              <option value="aktif">Aktif</option>
-              <option value="menunggu">Menunggu</option>
-              <option value="nonaktif">Nonaktif</option>
-              <option value="ditolak">Ditolak</option>
+              {userStatusOptions.map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </select>
 
             <div className="users-search">
@@ -1116,7 +1118,7 @@ export function AdminUsersPage() {
                             user.status === "aktif" ? "status-divalidasi" :
                             user.status === "menunggu" ? "status-menunggu" : ""
                           }`} style={{ fontSize: 11, padding: "4px 8px", background: user.status === "nonaktif" || user.status === "ditolak" ? "var(--surface-muted)" : undefined }}>
-                            {user.status}
+                            {userStatusLabel(user.status)}
                           </span>
                         </td>
                         <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: 13 }}>
@@ -1227,11 +1229,12 @@ export function AdminUsersPage() {
             </div>
             <p style={{ margin: "0 0 20px", fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.6 }}>{confirm.message}</p>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
-              <button type="button" className="btn secondary" disabled={isActing} onClick={() => setConfirm(null)}>Batal</button>
+              <button type="button" className="btn secondary" disabled={isActing} data-loading={isActing || undefined} onClick={() => setConfirm(null)}>Batal</button>
               <button
                 type="button"
                 className="btn primary"
                 disabled={isActing}
+                data-loading={isActing || undefined}
                 onClick={confirm.onConfirm}
                 style={confirm.tone === "danger" ? { background: "var(--critical)", borderColor: "var(--critical)" } : undefined}
               >

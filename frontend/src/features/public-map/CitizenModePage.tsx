@@ -953,7 +953,26 @@ export function CitizenModePage() {
       alive = false;
     };
   }, [coordinates]);
-  useEffect(() => { requestGpsLocation(); }, []);
+
+  // Jangan pernah memicu dialog izin tanpa gestur pengguna — dulu halaman ini
+  // langsung meminta GPS saat dibuka, dan penolakan memunculkan banner error
+  // sebelum warga sempat melihat isinya. GPS kini hanya berjalan otomatis bila
+  // izinnya SUDAH diberikan sebelumnya (query ini tidak memunculkan dialog);
+  // selebihnya menunggu tombol "Gunakan lokasi perangkat".
+  useEffect(() => {
+    let alive = true;
+    if (!navigator.permissions?.query) return;
+
+    navigator.permissions
+      .query({ name: "geolocation" as PermissionName })
+      .then((status) => {
+        if (alive && status.state === "granted") requestGpsLocation();
+      })
+      // Browser lama tak mengenal nama izin ini — biarkan manual saja.
+      .catch(() => undefined);
+
+    return () => { alive = false; };
+  }, []);
 
   const risk = data?.risk_class ? riskLabels[data.risk_class] : (dataLoaded || data ? "Tidak Tersedia" : "Memuat...");
   const cardStyle = getCardStyle(data?.risk_class ?? undefined);

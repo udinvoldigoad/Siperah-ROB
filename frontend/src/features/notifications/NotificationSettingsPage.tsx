@@ -208,8 +208,11 @@ export function NotificationSettingsPage() {
         .ns-check { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
         .ns-pad { padding: 20px 22px; }
         .ns-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-        .ns-chip { background: var(--brand-soft); border: 1px solid var(--brand); border-radius: 999px; padding: 6px 6px 6px 12px; font-size: 12px; font-weight: 600; color: var(--brand); display: flex; align-items: center; gap: 4px; }
-        .ns-chip button { background: transparent; border: none; color: var(--brand); cursor: pointer; display: flex; padding: 0; opacity: .65; transition: opacity .15s; }
+        /* --accent, bukan --brand: --brand-soft tak pernah didefinisikan (latar
+           chip jadi transparan) dan --brand hitam tanpa override tema, sehingga
+           chip ini tak terbaca di mode gelap. */
+        .ns-chip { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 999px; padding: 6px 6px 6px 12px; font-size: 12px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 4px; }
+        .ns-chip button { background: transparent; border: none; color: var(--accent); cursor: pointer; display: flex; padding: 0; opacity: .65; transition: opacity .15s; }
         .ns-chip button:hover { opacity: 1; }
         .ns-add { background: none; border: 1px dashed var(--line); border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 500; color: var(--ink-soft); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .2s; }
         .ns-add:hover { color: var(--accent); border-color: var(--accent); }
@@ -248,7 +251,8 @@ export function NotificationSettingsPage() {
           {/* Berlangganan Peristiwa */}
           <motion.section variants={itemVariants} className="ns-card">
             <div className="ns-head divider">
-              <div className="ns-ico"><Icon name="checklist" style={{ fontSize: 20, color: "var(--success)" }} /></div>
+              {/* --success tak pernah ada di tokens.css; emerald yang tersedia adalah --low. */}
+              <div className="ns-ico"><Icon name="checklist" style={{ fontSize: 20, color: "var(--low)" }} /></div>
               <div>
                 <h3>Berlangganan Peristiwa</h3>
                 <p>Jenis peringatan & pembaruan yang ingin Anda ikuti.</p>
@@ -268,7 +272,7 @@ export function NotificationSettingsPage() {
           {/* Wilayah Pantau */}
           <motion.section variants={itemVariants} className="ns-card">
             <div className="ns-head">
-              <div className="ns-ico"><Icon name="my_location" style={{ fontSize: 20, color: "var(--brand)" }} /></div>
+              <div className="ns-ico"><Icon name="my_location" style={{ fontSize: 20, color: "var(--accent)" }} /></div>
               <div>
                 <h3>Wilayah Pantau</h3>
                 <p>Batasi notifikasi ke wilayah tertentu. Kosongkan untuk seluruh Provinsi.</p>
@@ -319,7 +323,7 @@ export function NotificationSettingsPage() {
           {/* Aksi */}
           <motion.div variants={itemVariants} className="ns-actions">
             <button type="button" onClick={fetchSettings} className="btn secondary" style={{ minWidth: 100 }}>Batal</button>
-            <button className="btn primary" onClick={handleSave} disabled={isLoading} style={{ minWidth: 160 }}>
+            <button className="btn primary" onClick={handleSave} disabled={isLoading} data-loading={isLoading || undefined} style={{ minWidth: 160 }}>
               <Icon name="save" /> {isLoading ? "Menyimpan..." : "Simpan Perubahan"}
             </button>
           </motion.div>
