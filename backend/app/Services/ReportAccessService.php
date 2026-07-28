@@ -3,26 +3,38 @@
 namespace App\Services;
 
 use App\Models\GroundTruthReport;
-use App\Models\Region;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 
 final class ReportAccessService
 {
+    /**
+     * Cakupan laporan ground truth yang boleh dibaca seorang pengguna.
+     *
+     * `peneliti` SENGAJA tidak diberi akses: laporan mentah memuat identitas
+     * pelapor (nama & email lewat relasi `reporter`) dan koordinat presisi penuh
+     * yang bisa menunjuk rumahnya. Jalur data untuk peneliti adalah portal riset
+     * (`/research/datasets`), yang sudah membulatkan koordinat ke 3 desimal dan
+     * tidak menyertakan identitas.
+     *
+     * Catatan sejarah: saat peran disederhanakan 5→3, cabang lama
+     * `'bpbd_provinsi', 'admin'` sempat berubah jadi `'peneliti', 'admin'` —
+     * menaikkan peneliti dari 403 menjadi akses penuh. Itu tidak disengaja.
+     */
     public function accessible(User $user): Builder
     {
         $query = GroundTruthReport::query();
 
         return match ($user->role) {
             'warga' => $query->where('user_id', $user->id),
-            'peneliti', 'admin' => $query,
+            'admin' => $query,
             default => abort(403, 'Role ini tidak memiliki akses ke laporan ground truth.'),
         };
     }
 
     public function authorizeView(User $user, GroundTruthReport $report): void
     {
-        if (in_array($user->role, ['peneliti', 'admin'], true)) return;
+        if ($user->role === 'admin') return;
         if ($user->role === 'warga') {
             abort_unless($report->user_id === $user->id, 403, 'Anda hanya dapat mengakses laporan sendiri.');
             return;
@@ -32,25 +44,12 @@ final class ReportAccessService
 
     public function authorizeReview(User $user, GroundTruthReport $report): void
     {
-        abort_unless(in_array($user->role, ['admin'], true), 403);
+        abort_unless($user->role === 'admin', 403);
         $this->authorizeView($user, $report);
         abort_unless(
             in_array($report->status, ['menunggu', 'perlu_review'], true),
             409,
             'Hanya laporan menunggu atau perlu_review yang dapat diproses.',
         );
-    }
-
-    private function operatorRegency(User $user): string
-    {
-        abort_unless($user->region_id, 403, 'Akun operator belum memiliki wilayah kerja.');
-        $regency = Region::whereKey($user->region_id)->value('regency');
-        abort_unless($regency, 403, 'Wilayah kerja operator tidak valid.');
-        return $this->normalizeRegency($regency);
-    }
-
-    private function normalizeRegency(string $regency): string
-    {
-        return preg_replace('/^(kabupaten|kota)\s+/i', '', mb_strtolower(trim($regency))) ?? '';
     }
 }

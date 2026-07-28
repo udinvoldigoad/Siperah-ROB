@@ -2,6 +2,10 @@ import { expect, type Page } from "@playwright/test";
 
 // Kredensial user seed DemoUserSeeder (DB test di-reset global-setup).
 export const SEED_PASSWORD = "password";
+// Sejak peran disederhanakan 5→3, akun seed `operator` & `provinsi` ikut
+// berperan `admin`. Keduanya sengaja DIPERTAHANKAN sebagai akun admin
+// tambahan: limiter login dibatasi 10/menit per (email + IP), jadi memakai
+// email berbeda antar spec mencegah spec belakangan kena 429.
 export const SEED_USERS = {
   warga: "warga@siperah.local",
   operator: "operator@siperah.local",

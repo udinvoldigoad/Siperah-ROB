@@ -218,7 +218,7 @@ final class ApiFoundationTest extends TestCase
         $outsideRegion = $this->insertRegionForPoint(-4.500, 104.500, false);
         $operatorRegion = $this->insertRegionForPoint(-4.800, 104.800, true);
         $citizen = $this->createUser('warga');
-        $operator = $this->createUser('bpbd_operator', $operatorRegion->id);
+        $operator = $this->createUser('admin', $operatorRegion->id);
 
         $this->actingAs($citizen);
         $response = $this->postJson('/api/reports', [
@@ -329,7 +329,7 @@ final class ApiFoundationTest extends TestCase
             'provenance_status' => 'demo',
         ]);
         $citizen = $this->createUser('warga');
-        $operator = $this->createUser('bpbd_operator', $region->id);
+        $operator = $this->createUser('admin', $region->id);
 
         $this->actingAs($citizen);
         $response = $this->postJson('/api/reports', [
@@ -369,14 +369,20 @@ final class ApiFoundationTest extends TestCase
             ->assertJsonFragment(['report_code' => $reportCode]);
     }
 
-    public function test_operator_only_sees_triage_reports_in_their_work_area(): void
+    /**
+     * Dulu: operator hanya melihat triase di kabupaten kerjanya. Pembatasan itu
+     * hilang bersama peran `bpbd_operator` — antrean kini dipegang admin yang
+     * cakupannya se-provinsi. Yang dikunci sekarang: laporan dari kabupaten
+     * MANA PUN sama-sama masuk antrean triase admin.
+     */
+    public function test_admin_sees_triage_reports_from_every_regency(): void
     {
         $lampungSelatanMonitored = $this->insertRegionForPoint(-5.600, 105.300, true, 'Lampung Selatan');
         $lampungSelatanOutsideMonitoring = $this->insertRegionForPoint(-5.800, 105.100, false, 'Lampung Selatan');
         $bandarLampungMonitored = $this->insertRegionForPoint(-5.400, 105.250, true, 'Kota Bandar Lampung');
         $bandarLampungOutsideMonitoring = $this->insertRegionForPoint(-5.320, 105.180, false, 'Kota Bandar Lampung');
         $citizen = $this->createUser('warga');
-        $operatorLampungSelatan = $this->createUser('bpbd_operator', $lampungSelatanMonitored->id);
+        $admin = $this->createUser('admin', $lampungSelatanMonitored->id);
 
         $this->actingAs($citizen);
         $insideOwnArea = $this->postJson('/api/reports', [
@@ -395,11 +401,11 @@ final class ApiFoundationTest extends TestCase
             'description' => 'Laporan triase Bandar Lampung.',
         ])->assertCreated()->json('data.report_code');
 
-        $this->actingAs($operatorLampungSelatan)
+        $this->actingAs($admin)
             ->getJson('/api/reports?status=menunggu,perlu_review&per_page=100')
             ->assertOk()
             ->assertJsonFragment(['report_code' => $insideOwnArea])
-            ->assertJsonMissing(['report_code' => $outsideOwnArea]);
+            ->assertJsonFragment(['report_code' => $outsideOwnArea]);
 
         $this->assertNotNull($bandarLampungMonitored);
         $this->assertNotNull($lampungSelatanOutsideMonitoring);
@@ -414,7 +420,7 @@ final class ApiFoundationTest extends TestCase
         $operatorRegion = $this->insertRegionForPoint(-5.620, 105.320, true, $uniqueRegency);
         $outsideMonitoring = $this->insertRegionForPoint(-5.820, 105.120, false, $uniqueRegency);
         $citizen = $this->createUser('warga');
-        $operator = $this->createUser('bpbd_operator', $operatorRegion->id);
+        $operator = $this->createUser('admin', $operatorRegion->id);
 
         $this->actingAs($citizen);
         $reportCode = $this->postJson('/api/reports', [
@@ -430,10 +436,13 @@ final class ApiFoundationTest extends TestCase
             ->assertOk()
             ->assertJsonFragment(['report_code' => $reportCode]);
 
-        $this->getJson('/api/dashboard/operator/summary')
+        // pending_reports kini dihitung se-provinsi (admin melihat semua laporan),
+        // jadi yang dijamin adalah laporan ini IKUT terhitung — bukan angka
+        // persisnya, yang juga memuat data seed.
+        $summary = $this->getJson('/api/dashboard/operator/summary')
             ->assertOk()
-            ->assertJsonPath('data.pending_reports', 1)
             ->assertJsonPath('data.operator_regency', $uniqueRegency);
+        $this->assertGreaterThanOrEqual(1, $summary->json('data.pending_reports'));
 
         $export = $this->get('/api/dashboard/operator/reports/export')
             ->assertOk()
@@ -493,7 +502,7 @@ final class ApiFoundationTest extends TestCase
         // Region NON-pantau: laporan di sini otomatis berstatus perlu_review (triase).
         $region = $this->insertRegionForPoint(-5.905, 105.405, false, 'Uji Perlu Review');
         $citizen = $this->createUser('warga');
-        $operator = $this->createUser('bpbd_operator', $region->id);
+        $operator = $this->createUser('admin', $region->id);
 
         // 1) Warga mengirim laporan di titik luar pantauan → status perlu_review.
         $created = $this->actingAs($citizen)->postJson('/api/reports', [
@@ -520,34 +529,36 @@ final class ApiFoundationTest extends TestCase
         $this->assertDatabaseHas('ground_truth_reports', ['id' => $reportId, 'status' => 'divalidasi']);
     }
 
-    public function test_admin_edits_role_inline_and_operator_role_requires_region(): void
+    /**
+     * Invariant "operator wajib punya wilayah kerja" ikut hilang bersama peran
+     * bpbd_operator. Yang tersisa dijaga: admin bisa mengubah peran inline, dan
+     * peran di luar daftar 3 peran ditolak validasi.
+     */
+    public function test_admin_edits_role_inline_and_rejects_unknown_role(): void
     {
         $admin = $this->createUser('admin');
-        $region = $this->insertRegionForPoint(-5.520, 105.330, true, 'Uji Admin Edit');
         $target = $this->createUser('warga');
 
         $this->actingAs($admin);
 
-        // Ubah role warga → peneliti (tak perlu wilayah) berhasil.
         $this->patchJson("/api/admin/users/{$target->id}", ['role' => 'peneliti'])->assertOk();
         $this->assertDatabaseHas('users', ['id' => $target->id, 'role' => 'peneliti']);
 
-        // Ubah role → operator TANPA wilayah ditolak (invariant wilayah kerja operator).
+        $this->patchJson("/api/admin/users/{$target->id}", ['role' => 'admin'])->assertOk();
+        $this->assertDatabaseHas('users', ['id' => $target->id, 'role' => 'admin']);
+
+        // Peran lama yang sudah dihapus tak boleh bisa dipasang lagi.
         $this->patchJson("/api/admin/users/{$target->id}", ['role' => 'bpbd_operator'])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['region_id']);
-
-        // Dengan wilayah → berhasil.
-        $this->patchJson("/api/admin/users/{$target->id}", ['role' => 'bpbd_operator', 'region_id' => $region->id])
-            ->assertOk();
-        $this->assertDatabaseHas('users', ['id' => $target->id, 'role' => 'bpbd_operator', 'region_id' => $region->id]);
+            ->assertJsonValidationErrors(['role']);
+        $this->assertDatabaseHas('users', ['id' => $target->id, 'role' => 'admin']);
     }
 
     public function test_province_dashboard_filters_trend_top_impacted_and_export_share_scope(): void
     {
         $region = $this->insertRegionForPoint(-5.910, 105.410, true, 'Kabupaten Filter Test');
         $otherRegion = $this->insertRegionForPoint(-5.930, 105.430, true, 'Kabupaten Lain Test');
-        $provinceUser = $this->createUser('bpbd_provinsi');
+        $provinceUser = $this->createUser('admin');
 
         Prediction::create([
             'id' => (string) Str::uuid(),
@@ -616,20 +627,22 @@ final class ApiFoundationTest extends TestCase
     public function test_admin_can_create_user_export_users_and_researcher_workflow_is_visible(): void
     {
         $admin = $this->createUser('admin');
-        $operatorRegion = $this->insertRegionForPoint(-5.710, 105.510, true, 'Kota Admin Test');
+        // region_id tetap kolom yang valid (opsional untuk semua peran) meski
+        // invariant "wilayah kerja operator" sudah dihapus.
+        $adminRegion = $this->insertRegionForPoint(-5.710, 105.510, true, 'Kota Admin Test');
 
         $this->actingAs($admin)
             ->postJson('/api/admin/users', [
-                'name' => 'Operator Baru',
-                'email' => 'operator-baru@example.test',
+                'name' => 'Admin Baru',
+                'email' => 'admin-baru@example.test',
                 'password' => 'password123',
-                'role' => 'bpbd_operator',
+                'role' => 'admin',
                 'status' => 'aktif',
-                'region_id' => $operatorRegion->id,
+                'region_id' => $adminRegion->id,
             ])
             ->assertCreated()
-            ->assertJsonPath('data.role', 'bpbd_operator')
-            ->assertJsonPath('data.region_id', $operatorRegion->id);
+            ->assertJsonPath('data.role', 'admin')
+            ->assertJsonPath('data.region_id', $adminRegion->id);
 
         $this->postJson('/api/admin/users', [
             'name' => 'Peneliti Baru',
@@ -646,23 +659,27 @@ final class ApiFoundationTest extends TestCase
         $export = $this->get('/api/admin/users/export')
             ->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
-        $this->assertStringContainsString('operator-baru@example.test', $export->streamedContent());
+        $this->assertStringContainsString('admin-baru@example.test', $export->streamedContent());
     }
 
-    public function test_admin_user_creation_requires_operator_region_and_researcher_institution(): void
+    /**
+     * Syarat "wilayah kerja wajib untuk operator" ikut hilang bersama perannya;
+     * yang tersisa: instansi wajib untuk peneliti, dan peran lama ditolak.
+     */
+    public function test_admin_user_creation_requires_researcher_institution_and_valid_role(): void
     {
         $admin = $this->createUser('admin');
 
         $this->actingAs($admin)
             ->postJson('/api/admin/users', [
-                'name' => 'Operator Tanpa Wilayah',
-                'email' => 'operator-tanpa-wilayah@example.test',
+                'name' => 'Peran Sudah Dihapus',
+                'email' => 'peran-dihapus@example.test',
                 'password' => 'password123',
-                'role' => 'bpbd_operator',
+                'role' => 'bpbd_provinsi',
                 'status' => 'aktif',
             ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['region_id']);
+            ->assertJsonValidationErrors(['role']);
 
         $this->postJson('/api/admin/users', [
             'name' => 'Peneliti Tanpa Instansi',

@@ -107,15 +107,16 @@ final class ApiAccessRequestTest extends TestCase
             ->assertStatus(201);
     }
 
-    public function test_provinsi_generates_key_without_permit(): void
+    /** Hanya `peneliti` yang butuh izin; peran lain (kini admin) langsung bisa. */
+    public function test_admin_generates_key_without_permit(): void
     {
-        $provinsi = $this->makeUser('bpbd_provinsi');
+        $admin = $this->makeUser('admin');
 
-        $this->actingAs($provinsi)
+        $this->actingAs($admin)
             ->postJson('/api/research/api-keys')
             ->assertStatus(201);
 
-        $this->assertSame(1, ApiKey::where('user_id', $provinsi->id)->count());
+        $this->assertSame(1, ApiKey::where('user_id', $admin->id)->count());
     }
 
     private function makeUser(string $role, string $status = 'aktif'): User

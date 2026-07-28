@@ -45,8 +45,9 @@ final class NotificationBehaviorTest extends TestCase
         $regionB = $this->makeRegion('Kabupaten Skop B');
         $this->makePrediction($regionA, 'sangat_tinggi');
 
-        $operatorMatch = $this->makeUser('bpbd_operator', $regionA->id);
-        $operatorOther = $this->makeUser('bpbd_operator', $regionB->id);
+        // Peran bpbd_operator (beserta penyaringan per region_id-nya di
+        // NotificationService) sudah dihapus. Cakupan penerima kini ditentukan
+        // monitored_regions untuk warga/peneliti, dan admin selalu menerima.
         $wargaSubscribed = $this->makeUser('warga');
         $this->setMonitoredRegions($wargaSubscribed, [$regionA->village]);
         $wargaElsewhere = $this->makeUser('warga');
@@ -56,8 +57,6 @@ final class NotificationBehaviorTest extends TestCase
         app(NotificationService::class)
             ->notifyHighRiskPredictions(CarbonImmutable::today()->toDateString());
 
-        Notification::assertSentTo($operatorMatch, HighRiskWarningNotification::class);
-        Notification::assertNotSentTo($operatorOther, HighRiskWarningNotification::class);
         Notification::assertSentTo($wargaSubscribed, HighRiskWarningNotification::class);
         Notification::assertNotSentTo($wargaElsewhere, HighRiskWarningNotification::class);
         Notification::assertSentTo($admin, HighRiskWarningNotification::class);

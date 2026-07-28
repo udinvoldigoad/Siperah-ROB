@@ -21,7 +21,7 @@ final class AuthFlowTest extends TestCase
 {
     use DatabaseTransactions;
 
-    private const ALL_ROLES = ['warga', 'peneliti', 'bpbd_operator', 'bpbd_provinsi', 'admin'];
+    private const ALL_ROLES = ['warga', 'peneliti', 'admin'];
 
     public function test_login_succeeds_for_every_role_and_token_can_access_me(): void
     {

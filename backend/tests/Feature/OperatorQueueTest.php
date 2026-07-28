@@ -13,9 +13,13 @@ use Tests\TestCase;
 
 /**
  * Antrean operator: validasi/tolak/ubah-status laporan `menunggu`/`perlu_review`,
- * audit log per aksi, laporan terproses keluar dari antrean & tak bisa diproses
- * ulang (409), dan batas wilayah kerja operator (403 lintas kabupaten).
- * Scoping daftar antrean per wilayah sudah dicakup ApiFoundationTest.
+ * audit log per aksi, dan laporan terproses keluar dari antrean & tak bisa
+ * diproses ulang (409).
+ *
+ * Sejak peran disederhanakan 5→3, pemrosesan antrean dipegang `admin` — peran
+ * `bpbd_operator` beserta pembatasan wilayah kerjanya (403 lintas kabupaten)
+ * sudah tidak ada. Dua test yang dulu mengunci pembatasan itu diganti satu
+ * test yang mengunci peran mana saja yang boleh memproses.
  */
 final class OperatorQueueTest extends TestCase
 {
@@ -25,7 +29,7 @@ final class OperatorQueueTest extends TestCase
 
     public function test_operator_validates_menunggu_report_and_it_leaves_the_queue(): void
     {
-        [$region, $operator] = $this->makeRegionWithOperator('Kabupaten Antrean Validasi');
+        [$region, $operator] = $this->makeRegionWithAdmin('Kabupaten Antrean Validasi');
         $report = $this->makeReport($region, 'menunggu');
 
         $this->actingAs($operator)->getJson(self::QUEUE_URL)
@@ -51,7 +55,7 @@ final class OperatorQueueTest extends TestCase
 
     public function test_operator_rejects_perlu_review_report_with_mandatory_reason(): void
     {
-        [$region, $operator] = $this->makeRegionWithOperator('Kabupaten Antrean Tolak');
+        [$region, $operator] = $this->makeRegionWithAdmin('Kabupaten Antrean Tolak');
         $report = $this->makeReport($region, 'perlu_review');
 
         $this->actingAs($operator)
@@ -77,7 +81,7 @@ final class OperatorQueueTest extends TestCase
 
     public function test_update_status_requires_reason_for_ditolak_and_clears_validator_for_duplikat(): void
     {
-        [$region, $operator] = $this->makeRegionWithOperator('Kabupaten Antrean Status');
+        [$region, $operator] = $this->makeRegionWithAdmin('Kabupaten Antrean Status');
         $report = $this->makeReport($region, 'menunggu');
 
         $this->actingAs($operator)
@@ -98,7 +102,7 @@ final class OperatorQueueTest extends TestCase
 
     public function test_processed_report_cannot_be_processed_again(): void
     {
-        [$region, $operator] = $this->makeRegionWithOperator('Kabupaten Antrean Ulang');
+        [$region, $operator] = $this->makeRegionWithAdmin('Kabupaten Antrean Ulang');
         $report = $this->makeReport($region, 'divalidasi');
 
         $this->actingAs($operator)
@@ -110,32 +114,29 @@ final class OperatorQueueTest extends TestCase
         $this->assertSame('divalidasi', $report->fresh()->status);
     }
 
-    public function test_operator_cannot_process_report_outside_work_area(): void
+    /**
+     * Menggantikan dua test lama (`...outside_work_area`, `...without_work_region`)
+     * yang menguji pembatasan wilayah kerja operator — mekanisme itu ikut hilang
+     * bersama peran `bpbd_operator`. Yang tersisa untuk dijaga: hanya admin yang
+     * boleh memproses antrean.
+     */
+    public function test_only_admin_can_process_the_queue(): void
     {
-        [$regionA] = $this->makeRegionWithOperator('Kabupaten Wilayah Sendiri');
-        $reportA = $this->makeReport($regionA, 'menunggu');
-
-        $regionB = $this->insertRegion('Kota Wilayah Lain');
-        $operatorB = $this->makeUser('bpbd_operator', $regionB->id);
-
-        $this->actingAs($operatorB)
-            ->postJson("/api/reports/{$reportA->id}/validate")
-            ->assertForbidden();
-
-        $this->assertSame('menunggu', $reportA->fresh()->status);
-    }
-
-    public function test_operator_without_work_region_cannot_process_reports(): void
-    {
-        [$region] = $this->makeRegionWithOperator('Kabupaten Tanpa Operator');
+        [$region] = $this->makeRegionWithAdmin('Kabupaten Batas Peran');
         $report = $this->makeReport($region, 'menunggu');
-        $operatorWithoutRegion = $this->makeUser('bpbd_operator', null);
 
-        $this->actingAs($operatorWithoutRegion)
-            ->postJson("/api/reports/{$report->id}/validate")
-            ->assertForbidden();
+        foreach (['warga', 'peneliti'] as $role) {
+            $this->app['auth']->forgetGuards();
+            $this->actingAs($this->makeUser($role, null))
+                ->postJson("/api/reports/{$report->id}/validate")
+                ->assertForbidden();
 
-        $this->assertSame('menunggu', $report->fresh()->status);
+            $this->assertSame(
+                'menunggu',
+                $report->fresh()->status,
+                "Peran [{$role}] seharusnya tak bisa memvalidasi laporan.",
+            );
+        }
     }
 
     /**
@@ -149,14 +150,17 @@ final class OperatorQueueTest extends TestCase
     public function test_listing_many_non_coastal_reports_does_not_run_geometry_query_per_row(): void
     {
         $region = $this->insertRegion('Kabupaten Non Pesisir Regresi', coastal: false);
-        $operator = $this->makeUser('bpbd_operator', $region->id);
+        $admin = $this->makeUser('admin', $region->id);
         for ($i = 0; $i < 8; $i++) {
             $this->makeReport($region, 'menunggu', isWithinMonitoringArea: false);
         }
 
         DB::enableQueryLog();
-        $this->actingAs($operator)
-            ->getJson('/api/reports?status=menunggu,perlu_review&per_page=50')
+        // Difilter ke region test ini: admin melihat SELURUH laporan (termasuk
+        // data seed), sedangkan yang diukur di sini adalah perilaku query untuk
+        // banyak baris — bukan jumlah total laporan di database.
+        $this->actingAs($admin)
+            ->getJson("/api/reports?status=menunggu,perlu_review&per_page=50&region_id={$region->id}")
             ->assertOk()
             ->assertJsonCount(8, 'data');
         $log = DB::getQueryLog();
@@ -176,11 +180,11 @@ final class OperatorQueueTest extends TestCase
     }
 
     /** @return array{0: Region, 1: User} */
-    private function makeRegionWithOperator(string $regency): array
+    private function makeRegionWithAdmin(string $regency): array
     {
         $region = $this->insertRegion($regency);
 
-        return [$region, $this->makeUser('bpbd_operator', $region->id)];
+        return [$region, $this->makeUser('admin', $region->id)];
     }
 
     private function assertAudit(string $action, string $reportId): void

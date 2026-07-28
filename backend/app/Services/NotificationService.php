@@ -123,9 +123,8 @@ final class NotificationService
      * pun (kontras dengan notifikasi non-kritis di atas).
      *
      * Cakupan per penerima konsisten dengan region-nya:
-     * - bpbd_operator: hanya wilayah di kabupaten/kota kerjanya (region_id);
      * - warga/peneliti: difilter monitored_regions bila diisi, semua bila kosong;
-     * - bpbd_provinsi/admin: seluruh provinsi.
+     * - admin: seluruh provinsi.
      *
      * @return int jumlah penerima yang dikirimi
      */
