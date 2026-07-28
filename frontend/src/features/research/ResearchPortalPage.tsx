@@ -7,6 +7,7 @@ import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
 import { EmptyState } from "../../shared/components/EmptyState";
 import { Skeleton } from "../../shared/components/Skeleton";
+import { getCurrentUser, getToken } from "../../shared/auth/session";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface DatasetData {
@@ -136,7 +137,7 @@ function formatPeriodDate(value: string): string {
 
 export function ResearchPortalPage() {
   const toast = useToast();
-  const currentUser = (() => { try { return JSON.parse(localStorage.getItem("siperah-user") || "null") as { role?: string } | null; } catch { return null; } })();
+  const currentUser = getCurrentUser();
   const isResearcher = currentUser?.role === "peneliti";
   const [datasets, setDatasets] = useState<DatasetData[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKeyData[]>([]);
@@ -163,7 +164,7 @@ export function ResearchPortalPage() {
 
   const handleDatasetDownload = async (dataset: DatasetData, format: "csv" | "json" | "xlsx") => {
     try {
-      const token = localStorage.getItem("siperah-token");
+      const token = getToken();
       const response = await fetch(datasetDownloadUrl(dataset, format), {
         headers: {
           Accept: format === "csv" ? "text/csv" : format === "xlsx" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/json",

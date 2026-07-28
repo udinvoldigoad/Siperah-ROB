@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 /**
  * Alur autentikasi lengkap: login sukses semua role (token terbit & dipakai),
- * kredensial salah, registrasi (default warga+menunggu, tak bisa eskalasi role),
+ * kredensial salah, registrasi (default warga+aktif, tak bisa eskalasi role),
  * dan logout mencabut token. Negative path RBAC dicakup RbacNegativePathTest.
  *
  * Catatan rate limiter: registrasi dibatasi 5/jam per IP (cache array di test,
@@ -87,10 +87,11 @@ final class AuthFlowTest extends TestCase
             ->assertJsonPath('message', 'Email atau password salah');
     }
 
-    public function test_register_creates_pending_warga_that_cannot_login_yet(): void
+    public function test_register_creates_active_warga_that_can_login_immediately(): void
     {
         $email = Str::uuid().'@example.test';
 
+        // Kebijakan produk: pendaftaran mandiri tak lagi antre persetujuan admin.
         $this->postJson('/api/auth/register', [
             'name' => 'Warga Baru',
             'email' => $email,
@@ -98,14 +99,17 @@ final class AuthFlowTest extends TestCase
         ])
             ->assertCreated()
             ->assertJsonPath('user.role', 'warga')
-            ->assertJsonPath('user.status', 'menunggu')
+            ->assertJsonPath('user.status', 'aktif')
+            // Registrasi tetap TIDAK menerbitkan token; pengguna login sendiri.
             ->assertJsonMissingPath('access_token');
 
-        $this->assertDatabaseHas('users', ['email' => $email, 'role' => 'warga', 'status' => 'menunggu']);
+        $this->assertDatabaseHas('users', ['email' => $email, 'role' => 'warga', 'status' => 'aktif']);
 
+        $this->app['auth']->forgetGuards();
         $this->postJson('/api/auth/login', ['email' => $email, 'password' => 'password123'])
-            ->assertStatus(403)
-            ->assertJsonPath('account_status', 'menunggu');
+            ->assertOk()
+            ->assertJsonPath('user.role', 'warga')
+            ->assertJsonStructure(['access_token']);
     }
 
     public function test_register_ignores_role_and_status_escalation_attempt(): void
@@ -117,10 +121,12 @@ final class AuthFlowTest extends TestCase
             'email' => $email,
             'password' => 'password123',
             'role' => 'admin',
-            'status' => 'aktif',
+            'status' => 'nonaktif',
         ])->assertCreated();
 
-        $this->assertDatabaseHas('users', ['email' => $email, 'role' => 'warga', 'status' => 'menunggu']);
+        // Akun aktif itu memang kebijakan barunya; yang dikunci di sini adalah
+        // payload TIDAK boleh menentukan peran (maupun status) miliknya sendiri.
+        $this->assertDatabaseHas('users', ['email' => $email, 'role' => 'warga', 'status' => 'aktif']);
     }
 
     public function test_register_rejects_duplicate_email_and_short_password(): void

@@ -14,10 +14,11 @@ DirectoryIndex index.html index.php
 
     # CSP hanya untuk dokumen HTML (SPA). Origin eksternal yang dipakai:
     # Google Fonts (style+font), tile OSM (peta), Nominatim (geocoding),
-    # Open-Meteo (cuaca), picsum.photos (placeholder portal), blob: (worker
-    # maplibre-gl), data: (ikon inline).
+    # Open-Meteo (cuaca), blob: (worker maplibre-gl), data: (ikon inline).
+    # picsum.photos DIHAPUS dari img-src: placeholder-nya sudah dibuang dari
+    # portal, jadi allowlist-nya tak punya alasan untuk tetap ada.
     <FilesMatch "\.html$">
-        Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org https://picsum.photos; connect-src 'self' https://tile.openstreetmap.org https://nominatim.openstreetmap.org https://marine-api.open-meteo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+        Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org; connect-src 'self' https://tile.openstreetmap.org https://nominatim.openstreetmap.org https://marine-api.open-meteo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
     </FilesMatch>
 </IfModule>
 

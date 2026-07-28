@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Icon } from "../../shared/components/Icon";
 import { api, ApiError } from "../../shared/api/client";
 import { dashboardHashForRole } from "../../shared/constants/roles";
+import { clearSession, setSession } from "../../shared/auth/session";
 
 type ExchangeResponse = { access_token: string; user: any };
 
@@ -27,13 +28,12 @@ export function OAuthCallbackPage() {
       body: JSON.stringify({ code }),
     })
       .then((res) => {
-        localStorage.setItem("siperah-token", res.access_token);
-        localStorage.setItem("siperah-user", JSON.stringify(res.user));
+        setSession(res.access_token, res.user);
         window.location.hash = dashboardHashForRole(res.user.role);
       })
       .catch((err: unknown) => {
         console.error(err);
-        localStorage.removeItem("siperah-token");
+        clearSession();
 
         // Akun belum aktif → panel status di halaman login (bukan toast generik).
         if (err instanceof ApiError && err.status === 403 && err.body?.account_status) {

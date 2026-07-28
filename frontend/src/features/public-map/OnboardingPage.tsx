@@ -4,6 +4,7 @@ import { Icon } from "../../shared/components/Icon";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../../shared/api/client";
 import { MapPreview } from "../../shared/components/MapPreview";
+import { getCurrentUser, isLoggedIn } from "../../shared/auth/session";
 
 type Prediction = { risk_class: string; risk_probability: number; region?: { village?: string | null; regency?: string | null } | null };
 type PredictionResponse = { data: Prediction[] };
@@ -33,11 +34,10 @@ export function OnboardingPage() {
 
   // CTA "Mulai Melapor" harus mengarah ke login bila belum autentikasi.
   let reportHref = "#/login";
-  try {
-    const user = JSON.parse(localStorage.getItem("siperah-user") || "null") as { role?: string } | null;
-    const isLoggedIn = !!localStorage.getItem("siperah-token") && !!user;
-    if (isLoggedIn) reportHref = user?.role === "warga" || user?.role === "admin" ? "#/reports" : "#/map";
-  } catch { /* fallback ke #/login */ }
+  if (isLoggedIn()) {
+    const role = getCurrentUser()?.role;
+    reportHref = role === "warga" || role === "admin" ? "#/reports" : "#/map";
+  }
 
   useEffect(() => {
     void api<PredictionResponse>("/public/predictions").then((response) => setPredictions(response.data)).catch(() => undefined);

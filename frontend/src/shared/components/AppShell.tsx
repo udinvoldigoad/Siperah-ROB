@@ -6,6 +6,7 @@ import { Breadcrumbs, type BreadcrumbItem } from "./Breadcrumbs";
 import { useToast } from "./Toast";
 import { api } from "../api/client";
 import { roleLabels } from "../constants/roles";
+import { clearSession, getCurrentUser, isLoggedIn } from "../auth/session";
 
 const SIDEBAR_STORAGE_KEY = "siperah-sidebar";
 
@@ -93,13 +94,8 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
     return () => window.removeEventListener("siperah-auth-expired", handleAuthExpired);
   }, []);
 
-  let user: { name: string; role: string; region_id: string | null } | null = null;
-  try {
-    const userStr = localStorage.getItem("siperah-user");
-    if (userStr) user = JSON.parse(userStr);
-  } catch {}
-
-  const isUserLoggedIn = !!localStorage.getItem("siperah-token") && !!user;
+  const user = getCurrentUser();
+  const isUserLoggedIn = isLoggedIn();
 
   useEffect(() => {
     if (!isUserLoggedIn) return;
@@ -207,8 +203,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
                 aria-label="Logout"
                 href="#/"
                 onClick={() => {
-                  localStorage.removeItem("siperah-token");
-                  localStorage.removeItem("siperah-user");
+                  clearSession();
                 }}
                 style={{ color: "var(--critical)", display: "flex", alignItems: "center", gap: "8px", fontWeight: 600, fontSize: "14px", textDecoration: "none", marginTop: "4px" }}
               >
@@ -391,8 +386,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
                 <a
                   href="#/"
                   onClick={() => {
-                    localStorage.removeItem("siperah-token");
-                    localStorage.removeItem("siperah-user");
+                    clearSession();
                     setIsMoreMenuOpen(false);
                     window.location.hash = "/";
                     window.location.reload();

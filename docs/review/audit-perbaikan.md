@@ -17,7 +17,7 @@
 >
 > 7. ✅ **Hardening konfigurasi & mass assignment** — `role`/`status`/`google_id` keluar dari `$fillable` User (disetel eksplisit di controller berwenang) + `.env.example` default `APP_DEBUG=false` & CORS tak lagi `*`.
 >
-> 8. ✅ **Kebijakan akun Google OAuth** — signup Google ikut antrean approval (`menunggu`), gerbang status + audit log disamakan dengan login email-password, ditutup `GoogleOAuthTest`.
+> 8. ✅ **Kebijakan akun Google OAuth** — gerbang status + audit log disamakan dengan login email-password, ditutup `GoogleOAuthTest`. Sejak 2026-07-28 kebijakan approval-nya: **pendaftaran mandiri (Google & email/password) langsung aktif sebagai warga**, tanpa antre admin — yang penting kedua jalur identik.
 >
 > 9. ✅ **Token OAuth keluar dari URL** — redirect membawa kode sekali pakai (TTL 120 dtk, hash di cache); token Sanctum hanya lewat body `POST /auth/google/exchange`.
 >
@@ -25,8 +25,16 @@
 >
 > 11. ✅ **`provinceForecast` diagregasi per tanggal** — endpoint publik anonim tak lagi menarik ~9.600 baris (+ N+1 `is_monitored`); kini ≤30 baris, 1 query, cache 30 menit.
 >
-> **Seluruh prioritas 🔴 selesai.**
-> Suite backend: **160/160 hijau**.
+> 12. ✅ **Batch UI/UX (9 item)** — AppShell merender `breadcrumbs`/`subtitle`; toast error 12 dtk + jeda saat hover/fokus; dropdown wilayah tak menutup sendiri saat digulung; token `--scrim`/`--accent`/`--low` menggantikan variabel tak terdefinisi; badge status berkapitalisasi; kursor `not-allowed` untuk tombol disabled; Mode Awam berhenti meminta GPS tanpa gestur; antrean operator memakai skeleton; badge risiko peta jadi `<button>` + `aria-label` dipulihkan.
+>
+> 13. ✅ **Anti-race & routing (3 item)** — penanda urutan request di dashboard Provinsi & Operator; guard izin `App.tsx` jadi fungsi murni, mutasi hash pindah ke `useEffect`.
+>
+> 14. ✅ **Kebijakan registrasi (keputusan produk)** — pendaftaran mandiri lewat Google **maupun** email/password langsung aktif sebagai `warga`, tanpa antre admin. Gerbang status, larangan klaim peran, dan kesamaan kedua jalur tetap dijaga.
+>
+> 15. ✅ **Batch pembersihan (8 item)** — debounce pencarian admin; helper `downloadFile()` menggantikan 4 salinan export CSV (+401 kini ditangani terpusat); `shared/auth/session.ts` menggantikan parsing localStorage di 9 file; mock laporan & `MetricCard` mati dihapus; placeholder picsum dibuang + dicabut dari CSP; Nominatim diberi timeout & cek status. Dugaan CSP-vs-Google-Fonts **terbantah** — CSP produksi sudah meng-allowlist keduanya.
+>
+> **Seluruh prioritas 🔴 selesai.** Sisa 🟠/🟡 terbesar: dedup `CitizenModePage` & sapu `any` (ditunda sengaja, lihat §5), plus cluster N+1 backend di §6.
+> Suite backend: **161/161 hijau** · E2E Playwright: **14 lolos, 2 gagal** (`login.spec` warga→`#/` & `research.spec`; keduanya sudah gagal sebelum rangkaian perbaikan ini — belum ditangani).
 
 ---
 
@@ -96,22 +104,14 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 - [ ] 🟠 **Penggunaan `any` tersebar luas (Variants, catch, `api<any>`, GeoJSON)** — `frontend/src/features/admin/AuditLogPage.tsx:52` *(DITUNDA sengaja — refactor, bukan bug)*
   Melumpuhkan type-check padahal tipe konkret sudah ada. → `Variants`, tipe respons konkret, `catch(err: unknown)`.
   **Ukuran terukur:** 54 lokasi di 14 file (10 CitizenModePage · 6 AdminUsersPage · 5 ResearchPortal · 5 OperatorDashboard · 5 ForgotPassword · 3 `client.ts` · dst). Sebagian tumpang tindih dengan item di atas, jadi paling efisien dikerjakan bersamanya.
-- [ ] 🟠 **Pencarian pengguna admin memicu request tiap ketikan (tanpa debounce)** — `frontend/src/features/admin/AdminUsersPage.tsx:982`
-  → Debounce 300–400ms sebelum trigger fetch.
-- [ ] 🟠 **Boilerplate export CSV terduplikasi di 5 file, URL tidak konsisten, bypass `api()`** — `frontend/src/features/dashboards/OperatorDashboardPage.tsx:137`
-  `${apiBase}/...` vs `apiUrl('/api/...')` → path divergen; semua bypass handler 401 terpusat. → Helper `downloadFile()` tunggal.
-- [ ] 🟠 **`picsum.photos` placeholder + CSS mati `.inline-pill-img` + properti `align-middle` invalid** — `frontend/src/app/PortalPage.tsx:267`
-  → Hapus blok mati & URL eksternal acak.
-- [ ] 🟡 **Data laporan dummy hardcoded ikut ke produksi via `findOperatorReport`** — `frontend/src/features/reports/reportData.ts:74`
-  3 laporan contoh nyeed ReportDetailPage; bisa tampil saat fetch gagal. → Hapus mock, awali `undefined` + skeleton.
-- [ ] 🟡 **Komponen `MetricCard` tidak pernah diimpor (file mati)** — `frontend/src/shared/components/MetricCard.tsx:3`
-  → Hapus atau pakai ulang menggantikan kartu inline.
-- [ ] 🟡 **Parsing user dari localStorage diduplikasi di 8 file tanpa helper terpusat** — `frontend/src/shared/components/AppShell.tsx:98`
-  → Sediakan `getCurrentUser()`/`getToken()`/`isLoggedIn()` (atau AuthContext).
-- [ ] 🟡 **Reverse-geocode ke Nominatim tanpa AbortController / handling rate-limit** — `frontend/src/features/public-map/CitizenModePage.tsx:857`
-  fetch mentah tanpa timeout/429. → Bungkus AbortController + timeout, pertimbangkan via backend.
-- [ ] 🟡 ⚠️ **Google Fonts (Inter) dari CDN berpotensi diblok CSP produksi** — `frontend/src/app/PortalPage.tsx:73` *(PLAUSIBLE — belum ada file CSP di repo yang membuktikan)*
-  Glyph peta sengaja di-host sendiri karena font eksternal diblok CSP. → Self-host Inter atau allowlist CSP.
+- [x] ✅ 🟠 **Pencarian pengguna admin memicu request tiap ketikan (tanpa debounce)** — SELESAI: state `search` (responsif di input) dipisah dari `appliedSearch` (yang dikirim ke API), dijembatani debounce 350 ms. Reset halaman ikut pindah ke debounce agar paginasi tak melompat tiap huruf. Diverifikasi e2e: mengetik 8 karakter menghasilkan ≤2 request (sebelumnya 8).
+- [x] ✅ 🟠 **Boilerplate export CSV terduplikasi di 5 file, URL tidak konsisten, bypass `api()`** — SELESAI: `downloadFile()` di `shared/api/client.ts` menggantikan 4 blok salinan (~20 baris masing-masing) di Admin/Audit/Operator/Provinsi. Dua gaya URL (`${apiBase}/...` vs `apiUrl('/api/...')`) disatukan, dan **401 kini diperlakukan sama dengan `api()`** — sesi dibersihkan lalu diarahkan login, bukan cuma toast "Export gagal (401)". `URL.revokeObjectURL` dipindah ke `finally` supaya blob tak menggantung saat unduhan gagal.
+- [x] ✅ 🟠 **`picsum.photos` placeholder + CSS mati `.inline-pill-img` + properti `align-middle` invalid** — SELESAI: kelas `.inline-pill-img` tak pernah dipakai di JSX mana pun (hanya dideklarasikan + di-`display:none`-kan di media query), jadi kedua bloknya dihapus. Sekalian **`https://picsum.photos` dicabut dari `img-src` CSP** di `backend/public/.htaccess` — allowlist-nya tak lagi punya alasan untuk ada. Diverifikasi e2e: nol request ke picsum saat portal dibuka.
+- [x] ✅ 🟡 **Data laporan dummy hardcoded ikut ke produksi via `findOperatorReport`** — SELESAI: 61 baris mock + `findOperatorReport()` dihapus; `ReportDetailPage` selalu mulai `undefined` + skeleton. Diverifikasi e2e dengan memaksa API balas 500: nama fiktif ("Panjang Utara", "Rudi Hartono") tak lagi muncul.
+- [x] ✅ 🟡 **Komponen `MetricCard` tidak pernah diimpor (file mati)** — SELESAI: dihapus. Halaman yang ada memakai kartu KPI inline dengan animasi framer-motion masing-masing, jadi memaksa memakai komponen ini justru menurunkan kualitas tampilan.
+- [x] ✅ 🟡 **Parsing user dari localStorage diduplikasi di 8 file tanpa helper terpusat** — SELESAI: `shared/auth/session.ts` (`getToken`/`getCurrentUser`/`isLoggedIn`/`setSession`/`clearSession`) dipakai di **9** file. `getCurrentUser()` juga memvalidasi bentuknya, bukan hanya `JSON.parse` — data sesi versi lama/rusak kini dianggap "belum login" alih-alih menghasilkan objek separuh jadi. Diverifikasi e2e dengan sengaja merusak `siperah-user`: pengguna diarahkan ke login, bukan crash.
+- [x] ✅ 🟡 **Reverse-geocode ke Nominatim tanpa AbortController / handling rate-limit** — SELESAI: `AbortController` + timeout 8 detik, dan status non-OK (429/5xx) diperiksa eksplisit — sebelumnya body error ikut di-`json()` lalu lolos sebagai "alamat". Kegagalan apa pun jatuh ke label generik; koordinatnya sendiri sudah didapat sebelum langkah ini, jadi fitur intinya tak terganggu.
+- [x] ❌ 🟡 **Google Fonts (Inter) dari CDN berpotensi diblok CSP produksi** — **TIDAK BERLAKU (diverifikasi di produksi).** Header CSP live sudah meng-allowlist keduanya secara eksplisit: `style-src ... https://fonts.googleapis.com` dan `font-src ... https://fonts.gstatic.com` (sumbernya `backend/public/.htaccess`, bukan file yang tak ada seperti dugaan audit). Tak ada yang perlu diubah — dugaan `PLAUSIBLE`-nya terbantah, bukan dikerjakan.
 
 ## 6. 🛠️ Backend (Laravel) (13)
 
@@ -147,7 +147,8 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 - [x] ✅ 🟠 **OTP disimpan plaintext di DB & ditulis ke log aplikasi** — SELESAI (`b1908f9`): kolom `otp` diisi `null`, `Log::info` OTP dihapus, verifikasi via hash `token`.
 - [x] ✅ 🟠 **Reset kata sandi tidak mencabut token/sesi Sanctum** — SELESAI (`b1908f9`): `$user->tokens()->delete()` setelah reset.
 - [x] ✅ 🟠 **Token Sanctum dikirim lewat query string URL pada callback Google OAuth** — SELESAI: callback kini meredirect `?code=<sekali-pakai>` (acak 64 char, disimpan sebagai hash SHA-256 di cache, TTL 120 detik, hangus lewat `Cache::pull`). SPA menukarnya di `POST /auth/google/exchange` (throttle 10/menit) dan menerima token di **body** respons; token, `last_login_at`, & audit sukses pindah ke titik tukar itu, plus cek ulang status akun di sana. 3 tes baru mengunci: URL tak pernah memuat token, kode hanya sah sekali, dan akun yang dinonaktifkan setelah redirect tetap ditolak 403.
-- [x] ✅ 🟠 **Callback Google OAuth abaikan status akun (signup auto-aktif, lewati approval)** — SELESAI: signup Google kini `warga` + **`menunggu`** (sama dengan `/auth/register`), gerbang status tetap menolak sebelum token terbit, dan alurnya menulis audit log (`register` success / `login` success·denied, `provider: google`) seperti login email-password. `GoogleOAuthTest` (3 tes) mengunci: signup baru → `?error=menunggu` tanpa token, akun aktif → token + `google_id` tertaut, ketiga status non-aktif → ditolak & teraudit.
+- [x] ✅ 🟠 **Callback Google OAuth abaikan status akun (signup auto-aktif, lewati approval)** — SELESAI: **gerbang status** dipasang (akun `menunggu`/`nonaktif`/`ditolak` tak pernah dapat token, sebelumnya tak diperiksa sama sekali) dan alurnya menulis audit log (`register` success / `login` success·denied, `provider: google`) seperti login email-password.
+  **Kebijakan approval-nya sendiri: keputusan produk (2026-07-28) — pendaftaran mandiri LANGSUNG AKTIF sebagai warga, baik lewat Google maupun email/password.** Yang jadi inti temuan audit adalah *ketimpangan* antara kedua jalur; keduanya kini identik, jadi tak ada lagi jalur yang lebih longgar untuk dieksploitasi. Peran di atas warga tetap hanya bisa diberikan admin, dan admin tetap bisa menonaktifkan/menolak akun kapan pun. `GoogleOAuthTest` mengunci: signup baru → `warga`+`aktif` & dapat kode tukar, akun aktif → token + `google_id` tertaut, ketiga status non-aktif → ditolak & teraudit, serta signup mandiri tak pernah bisa mengklaim peran istimewa.
   Sisa terkait (belum dikerjakan): callback belum memeriksa `email_verified` dari Google sebelum menautkan akun berdasarkan email.
 - [x] ✅ 🟠 **Koordinat presisi penuh pelapor bocor di endpoint publik** — SELESAI (`efa3118`): `ReportResource` membulatkan 3 desimal secara **default**, presisi penuh hanya bila `$request->user()` ada → endpoint publik baru otomatis aman. Titik `/public/map` ikut dibulatkan. Dokumen kontrak API diperbarui.
 - [x] ✅ 🟡 **Kolom `role`/`status`/`google_id` ada di `$fillable` User (risiko laten mass assignment)** — SELESAI: ketiganya dikeluarkan dari `$fillable`; Auth/Admin/GoogleAuth controller menyetelnya eksplisit (`$user->role = ...`), fixture test pakai `User::forceCreate()`. `UserMassAssignmentTest` mengunci invarian (`isFillable()` false + `fill()` mengabaikan) untuk ketiga kolom.

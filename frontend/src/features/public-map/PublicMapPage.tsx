@@ -6,6 +6,7 @@ import { api } from "../../shared/api/client";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { riskColors, riskLabels } from "../../shared/constants/risk";
+import { getCurrentUser } from "../../shared/auth/session";
 import { severityLabels, type ReportSeverity } from "../reports/reportData";
 
 type GeoJsonFeature = { type: "Feature"; id: string; geometry: { type: string; coordinates: unknown }; properties: Record<string, unknown> };
@@ -631,13 +632,7 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, user
 }
 
 export function PublicMapPage() {
-  let userRole = "";
-  try {
-    const userStr = localStorage.getItem("siperah-user");
-    if (userStr) {
-      userRole = JSON.parse(userStr).role;
-    }
-  } catch(e) {}
+  const userRole = getCurrentUser()?.role ?? "";
 
   const [regions, setRegions] = useState<FeatureCollection>({ type: "FeatureCollection", features: [] });
   const [reports, setReports] = useState<FeatureCollection>({ type: "FeatureCollection", features: [] });

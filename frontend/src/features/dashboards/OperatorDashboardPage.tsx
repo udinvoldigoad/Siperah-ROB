@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { useToast } from "../../shared/components/Toast";
 import { fetchOperatorReports, severityLabels, updateOperatorReportStatus, type OperatorReport, type ReportSeverity } from "../reports/reportData";
-import { api, apiBase } from "../../shared/api/client";
+import { api, downloadFile } from "../../shared/api/client";
 import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
 import { motion, AnimatePresence } from "framer-motion";
@@ -150,21 +150,7 @@ export function OperatorDashboardPage() {
 
   const handleExport = async () => {
     try {
-      const token = localStorage.getItem("siperah-token");
-      const response = await fetch(`${apiBase}/dashboard/operator/reports/export`, {
-        headers: {
-          Accept: "text/csv",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-      if (!response.ok) throw new Error("Gagal mengunduh export laporan.");
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "dashboard-operator-laporan.csv";
-      link.click();
-      window.URL.revokeObjectURL(url);
+      await downloadFile("/dashboard/operator/reports/export", "dashboard-operator-laporan.csv");
       toast.success("Export laporan operator berhasil diunduh.");
     } catch (err: any) {
       toast.error(err.message || "Gagal export laporan operator.");

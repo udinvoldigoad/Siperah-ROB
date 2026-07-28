@@ -79,9 +79,16 @@ final class AuthController
             'region_id' => $data['region_id'] ?? null,
         ]);
         // Di luar $fillable — disetel eksplisit agar payload registrasi tidak
-        // pernah bisa memilih peran atau melewati approval admin.
-        $user->role = 'warga'; // Default to warga, admin must upgrade
-        $user->status = 'menunggu'; // Default to pending approval
+        // pernah bisa memilih perannya sendiri.
+        //
+        // Kebijakan (keputusan produk): pendaftaran mandiri LANGSUNG AKTIF
+        // sebagai warga, tanpa antre persetujuan admin — hambatan approval
+        // menahan warga melapor genangan justru saat kejadian berlangsung.
+        // Peran di atas warga tetap hanya bisa diberikan admin, dan admin tetap
+        // bisa menonaktifkan/menolak akun kapan pun (gerbang status di login
+        // tidak dilonggarkan).
+        $user->role = 'warga';
+        $user->status = 'aktif';
         $user->save();
 
         $this->audit->write($request, 'register', 'success', $user->email, [
@@ -91,7 +98,7 @@ final class AuthController
         ]);
 
         return response()->json([
-            'message' => 'Registrasi berhasil. Menunggu persetujuan admin.',
+            'message' => 'Registrasi berhasil. Silakan masuk dengan email dan kata sandi Anda.',
             'user' => new UserResource($user)
         ], 201);
     }

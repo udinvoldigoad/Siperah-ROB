@@ -6,23 +6,23 @@ import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { Skeleton } from "../../shared/components/Skeleton";
 import { useToast } from "../../shared/components/Toast";
-import { fetchOperatorReport, findOperatorReport, severityLabels, statusLabels, updateOperatorReportStatus, type OperatorReport, type ReportStatus } from "./reportData";
+import { fetchOperatorReport, severityLabels, statusLabels, updateOperatorReportStatus, type OperatorReport, type ReportStatus } from "./reportData";
 
 export function ReportDetailPage({ reportId }: { reportId: string }) {
-  const [report, setReport] = useState<OperatorReport | undefined>(() => findOperatorReport(reportId));
+  // Selalu mulai kosong + skeleton. Dulu di-seed dari 3 laporan contoh
+  // hardcoded yang ikut ter-bundle ke produksi, sehingga saat fetch gagal
+  // operator bisa melihat laporan fiktif seolah data asli.
+  const [report, setReport] = useState<OperatorReport | undefined>(undefined);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  // Skeleton hanya saat belum ada data lokal (laporan asli dari API) agar tak
-  // ada kedip "tidak ditemukan" sebelum fetch selesai.
-  const [isLoading, setIsLoading] = useState(() => !findOperatorReport(reportId));
+  const [isLoading, setIsLoading] = useState(true);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const toast = useToast();
 
   useEffect(() => {
-    const local = findOperatorReport(reportId);
-    setReport(local);
-    setIsLoading(!local);
+    setReport(undefined);
+    setIsLoading(true);
     fetchOperatorReport(reportId)
       .then((data) => { setReport(data); setError(""); })
       // Teruskan pesan asli API — 403 "di luar wilayah kerja" atau 404 jauh

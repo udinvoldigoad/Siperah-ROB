@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
-import { api, apiUrl } from "../../shared/api/client";
+import { api, apiUrl, downloadFile } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { riskLabels } from "../../shared/constants/risk";
@@ -161,26 +161,10 @@ export function ProvinceDashboardPage() {
 
   const handleProvinceExport = async () => {
     try {
-      const token = localStorage.getItem("siperah-token");
-      const params = new URLSearchParams();
-      if (selectedMonth) params.set("month", selectedMonth);
-      if (selectedRegency !== "all") params.set("regency", selectedRegency);
-      const response = await fetch(apiUrl(`/api/dashboard/province/export${params.toString() ? `?${params.toString()}` : ""}`), {
-        headers: {
-          Accept: "text/csv",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+      await downloadFile("/dashboard/province/export", "dashboard-provinsi-risiko.csv", {
+        month: selectedMonth,
+        regency: selectedRegency === "all" ? "" : selectedRegency,
       });
-      if (!response.ok) throw new Error(`Export gagal (${response.status})`);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = "dashboard-provinsi-risiko.csv";
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
       toast.success("Export CSV provinsi mulai diunduh.");
     } catch (err: any) {
       toast.error(err.message || "Gagal mengekspor CSV provinsi.");

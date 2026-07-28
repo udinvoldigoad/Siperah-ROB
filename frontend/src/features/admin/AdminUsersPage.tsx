@@ -1,7 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AppShell } from "../../shared/components/AppShell";
-import { api, apiUrl } from "../../shared/api/client";
+import { api, apiUrl, downloadFile } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
@@ -223,6 +223,10 @@ export function AdminUsersPage() {
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
+  // Nilai yang benar-benar dikirim ke API. Kotak pencarian tetap responsif
+  // (state `search` berubah tiap ketikan) tapi request baru ditembakkan setelah
+  // pengetikan berhenti — dulu setiap huruf memicu satu request /admin/users.
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [isCreateOpen, setCreateOpen] = useState(false);
 
   // Permohonan izin akses API (peneliti) — ditinjau lewat modal terpisah.
@@ -253,7 +257,7 @@ export function AdminUsersPage() {
     const query = new URLSearchParams();
     if (role) query.append("role", role);
     if (status) query.append("status", status);
-    if (search) query.append("search", search);
+    if (appliedSearch) query.append("search", appliedSearch);
     query.append("page", String(page));
 
     return api<UserListResponse>(`/admin/users?${query.toString()}`)
@@ -269,7 +273,18 @@ export function AdminUsersPage() {
         setError(err instanceof Error ? err.message : "Daftar pengguna belum bisa dimuat.");
       })
       .finally(() => { if (seq === fetchSeqRef.current) setIsLoading(false); });
-  }, [role, status, search, page]);
+  }, [role, status, appliedSearch, page]);
+
+  // Debounce 350ms: cukup untuk menelan satu kata yang diketik cepat tanpa
+  // terasa lambat. Timer di-reset tiap ketikan, jadi hanya jeda terakhir yang
+  // benar-benar menembak request.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setAppliedSearch(search);
+      setPage(1);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     fetchUsers();
@@ -495,26 +510,9 @@ export function AdminUsersPage() {
 
   const handleExportUsers = async () => {
     try {
-      const token = localStorage.getItem("siperah-token");
       // Bawa filter aktif — tombol export berada tepat di atas bar filter,
       // hasil unduhan harus sama dengan yang sedang dilihat admin.
-      const query = new URLSearchParams();
-      if (role) query.append("role", role);
-      if (status) query.append("status", status);
-      if (search) query.append("search", search);
-      const response = await fetch(apiUrl(`/api/admin/users/export${query.size ? `?${query.toString()}` : ""}`), {
-        headers: { Accept: "text/csv", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      });
-      if (!response.ok) throw new Error(`Export gagal (${response.status})`);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = "admin-users.csv";
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
+      await downloadFile("/admin/users/export", "admin-users.csv", { role, status, search: appliedSearch });
       toast.success("Export pengguna berhasil diunduh.");
     } catch (err: any) {
       toast.error(err.message || "Gagal export pengguna.");
@@ -1060,7 +1058,9 @@ export function AdminUsersPage() {
                 placeholder="Cari nama, email..."
                 maxLength={100}
                 value={search}
-                onChange={(e) => onFilterChange(setSearch)(e.target.value)}
+                // Reset halaman ditangani efek debounce, bukan di sini —
+                // kalau tidak, halaman ikut melompat tiap huruf diketik.
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
           </div>

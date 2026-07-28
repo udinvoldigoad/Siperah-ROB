@@ -3,6 +3,7 @@ import { Icon } from "../shared/components/Icon";
 import { MapPreview } from "../shared/components/MapPreview";
 import { motion, AnimatePresence } from "framer-motion";
 import { dashboardHashForRole } from "../shared/constants/roles";
+import { getCurrentUser, isLoggedIn } from "../shared/auth/session";
 
 const faqData = [
   {
@@ -47,20 +48,13 @@ export function PortalPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const userStr = localStorage.getItem("siperah-user");
-  const isLoggedIn = Boolean(localStorage.getItem("siperah-token") && userStr);
-  let currentRole = "";
-  let dashboardRoute = "#/login";
-  if (userStr) {
-    try {
-      const user = JSON.parse(userStr);
-      currentRole = user.role || "";
-      // Pakai helper kanonik — roleMap lama memakai kunci yang tidak pernah
-      // ada di DB (operator_kabkota/operator_provinsi), sehingga operator BPBD
-      // yang sudah login malah dilempar ke halaman login.
-      dashboardRoute = dashboardHashForRole(user.role);
-    } catch (e) {}
-  }
+  const currentUser = getCurrentUser();
+  const userIsLoggedIn = isLoggedIn();
+  const currentRole = currentUser?.role ?? "";
+  // Pakai helper kanonik — roleMap lama memakai kunci yang tidak pernah ada di
+  // DB (operator_kabkota/operator_provinsi), sehingga operator BPBD yang sudah
+  // login malah dilempar ke halaman login.
+  const dashboardRoute = currentUser ? dashboardHashForRole(currentUser.role) : "#/login";
 
   return (
     <div className="siperah-landing-root">
@@ -253,21 +247,6 @@ export function PortalPage() {
         }
         .hero-section h1 span.highlight {
           color: var(--accent-blue);
-        }
-        /* Inline Typography Image Pill */
-        .inline-pill-img {
-          display: inline-block;
-          width: 90px;
-          height: 48px;
-          border-radius: 100px;
-          align-middle: middle;
-          background-image: url('https://picsum.photos/seed/coastal/400/200');
-          background-size: cover;
-          background-position: center;
-          margin: 0 12px;
-          border: 1.5px solid rgba(255,255,255,0.8);
-          box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-          transform: translateY(6px);
         }
         .hero-section p {
           font-size: clamp(1rem, 1.8vw, 1.25rem);
@@ -747,7 +726,6 @@ export function PortalPage() {
           .hero-section p { font-size: 1rem !important; margin-bottom: 24px; padding: 0 10px; }
           .hero-actions { flex-direction: column; gap: 12px !important; margin-bottom: 24px !important; }
           .hero-actions > a { width: 100%; box-sizing: border-box; text-align: center; }
-          .inline-pill-img { display: none; }
           /* Pita marquee dipadatkan (tinggi 160px sebelumnya menyisakan band
              kosong ~96px) + margin bawah dipangkas, dan header "Portal Sistem
              Terpadu" disembunyikan, agar kartu Public Access naik mengisi
@@ -842,7 +820,7 @@ export function PortalPage() {
           >
             <Icon name={isDarkMode ? "light_mode" : "dark_mode"} />
           </button>
-          <a className="btn-nav-primary" href={isLoggedIn ? dashboardRoute : "#/login"}>{isLoggedIn ? "Dashboard" : "Login"}</a>
+          <a className="btn-nav-primary" href={userIsLoggedIn ? dashboardRoute : "#/login"}>{userIsLoggedIn ? "Dashboard" : "Login"}</a>
         </div>
       </header>
 
@@ -1092,7 +1070,7 @@ export function PortalPage() {
             </div>
           </div>
           <div style={{ marginTop: "40px" }}>
-            <a href={!isLoggedIn ? "#/login" : currentRole === "warga" ? "#/reports" : dashboardRoute} className="btn solid" style={{ background: "var(--ocean-dark, #0f172a)", color: "#fff", padding: "14px 32px", borderRadius: "10px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            <a href={!userIsLoggedIn ? "#/login" : currentRole === "warga" ? "#/reports" : dashboardRoute} className="btn solid" style={{ background: "var(--ocean-dark, #0f172a)", color: "#fff", padding: "14px 32px", borderRadius: "10px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
               Mulai Melapor Sekarang <Icon name="add_circle" />
             </a>
           </div>

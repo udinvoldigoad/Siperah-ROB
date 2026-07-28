@@ -5,6 +5,7 @@ import { navItems } from "./navigation";
 import { ToastProvider } from "../shared/components/Toast";
 import { ErrorBoundary } from "../shared/components/ErrorBoundary";
 import { PageFallback } from "../shared/components/PageFallback";
+import { getCurrentUser, isLoggedIn } from "../shared/auth/session";
 
 import { OAuthCallbackPage } from "../features/auth/OAuthCallbackPage";
 import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
@@ -44,13 +45,8 @@ function currentRoute() {
 function guardRedirect(route: string): string | null {
   if (route === "reset-password") return "#/forgot-password";
 
-  let user: { role: string } | null = null;
-  try {
-    const userStr = localStorage.getItem("siperah-user");
-    if (userStr) user = JSON.parse(userStr);
-  } catch {}
-
-  const isUserLoggedIn = !!localStorage.getItem("siperah-token") && !!user;
+  const user = getCurrentUser();
+  const isUserLoggedIn = isLoggedIn();
 
   const baseRoute = route.split("/")[0];
   const navItem = navItems.find(item => item.href === `#/${baseRoute}`);

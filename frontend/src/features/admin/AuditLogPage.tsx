@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
-import { api, apiUrl } from "../../shared/api/client";
+import { api, downloadFile } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
@@ -167,25 +167,7 @@ export function AuditLogPage() {
 
   const handleExportAudit = async () => {
     try {
-      const query = new URLSearchParams();
-      if (action) query.append("action", action);
-      if (outcome) query.append("outcome", outcome);
-      if (search) query.append("search", search);
-      query.append("format", "csv");
-      const token = localStorage.getItem("siperah-token");
-      const response = await fetch(apiUrl(`/api/admin/audit-logs?${query.toString()}`), {
-        headers: { Accept: "text/csv", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      });
-      if (!response.ok) throw new Error(`Export gagal (${response.status})`);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = "audit_logs.csv";
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
+      await downloadFile("/admin/audit-logs", "audit_logs.csv", { action, outcome, search, format: "csv" });
       toast.success("Export audit log berhasil diunduh.");
     } catch (err: any) {
       toast.error(err.message || "Gagal export audit log.");

@@ -3,6 +3,7 @@ import { Icon } from "../../shared/components/Icon";
 import { api, apiUrl, ApiError } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { dashboardHashForRole } from "../../shared/constants/roles";
+import { setSession } from "../../shared/auth/session";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface LoginResponse {
@@ -26,7 +27,10 @@ export function LoginPage() {
   useEffect(() => {
     const hash = window.location.hash;
     if (hash.includes("error=menunggu")) {
-      setLoginNotice({ message: "Pendaftaran lewat Google berhasil, namun akun Anda masih menunggu persetujuan admin.", status: "menunggu" });
+      // Pendaftaran mandiri (email maupun Google) kini langsung aktif, jadi
+      // status "menunggu" hanya muncul untuk akun yang SENGAJA dibuat admin
+      // dalam keadaan menunggu — pesannya tak boleh lagi menyebut pendaftaran.
+      setLoginNotice({ message: "Akun Anda masih menunggu persetujuan admin.", status: "menunggu" });
     } else if (hash.includes("error=nonaktif")) {
       setLoginNotice({ message: "Akun Anda telah dinonaktifkan.", status: "nonaktif" });
     } else if (hash.includes("error=ditolak")) {
@@ -63,8 +67,7 @@ export function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      localStorage.setItem("siperah-token", res.access_token);
-      localStorage.setItem("siperah-user", JSON.stringify(res.user));
+      setSession(res.access_token, res.user);
 
       toast.success(`Selamat datang kembali, ${res.user.name}!`);
 
@@ -106,7 +109,7 @@ export function LoginPage() {
         }),
       });
 
-      toast.success("Pendaftaran berhasil! Permintaan akun menunggu persetujuan admin.");
+      toast.success("Pendaftaran berhasil! Akun Anda langsung aktif — silakan masuk.");
       setMode("login");
       setEmail(regEmail);
       setPassword("");

@@ -45,9 +45,10 @@ class GoogleAuthController
 
             if (!$user) {
                 // Pendaftaran lewat Google = pendaftaran biasa, hanya beda cara
-                // membuktikan kepemilikan email. Kebijakan approval-nya WAJIB
-                // sama dengan /auth/register (warga + menunggu), kalau tidak
-                // tombol "Masuk dengan Google" jadi jalan pintas melewati admin.
+                // membuktikan kepemilikan email. Kebijakannya WAJIB sama dengan
+                // /auth/register — kalau berbeda, salah satu jalur jadi celah
+                // (dulu Google auto-aktif sementara email/password harus antre).
+                // Keduanya kini langsung aktif sebagai warga.
                 $user = new User([
                     'id' => (string) Str::uuid(),
                     'name' => $googleUser->name,
@@ -57,7 +58,7 @@ class GoogleAuthController
                 // (profil Google terverifikasi), bukan dari payload request.
                 $user->google_id = $googleUser->id;
                 $user->role = 'warga';
-                $user->status = 'menunggu';
+                $user->status = 'aktif';
                 $user->save();
 
                 $this->audit->write($request, 'register', 'success', $user->email, [

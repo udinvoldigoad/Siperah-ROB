@@ -3,6 +3,7 @@ import { api } from "../../shared/api/client";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { useToast } from "../../shared/components/Toast";
+import { getCurrentUser } from "../../shared/auth/session";
 import { severityLabels, type ReportSeverity } from "../reports/reportData";
 import { motion, type Variants } from "framer-motion";
 import type { RiskClass } from "../../shared/types/domain";
@@ -425,9 +426,7 @@ function CitizenModeDesktop({
                 <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Informasi lapangan dari masyarakat untuk meningkatkan kewaspadaan.</p>
               </div>
               {(() => {
-                let user: { role?: string } | null = null;
-                try { user = JSON.parse(localStorage.getItem("siperah-user") || "null"); } catch {}
-                return user?.role !== "admin" ? (
+                return getCurrentUser()?.role !== "admin" ? (
                   <a className="btn secondary" href="#/reports" style={{ whiteSpace: "nowrap" }}>Laporkan Genangan</a>
                 ) : null;
               })()}
@@ -886,13 +885,26 @@ export function CitizenModePage() {
         const lon = position.coords.longitude;
         setCoordinates({ lat, lon });
         
+        // Nominatim = layanan pihak ketiga gratis: bisa lambat, bisa membalas
+        // 429, dan tak menjanjikan SLA apa pun. Karena namanya cuma pemanis di
+        // atas koordinat yang SUDAH didapat, kegagalan apa pun tak boleh
+        // menggantung UI — batasi 8 detik lalu jatuh ke label generik.
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 8000);
         try {
-          // Reverse geocode to get actual user location name, enforce Indonesian language
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=id`);
+          // accept-language=id agar nama wilayah tak kembali dalam bahasa Inggris.
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=id`,
+            { signal: controller.signal },
+          );
+          // 429 (kena rate limit) & 5xx tetap punya body JSON, jadi status
+          // harus diperiksa eksplisit — bukan diserahkan ke parse error.
+          if (!res.ok) throw new Error(`Nominatim ${res.status}`);
+
           const geo = await res.json();
           if (geo && geo.address) {
             const locName = [
-              geo.address.residential || geo.address.neighbourhood || geo.address.road || geo.address.village || geo.address.suburb, 
+              geo.address.residential || geo.address.neighbourhood || geo.address.road || geo.address.village || geo.address.suburb,
               geo.address.city || geo.address.town || geo.address.county || geo.address.state
             ].filter(Boolean).join(", ");
             setLocationNote(locName || "Lokasi Anda");
@@ -901,6 +913,8 @@ export function CitizenModePage() {
           }
         } catch {
           setLocationNote("Lokasi perangkat");
+        } finally {
+          window.clearTimeout(timeout);
         }
       },
       (error) => {
@@ -1002,8 +1016,7 @@ export function CitizenModePage() {
   // Tidak ada data prakiraan → biarkan kosong; bagian render menampilkan
   // pesan "belum tersedia", BUKAN tujuh hari "Rendah 0%" karangan.
 
-  let user: { role?: string } | null = null;
-  try { user = JSON.parse(localStorage.getItem("siperah-user") || "null"); } catch {}
+  const user = getCurrentUser();
 
   const actionCards = [
     ["Jauhi area rendah", "Hindari jalan pesisir dan area yang mudah tergenang.", "priority_high"],
