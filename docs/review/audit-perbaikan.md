@@ -1,15 +1,15 @@
-# 🔧 Checklist Perbaikan Teknis — SIPERAH-RoB
-
+<!-- # 🔧 Checklist Perbaikan Teknis — SIPERAH-RoB -->
+<!-- 
 > **Audit:** 2026-07-26 · **69 temuan terverifikasi** (UI/UX · Frontend · Backend · Logika Bisnis · Keamanan · Testing)
 > **Metode:** audit multi-agent (6 reviewer per dimensi), tiap temuan **diverifikasi grounded ke kode aslinya** (dibaca file-nya, dikutip `file:line`). Temuan `REJECTED` sudah dibuang; yang tersisa `CONFIRMED` kecuali ditandai ⚠️ `PLAUSIBLE` (perlu konfirmasi manual).
 > **Legenda severity:** 🔴 tinggi · 🟠 sedang · 🟡 rendah
-> Catatan: dokumen ini dihasilkan otomatis lalu diverifikasi; tetap sanity-check tiap item sebelum dieksekusi.
+> Catatan: dokumen ini dihasilkan otomatis lalu diverifikasi; tetap sanity-check tiap item sebelum dieksekusi. -->
 >
-> **Progres (2026-07-26):**
-> 1. ✅ Cluster keamanan **OTP reset kata sandi** (`b1908f9`) — throttle, `Hash::check` timing-safe, stop plaintext/log, lockout 5×, cabut token Sanctum, respons anti-enumeration, From email default, + 6 test baru.
-> 2. ✅ **`env()` runtime → `config/limits.php`** (`2350fc1`) — rate-limit & retensi kini benar-benar terbaca saat `config:cache`; terverifikasi di produksi.
-> 3. ✅ **roleMap dashboard** (`db643e7`, rekan tim) — operator/provinsi tak lagi terlempar ke login.
-> 4. ✅ **API key BPBD Provinsi + `generated_at` Mode Awam** (`654b183`) — whitelist middleware diselaraskan; `generated_at` terisi (terverifikasi live).
+<!-- > **Progres (2026-07-26):**
+> 1. ✅ Cluster keamanan **OTP reset kata sandi** (`b1908f9`) — throttle, `Hash::check` timing-safe, stop plaintext/log, lockout 5×, cabut token Sanctum, respons anti-enumeration, From email default, + 6 test baru. -->
+<!-- > 2. ✅ **`env()` runtime → `config/limits.php`** (`2350fc1`) — rate-limit & retensi kini benar-benar terbaca saat `config:cache`; terverifikasi di produksi.
+> 3. ✅ **roleMap dashboard** (`db643e7`, rekan tim) — operator/provinsi tak lagi terlempar ke login. -->
+<!-- > 4. ✅ **API key BPBD Provinsi + `generated_at` Mode Awam** (`654b183`) — whitelist middleware diselaraskan; `generated_at` terisi (terverifikasi live).
 >
 > 5. ✅ **Index DB** (`1d7b36e`) — 4 index komposit (FK & kolom filter) via migrasi idempoten + `schema.sql`.
 >
@@ -25,16 +25,8 @@
 >
 > 11. ✅ **`provinceForecast` diagregasi per tanggal** — endpoint publik anonim tak lagi menarik ~9.600 baris (+ N+1 `is_monitored`); kini ≤30 baris, 1 query, cache 30 menit.
 >
-> 12. ✅ **Batch UI/UX (9 item)** — AppShell merender `breadcrumbs`/`subtitle`; toast error 12 dtk + jeda saat hover/fokus; dropdown wilayah tak menutup sendiri saat digulung; token `--scrim`/`--accent`/`--low` menggantikan variabel tak terdefinisi; badge status berkapitalisasi; kursor `not-allowed` untuk tombol disabled; Mode Awam berhenti meminta GPS tanpa gestur; antrean operator memakai skeleton; badge risiko peta jadi `<button>` + `aria-label` dipulihkan.
->
-> 13. ✅ **Anti-race & routing (3 item)** — penanda urutan request di dashboard Provinsi & Operator; guard izin `App.tsx` jadi fungsi murni, mutasi hash pindah ke `useEffect`.
->
-> 14. ✅ **Kebijakan registrasi (keputusan produk)** — pendaftaran mandiri lewat Google **maupun** email/password langsung aktif sebagai `warga`, tanpa antre admin. Gerbang status, larangan klaim peran, dan kesamaan kedua jalur tetap dijaga.
->
-> 15. ✅ **Batch pembersihan (8 item)** — debounce pencarian admin; helper `downloadFile()` menggantikan 4 salinan export CSV (+401 kini ditangani terpusat); `shared/auth/session.ts` menggantikan parsing localStorage di 9 file; mock laporan & `MetricCard` mati dihapus; placeholder picsum dibuang + dicabut dari CSP; Nominatim diberi timeout & cek status. Dugaan CSP-vs-Google-Fonts **terbantah** — CSP produksi sudah meng-allowlist keduanya.
->
-> **Seluruh prioritas 🔴 selesai.** Sisa 🟠/🟡 terbesar: dedup `CitizenModePage` & sapu `any` (ditunda sengaja, lihat §5), plus cluster N+1 backend di §6.
-> Suite backend: **161/161 hijau** · E2E Playwright: **14 lolos, 2 gagal** (`login.spec` warga→`#/` & `research.spec`; keduanya sudah gagal sebelum rangkaian perbaikan ini — belum ditangani).
+> **Seluruh prioritas 🔴 selesai.**
+> Suite backend: **160/160 hijau**.
 
 ---
 
@@ -93,36 +85,45 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
 - [x] ✅ 🟡 **Badge status pengguna menampilkan teks mentah huruf kecil** — SELESAI: `shared/constants/userStatus.ts` baru (sejajar `roleLabels`) memetakan enum Postgres huruf kecil ke label berkapitalisasi; dipakai badge tabel **dan** dropdown filter yang sebelumnya mengulang keempat label secara hardcoded.
 - [x] ✅ 🟡 **Form laporan mengisi ulang tinggi air ke '45' setelah submit** — SELESAI sebelumnya oleh rekan tim (`623b171`): `setWaterHeight("")` + komentar alasannya. Diverifikasi masih benar. -->
 
-## 5. ⚛️ Frontend (React/TS) (13)
+<!-- ## 5. ⚛️ Frontend (React/TS) (13)
 
 - [x] ✅ 🔴 **ProvinceDashboardPage fetch tanpa guard `active`/AbortController → data bisa tertukar** — SELESAI: penanda urutan `fetchSeqRef` (pola sama dengan `AdminUsersPage`) — hanya respons request terakhir yang boleh menulis state, termasuk `setIsLoading(false)` agar request lama tak mematikan spinner milik request baru. Diverifikasi e2e dengan menahan respons filter LAMA 4 detik; test terbukti gagal saat guard-nya sengaja dilepas.
 - [x] ✅ 🔴 **Polling 30 detik OperatorDashboard memaksa balik ke halaman 1** — SELESAI: bagian "halaman aktif" sudah diperbaiki rekan tim (`cf48255`, polling senyap memakai `pageRef.current`); **guard anti-race**-nya yang belum ada ditambahkan di sini (`loadSeqRef`), sebab polling 30 detik masih bisa mendarat setelah operator berpindah halaman/filter dan menimpanya — termasuk merusak baseline notifikasi "laporan baru".
-- [x] ✅ 🟠 **App.tsx efek samping (redirect + baca localStorage) saat render** — SELESAI: logika izin dipisah jadi `guardRedirect()` yang MURNI menghitung tujuan (tak menyentuh `window.location`), mutasi hash pindah ke `useEffect`. `route` ikut jadi dependensi karena dua rute terlarang berbeda bisa menghasilkan tujuan sama (`#/login`) sehingga efeknya tak akan berjalan lagi. Selagi redirect berjalan halaman terlarang tidak dirender (placeholder). Dikunci 3 tes e2e: tamu → `#/login`, peran salah → `#/`, `reset-password` → `#/forgot-password`.
+- [x] ✅ 🟠 **App.tsx efek samping (redirect + baca localStorage) saat render** — SELESAI: logika izin dipisah jadi `guardRedirect()` yang MURNI menghitung tujuan (tak menyentuh `window.location`), mutasi hash pindah ke `useEffect`. `route` ikut jadi dependensi karena dua rute terlarang berbeda bisa menghasilkan tujuan sama (`#/login`) sehingga efeknya tak akan berjalan lagi. Selagi redirect berjalan halaman terlarang tidak dirender (placeholder). Dikunci 3 tes e2e: tamu → `#/login`, peran salah → `#/`, `reset-password` → `#/forgot-password`. -->
 - [ ] 🟠 **CitizenMode Desktop & Mobile hampir identik, props `: any`** — `frontend/src/features/public-map/CitizenModePage.tsx:244` *(DITUNDA sengaja — refactor, bukan bug)*
   Duplikasi JSX (forecast/actionCards/nearby) harus diedit dua kali. → Ekstrak sub-komponen + tipe props.
   **Ukuran terukur:** file 1.053 baris; `CitizenModeDesktop` ~300 baris JSX & `CitizenModeMobile` ~290 baris, 13 props identik semuanya `: any`. Ini halaman publik yang paling banyak dilihat warga dan tak punya test komponen, jadi sengaja dipisah dari batch perbaikan bug agar kegagalannya tidak menyeret 16 perbaikan lain saat revert.
 - [ ] 🟠 **Penggunaan `any` tersebar luas (Variants, catch, `api<any>`, GeoJSON)** — `frontend/src/features/admin/AuditLogPage.tsx:52` *(DITUNDA sengaja — refactor, bukan bug)*
   Melumpuhkan type-check padahal tipe konkret sudah ada. → `Variants`, tipe respons konkret, `catch(err: unknown)`.
   **Ukuran terukur:** 54 lokasi di 14 file (10 CitizenModePage · 6 AdminUsersPage · 5 ResearchPortal · 5 OperatorDashboard · 5 ForgotPassword · 3 `client.ts` · dst). Sebagian tumpang tindih dengan item di atas, jadi paling efisien dikerjakan bersamanya.
-- [x] ✅ 🟠 **Pencarian pengguna admin memicu request tiap ketikan (tanpa debounce)** — SELESAI: state `search` (responsif di input) dipisah dari `appliedSearch` (yang dikirim ke API), dijembatani debounce 350 ms. Reset halaman ikut pindah ke debounce agar paginasi tak melompat tiap huruf. Diverifikasi e2e: mengetik 8 karakter menghasilkan ≤2 request (sebelumnya 8).
-- [x] ✅ 🟠 **Boilerplate export CSV terduplikasi di 5 file, URL tidak konsisten, bypass `api()`** — SELESAI: `downloadFile()` di `shared/api/client.ts` menggantikan 4 blok salinan (~20 baris masing-masing) di Admin/Audit/Operator/Provinsi. Dua gaya URL (`${apiBase}/...` vs `apiUrl('/api/...')`) disatukan, dan **401 kini diperlakukan sama dengan `api()`** — sesi dibersihkan lalu diarahkan login, bukan cuma toast "Export gagal (401)". `URL.revokeObjectURL` dipindah ke `finally` supaya blob tak menggantung saat unduhan gagal.
-- [x] ✅ 🟠 **`picsum.photos` placeholder + CSS mati `.inline-pill-img` + properti `align-middle` invalid** — SELESAI: kelas `.inline-pill-img` tak pernah dipakai di JSX mana pun (hanya dideklarasikan + di-`display:none`-kan di media query), jadi kedua bloknya dihapus. Sekalian **`https://picsum.photos` dicabut dari `img-src` CSP** di `backend/public/.htaccess` — allowlist-nya tak lagi punya alasan untuk ada. Diverifikasi e2e: nol request ke picsum saat portal dibuka.
-- [x] ✅ 🟡 **Data laporan dummy hardcoded ikut ke produksi via `findOperatorReport`** — SELESAI: 61 baris mock + `findOperatorReport()` dihapus; `ReportDetailPage` selalu mulai `undefined` + skeleton. Diverifikasi e2e dengan memaksa API balas 500: nama fiktif ("Panjang Utara", "Rudi Hartono") tak lagi muncul.
-- [x] ✅ 🟡 **Komponen `MetricCard` tidak pernah diimpor (file mati)** — SELESAI: dihapus. Halaman yang ada memakai kartu KPI inline dengan animasi framer-motion masing-masing, jadi memaksa memakai komponen ini justru menurunkan kualitas tampilan.
-- [x] ✅ 🟡 **Parsing user dari localStorage diduplikasi di 8 file tanpa helper terpusat** — SELESAI: `shared/auth/session.ts` (`getToken`/`getCurrentUser`/`isLoggedIn`/`setSession`/`clearSession`) dipakai di **9** file. `getCurrentUser()` juga memvalidasi bentuknya, bukan hanya `JSON.parse` — data sesi versi lama/rusak kini dianggap "belum login" alih-alih menghasilkan objek separuh jadi. Diverifikasi e2e dengan sengaja merusak `siperah-user`: pengguna diarahkan ke login, bukan crash.
-- [x] ✅ 🟡 **Reverse-geocode ke Nominatim tanpa AbortController / handling rate-limit** — SELESAI: `AbortController` + timeout 8 detik, dan status non-OK (429/5xx) diperiksa eksplisit — sebelumnya body error ikut di-`json()` lalu lolos sebagai "alamat". Kegagalan apa pun jatuh ke label generik; koordinatnya sendiri sudah didapat sebelum langkah ini, jadi fitur intinya tak terganggu.
-- [x] ❌ 🟡 **Google Fonts (Inter) dari CDN berpotensi diblok CSP produksi** — **TIDAK BERLAKU (diverifikasi di produksi).** Header CSP live sudah meng-allowlist keduanya secara eksplisit: `style-src ... https://fonts.googleapis.com` dan `font-src ... https://fonts.gstatic.com` (sumbernya `backend/public/.htaccess`, bukan file yang tak ada seperti dugaan audit). Tak ada yang perlu diubah — dugaan `PLAUSIBLE`-nya terbantah, bukan dikerjakan.
+<!-- - [x] 🟠 **Pencarian pengguna admin memicu request tiap ketikan (tanpa debounce)** — `frontend/src/features/admin/AdminUsersPage.tsx:982`
+  → Debounce 300–400ms sebelum trigger fetch.
+- [x] 🟠 **Boilerplate export CSV terduplikasi di 5 file, URL tidak konsisten, bypass `api()`** — `frontend/src/features/dashboards/OperatorDashboardPage.tsx:137`
+  `${apiBase}/...` vs `apiUrl('/api/...')` → path divergen; semua bypass handler 401 terpusat. → Helper `downloadFile()` tunggal.
+- [x] 🟠 **`picsum.photos` placeholder + CSS mati `.inline-pill-img` + properti `align-middle` invalid** — `frontend/src/app/PortalPage.tsx:267`
+  → Hapus blok mati & URL eksternal acak.
+- [x] 🟡 **Data laporan dummy hardcoded ikut ke produksi via `findOperatorReport`** — `frontend/src/features/reports/reportData.ts:74`
+  3 laporan contoh nyeed ReportDetailPage; bisa tampil saat fetch gagal. → Hapus mock, awali `undefined` + skeleton.
+- [x] 🟡 **Komponen `MetricCard` tidak pernah diimpor (file mati)** — `frontend/src/shared/components/MetricCard.tsx:3`
+  → Hapus atau pakai ulang menggantikan kartu inline.
+- [x] 🟡 **Parsing user dari localStorage diduplikasi di 8 file tanpa helper terpusat** — `frontend/src/shared/components/AppShell.tsx:98`
+  → Sediakan `getCurrentUser()`/`getToken()`/`isLoggedIn()` (atau AuthContext).
+- [x] 🟡 **Reverse-geocode ke Nominatim tanpa AbortController / handling rate-limit** — `frontend/src/features/public-map/CitizenModePage.tsx:857`
+  fetch mentah tanpa timeout/429. → Bungkus AbortController + timeout, pertimbangkan via backend.
+- [x] 🟡 ⚠️ **Google Fonts (Inter) dari CDN berpotensi diblok CSP produksi** — `frontend/src/app/PortalPage.tsx:73` *(PLAUSIBLE — belum ada file CSP di repo yang membuktikan)*
+  Glyph peta sengaja di-host sendiri karena font eksternal diblok CSP. → Self-host Inter atau allowlist CSP. -->
 
-## 6. 🛠️ Backend (Laravel) (13)
+<!-- ## 6. 🛠️ Backend (Laravel) (13)
 
 - [x] ✅ 🔴 **`env()` dipakai saat runtime → nilai `.env` diabaikan setelah `config:cache`** — SELESAI (`2350fc1`): semua pindah ke `config/limits.php`.
 - [x] ✅ 🔴 **Tak ada index pada `ground_truth_reports.status`, FK `region_id`, `audit_logs.actor_user_id`** — SELESAI (`1d7b36e`):
-  `reports_user_created_idx (user_id,created_at)` · `reports_status_created_idx (status,created_at)` · `reports_region_idx (region_id)` · `audit_logs_actor_idx (actor_user_id,created_at)`.
-- [ ] 🔴 **N+1 count query per dataset di `ResearchController::stats` & `datasets`** — `backend/app/Http/Controllers/Api/ResearchController.php:268`
-  1 COUNT (predictions/reports/tidal) per dataset tiap buka halaman statistik. → Hitung agregat sekali + cache.
-- [x] ✅ 🔴 **`provinceForecast` kembalikan seluruh prediksi 30 hari tanpa pagination** — SELESAI: respons kini **diagregasi per tanggal** (≤30 baris: `avg/max_probability`, `high_risk_count`, `critical_count`, `region_count`) + amplop `meta`, sejajar `trend_30_days` dashboard provinsi. Ditambah cache 30 menit.
+  `reports_user_created_idx (user_id,created_at)` · `reports_status_created_idx (status,created_at)` · `reports_region_idx (region_id)` · `audit_logs_actor_idx (actor_user_id,created_at)`. -->
+- [x] ✅ 🔴 **N+1 count query per dataset di `ResearchController::stats` & `datasets`** — SELESAI: `datasetRecordCount()` men-cache hitungan per dataset (TTL 30 menit), dan `stats.total_records` di-cache sebagai satu nilai. Angkanya tetap dihitung dari query data NYATA (bukan kolom `record_count` seeder) supaya konsisten dengan isi unduhan.
+  Agregat tunggal tidak mungkin di sini karena tiap dataset punya filter periode + cakupan kabupaten sendiri; yang bisa dihilangkan adalah **penghitungan ulang tiap request**. Kunci cache dibangun dari seluruh metadata pembentuk query (`dataset_type`, periode, `coverage_regencies`) — tabel `datasets` tak punya `updated_at`, jadi cara ini yang membuat perubahan metadata otomatis membatalkan cache tanpa invalidasi manual.
+  Dikunci `ResearchDatasetCountTest` (4 tes: angka nyata vs kolom seeder, nol COUNT pada request berulang di `/datasets` & `/stats`, dan cache benar-benar batal saat periode dataset diubah). Mutation test: dengan cache dilepas, 2 tes gagal (`6 query` muncul kembali).
+<!-- - [x] ✅ 🔴 **`provinceForecast` kembalikan seluruh prediksi 30 hari tanpa pagination** — SELESAI: respons kini **diagregasi per tanggal** (≤30 baris: `avg/max_probability`, `high_risk_count`, `critical_count`, `region_count`) + amplop `meta`, sejajar `trend_30_days` dashboard provinsi. Ditambah cache 30 menit.
   **Lebih parah dari yang tercatat audit:** tiap baris lama melewati `RegionResource`, yang menghitung `is_monitored` via `predictions()->exists()` — satu permintaan **anonim** bisa memicu ~9.600 query, bukan sekadar payload besar. Terukur setelah perbaikan: **1 query** untuk 50 baris mentah.
-  Bentuk respons berubah (breaking), diambil setelah dipastikan **tak ada konsumen**: nol pemanggilan di frontend dan endpoint ini tidak tercantum di `docs/operations/api-contract.md` (kontrak itu hanya mencakup `/api/v1/*`). Dikunci `ProvinceForecastTest` (4 tes: bentuk agregat, batas jumlah query, jendela 30 hari, filter regency).
+  Bentuk respons berubah (breaking), diambil setelah dipastikan **tak ada konsumen**: nol pemanggilan di frontend dan endpoint ini tidak tercantum di `docs/operations/api-contract.md` (kontrak itu hanya mencakup `/api/v1/*`). Dikunci `ProvinceForecastTest` (4 tes: bentuk agregat, batas jumlah query, jendela 30 hari, filter regency). -->
 - [ ] 🟠 **`reporter` tak di-eager-load pada `operatorReportsExport` (N+1 s/d 1000 baris)** — `backend/app/Http/Controllers/Api/DashboardController.php:244`
   `reporter?->name` lazy-load per baris padahal tak ditulis ke CSV. → Tambah `with('reporter')` atau varian summary.
 - [ ] 🟠 **N+1 loop notifikasi (settings & regency per user) di NotificationService** — `backend/app/Services/NotificationService.php:172`
@@ -131,14 +132,14 @@ Kualitas frontend menengah (banyak `any`, duplikasi boilerplate, fetch tanpa gua
   Tak ada `app/Enums`; DB pakai Postgres enum tapi tak dipetakan ke PHP. → Buat enum `ReportStatus`/`UserRole`/`RiskClass`.
 - [ ] 🟠 **Exception ditelan diam-diam tanpa logging di PublicMapController** — `backend/app/Http/Controllers/Api/PublicMapController.php:223`
   `catch(\Throwable){ $features=[]; }` → layer garis pantai kosong tanpa jejak; `hasPostgis()` fallback diam. → `Log::warning()` di catch.
-- [x] ✅ 🟠 **Alamat pengirim email OTP hardcode ke `onboarding@resend.dev`** — SELESAI (`b1908f9`): hapus `->from()`, pakai `config('mail.from')` (selaras SPF/DKIM Gmail SMTP).
+<!-- - [x] ✅ 🟠 **Alamat pengirim email OTP hardcode ke `onboarding@resend.dev`** — SELESAI (`b1908f9`): hapus `->from()`, pakai `config('mail.from')` (selaras SPF/DKIM Gmail SMTP). -->
 - [ ] 🟠 **Celah validasi: `incident_time` boleh masa depan, `water_height_cm` tanpa batas atas** — `backend/app/Http/Requests/StoreReportRequest.php:22`
   Register password hanya `min:8`. → `before_or_equal:now`, `max:1000`, konfirmasi/kompleksitas password.
 - [ ] 🟠 **DashboardController kegemukan & logika `normalizeRegency` terduplikasi** — `backend/app/Http/Controllers/Api/DashboardController.php:29`
   ~478 baris query mentah; `normalizeRegency` ganda dg ReportAccessService; `ReportController::store` menampung banyak hal. → Ekstrak ke service.
 - [ ] 🟡 **Bentuk amplop response API tak konsisten antar endpoint** — `backend/app/Http/Controllers/Api/AdminController.php:114`
   `{message,id}` vs `{message,data}` vs `{access_token,...}` vs JsonResource `{data,meta}`. → Konvensi amplop tunggal.
-- [x] ✅ 🟠 **OTP disimpan plaintext + tanpa batas percobaan + route reset tanpa throttle** — SELESAI (`b1908f9`, lihat §7 cluster OTP).
+<!-- - [x] ✅ 🟠 **OTP disimpan plaintext + tanpa batas percobaan + route reset tanpa throttle** — SELESAI (`b1908f9`, lihat §7 cluster OTP). -->
 
 <!-- ## 7. 🔐 Keamanan & Integritas Data (9)
 

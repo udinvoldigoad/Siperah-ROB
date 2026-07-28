@@ -14,12 +14,17 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ResearchController
 {
+    /** Hitungan rekaman hanya berubah saat pipeline ML jalan (harian)
+     *  atau saat operator memvalidasi laporan — 30 menit lebih dari cukup. */
+    private const RECORD_COUNT_TTL_MINUTES = 30;
+
     public function __construct(private readonly AuditService $audit) {}
 
     public function datasets(Request $request): JsonResponse
@@ -61,9 +66,10 @@ final class ResearchController
 
         // REKAMAN dihitung langsung dari query data nyata (sama dengan yang
         // diekspor saat download), bukan kolom seeder statis — agar angka selalu
-        // cocok dengan isi CSV/JSON yang bisa diunduh.
+        // cocok dengan isi CSV/JSON yang bisa diunduh. Hitungannya di-cache
+        // (lihat datasetRecordCount) karena tiap dataset butuh COUNT sendiri.
         $items = array_map(function (Dataset $dataset): Dataset {
-            $dataset->record_count = $this->queryForDataset($dataset)[0]->count();
+            $dataset->record_count = $this->datasetRecordCount($dataset);
 
             return $dataset;
         }, $paginator->items());
@@ -262,8 +268,15 @@ final class ResearchController
         return response()->json(['data' => [
             'dataset_count' => Dataset::count(),
             // Jumlah rekaman nyata lintas dataset (count dari query data asli),
-            // bukan penjumlahan kolom seeder statis.
-            'total_records' => (int) Dataset::all()->sum(fn (Dataset $dataset): int => $this->queryForDataset($dataset)[0]->count()),
+            // bukan penjumlahan kolom seeder statis. Dulu satu COUNT dijalankan
+            // per dataset SETIAP kali halaman statistik dibuka — masing-masing
+            // join predictions×regions dengan REGEXP pada nama kabupaten, jadi
+            // jauh dari murah. Totalnya kini di-cache sebagai satu nilai.
+            'total_records' => Cache::remember(
+                'research:total-records',
+                now()->addMinutes(self::RECORD_COUNT_TTL_MINUTES),
+                fn (): int => (int) Dataset::all()->sum(fn (Dataset $dataset): int => $this->datasetRecordCount($dataset)),
+            ),
             'downloads_this_month' => DB::table('audit_logs')
                 ->where('action', 'download_research_dataset')
                 ->where('outcome', 'success')
@@ -500,6 +513,34 @@ final class ResearchController
             ->orderByDesc('recorded_at');
 
         return $this->exportOrPaginate($query, $data, 'tidal_data.csv');
+    }
+
+    /**
+     * Jumlah rekaman nyata sebuah dataset, di-cache.
+     *
+     * Filternya (periode + cakupan kabupaten) berbeda-beda per dataset, jadi
+     * tak bisa disatukan jadi satu query agregat — yang bisa dilakukan adalah
+     * berhenti menghitung ulang tiap request. Isi datanya sendiri hanya berubah
+     * sekali sehari (pipeline ML) atau saat operator memvalidasi laporan.
+     */
+    private function datasetRecordCount(Dataset $dataset): int
+    {
+        // Tabel `datasets` tidak punya `updated_at` (timestamps=false), jadi
+        // kunci cache dibangun dari SELURUH kolom yang membentuk query-nya:
+        // begitu metadata dataset diubah, kuncinya ikut berubah dan hitungannya
+        // dihitung ulang tanpa perlu invalidasi manual.
+        $signature = md5(json_encode([
+            $dataset->dataset_type,
+            $dataset->period_start?->toDateString(),
+            $dataset->period_end?->toDateString(),
+            $dataset->coverage_regencies,
+        ]));
+
+        return Cache::remember(
+            "research:dataset-count:{$dataset->id}:{$signature}",
+            now()->addMinutes(self::RECORD_COUNT_TTL_MINUTES),
+            fn (): int => (int) $this->queryForDataset($dataset)[0]->count(),
+        );
     }
 
     private function queryForDataset(Dataset $dataset): array
