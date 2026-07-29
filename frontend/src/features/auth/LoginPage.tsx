@@ -55,6 +55,14 @@ export function LoginPage() {
   const [regPassword, setRegPassword] = useState("");
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [regInstitution, setRegInstitution] = useState("");
+  // Jenis akun yang dimohon. Warga langsung aktif setelah verifikasi email;
+  // peneliti berhenti di antrean admin karena perannya membuka data penelitian.
+  const [accountType, setAccountType] = useState<"warga" | "peneliti">("warga");
+  const [regPurpose, setRegPurpose] = useState("");
+  // Diisi dari respons registrasi: menentukan apakah layar OTP menutup dengan
+  // "silakan masuk" atau "menunggu persetujuan admin".
+  const [awaitingApproval, setAwaitingApproval] = useState(false);
+  const isPeneliti = accountType === "peneliti";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +98,9 @@ export function LoginPage() {
       if (err instanceof ApiError && err.status === 403 && err.body?.requires_email_verification) {
         setVerifyEmail(email);
         setOtp("");
+        // Akun yang belum terverifikasi DAN masih ditahan admin = permohonan
+        // peneliti; layar OTP perlu menyebut langkah persetujuan berikutnya.
+        setAwaitingApproval(err.body.account_status === "menunggu");
         setMode("verify");
         toast.info("Email Anda belum diverifikasi. Masukkan kode yang kami kirim.");
       } else if (err instanceof ApiError && err.status === 403 && err.body?.account_status) {
@@ -107,19 +118,29 @@ export function LoginPage() {
       toast.error("Nama, email, dan kata sandi wajib diisi.");
       return;
     }
+    // Dicegat di sini supaya pemohon tak kehilangan isian panjangnya hanya
+    // untuk membaca pesan validasi server. Batas 30 karakter sama dengan
+    // aturan `research_purpose` di RegisterRequest.
+    if (isPeneliti && regPurpose.trim().length < 30) {
+      toast.error("Jelaskan tujuan penggunaan data minimal satu kalimat utuh (30 karakter).");
+      return;
+    }
 
     setIsLoading(true);
     try {
-      await api("/auth/register", {
+      const res = await api<{ requires_admin_approval?: boolean }>("/auth/register", {
         method: "POST",
         body: JSON.stringify({
+          account_type: accountType,
           name: regName,
           email: regEmail,
           password: regPassword,
           institution: regInstitution,
+          ...(isPeneliti ? { research_purpose: regPurpose } : {}),
         }),
       });
 
+      setAwaitingApproval(res.requires_admin_approval === true);
       toast.success("Kode verifikasi 6 digit telah dikirim ke email Anda.");
       setVerifyEmail(regEmail);
       setEmail(regEmail);
@@ -142,11 +163,13 @@ export function LoginPage() {
 
     setIsLoading(true);
     try {
-      await api("/auth/verify-email", {
+      const res = await api<{ message?: string }>("/auth/verify-email", {
         method: "POST",
         body: JSON.stringify({ email: verifyEmail, otp: otp.trim() }),
       });
-      toast.success("Email terverifikasi. Silakan masuk.");
+      // Pesan datang dari server karena hanya server yang tahu akun ini
+      // langsung aktif (warga) atau masih menunggu admin (peneliti).
+      toast.success(res.message || "Email terverifikasi. Silakan masuk.");
       setMode("login");
       setEmail(verifyEmail);
       setOtp("");
@@ -398,14 +421,42 @@ export function LoginPage() {
                 exit={{ opacity: 0, y: -10 }}
                 onSubmit={handleRegister}
               >
-                <div className="auth-header-text" style={{ marginBottom: "32px" }}>
+                <div className="auth-header-text" style={{ marginBottom: "24px" }}>
                   <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 12px", color: "var(--ink)" }}>Buat Akun Baru</h2>
-                  <p style={{ color: "var(--ink-soft)", fontSize: "1rem", lineHeight: "1.6", margin: 0 }}>Daftar sebagai warga untuk berpartisipasi melaporkan kejadian rob. Kami akan mengirim kode verifikasi ke email Anda.</p>
+                  <p style={{ color: "var(--ink-soft)", fontSize: "1rem", lineHeight: "1.6", margin: 0 }}>Pilih jenis akun yang sesuai. Kami akan mengirim kode verifikasi ke email Anda.</p>
+                </div>
+
+                {/* Pilihan jenis akun. Keduanya lewat endpoint yang sama; server
+                    yang memetakannya ke peran & status, jadi pemohon tak bisa
+                    memilih "peneliti + langsung aktif" dari sisi klien. */}
+                <div role="radiogroup" aria-label="Jenis akun" className="acct-type-grid" style={{ marginBottom: "20px" }}>
+                  {([
+                    { v: "warga", icon: "groups", title: "Warga", desc: "Melaporkan kejadian rob di sekitar Anda. Aktif setelah verifikasi email." },
+                    { v: "peneliti", icon: "science", title: "Peneliti", desc: "Mengunduh dataset & akses API. Ditinjau admin sebelum aktif." },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.v}
+                      type="button"
+                      role="radio"
+                      aria-checked={accountType === opt.v}
+                      onClick={() => setAccountType(opt.v)}
+                      className="acct-type-card"
+                      data-selected={accountType === opt.v || undefined}
+                    >
+                      <Icon name={opt.icon} style={{ fontSize: "22px" }} />
+                      <span className="acct-type-title">{opt.title}</span>
+                      <span className="acct-type-desc">{opt.desc}</span>
+                    </button>
+                  ))}
                 </div>
 
                 <div style={{ marginBottom: "24px", padding: "12px 16px", borderRadius: "10px", background: "var(--surface-soft)", border: "1px solid var(--line)", fontSize: "13px", color: "var(--ink-soft)", display: "flex", gap: "12px", alignItems: "flex-start" }}>
-                  <Icon name="info" style={{ fontSize: "18px", color: "#3b82f6", flexShrink: 0, marginTop: "2px" }} />
-                  <span style={{ lineHeight: "1.5" }}>Butuh akun BPBD atau Peneliti? Hubungi admin — akun instansi dibuat & diverifikasi langsung oleh admin.</span>
+                  <Icon name={isPeneliti ? "gavel" : "info"} style={{ fontSize: "18px", color: "#3b82f6", flexShrink: 0, marginTop: "2px" }} />
+                  <span style={{ lineHeight: "1.5" }}>
+                    {isPeneliti
+                      ? "Akun peneliti membuka data mentah laporan & prediksi, jadi permohonan Anda ditinjau admin lebih dulu. Isi keterangan di bawah selengkap mungkin — admin memakainya untuk memastikan kepentingan Anda."
+                      : "Butuh akun BPBD? Hubungi admin — akun instansi dibuat & diverifikasi langsung oleh admin."}
+                  </span>
                 </div>
 
                 <div style={{ marginBottom: "20px" }}>
@@ -422,26 +473,65 @@ export function LoginPage() {
                   />
                 </div>
 
+                {/* Satu kolom, dua makna: catatan wilayah bagi warga, dan
+                    identitas lembaga yang wajib bagi peneliti. */}
                 <div style={{ marginBottom: "20px" }}>
-                  <label style={labelStyle}>Desa / Wilayah <span style={{ color: "var(--ink-soft)", fontWeight: 400 }}>(Opsional)</span></label>
+                  <label style={labelStyle} htmlFor="reg-institution">
+                    {isPeneliti ? "Instansi / Universitas" : (
+                      <>Desa / Wilayah <span style={{ color: "var(--ink-soft)", fontWeight: 400 }}>(Opsional)</span></>
+                    )}
+                  </label>
                   <input
+                    id="reg-institution"
+                    name="institution"
                     type="text"
+                    autoComplete="organization"
                     value={regInstitution}
                     onChange={(e) => setRegInstitution(e.target.value)}
+                    placeholder={isPeneliti ? "mis. Universitas Lampung — Fakultas Teknik" : ""}
                     style={inputStyle}
+                    required={isPeneliti}
                   />
                 </div>
 
                 <div style={{ marginBottom: "20px" }}>
-                  <label style={labelStyle}>Alamat Email</label>
-                  <input 
-                    type="email" 
-                    value={regEmail} 
-                    onChange={(e) => setRegEmail(e.target.value)} 
+                  <label style={labelStyle} htmlFor="reg-email">Alamat Email</label>
+                  <input
+                    id="reg-email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
                     style={inputStyle}
                     required
                   />
+                  {isPeneliti && (
+                    <p style={{ margin: "6px 0 0", fontSize: "12.5px", color: "var(--ink-soft)", lineHeight: 1.5 }}>
+                      Sebisa mungkin pakai email resmi instansi — alamat institusional mempercepat admin memastikan permohonan Anda.
+                    </p>
+                  )}
                 </div>
+
+                {isPeneliti && (
+                  <div style={{ marginBottom: "20px" }}>
+                    <label style={labelStyle} htmlFor="reg-purpose">Tujuan Penggunaan Data</label>
+                    <textarea
+                      id="reg-purpose"
+                      name="research_purpose"
+                      value={regPurpose}
+                      onChange={(e) => setRegPurpose(e.target.value)}
+                      rows={4}
+                      maxLength={1000}
+                      placeholder="Contoh: Penelitian skripsi tentang pola banjir rob di pesisir Bandar Lampung. Data laporan tervalidasi & prediksi harian akan dipakai untuk memvalidasi model genangan."
+                      style={{ ...inputStyle, resize: "vertical", minHeight: "110px", fontFamily: "inherit", lineHeight: 1.55 }}
+                      required
+                    />
+                    <p style={{ margin: "6px 0 0", fontSize: "12.5px", color: regPurpose.trim().length > 0 && regPurpose.trim().length < 30 ? "var(--critical)" : "var(--ink-soft)", lineHeight: 1.5 }}>
+                      Sebutkan judul/topik penelitian dan data apa yang dibutuhkan. Minimal 30 karakter ({regPurpose.trim().length}/1000).
+                    </p>
+                  </div>
+                )}
 
                 <div style={{ marginBottom: "32px" }}>
                   <label style={labelStyle}>Kata Sandi</label>
@@ -470,7 +560,7 @@ export function LoginPage() {
                     style={{ width: "100%", background: "var(--accent)", color: "#fff", padding: "14px", borderRadius: "10px", fontSize: "15px", fontWeight: 600, border: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", cursor: "pointer", transition: "background 0.2s" }} 
                     disabled={isLoading}
                   >
-                  {isLoading ? "Memproses..." : "Daftar Akun"}
+                  {isLoading ? "Memproses..." : isPeneliti ? "Kirim Permohonan Akun Peneliti" : "Daftar Akun"}
                 </button>
 
                 <div style={{ marginTop: "40px", textAlign: "center", fontSize: "14px", color: "var(--ink-soft)" }}>
@@ -493,9 +583,24 @@ export function LoginPage() {
               <div className="auth-header-text" style={{ marginBottom: "32px" }}>
                 <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 8px", color: "var(--ink)" }}>Verifikasi email</h2>
                 <p style={{ color: "var(--ink-soft)", fontSize: "0.95rem", margin: 0 }}>
-                  Kami mengirim kode 6 digit ke <strong style={{ color: "var(--ink)" }}>{verifyEmail}</strong>. Masukkan kodenya untuk mengaktifkan akun.
+                  Kami mengirim kode 6 digit ke <strong style={{ color: "var(--ink)" }}>{verifyEmail}</strong>.{" "}
+                  {awaitingApproval
+                    ? "Masukkan kodenya untuk membuktikan alamat ini milik Anda."
+                    : "Masukkan kodenya untuk mengaktifkan akun."}
                 </p>
               </div>
+
+              {/* Permohonan peneliti punya SATU langkah lagi setelah OTP.
+                  Tanpa keterangan ini pemohon mengira verifikasi gagal saat
+                  loginnya tetap ditolak. */}
+              {awaitingApproval && (
+                <div role="status" style={{ marginBottom: "24px", padding: "14px 16px", borderRadius: 10, background: "var(--surface-soft)", border: "1px solid var(--line)", display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <Icon name="hourglass_top" style={{ fontSize: 20, color: "var(--ink)", flexShrink: 0, marginTop: 1 }} />
+                  <div style={{ fontSize: "0.85rem", color: "var(--ink)", lineHeight: 1.5 }}>
+                    Setelah email terverifikasi, permohonan akun peneliti Anda masuk ke antrean admin. Anda akan bisa masuk begitu admin menyetujuinya.
+                  </div>
+                </div>
+              )}
 
               <div style={{ marginBottom: "24px" }}>
                 <label style={labelStyle} htmlFor="otp">Kode Verifikasi</label>
@@ -598,6 +703,52 @@ export function LoginPage() {
           font-weight: 850;
           letter-spacing: -0.02em;
           color: var(--ink);
+        }
+
+        /* Pilihan jenis akun. Dua kartu sejajar; pada layar sempit menumpuk
+           agar deskripsinya tetap terbaca dan tidak terpotong. */
+        .acct-type-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        @media (max-width: 420px) {
+          .acct-type-grid { grid-template-columns: 1fr; }
+        }
+        .acct-type-card {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+          padding: 14px;
+          border-radius: 12px;
+          border: 1px solid var(--line);
+          background: var(--surface);
+          color: var(--ink-soft);
+          cursor: pointer;
+          text-align: left;
+          font-family: inherit;
+          transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+        }
+        .acct-type-card:hover { border-color: var(--accent); }
+        .acct-type-card:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
+        }
+        .acct-type-card[data-selected] {
+          border-color: var(--accent);
+          background: var(--accent-soft, rgba(2, 132, 199, 0.08));
+          color: var(--accent);
+        }
+        .acct-type-title {
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--ink);
+        }
+        .acct-type-desc {
+          font-size: 12px;
+          line-height: 1.45;
+          color: var(--ink-soft);
         }
 
         @media (min-width: 1024px) {

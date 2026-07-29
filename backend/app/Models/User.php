@@ -35,6 +35,7 @@ class User extends Authenticatable
         'password_hash',
         'phone_number',
         'institution',
+        'research_purpose',
         'region_id',
         'last_login_at'
     ];

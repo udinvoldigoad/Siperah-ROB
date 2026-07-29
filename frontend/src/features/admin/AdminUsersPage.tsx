@@ -19,6 +19,15 @@ interface UserData {
   institution: string | null;
   region_id: string | null;
   region_name: string | null;
+  created_at: string | null;
+  // Hanya terisi untuk peneliti — keterangan yang ditulis pemohon saat
+  // mendaftar, dipakai admin untuk memutuskan setujui/tolak.
+  permission_workflow: {
+    status: string;
+    institution: string | null;
+    reason: string | null;
+    email_verified: boolean;
+  } | null;
 }
 
 const ROLE_OPTIONS = [
@@ -399,6 +408,22 @@ export function AdminUsersPage() {
     onConfirm: () => runAction("menolak akun", api(`/admin/users/${id}/reject`, { method: "POST" }), `Akun "${name}" ditolak.`),
   });
 
+  // ── Tinjau permohonan akun peneliti ────────────────────────────────
+  // Peneliti bisa mengunduh data mentah & memegang kunci API, jadi barisnya
+  // TIDAK diberi tombol Setujui/Tolak langsung seperti warga: admin harus
+  // membuka keterangan pemohon lebih dulu. Keputusannya diambil dari dalam
+  // modal ini agar tak ada jalur "setujui tanpa membaca".
+  const [reviewUser, setReviewUser] = useState<UserData | null>(null);
+
+  useEffect(() => {
+    if (!reviewUser) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setReviewUser(null); };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [reviewUser]);
+
   const confirmDelete = (user: UserData) => setConfirm({
     title: "Hapus pengguna?",
     message: `Akun "${user.name}" akan dihapus dari daftar dan tidak bisa masuk lagi. Jejak audit & laporan lamanya tetap tersimpan untuk keperluan riwayat.`,
@@ -601,6 +626,8 @@ export function AdminUsersPage() {
         .admin-combo-option.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
         .admin-combo-empty { color: var(--ink-soft); font-size: 13px; padding: 14px 12px; text-align: center; }
         .admin-create-footer { align-items: center; background: var(--surface); border-top: 1px solid var(--line); display: flex; gap: 14px; justify-content: space-between; padding: 16px 22px; flex-wrap: wrap; }
+        /* Label ringkas di modal tinjau permohonan peneliti. */
+        .review-label { color: var(--ink-soft); font-size: 11.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
         .admin-create-hint { align-items: flex-start; color: var(--ink-soft); display: flex; font-size: 12.5px; gap: 8px; line-height: 1.5; max-width: 480px; }
         .admin-create-hint .material-symbols-outlined, .admin-create-hint .material-symbols-rounded { color: var(--accent); font-size: 17px; }
         @media (max-width: 640px) { .admin-create-grid { grid-template-columns: 1fr; } }
@@ -1007,6 +1034,111 @@ export function AdminUsersPage() {
           document.body
         )}
 
+        {/* Modal tinjau permohonan akun peneliti — satu-satunya jalan untuk
+            menyetujui/menolak peneliti, agar keterangan pemohon selalu terbaca
+            lebih dulu. */}
+        {createPortal(
+          <AnimatePresence>
+            {reviewUser && (
+              <motion.div
+                className="admin-confirm-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                onClick={() => setReviewUser(null)}
+              >
+                <motion.div
+                  className="admin-modal-card"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 12 }}
+                  onClick={(e) => e.stopPropagation()}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={`Tinjau permohonan akun peneliti ${reviewUser.name}`}
+                >
+                  <div className="admin-modal-head">
+                    <div>
+                      <h2>Permohonan Akun Peneliti</h2>
+                      <p>Periksa keterangan pemohon sebelum memutuskan.</p>
+                    </div>
+                    <button type="button" className="admin-modal-close" onClick={() => setReviewUser(null)} aria-label="Tutup">
+                      <Icon name="close" style={{ fontSize: 18 }} />
+                    </button>
+                  </div>
+
+                  <div style={{ padding: "20px 24px", display: "grid", gap: 16 }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>{reviewUser.name}</div>
+                      <div style={{ fontSize: 13, color: "var(--ink-soft)", wordBreak: "break-word" }}>{reviewUser.email}</div>
+                    </div>
+
+                    {/* Peringatan keras: menyetujui akun yang alamat emailnya
+                        belum terbukti = menyerahkan akses data ke alamat yang
+                        mungkin bukan milik pemohon. */}
+                    {reviewUser.permission_workflow?.email_verified ? (
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 700, color: "#166534" }}>
+                        <Icon name="verified" style={{ fontSize: 18 }} /> Email sudah diverifikasi pemohon
+                      </div>
+                    ) : (
+                      <div role="alert" style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 14px", borderRadius: 10, border: "1px solid var(--critical)", color: "#991b1b", fontSize: 12.5, lineHeight: 1.5 }}>
+                        <Icon name="warning" style={{ fontSize: 18, flexShrink: 0 }} />
+                        <span><strong>Email belum diverifikasi.</strong> Pemohon belum memasukkan kode OTP, jadi belum terbukti alamat ini miliknya. Sebaiknya tunggu verifikasi sebelum menyetujui.</span>
+                      </div>
+                    )}
+
+                    <div style={{ display: "grid", gap: 14, padding: "16px", borderRadius: 14, background: "var(--surface-soft)", border: "1px solid var(--line)" }}>
+                      <div>
+                        <div className="review-label">Tujuan penggunaan data</div>
+                        <div style={{ color: "var(--ink)", fontSize: 13.5, lineHeight: 1.6, marginTop: 4, whiteSpace: "pre-wrap" }}>
+                          {reviewUser.permission_workflow?.reason || "— (permohonan lama, tanpa keterangan)"}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                        <div>
+                          <div className="review-label">Instansi</div>
+                          <div style={{ color: "var(--ink)", fontSize: 13.5, marginTop: 4 }}>{reviewUser.institution || "—"}</div>
+                        </div>
+                        <div>
+                          <div className="review-label">Diajukan</div>
+                          <div style={{ color: "var(--ink)", fontSize: 13.5, marginTop: 4 }}>
+                            {reviewUser.created_at ? new Date(reviewUser.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "—"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        className="btn outline"
+                        disabled={isActing}
+                        data-loading={isActing || undefined}
+                        style={{ color: "var(--critical)", borderColor: "var(--critical)", fontSize: 12.5 }}
+                        onClick={() => { const u = reviewUser; setReviewUser(null); confirmReject(u.id, u.name); }}
+                      >
+                        <Icon name="close" style={{ fontSize: 16 }} /> Tolak
+                      </button>
+                      <button
+                        type="button"
+                        className="btn primary"
+                        disabled={isActing}
+                        data-loading={isActing || undefined}
+                        style={{ fontSize: 12.5 }}
+                        onClick={() => { const u = reviewUser; setReviewUser(null); handleApprove(u.id, u.name); }}
+                      >
+                        <Icon name="check" style={{ fontSize: 16 }} /> Setujui Akun Peneliti
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
+
         {/* Filters and List */}
         <motion.div variants={itemVariants} className="panel flush" style={{ overflow: "hidden", marginBottom: 32 }}>
           <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
@@ -1116,7 +1248,23 @@ export function AdminUsersPage() {
                         </td>
                         <td style={{ padding: "16px 24px", textAlign: "right", whiteSpace: "nowrap" }}>
                           <div style={{ display: "inline-flex", gap: 8, justifyContent: "flex-end" }}>
-                            {user.status === "menunggu" ? (
+                            {user.status === "menunggu" && user.role === "peneliti" ? (
+                              // Permohonan peneliti: satu pintu, lewat modal
+                              // tinjau — keputusannya butuh keterangan pemohon.
+                              <>
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                  disabled={isActing}
+                                  style={{ background: "var(--accent)", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, padding: "6px 12px", cursor: "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}
+                                  onClick={() => setReviewUser(user)}
+                                >
+                                  <Icon name="fact_check" style={{ fontSize: 16 }} /> Tinjau Permohonan
+                                </motion.button>
+                                <button type="button" className="btn secondary" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => startEdit(user)} aria-label={`Kelola akun ${user.name}`}>
+                                  <Icon name="edit" style={{ fontSize: 16 }} /> Kelola
+                                </button>
+                              </>
+                            ) : user.status === "menunggu" ? (
                               <>
                                 <motion.button
                                   whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}

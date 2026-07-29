@@ -16,6 +16,8 @@ create table users (
   phone_number varchar(30),
   role user_role not null,
   institution varchar(150),
+  -- Alasan permohonan akun peneliti; dasar admin menyetujui/menolak.
+  research_purpose text,
   region_id uuid,
   status user_status not null default 'menunggu',
   last_login_at timestamptz,

@@ -104,6 +104,8 @@ final class AuthController
     {
         $data = $request->validated();
 
+        $isPeneliti = ($data['account_type'] ?? 'warga') === 'peneliti';
+
         $user = new User([
             'id' => (string) Str::uuid(),
             'name' => $data['name'],
@@ -111,17 +113,26 @@ final class AuthController
             'password_hash' => Hash::make($data['password']),
             'phone_number' => $data['phone_number'] ?? null,
             'institution' => $data['institution'] ?? null,
+            'research_purpose' => $isPeneliti ? $data['research_purpose'] : null,
             'region_id' => $data['region_id'] ?? null,
         ]);
-        // Di luar $fillable — disetel eksplisit agar payload registrasi tidak
-        // pernah bisa memilih perannya sendiri.
+        // `role` & `status` di luar $fillable — disetel eksplisit agar payload
+        // registrasi tidak pernah bisa memilih perannya sendiri. Yang boleh
+        // dipilih pemohon hanya `account_type`, dan pemetaannya ada di sini.
         //
-        // Kebijakan (keputusan produk): pendaftaran mandiri tidak perlu
-        // persetujuan admin, TAPI wajib membuktikan kepemilikan email lewat OTP.
-        // `status` tetap 'aktif' karena admin tak menahan apa pun di sini — yang
-        // menahan login adalah `email_verified_at` yang masih null.
-        $user->role = 'warga';
-        $user->status = 'aktif';
+        // Warga: pendaftaran mandiri tidak perlu persetujuan admin, TAPI wajib
+        // membuktikan kepemilikan email lewat OTP. `status` tetap 'aktif' karena
+        // admin tak menahan apa pun — yang menahan login adalah
+        // `email_verified_at` yang masih null.
+        //
+        // Peneliti: peran ini membuka data penelitian (unduhan dataset, kunci
+        // API), jadi kepemilikan email saja tidak cukup — admin harus menilai
+        // kepentingan pemohon lebih dulu. Karena itu status 'menunggu'.
+        // Keduanya tetap mengirim OTP: verifikasi email berjalan paralel dengan
+        // antrean admin, sehingga admin tak perlu meninjau permohonan dari
+        // alamat email yang belum terbukti dimiliki pemohon.
+        $user->role = $isPeneliti ? 'peneliti' : 'warga';
+        $user->status = $isPeneliti ? 'menunggu' : 'aktif';
         $user->save();
 
         $this->emailVerification->send($user);
@@ -134,8 +145,11 @@ final class AuthController
         ]);
 
         return response()->json([
-            'message' => 'Registrasi berhasil. Kode verifikasi 6 digit telah dikirim ke email Anda.',
+            'message' => $isPeneliti
+                ? 'Permohonan akun peneliti terkirim. Verifikasi email Anda dengan kode 6 digit yang kami kirim, lalu tunggu persetujuan admin.'
+                : 'Registrasi berhasil. Kode verifikasi 6 digit telah dikirim ke email Anda.',
             'requires_email_verification' => true,
+            'requires_admin_approval' => $isPeneliti,
             'user' => new UserResource($user)
         ], 201);
     }
@@ -168,8 +182,13 @@ final class AuthController
             'status' => $user->status,
         ]);
 
+        // Verifikasi hanya membuka gerbang milik pengguna. Akun yang masih
+        // ditahan admin (mis. permohonan peneliti) belum bisa masuk, jadi
+        // pesannya tak boleh menjanjikan "sudah aktif".
         return response()->json([
-            'message' => 'Email terverifikasi. Akun Anda sudah aktif — silakan masuk.',
+            'message' => $user->status === 'aktif'
+                ? 'Email terverifikasi. Akun Anda sudah aktif — silakan masuk.'
+                : 'Email terverifikasi. Permohonan Anda kini menunggu persetujuan admin.',
             'user' => new UserResource($user),
         ]);
     }

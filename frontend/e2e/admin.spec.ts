@@ -65,6 +65,48 @@ test("registrasi mandiri tak butuh approval admin, tapi wajib verifikasi email",
   expect((await login.json()).requires_email_verification).toBe(true);
 });
 
+test("permohonan akun peneliti tertahan dan alasannya terbaca admin", async ({ page }) => {
+  const purpose = "Penelitian skripsi pola banjir rob pesisir Bandar Lampung memakai laporan tervalidasi.";
+  const name = `E2E Peneliti ${Date.now()}`;
+  const email = `e2e-peneliti-${Date.now()}@example.test`;
+
+  const register = await page.request.post("/api/auth/register", {
+    data: {
+      account_type: "peneliti",
+      name,
+      email,
+      password: "password123",
+      institution: "Universitas Lampung",
+      research_purpose: purpose,
+    },
+  });
+  expect(register.status()).toBe(201);
+  const body = await register.json();
+  // Beda dengan warga: peneliti BERHENTI di antrean admin.
+  expect(body.user.role).toBe("peneliti");
+  expect(body.user.status).toBe("menunggu");
+  expect(body.requires_admin_approval).toBe(true);
+
+  await loginAdminOnce(page);
+  await page.goto("/#/admin");
+  await page.reload();
+
+  // Baris peneliti menunggu TIDAK punya tombol Setujui langsung — admin harus
+  // membuka permohonannya lebih dulu.
+  const row = page.locator("tr", { hasText: name });
+  await expect(row).toBeVisible();
+  await expect(row.getByRole("button", { name: "Setujui" })).toHaveCount(0);
+  await row.getByRole("button", { name: "Tinjau Permohonan" }).click();
+
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText(purpose)).toBeVisible();
+  await expect(dialog.getByText("Universitas Lampung")).toBeVisible();
+  await expect(dialog.getByText("Email belum diverifikasi.")).toBeVisible();
+
+  await dialog.getByRole("button", { name: "Setujui Akun Peneliti" }).click();
+  await expect(row.getByText("Aktif", { exact: true })).toBeVisible();
+});
+
 test("admin approve, reject, dan nonaktifkan user", async ({ page }) => {
   const token = await loginAdminOnce(page);
   const { name: approveName, email: approveEmail } = await createPendingUser(page, token, "Approve");
