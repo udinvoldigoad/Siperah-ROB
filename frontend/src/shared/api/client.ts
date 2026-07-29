@@ -43,7 +43,8 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
   const response = await fetch(`${apiBase}${path}`, { ...options, headers });
 
   if (!response.ok) {
-    if (response.status === 401) {
+    const isLoginPath = path.includes("/login");
+    if (response.status === 401 && !isLoginPath) {
       localStorage.removeItem("siperah-token");
       window.dispatchEvent(new CustomEvent("siperah-auth-expired"));
       window.location.hash = "#/login";
@@ -56,7 +57,7 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
       if (body?.message) msg = body.message;
     } catch {}
 
-    if (response.status === 401) {
+    if (response.status === 401 && !isLoginPath) {
       msg = "Sesi Anda telah habis. Silakan login kembali.";
     }
 
