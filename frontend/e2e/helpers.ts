@@ -1,17 +1,16 @@
 import { expect, type Page } from "@playwright/test";
 
-// Kredensial user seed DemoUserSeeder (DB test di-reset global-setup).
+// Kredensial user seed DatabaseSeeder::seedUsers (DB test di-reset global-setup).
 export const SEED_PASSWORD = "password";
-// Sejak peran disederhanakan 5→3, akun seed `operator` & `provinsi` ikut
-// berperan `admin`. Keduanya sengaja DIPERTAHANKAN sebagai akun admin
-// tambahan: limiter login dibatasi 10/menit per (email + IP), jadi memakai
-// email berbeda antar spec mencegah spec belakangan kena 429.
+// Satu akun per peran yang benar-benar ada sejak penyederhanaan 5→3, plus
+// `admin2`. `admin2` BUKAN peran lain — ia hanya email admin kedua, supaya
+// limiter login (10 percobaan/menit per email + IP) tidak tertabrak ketika
+// beberapa spec dalam satu run sama-sama butuh sesi admin.
 export const SEED_USERS = {
   warga: "warga@siperah.local",
-  operator: "operator@siperah.local",
-  provinsi: "provinsi@siperah.local",
   peneliti: "peneliti@siperah.local",
   admin: "admin@siperah.local",
+  admin2: "demo@siperah.local",
 } as const;
 
 export async function loginViaUi(page: Page, email: string): Promise<void> {

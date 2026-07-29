@@ -247,6 +247,13 @@ final class DatabaseSeeder extends Seeder
 
     public function seedUsers(): void
     {
+        // Empat akun demo, satu per peran yang benar-benar ada (warga, admin,
+        // peneliti) — plus admin KEDUA. Admin kedua bukan peran berbeda: ia ada
+        // semata supaya suite e2e bisa memakai email berbeda antar-spec,
+        // sebab limiter login membatasi 10 percobaan/menit per (email + IP).
+        //
+        // Akun `operator@` & `provinsi@` sudah dihapus: sejak peran
+        // disederhanakan 5→3 keduanya cuma admin bernama peran yang tak ada lagi.
         $users = [
             [
                 'id' => '22222222-2222-4222-8222-222222222222',
@@ -267,26 +274,6 @@ final class DatabaseSeeder extends Seeder
                 'status' => 'aktif',
             ],
             [
-                'id' => '22222222-2222-4222-8222-bbbbbbbbbbbb',
-                'name' => 'Operator BPBD Bandar Lampung',
-                'email' => 'operator@siperah.local',
-                'password_hash' => Hash::make('password'),
-                'role' => 'admin',
-                'region_id' => '11111111-1111-4111-8111-111111111111',
-                'status' => 'aktif',
-                'institution' => 'BPBD Kota Bandar Lampung',
-            ],
-            [
-                'id' => '22222222-2222-4222-8222-cccccccccccc',
-                'name' => 'Kepala BPBD Provinsi Lampung',
-                'email' => 'provinsi@siperah.local',
-                'password_hash' => Hash::make('password'),
-                'role' => 'admin',
-                'region_id' => null,
-                'status' => 'aktif',
-                'institution' => 'BPBD Provinsi Lampung',
-            ],
-            [
                 'id' => '22222222-2222-4222-8222-dddddddddddd',
                 'name' => 'Dr. Peneliti Unila',
                 'email' => 'peneliti@siperah.local',
@@ -298,7 +285,7 @@ final class DatabaseSeeder extends Seeder
             ],
             [
                 'id' => '22222222-2222-4222-8222-eeeeeeeeeeee',
-                'name' => 'Demo Super User',
+                'name' => 'Admin Sistem Kedua',
                 'email' => 'demo@siperah.local',
                 'password_hash' => Hash::make('password'),
                 'role' => 'admin',
@@ -496,7 +483,8 @@ final class DatabaseSeeder extends Seeder
         ];
 
         $userId = '22222222-2222-4222-8222-222222222222';
-        $validatorId = '22222222-2222-4222-8222-bbbbbbbbbbbb';
+        // Dulu akun `operator@`; akun itu dihapus, validasi kini atas nama admin.
+        $validatorId = '22222222-2222-4222-8222-aaaaaaaaaaaa';
 
         foreach ($reports as $r) {
             DB::statement(

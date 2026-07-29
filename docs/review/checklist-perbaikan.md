@@ -24,13 +24,13 @@
 | # | Kategori | 🔴 | 🟠 | 🟡 | Total | Selesai |
 |---|---|---|---|---|---|---|
 | 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) | 1 | 0 | 1 | 2 | **2 ✅** |
-| 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **1** |
+| 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **2** |
 | 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | 0 |
 | 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | 0 |
 | 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | 0 |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | 0 |
-| 7 | [Data & skema](#7--data--skema) | 0 | 1 | 2 | 3 | 0 |
-| | **Total** | **1** | **11** | **8** | **20** | **3** |
+| 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | 0 |
+| | **Total** | **1** | **11** | **9** | **21** | **4** |
 
 ---
 
@@ -62,9 +62,10 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
   **Aman:** di produksi hanya 5 baris terisi, semuanya akun demo `@siperah.local` dengan nomor placeholder seeder — tidak ada pengguna sungguhan yang punya nomor.
   **Catatan:** ini mengubah bentuk respons `UserResource` (breaking), diambil setelah dipastikan frontend tak pernah membacanya dan endpoint publik `/api/v1/*` tak memakai resource ini.
 
-- [ ] 🟡 **`KM-2` — Akun seed `operator@` & `provinsi@` menyandang nama peran yang sudah dihapus** — `frontend/e2e/helpers.ts:11-12` *(bukti: kode)*
-  Keduanya kini berperan `admin`. Dipertahankan **sengaja** sebagai admin tambahan agar limiter login (10/menit per email+IP) tidak tertabrak antar-spec, dan alasannya sudah dicatat di komentar. Tapi namanya tetap menyesatkan pembaca baru.
-  **Aksi:** ganti nama jadi `admin2@`/`admin3@`, atau biarkan dan cukup pertegas komentarnya.
+- [x] 🟡 **`KM-2` — Akun seed `operator@` & `provinsi@` menyandang nama peran yang sudah dihapus** — ✅ *dihapus 2026-07-29*
+  Keduanya dibuang dari seeder, `SEED_USERS`, dan pintasan DEV di halaman login. Yang tersisa: satu akun per peran nyata (`warga`/`peneliti`/`admin`) plus `admin2` (`demo@siperah.local`, sebelumnya "Demo Super User") yang ada **semata** untuk memberi spec email admin kedua — limiter login 10/menit per (email + IP) jadi tak tertabrak antar-spec.
+  **Ikutan yang tak tercatat di temuan:** `$validatorId` seeder laporan menunjuk UUID `operator@`; kalau akunnya dibuang tanpa itu, seed laporan `divalidasi` melanggar FK. Kini menunjuk admin. Spec `province` pindah ke `admin2`, `report-flow` ke `admin` — aman karena `ReportAccessService::accessible()` cabang `admin` tidak menyaring per wilayah.
+  **Belum dikerjakan — produksi:** `operator@` & `provinsi@` masih ada di sana (lihat `DT-4`).
 
 - [ ] 🟡 **`KM-3` — Header progres `audit-perbaikan.md` basi & seluruhnya dikomentari HTML** — `docs/review/audit-perbaikan.md:1-29` *(bukti: kode)*
   Blok progres berhenti di butir 11 dan masih menulis *"Suite backend: 160/160 hijau"* — kini **189/189**. Seluruh blok dibungkus `<!-- -->` sehingga tak terlihat saat dirender, jadi pembaca tak tahu dokumen itu sudah dikerjakan sejauh mana.
@@ -149,6 +150,11 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
 - [ ] 🟡 **`DT-3` — `catch {}` menelan galat parse JSON di klien API** — `frontend/src/shared/api/client.ts:57` *(bukti: kode)*
   Kalau respons galat bukan JSON (mis. halaman error HTML dari server), badannya dibuang diam-diam dan pengguna hanya melihat pesan generik. Sengaja fail-safe, tapi menyulitkan diagnosa persis saat paling dibutuhkan.
   **Aksi:** tetap jangan melempar, tapi `console.debug` badan mentahnya saat `import.meta.env.DEV`.
+
+- [ ] 🟡 **`DT-4` — Akun demo `operator@` & `provinsi@` masih hidup di produksi** — *(bukti: produksi)*
+  `KM-2` membuangnya dari seeder, tapi seeder memakai `updateOrInsert` — baris yang sudah ada tidak ikut terhapus. Keduanya masih **aktif berperan `admin`** di produksi (login terakhir 28 & 27 Juli), artinya kredensial demo berpassword `password` masih bisa masuk sebagai admin.
+  **Diperiksa langsung ke DB produksi:** keduanya tidak memiliki laporan, validasi, maupun kunci API — hanya 1 & 4 baris `audit_logs` dan 1 baris `notification_settings` masing-masing.
+  **Aksi:** hapus manual. `notification_settings` ikut terhapus lewat cascade, tapi `audit_logs.actor_user_id` **tidak** bercascade sehingga harus di-`null`-kan lebih dulu — jejaknya tetap terbaca karena `actor_name`/`actor_role` disimpan terpisah. Belum dieksekusi: ini penghapusan data produksi yang tak bisa dibatalkan.
 
 ---
 
