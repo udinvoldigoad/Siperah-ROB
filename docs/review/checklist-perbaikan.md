@@ -1,8 +1,8 @@
 # 🔧 Checklist Perbaikan Lanjutan — SIPERAH-RoB
 
-> **Dibuat:** 2026-07-29 · **20 temuan** · Semua rujukan `file:baris` sudah dibuka & diverifikasi.
+> **Dibuat:** 2026-07-29 · **39 temuan** · Semua rujukan `file:baris` sudah dibuka & diverifikasi.
 > **Cakupan:** kode mati, bug, logika bisnis, UI tak konsisten, perawatan, data.
-> **Bukan pengganti** [`audit-perbaikan.md`](audit-perbaikan.md) — dokumen itu masih menyimpan **26 item terbuka** dan tidak diulang di sini. Lihat [§8](#8-hubungan-dengan-audit-sebelumnya).
+> **Dokumen tunggal.** Sejak 2026-07-29 file ini menggantikan `audit-perbaikan.md` (audit 2026-07-26), yang sudah dihapus. Item terbukanya diperiksa ulang terhadap kode hari ini lalu dipindahkan ke [§8](#8--warisan-audit-2026-07-26); yang tidak dipindahkan beserta alasannya ada di [§8.6](#86-yang-digugurkan-dan-alasannya).
 
 ---
 
@@ -24,13 +24,14 @@
 | # | Kategori | 🔴 | 🟠 | 🟡 | Total | Selesai |
 |---|---|---|---|---|---|---|
 | 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) | 1 | 0 | 1 | 2 | **2 ✅** |
-| 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **2** |
+| 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **3** |
 | 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | 0 |
 | 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | 0 |
 | 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | 0 |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | 0 |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | 0 |
-| | **Total** | **1** | **11** | **9** | **21** | **4** |
+| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | 0 |
+| | **Total** | **1** | **23** | **15** | **39** | **5** |
 
 ---
 
@@ -67,9 +68,9 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
   **Ikutan yang tak tercatat di temuan:** `$validatorId` seeder laporan menunjuk UUID `operator@`; kalau akunnya dibuang tanpa itu, seed laporan `divalidasi` melanggar FK. Kini menunjuk admin. Spec `province` pindah ke `admin2`, `report-flow` ke `admin` — aman karena `ReportAccessService::accessible()` cabang `admin` tidak menyaring per wilayah.
   **Belum dikerjakan — produksi:** `operator@` & `provinsi@` masih ada di sana (lihat `DT-4`).
 
-- [ ] 🟡 **`KM-3` — Header progres `audit-perbaikan.md` basi & seluruhnya dikomentari HTML** — `docs/review/audit-perbaikan.md:1-29` *(bukti: kode)*
-  Blok progres berhenti di butir 11 dan masih menulis *"Suite backend: 160/160 hijau"* — kini **189/189**. Seluruh blok dibungkus `<!-- -->` sehingga tak terlihat saat dirender, jadi pembaca tak tahu dokumen itu sudah dikerjakan sejauh mana.
-  **Aksi:** perbarui angkanya lalu buka komentarnya, atau hapus blok itu dan tunjuk ke dokumen ini.
+- [x] 🟡 **`KM-3` — Header progres `audit-perbaikan.md` basi & seluruhnya dikomentari HTML** — ✅ *file dihapus 2026-07-29, isinya dilebur ke [§8](#8--warisan-audit-2026-07-26)*
+  Bukan sekadar headernya yang basi: **70% isi dokumen** dibungkus `<!-- -->`, sehingga sebagian besar temuan tak pernah terlihat saat dirender. Memperbarui angkanya saja tak akan memperbaiki itu.
+  Ke-26 item terbukanya dibuka ulang terhadap kode hari ini — 5 gugur, 21 dipindahkan (jadi 18 entri `AU-*`). Alasan tiap yang gugur tercatat di [§8.6](#86-yang-digugurkan-dan-alasannya).
 
 - [ ] 🟡 **`KM-4` — 59 pemakaian `any` di frontend** — `frontend/src` *(bukti: kode)*
   Naik dari 54 saat audit sebelumnya. Sudah tercatat di audit lama sebagai ditunda; dicatat ulang di sini hanya sebagai penanda tren agar tidak diam-diam bertambah terus.
@@ -158,16 +159,108 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
 
 ---
 
-## 8. Hubungan dengan audit sebelumnya
+## 8. 📦 Warisan audit 2026-07-26
 
-[`audit-perbaikan.md`](audit-perbaikan.md) masih menyimpan **26 item terbuka** yang **tidak diulang** di sini, antara lain:
+Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% terkomentari HTML sehingga tak terbaca saat dirender, dan header progresnya berhenti di angka yang basi. Item yang masih terbuka **dibuka ulang satu per satu terhadap kode hari ini**, lalu yang bertahan dipindahkan ke bawah ini.
 
-| Kelompok | Contoh item terbuka |
+**26 item terbuka → 5 digugurkan, 21 dipindahkan** (menjadi 18 entri: beberapa temuan bertetangga disatukan, mis. tiga tes rapuh jadi satu `AU-18`). Yang digugurkan dicatat di [§8.6](#86-yang-digugurkan-dan-alasannya) supaya keputusannya tidak ikut hilang bersama filenya.
+
+### 8.1 Korektness pipeline ML
+
+- [ ] 🟠 **`AU-1` — Wilayah tanpa data spasial diperlakukan sebagai wilayah paling berbahaya** — `ml-api/main.py:415-427` *(bukti: kode)*
+  `distance_to_coast_m` dan `avg_elevation_m` yang `NULL` dibaca sebagai `0.0`, sehingga `spatial_factor = exp(0) × exp(0) = 1.0` — nilai **maksimum**. Wilayah yang datanya belum terisi jadi tampak lebih berisiko daripada wilayah pesisir berelevasi rendah yang datanya lengkap. Ini kebalikan dari yang dimaksud, dan keluarannya adalah peringatan banjir yang dibaca warga.
+  **Aksi:** bedakan "nol yang valid" dari "data hilang" — lewati wilayahnya, atau pakai faktor konservatif yang eksplisit dan tandai `provenance_status`.
+
+- [ ] 🟠 **`AU-2` — `confidence_score` tidak sejalan dengan `risk_probability`** — `ml-api/main.py:437-445` *(bukti: kode)*
+  `risk_probability` dihitung dari `final_prob` (sudah dikali `spatial_factor`), tetapi `confidence_score` diambil apa adanya dari `row["confidence"]` milik probabilitas **mentah**. Hasilnya bisa terbaca "risiko rendah 4%" berdampingan dengan "keyakinan 80%" — dua angka yang menjelaskan hal berbeda tapi disajikan sebagai satu kesatuan.
+  **Aksi:** hitung ulang keyakinan dari `final_prob`, atau pisahkan penamaannya agar jelas mereka mengukur hal berbeda.
+
+- [ ] 🟠 **`AU-3` — Dua command Artisan memakai nama `ml:predict` yang sama** — `backend/app/Console/Commands/RunMlPrediction.php:10` & `RunMlPredictions.php:10` *(bukti: kode)*
+  Keduanya mendaftarkan signature `ml:predict`; yang menang bergantung urutan pendaftaran, jadi salah satunya dead code dan cron bisa memanggil yang bukan dimaksud. Opsi `--simulate` milik `RunMlPrediction` tidak dikenal argparse `main.py`.
+  **Aksi:** hapus atau ganti nama salah satu, lalu pastikan cron memanggil yang tersisa.
+
+- [ ] 🟡 **`AU-4` — Type hint `RandomForestClassifier` padahal modelnya XGBoost** — `ml-api/files/train_model.py:119,158,170` *(bukti: kode)*
+  Impor-nya tak ada (anotasi Python malas dievaluasi, jadi tak crash), dan docstring di baris 6 juga masih menulis RandomForest sementara baris 90 membangun `XGBClassifier`. Menyesatkan pembaca — termasuk penguji skripsi.
+  **Aksi:** ganti ke `XGBClassifier` dan selaraskan docstring.
+
+### 8.2 Korektness backend
+
+- [ ] 🟠 **`AU-5` — Aksi validasi/tolak/ubah-status laporan tanpa penguncian** — `backend/app/Http/Controllers/Api/ReportController.php:231,251,272` *(bukti: kode)*
+  `authorizeReview()` memeriksa status lalu `update()` menulisnya — non-atomik. Dua admin (atau satu double-click) sama-sama lolos pemeriksaan, keduanya menulis, dan pelapor menerima **notifikasi ganda** yang bisa saling bertentangan.
+  **Aksi:** bungkus `DB::transaction` + `lockForUpdate`, atau jadikan update kondisional (`where('status', ...)`) dan tolak bila 0 baris terpengaruh.
+
+- [ ] 🟠 **`AU-6` — Callback Google menautkan akun by-email tanpa memeriksa klaim email terverifikasi** — `backend/app/Http/Controllers/Api/GoogleAuthController.php:52,91-96` *(bukti: kode)*
+  Pencarian pengguna memakai `orWhere('email', $googleUser->email)`, lalu `email_verified_at ??= now()` — tanpa membaca klaim `email_verified` dari Google. Akun Google yang emailnya belum terverifikasi (mungkin di Workspace yang dikelola sendiri) karenanya bisa menaut ke akun SIPERAH yang sudah ada dan langsung masuk.
+  **Aksi:** tolak penautan bila klaim `email_verified` bukan `true`; sisa cabang `catch` (`?error=google_auth_failed`) juga masih belum teruji.
+
+- [ ] 🟡 **`AU-7` — Status `duplikat` tidak mencatat siapa & kapan** — `backend/app/Http/Controllers/Api/ReportController.php:282-283` *(bukti: kode)*
+  `validated_by` dan `validated_at` sengaja diisi `null` untuk status selain `divalidasi`/`ditolak`, padahal `duplikat` sama-sama keputusan manusia yang menutup laporan. Laporan terlihat "selesai" tanpa jejak siapa yang memutuskan. Transisi status juga tidak dibatasi — laporan `divalidasi` masih bisa dikembalikan ke `menunggu`.
+  **Aksi:** isi kolom resolusi untuk `duplikat` juga, dan batasi transisi yang sah.
+
+- [ ] 🟡 **`AU-8` — `water_height_cm` tanpa batas atas** — `backend/app/Http/Requests/StoreReportRequest.php:20` *(bukti: kode)*
+  Hanya `integer|min:0`. Nilai seperti 999999 lolos dan ikut masuk agregat dashboard serta dataset peneliti. (Bagian lain temuan ini — `incident_time` boleh masa depan — sudah diperbaiki: `before_or_equal` dengan toleransi 10 menit untuk selisih jam perangkat.)
+  **Aksi:** tambahkan `max:1000`.
+
+- [ ] 🟡 **`AU-9` — Contoh `risk_probability` di API reference memakai skala 0..1** — `backend/app/Http/Controllers/Api/ResearchController.php:395` *(bukti: kode)*
+  Contohnya menulis `0.82` sedangkan sistem menyimpan persen (0..100). Konsumen eksternal yang menyalin contoh akan salah menafsirkan skalanya seratus kali lipat.
+  **Aksi:** perbaiki contohnya ke skala persen.
+
+### 8.3 Performa
+
+- [ ] 🟠 **`AU-10` — Export laporan lazy-load `reporter` 1.000× untuk kolom yang tak pernah ditulis** — `backend/app/Http/Controllers/Api/DashboardController.php:256-262` & `:472` *(bukti: kode)*
+  Query-nya `->with('region')` saja, tetapi `reportSummary()` membaca `$report->reporter?->name`. Header CSV-nya (`Kode, Status, Keparahan, Tinggi Air CM, Wilayah, Waktu Kejadian, SLA, Dibuat`) tidak memuat nama pelapor sama sekali — jadi 1.000 query dijalankan untuk nilai yang dibuang. `isReportWithinMonitoringArea()` per baris patut diperiksa dengan cara yang sama.
+  **Aksi:** tambahkan `with('reporter')`, atau pakai varian ringkas yang tidak menyentuh relasi itu.
+
+- [ ] 🟠 **`AU-11` — Notifikasi risiko tinggi menjalankan 2 query per pengguna, atas seluruh pengguna, setiap hari** — `backend/app/Services/NotificationService.php:142-147` *(bukti: kode)*
+  `notifyHighRiskPredictions()` mengambil **semua** user aktif, lalu di dalam loop memanggil `settings()` (`firstOrCreate` = SELECT, kadang + INSERT) dan sebuah `exists()` ke `notification_inbox`. Berbeda dari jalur laporan yang penerimanya hanya admin, jalur ini tumbuh seiring jumlah warga terdaftar — dan dipicu cron harian.
+  **Aksi:** pra-muat pengaturan lewat satu `whereIn`, dan ambil penanda "sudah dikirim" sebagai satu query kolektif.
+
+### 8.4 Diagnosa
+
+- [ ] 🟠 **`AU-12` — Tiga `catch (\Throwable)` tanpa log di peta publik** — `backend/app/Http/Controllers/Api/PublicMapController.php:231,341,350` *(bukti: kode)*
+  Yang di baris 231 mengubah kegagalan jadi `$features = []`: layer garis pantai lenyap dari peta publik tanpa satu pun jejak. Dua sisanya membuat deteksi PostGIS `return false` diam-diam, sehingga sistem turun ke jalur non-spasial tanpa ada yang tahu.
+  **Aksi:** `Log::warning()` di ketiganya — tetap fail-safe, tapi kegagalannya meninggalkan jejak.
+
+### 8.5 Testing & refactor yang ditunda
+
+- [ ] 🟠 **`AU-13` — Suite Playwright tak pernah jalan di CI** — `.github/workflows/` *(bukti: kode)*
+  15 tes e2e nyata (`login`/`admin`/`map`/`province`/`research`/`report-flow`) hanya berjalan bila seseorang mengetikkannya di mesin lokal. Tak ada satu pun dari lima workflow yang memanggilnya, jadi suite ini bisa membusuk tanpa ketahuan.
+  **Aksi:** tambahkan job Playwright — nightly sudah cukup untuk mulai.
+
+- [ ] 🟠 **`AU-14` — Pipeline ML Python tanpa test, dan CI-nya menelan kegagalan** — `.github/workflows/ml-predict.yml:37` *(bukti: kode)*
+  `main.py`, `feature_engineering`, `predict_forecast`, `labeler`, dan `PredictionContract` tidak punya pytest sama sekali; yang ada hanya uji wrapper PHP dengan stub. Workflow-nya pun berjalan terjadwal langsung ke DB **produksi**, dan cek konektivitasnya diakhiri `|| echo "GAGAL/TIMEOUT"` sehingga kegagalan tidak pernah menggagalkan job.
+  **Aksi:** suite pytest di `ml-api` yang jalan pada PR menyentuh `ml-api/**`, dan buat kegagalan konektivitas benar-benar menggagalkan job.
+
+- [ ] 🟠 **`AU-15` — `CitizenModePage.tsx` 1.053 baris dengan Desktop & Mobile hampir identik** — `frontend/src/features/public-map/CitizenModePage.tsx:244` *(bukti: kode)*
+  `CitizenModeDesktop` (~300 baris JSX) dan `CitizenModeMobile` (~290) menduplikasi blok forecast/actionCards/nearby, dengan 13 props identik yang semuanya bertipe `any`. Setiap perubahan harus ditulis dua kali. Ini halaman publik yang paling banyak dilihat warga dan tidak punya test komponen.
+  **Ditunda sengaja** di audit sebelumnya agar kegagalan refactor tidak menyeret perbaikan bug lain saat revert — keputusan itu masih berlaku, dicatat di sini supaya tidak terlupakan. Beririsan dengan [`KM-4`](#2--kode-mati--sisa-peralihan).
+
+- [ ] 🟠 **`AU-16` — Tidak ada `app/Enums`: status, peran, dan kelas risiko sebagai literal string** — `backend/app/Services/ReportAccessService.php:28-32` *(bukti: kode)*
+  DB memakai enum Postgres, PHP tidak memetakannya. Ini bukan kerapian belaka — bukti kerugiannya ada di docblock file itu sendiri: saat peran disederhanakan 5→3, cabang `'bpbd_provinsi', 'admin'` tak sengaja berubah jadi `'peneliti', 'admin'`, yang **menaikkan peneliti dari 403 menjadi akses penuh ke laporan berisi identitas pelapor**. Enum akan membuat kekeliruan seperti itu gagal saat kompilasi.
+  **Aksi:** buat `ReportStatus`, `UserRole`, `RiskClass` sebagai backed enum, mulai dari titik yang menentukan otorisasi.
+
+- [ ] 🟡 **`AU-17` — Satu tes lulus tanpa memverifikasi apa pun** — `backend/tests/Feature/ApiFoundationTest.php:766` *(bukti: kode)*
+  `test_audit_service_is_fail_safe_when_storage_rejects_payload()` memanggil `AuditService::write()` dengan outcome tak sah lalu berakhir `$this->assertTrue(true)`. Tes ini tak bisa gagal, jadi ia hanya memberi rasa aman palsu bahwa fail-safe audit sudah teruji.
+  **Aksi:** `assertDatabaseMissing` pada baris audit yang tak sah, dan pastikan tak ada exception yang lolos.
+
+- [ ] 🟡 **`AU-18` — Tiga tes bergantung pada state global DB/cache, bukan state miliknya sendiri** — `backend/tests/Feature/QueueWorkerTest.php:52`, `AuthFlowTest.php:16-18`, `PublicMapTest.php:21-23` *(bukti: kode)*
+  `QueueWorkerTest` meng-assert `failed_jobs` **global** bernilai 0 — satu baris sisa run lain menggagalkannya. `AuthFlowTest` menjaga jumlah panggilan `/auth/register` maksimal 4 agar tak menabrak limiter 5/jam. `PublicMapTest` memakai nama kabupaten unik + `Cache::flush()` karena cache array bertahan antar tes. Ketiganya sudah didokumentasikan di komentar, jadi ini kerapuhan yang dikelola, bukan yang tersembunyi — tetapi tetap gagal karena sebab yang tak ada hubungannya dengan yang diuji.
+  **Aksi:** assert delta alih-alih nilai absolut, dan `RateLimiter::clear()` + flush cache terpusat di base `TestCase`.
+
+### 8.6 Yang digugurkan dan alasannya
+
+Lima item terbuka **tidak** dipindahkan. Dua di antaranya sudah tidak berlaku karena kodenya berubah setelah audit ditulis, dua duplikat item yang sudah ada di dokumen ini, satu keputusan sadar untuk tidak dikerjakan.
+
+| Item audit lama | Alasan gugur |
 |---|---|
-| Backend performa | N+1 `reporter` di `operatorReportsExport`, N+1 loop notifikasi |
-| Backend korektness | penguncian aksi validasi laporan, `duplikat` tak catat validator |
-| Pipeline ML | elevasi/jarak-pantai NULL → risiko maksimum, `confidence_score` tak konsisten |
-| Testing | pipeline ML tanpa test, e2e Playwright tak jalan di CI |
-| Refactor (ditunda sengaja) | dedup CitizenMode Desktop/Mobile, sapuan `any` |
+| API key BPBD Provinsi selalu ditolak 403 (ditandai 🔴) | **Tidak berlaku lagi.** Peran `bpbd_provinsi` hilang saat peran disederhanakan 5→3, jadi whitelist `['peneliti','admin']` di `AuthenticateApiKey.php:37` kini persis sama dengan daftar peran yang boleh membuat key. Ketimpangan yang jadi pokok temuan sudah tertutup dengan sendirinya. |
+| SLA overdue fail-open untuk operator tanpa `region_id` | **Tidak berlaku lagi.** `notifyReportSlaOverdue()` dan `notifyNewReportForReview()` kini sama-sama memilih seluruh admin aktif; cabang berbasis `region_id` yang jadi pokok temuan sudah tidak ada. |
+| `DashboardController` kegemukan & `normalizeRegency` terduplikasi | Duplikat [`MT-2`](#5--perawatan--struktur) dan [`MT-3`](#5--perawatan--struktur). |
+| Sapuan `any` di frontend | Duplikat [`KM-4`](#2--kode-mati--sisa-peralihan), yang sudah melacak angkanya (59). |
+| Amplop respons API tak konsisten antar endpoint | **Diputuskan tidak dikerjakan.** Nyata, tapi konsumennya hanya frontend sendiri; `/api/v1/*` yang menghadap luar sudah punya kontrak terpisah di `docs/operations/api-contract.md`. Biaya penyeragaman lebih besar dari manfaatnya sekarang. |
 
-**Urutan pengerjaan yang disarankan:** selesaikan dulu 🔴 dan 🟠 di audit lama yang menyangkut korektness ML & penguncian laporan — dampaknya ke integritas data lebih besar daripada mayoritas item di dokumen ini.
+Satu temuan dipindahkan **sebagian**: "`incident_time` boleh masa depan, `water_height_cm` tanpa batas atas" — paruh pertamanya sudah diperbaiki (`before_or_equal` + toleransi 10 menit), paruh keduanya dilanjutkan sebagai `AU-8`.
+
+---
+
+**Urutan pengerjaan yang disarankan:** dahulukan `AU-1` dan `AU-2`. Keduanya menghasilkan angka risiko yang salah di layar warga, dan itu adalah keluaran utama sistem ini — dampaknya lebih besar daripada mayoritas item lain di dokumen ini.

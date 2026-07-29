@@ -33,6 +33,7 @@ hubung (`kebab-case`); akronim resmi dokumen (PRD, SKPL, ERD, UAT) dipertahankan
 ## 📝 `review/` — Tinjauan kualitas
 | Berkas | Isi |
 | :--- | :--- |
+| [checklist-perbaikan.md](review/checklist-perbaikan.md) | Ceklis perbaikan teknis yang masih terbuka — satu-satunya daftar aktif |
 | [copywriting.md](review/copywriting.md) | Tinjauan konsistensi copywriting & istilah |
 
 ## 🗒️ `internal/` — Catatan kerja
