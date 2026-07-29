@@ -21,8 +21,8 @@ final class NotificationService
             ['user_id' => $userId],
             [
                 'id' => (string) Str::uuid(),
-                'channels' => ['browser', 'email'],
-                'event_types' => ['bahaya_sangat_tinggi', 'laporan_ground_truth', 'peringatan_bmkg'],
+                'channels' => NotificationSetting::DEFAULT_CHANNELS,
+                'event_types' => NotificationSetting::DEFAULT_EVENT_TYPES,
                 'monitored_regions' => [],
             ],
         );

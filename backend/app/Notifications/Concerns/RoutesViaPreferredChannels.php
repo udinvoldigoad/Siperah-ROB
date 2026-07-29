@@ -14,12 +14,17 @@ trait RoutesViaPreferredChannels
 {
     public function via(object $notifiable): array
     {
+        // Baris pengaturan dibuat MALAS (saat halaman notifikasi dibuka, atau
+        // saat jalur notifikasi tertentu kebetulan memanggil settings()), jadi
+        // banyak akun sah tak punya baris sama sekali. Dulu kondisi itu jatuh ke
+        // inbox saja sehingga akun tersebut tidak pernah menerima email, padahal
+        // defaultnya browser + email. Sekarang keduanya memakai konstanta sama.
         $settings = NotificationSetting::where('user_id', $notifiable->id)->first();
-        if (!$settings) {
-            return [InboxChannel::class];
-        }
+        // Sengaja lewat model (bukan ->value()) supaya cast array-nya jalan.
+        // `[]` yang tersimpan berarti user memang mematikan semua kanal dan
+        // harus dihormati; hanya ketiadaan nilai yang jatuh ke default.
+        $channels = $settings?->channels ?? NotificationSetting::DEFAULT_CHANNELS;
 
-        $channels = $settings->channels ?? [];
         $delivery = [InboxChannel::class];
 
         if (in_array('email', $channels, true)) {
