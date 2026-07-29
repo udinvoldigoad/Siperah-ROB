@@ -2,9 +2,9 @@ import { useEffect } from "react";
 import { Icon } from "../../shared/components/Icon";
 import { api, ApiError } from "../../shared/api/client";
 import { dashboardHashForRole } from "../../shared/constants/roles";
-import { clearSession, setSession } from "../../shared/auth/session";
+import { clearSession, setSession, type SessionUser } from "../../shared/auth/session";
 
-type ExchangeResponse = { access_token: string; user: any };
+type ExchangeResponse = { access_token: string; user: SessionUser };
 
 export function OAuthCallbackPage() {
   useEffect(() => {

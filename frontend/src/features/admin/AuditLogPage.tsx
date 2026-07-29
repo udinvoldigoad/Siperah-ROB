@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
-import { api, downloadFile } from "../../shared/api/client";
+import { api, downloadFile, errorMessage } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
 import { EmptyState } from "../../shared/components/EmptyState";
 import { roleLabel } from "../../shared/constants/roles";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
 interface AuditLogData {
   id: string;
@@ -49,12 +49,12 @@ const outcomes: Record<string, string> = {
   partial: "Sebagian",
 };
 
-const containerVariants: any = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } }
 };
 
-const itemVariants: any = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
@@ -82,9 +82,6 @@ const actionLabels: Record<string, string> = {
   download_research_dataset: "Unduh Dataset Riset",
   regenerate_api_key: "Regenerasi API Key",
   api_key_request: "Permintaan API Key",
-  request_api_access: "Mengajukan Izin API",
-  approve_api_access: "Menyetujui Izin API",
-  reject_api_access: "Menolak Izin API",
   access_denied: "Akses Ditolak",
   update_notification_settings: "Update Konfigurasi Notifikasi",
 };
@@ -93,7 +90,6 @@ function formatTargetResource(target: string | null): string {
   if (!target) return "-";
   return target.replace("ground_truth_reports:", "ID Laporan: ")
                .replace("datasets:", "ID Dataset: ")
-               .replace("api_access_requests:", "ID Izin API: ")
                .replace("users:", "ID Pengguna: ")
                .replace("api_keys:", "ID API Key: ");
 }
@@ -169,8 +165,8 @@ export function AuditLogPage() {
     try {
       await downloadFile("/admin/audit-logs", "audit_logs.csv", { action, outcome, search, format: "csv" });
       toast.success("Export audit log berhasil diunduh.");
-    } catch (err: any) {
-      toast.error(err.message || "Gagal export audit log.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal export audit log."));
     }
   };
 
@@ -273,9 +269,6 @@ export function AuditLogPage() {
               <option value="reject_user">Tolak Pengguna</option>
               <option value="download_research_dataset">Unduh Dataset Riset</option>
               <option value="regenerate_api_key">Regenerasi API Key</option>
-              <option value="request_api_access">Ajukan Izin API</option>
-              <option value="approve_api_access">Setujui Izin API</option>
-              <option value="reject_api_access">Tolak Izin API</option>
             </select>
 
             <select

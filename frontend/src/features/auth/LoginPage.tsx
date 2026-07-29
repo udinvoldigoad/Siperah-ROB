@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon } from "../../shared/components/Icon";
-import { api, apiUrl, ApiError } from "../../shared/api/client";
+import { api, apiUrl, ApiError, errorMessage } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { dashboardHashForRole } from "../../shared/constants/roles";
 import { setSession } from "../../shared/auth/session";
@@ -90,7 +90,7 @@ export function LoginPage() {
         window.location.hash = dashboardHashForRole(res.user.role);
       }, 500);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Akun belum aktif (menunggu/nonaktif/ditolak) → tampilkan panel status
       // yang jelas & persisten, bukan sekadar toast sesaat.
       // Belum verifikasi email punya jalan keluar sendiri (masukkan OTP),
@@ -106,7 +106,7 @@ export function LoginPage() {
       } else if (err instanceof ApiError && err.status === 403 && err.body?.account_status) {
         setLoginNotice({ message: err.message, status: err.body.account_status });
       } else {
-        toast.error(err.message || "Gagal masuk. Silakan cek kredensial Anda.");
+        toast.error(errorMessage(err, "Gagal masuk. Silakan cek kredensial Anda."));
       }
       setIsLoading(false);
     }
@@ -147,8 +147,8 @@ export function LoginPage() {
       setPassword("");
       setOtp("");
       setMode("verify");
-    } catch (err: any) {
-      toast.error(err.message || "Pendaftaran gagal. Coba lagi.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Pendaftaran gagal. Coba lagi."));
     } finally {
       setIsLoading(false);
     }
@@ -173,8 +173,8 @@ export function LoginPage() {
       setMode("login");
       setEmail(verifyEmail);
       setOtp("");
-    } catch (err: any) {
-      toast.error(err.message || "Kode verifikasi salah atau kedaluwarsa.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Kode verifikasi salah atau kedaluwarsa."));
     } finally {
       setIsLoading(false);
     }
@@ -189,8 +189,8 @@ export function LoginPage() {
       });
       // Pesan backend sengaja generik (anti-enumeration) — diteruskan apa adanya.
       toast.info("Jika email tersebut belum terverifikasi, kode baru telah dikirim.");
-    } catch (err: any) {
-      toast.error(err.message || "Gagal mengirim ulang kode.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal mengirim ulang kode."));
     } finally {
       setIsLoading(false);
     }
@@ -391,11 +391,9 @@ export function LoginPage() {
                 <div className="dev-shortcut-box" style={{ marginTop: "12px", padding: "16px", background: "var(--surface-soft)", borderRadius: "12px", border: "1px dashed var(--line)" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                     <button type="button" onClick={() => { setEmail("warga@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>👤 Warga</button>
-                    <button type="button" onClick={() => { setEmail("operator@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>🛡️ Operator BPBD</button>
-                    <button type="button" onClick={() => { setEmail("provinsi@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>🏢 Provinsi</button>
                     <button type="button" onClick={() => { setEmail("admin@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>⚙️ Admin</button>
                     <button type="button" onClick={() => { setEmail("peneliti@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>🔬 Peneliti</button>
-                    <button type="button" onClick={() => { setEmail("demo@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>⭐ Super Demo</button>
+                    <button type="button" onClick={() => { setEmail("demo@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>⚙️ Admin 2</button>
                   </div>
                 </div>
               </details>

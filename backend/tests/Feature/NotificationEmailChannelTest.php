@@ -4,8 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\NotificationSetting;
 use App\Models\User;
-use App\Notifications\ApiAccessReviewedNotification;
+use App\Notifications\Data\ReportSummary;
 use App\Notifications\HighRiskWarningNotification;
+use App\Notifications\ReportSlaOverdueNotification;
 use App\Notifications\ReportStatusUpdatedNotification;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
@@ -20,8 +21,8 @@ use Tests\TestCase;
  * karena itu tidak punya baris sama sekali, dan `via()` dulu menjatuhkannya ke
  * inbox saja - emailnya tak pernah terkirim padahal defaultnya browser + email.
  *
- * Jalur yang TIDAK memanggil settings() (SLA overdue, hasil tinjauan izin API)
- * adalah yang paling sering terkena.
+ * Jalur yang TIDAK memanggil settings() — SLA overdue salah satunya — adalah
+ * yang paling sering terkena.
  */
 final class NotificationEmailChannelTest extends TestCase
 {
@@ -43,7 +44,7 @@ final class NotificationEmailChannelTest extends TestCase
         $user = $this->makeUser();
 
         foreach ([
-            new ApiAccessReviewedNotification('disetujui'),
+            new ReportSlaOverdueNotification(new ReportSummary('id-uji', 'GT-UJI-001', 'menunggu')),
             new HighRiskWarningNotification('2026-07-29', ['Kelurahan Uji'], 1),
         ] as $notification) {
             self::assertContains(

@@ -13,7 +13,6 @@ create table users (
   email varchar(150) unique not null,
   email_verified_at timestamptz,
   password_hash varchar(255),
-  phone_number varchar(30),
   role user_role not null,
   institution varchar(150),
   -- Alasan permohonan akun peneliti; dasar admin menyetujui/menolak.

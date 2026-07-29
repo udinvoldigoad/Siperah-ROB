@@ -43,8 +43,11 @@ test("warga submit laporan, operator validasi, laporan tampil di peta publik", a
   await expect(page.getByText(`KODE: ${reportCode}`)).toBeVisible();
   await expect(page.getByText(uniqueDescription)).toBeVisible();
 
-  // ── 3. Operator memvalidasi dari antrean ────────────────────────
-  await loginViaApi(page, SEED_USERS.operator, "#/operator");
+  // ── 3. Admin memvalidasi dari antrean ───────────────────────────
+  // Antrean `#/operator` kini milik peran admin (peran `operator` dihapus saat
+  // peran disederhanakan 5→3) dan tidak disaring per wilayah — lihat
+  // ReportAccessService::accessible(), cabang 'admin' mengembalikan semua.
+  await loginViaApi(page, SEED_USERS.admin, "#/operator");
   const reportCard = page.locator(".report-row", { hasText: uniqueDescription });
   await expect(reportCard).toBeVisible();
   await reportCard.getByRole("button", { name: "Validasi" }).click();

@@ -247,13 +247,19 @@ final class DatabaseSeeder extends Seeder
 
     public function seedUsers(): void
     {
+        // Empat akun demo, satu per peran yang benar-benar ada (warga, admin,
+        // peneliti) — plus admin KEDUA. Admin kedua bukan peran berbeda: ia ada
+        // semata supaya suite e2e bisa memakai email berbeda antar-spec,
+        // sebab limiter login membatasi 10 percobaan/menit per (email + IP).
+        //
+        // Akun `operator@` & `provinsi@` sudah dihapus: sejak peran
+        // disederhanakan 5→3 keduanya cuma admin bernama peran yang tak ada lagi.
         $users = [
             [
                 'id' => '22222222-2222-4222-8222-222222222222',
                 'name' => 'Warga Mode Awam',
                 'email' => 'warga@siperah.local',
                 'password_hash' => Hash::make('password'),
-                'phone_number' => '080000000000',
                 'role' => 'warga',
                 'region_id' => '11111111-1111-4111-8111-111111111111',
                 'status' => 'aktif',
@@ -263,50 +269,29 @@ final class DatabaseSeeder extends Seeder
                 'name' => 'Admin Sistem',
                 'email' => 'admin@siperah.local',
                 'password_hash' => Hash::make('password'),
-                'phone_number' => '081111111111',
                 'role' => 'admin',
                 'region_id' => null,
                 'status' => 'aktif',
-            ],
-            [
-                'id' => '22222222-2222-4222-8222-bbbbbbbbbbbb',
-                'name' => 'Operator BPBD Bandar Lampung',
-                'email' => 'operator@siperah.local',
-                'password_hash' => Hash::make('password'),
-                'phone_number' => '082222222222',
-                'role' => 'admin',
-                'region_id' => '11111111-1111-4111-8111-111111111111',
-                'status' => 'aktif',
-                'institution' => 'BPBD Kota Bandar Lampung',
-            ],
-            [
-                'id' => '22222222-2222-4222-8222-cccccccccccc',
-                'name' => 'Kepala BPBD Provinsi Lampung',
-                'email' => 'provinsi@siperah.local',
-                'password_hash' => Hash::make('password'),
-                'phone_number' => '083333333333',
-                'role' => 'admin',
-                'region_id' => null,
-                'status' => 'aktif',
-                'institution' => 'BPBD Provinsi Lampung',
             ],
             [
                 'id' => '22222222-2222-4222-8222-dddddddddddd',
                 'name' => 'Dr. Peneliti Unila',
                 'email' => 'peneliti@siperah.local',
                 'password_hash' => Hash::make('password'),
-                'phone_number' => '084444444444',
                 'role' => 'peneliti',
                 'region_id' => null,
                 'status' => 'aktif',
                 'institution' => 'Universitas Lampung',
+                // Sejak izin diminta sekali saat pendaftaran (bukan lagi lewat
+                // permohonan kunci API terpisah), inilah keterangan yang dibaca
+                // admin di modal tinjau permohonan. Tanpa ini layar demo kosong.
+                'research_purpose' => 'Penelitian akademik pemodelan risiko banjir rob pesisir Lampung 2024-2026 untuk kebutuhan disertasi dan mitigasi wilayah.',
             ],
             [
                 'id' => '22222222-2222-4222-8222-eeeeeeeeeeee',
-                'name' => 'Demo Super User',
+                'name' => 'Admin Sistem Kedua',
                 'email' => 'demo@siperah.local',
                 'password_hash' => Hash::make('password'),
-                'phone_number' => '085555555555',
                 'role' => 'admin',
                 'region_id' => null,
                 'status' => 'aktif',
@@ -325,34 +310,6 @@ final class DatabaseSeeder extends Seeder
                 ]),
             );
         }
-
-        $this->seedResearcherApiPermit();
-    }
-
-    /**
-     * Izin akses API yang SUDAH disetujui untuk peneliti demo.
-     *
-     * Sejak alur perizinan diperkenalkan, `canGenerateApiKey()` menolak peneliti
-     * tanpa izin berstatus `disetujui` — sehingga peneliti demo tak pernah bisa
-     * membuat API key dan tombolnya berlabel "Ajukan Izin API". Tanpa baris ini
-     * lingkungan demo/uji tak konsisten dengan cerita yang ditampilkannya.
-     */
-    private function seedResearcherApiPermit(): void
-    {
-        DB::table('api_access_requests')->updateOrInsert(
-            ['id' => '33333333-3333-4333-8333-aaaaaaaaaaaa'],
-            [
-                'user_id' => '22222222-2222-4222-8222-dddddddddddd', // peneliti@siperah.local
-                'purpose' => 'Penelitian akademik pemodelan risiko banjir rob pesisir Lampung.',
-                'organization' => 'Universitas Lampung',
-                'project_title' => 'Pemodelan Risiko Rob Pesisir Lampung',
-                'status' => 'disetujui',
-                'reviewed_by' => '22222222-2222-4222-8222-aaaaaaaaaaaa', // admin@siperah.local
-                'reviewed_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        );
     }
 
     // ── Predictions ────────────────────────────────────────────────
@@ -502,7 +459,8 @@ final class DatabaseSeeder extends Seeder
         ];
 
         $userId = '22222222-2222-4222-8222-222222222222';
-        $validatorId = '22222222-2222-4222-8222-bbbbbbbbbbbb';
+        // Dulu akun `operator@`; akun itu dihapus, validasi kini atas nama admin.
+        $validatorId = '22222222-2222-4222-8222-aaaaaaaaaaaa';
 
         foreach ($reports as $r) {
             DB::statement(

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { AppShell } from "../../shared/components/AppShell";
-import { api, apiUrl } from "../../shared/api/client";
+import { api, apiUrl, errorMessage } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
@@ -52,25 +51,6 @@ interface ApiKeyResponse {
 interface RegenerateKeyResponse {
   message: string;
   raw_key: string;
-}
-
-interface ApiAccessPermit {
-  id: string;
-  purpose: string;
-  organization: string | null;
-  project_title: string | null;
-  status: "menunggu" | "disetujui" | "ditolak";
-  review_note: string | null;
-  reviewed_at: string | null;
-  created_at: string | null;
-}
-
-interface ApiAccessResponse {
-  data: {
-    requires_permit: boolean;
-    can_generate_key: boolean;
-    request: ApiAccessPermit | null;
-  };
 }
 
 interface ResearchStats {
@@ -142,10 +122,6 @@ export function ResearchPortalPage() {
   const [datasets, setDatasets] = useState<DatasetData[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKeyData[]>([]);
   const [rawGeneratedKey, setRawGeneratedKey] = useState<string | null>(null);
-  const [permit, setPermit] = useState<ApiAccessResponse["data"] | null>(null);
-  const [isPermitFormOpen, setIsPermitFormOpen] = useState(false);
-  const [permitForm, setPermitForm] = useState({ purpose: "", organization: "", project_title: "" });
-  const [permitSubmitting, setPermitSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<number>(0);
   const [stats, setStats] = useState<ResearchStats>({ dataset_count: 0, total_records: 0, downloads_this_month: 0, api_calls_today: 0, active_api_keys: 0 });
@@ -182,8 +158,8 @@ export function ResearchPortalPage() {
       anchor.remove();
       URL.revokeObjectURL(url);
       toast.success(`Dataset ${format.toUpperCase()} mulai diunduh.`);
-    } catch (err: any) {
-      toast.error(err.message || "Gagal mengunduh dataset.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal mengunduh dataset."));
     }
   };
 
@@ -203,16 +179,14 @@ export function ResearchPortalPage() {
       setAllDatasetTypes((prev) => Array.from(new Set([...prev, ...dsRes.data.map((item) => item.dataset_type)])).sort());
 
       if (isResearcher) {
-        const [keysRes, statsRes, refRes, permitRes] = await Promise.all([
+        const [keysRes, statsRes, refRes] = await Promise.all([
           api<ApiKeyResponse>("/research/api-keys"),
           api<ResearchStatsResponse>("/research/stats"),
           api<ApiReferenceResponse>("/research/api-reference"),
-          api<ApiAccessResponse>("/research/api-access-request"),
         ]);
         setApiKeys(keysRes.data);
         setStats(statsRes.data);
         setApiReference(refRes.data);
-        setPermit(permitRes.data);
       } else {
         // admin juga boleh membaca /research/stats — dulu KPI mereka dihitung
         // dari 10 baris halaman aktif dan unduhan/API dibiarkan "0" hardcoded
@@ -220,8 +194,8 @@ export function ResearchPortalPage() {
         const statsRes = await api<ResearchStatsResponse>("/research/stats");
         setStats(statsRes.data);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Gagal memuat portal penelitian.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal memuat portal penelitian."));
     } finally {
       setIsLoading(false);
     }
@@ -237,8 +211,8 @@ export function ResearchPortalPage() {
     try {
       const res = await api<UsageResponse>("/research/usage");
       setUsage(res.data);
-    } catch (err: any) {
-      toast.error(err.message || "Gagal memuat statistik penggunaan API.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal memuat statistik penggunaan API."));
     } finally {
       setUsageLoading(false);
     }
@@ -251,43 +225,10 @@ export function ResearchPortalPage() {
     }
   }, [activeTab]);
 
-  const handleSubmitPermit = async () => {
-    if (permitForm.purpose.trim().length < 20) {
-      toast.error("Jelaskan tujuan penggunaan minimal 20 karakter.");
-      return;
-    }
-    setPermitSubmitting(true);
-    try {
-      await api("/research/api-access-request", {
-        method: "POST",
-        body: JSON.stringify({
-          purpose: permitForm.purpose.trim(),
-          organization: permitForm.organization.trim() || null,
-          project_title: permitForm.project_title.trim() || null,
-        }),
-      });
-      toast.success("Permohonan izin terkirim. Menunggu persetujuan admin.");
-      setIsPermitFormOpen(false);
-      const permitRes = await api<ApiAccessResponse>("/research/api-access-request");
-      setPermit(permitRes.data);
-    } catch (err: any) {
-      toast.error(err.message || "Gagal mengirim permohonan izin.");
-    } finally {
-      setPermitSubmitting(false);
-    }
-  };
-
+  // Tak ada gerbang izin di sini lagi: izin diminta SEKALI saat akun peneliti
+  // dibuat (research_purpose wajib, akun ditahan `menunggu` sampai admin
+  // menyetujui). Peneliti yang sampai ke halaman ini sudah pernah ditinjau.
   const handleRegenerateKey = async () => {
-    // Peneliti tanpa izin disetujui: arahkan ke form perizinan, bukan buat kunci.
-    if (permit && !permit.can_generate_key) {
-      if (permit.request?.status === "menunggu") {
-        toast.error("Permohonan izin Anda masih menunggu persetujuan admin.");
-        return;
-      }
-      setPermitForm({ purpose: "", organization: "", project_title: "" });
-      setIsPermitFormOpen(true);
-      return;
-    }
     try {
       const res = await api<RegenerateKeyResponse>("/research/api-keys", {
         method: "POST",
@@ -297,8 +238,8 @@ export function ResearchPortalPage() {
 
       const keysRes = await api<ApiKeyResponse>("/research/api-keys");
       setApiKeys(keysRes.data);
-    } catch (err: any) {
-      toast.error(err.message || "Gagal meregenerasi API key.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal meregenerasi API key."));
     }
   };
 
@@ -343,18 +284,10 @@ export function ResearchPortalPage() {
     loadResearchData(nextPage);
   };
 
-  // Gating pembuatan API key oleh status izin (peneliti). Selama data izin belum
-  // termuat, anggap boleh agar UI tak "mengunci" keliru untuk admin/provinsi.
-  const canGenerateKey = permit ? permit.can_generate_key : true;
-  const permitStatus = permit?.request?.status ?? null;
-  // Status izin/kunci belum diketahui saat pemuatan awal — tampilkan skeleton
-  // agar tombol tak keliru muncul "Buat Kunci" sebelum gating izin termuat.
-  const credentialLoading = isResearcher && isLoading && permit === null;
-  const keyButtonLabel = canGenerateKey
-    ? (activeKey || rawGeneratedKey ? "Regenerasi" : "Buat Kunci")
-    : permitStatus === "menunggu" ? "Menunggu Persetujuan" : "Ajukan Izin API";
-  const keyButtonIcon = canGenerateKey ? "refresh" : permitStatus === "menunggu" ? "hourglass_top" : "assignment";
-  const keyButtonDisabled = !canGenerateKey && permitStatus === "menunggu";
+  // Daftar kunci belum termuat pada render pertama — tampilkan skeleton supaya
+  // tombolnya tak sempat salah berlabel "Buat Kunci" padahal kunci sudah ada.
+  const credentialLoading = isResearcher && isLoading && apiKeys.length === 0;
+  const keyButtonLabel = activeKey || rawGeneratedKey ? "Regenerasi" : "Buat Kunci";
 
   return (
     <AppShell active="research" title={isResearcher ? "Arsip & API Peneliti" : "Arsip Data Provinsi"}>
@@ -381,18 +314,8 @@ export function ResearchPortalPage() {
                 <div style={{ fontSize: "13px", color: "var(--ink-soft)", fontFamily: "monospace", marginTop: "2px", wordBreak: "break-all" }}>
                   {activeKey.key_prefix}**************** · <span style={{ fontFamily: "inherit" }}>kunci penuh hanya tampil sekali saat dibuat</span>
                 </div>
-              ) : !canGenerateKey ? (
-                permitStatus === "menunggu" ? (
-                  <div style={{ fontSize: "13px", color: "var(--medium)", marginTop: "2px" }}>Izin akses API sedang ditinjau admin.</div>
-                ) : permitStatus === "ditolak" ? (
-                  <div style={{ fontSize: "13px", color: "var(--critical)", marginTop: "2px" }}>
-                    Permohonan izin ditolak{permit?.request?.review_note ? ` — ${permit.request.review_note}` : ""}. Ajukan ulang untuk memakai API.
-                  </div>
-                ) : (
-                  <div style={{ fontSize: "13px", color: "var(--critical)", marginTop: "2px" }}>Ajukan izin akses API dulu untuk membuat kunci.</div>
-                )
               ) : (
-                <div style={{ fontSize: "13px", color: "var(--critical)", marginTop: "2px" }}>Belum ada kunci API.</div>
+                <div style={{ fontSize: "13px", color: "var(--ink-soft)", marginTop: "2px" }}>Belum ada kunci API — buat sekarang, akses Anda sudah disetujui saat akun dibuat.</div>
               )}
             </div>
           </div>
@@ -408,78 +331,15 @@ export function ResearchPortalPage() {
             )}
             <button
               className="btn outline"
-              disabled={keyButtonDisabled}
-              style={{ fontSize: "12px", padding: "8px 16px", color: canGenerateKey ? "var(--critical)" : "var(--ocean-dark, #0284c7)", borderColor: canGenerateKey ? "var(--critical)" : "var(--ocean-dark, #0284c7)", opacity: keyButtonDisabled ? 0.65 : 1, cursor: keyButtonDisabled ? "not-allowed" : "pointer" }}
+              style={{ fontSize: "12px", padding: "8px 16px", color: "var(--critical)", borderColor: "var(--critical)" }}
               onClick={handleRegenerateKey}
             >
-              <Icon name={keyButtonIcon} style={{ fontSize: "16px" }} /> {keyButtonLabel}
+              <Icon name="refresh" style={{ fontSize: "16px" }} /> {keyButtonLabel}
             </button>
             </>
             )}
           </div>
         </div>}
-
-        {isResearcher && isPermitFormOpen && createPortal(
-          <div
-            role="dialog"
-            aria-modal="true"
-            onMouseDown={(e) => { if (e.target === e.currentTarget && !permitSubmitting) setIsPermitFormOpen(false); }}
-            style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 10000 }}
-          >
-            <div style={{ width: "100%", maxWidth: 480, background: "var(--surface)", borderRadius: 16, border: "1px solid var(--line)", boxShadow: "0 24px 60px rgba(0,0,0,0.28)", overflow: "hidden" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, padding: "18px 20px", borderBottom: "1px solid var(--line)" }}>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Ajukan Izin Akses API</div>
-                  <div style={{ fontSize: 12.5, color: "var(--medium)", marginTop: 3 }}>Permohonan akan ditinjau admin sebelum kunci API bisa dibuat.</div>
-                </div>
-                <button type="button" onClick={() => !permitSubmitting && setIsPermitFormOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--medium)", padding: 4, lineHeight: 0 }} aria-label="Tutup">
-                  <Icon name="close" style={{ fontSize: 20 }} />
-                </button>
-              </div>
-              <div style={{ padding: "18px 20px", display: "grid", gap: 14 }}>
-                <label style={{ display: "grid", gap: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Tujuan penggunaan API <span style={{ color: "var(--critical)" }}>*</span></span>
-                  <textarea
-                    value={permitForm.purpose}
-                    onChange={(e) => setPermitForm((f) => ({ ...f, purpose: e.target.value }))}
-                    rows={4}
-                    maxLength={1000}
-                    placeholder="Contoh: Penelitian skripsi analisis pola banjir rob di pesisir Bandar Lampung 2024–2026 untuk pemodelan risiko."
-                    style={{ width: "100%", resize: "vertical", padding: "10px 12px", borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 13.5, fontFamily: "inherit", lineHeight: 1.5 }}
-                  />
-                  <span style={{ fontSize: 11.5, color: "var(--medium)" }}>Minimal 20 karakter. Jelaskan untuk keperluan apa data ini digunakan.</span>
-                </label>
-                <label style={{ display: "grid", gap: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Instansi / lembaga</span>
-                  <input
-                    value={permitForm.organization}
-                    onChange={(e) => setPermitForm((f) => ({ ...f, organization: e.target.value }))}
-                    maxLength={150}
-                    placeholder="Contoh: Universitas Lampung"
-                    style={{ width: "100%", height: 44, padding: "0 12px", borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 13.5 }}
-                  />
-                </label>
-                <label style={{ display: "grid", gap: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Judul penelitian / proyek</span>
-                  <input
-                    value={permitForm.project_title}
-                    onChange={(e) => setPermitForm((f) => ({ ...f, project_title: e.target.value }))}
-                    maxLength={150}
-                    placeholder="Opsional"
-                    style={{ width: "100%", height: 44, padding: "0 12px", borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 13.5 }}
-                  />
-                </label>
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "14px 20px", borderTop: "1px solid var(--line)" }}>
-                <button type="button" className="btn secondary" style={{ fontSize: 13 }} disabled={permitSubmitting} data-loading={permitSubmitting || undefined} onClick={() => setIsPermitFormOpen(false)}>Batal</button>
-                <button type="button" className="btn primary" style={{ fontSize: 13 }} disabled={permitSubmitting} data-loading={permitSubmitting || undefined} onClick={handleSubmitPermit}>
-                  <Icon name="send" style={{ fontSize: 16 }} /> {permitSubmitting ? "Mengirim…" : "Kirim Permohonan"}
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
 
         {/* KPI Grid */}
         <style>{`

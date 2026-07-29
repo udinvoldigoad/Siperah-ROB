@@ -268,8 +268,8 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, user
       evacMarkers.current.forEach(m => m.remove());
       evacMarkers.current = [];
 
-      const circleFeatures: any[] = [];
-      const riskPointFeatures: any[] = [];
+      const circleFeatures: GeoJSON.Feature[] = [];
+      const riskPointFeatures: GeoJSON.Feature[] = [];
       // Di zoom jauh badge angka diwakili gelembung cluster; pada zoom dekat
       // badge dikembalikan, dan hanya dibuat untuk wilayah yang benar-benar
       // terlihat (viewport culling) agar jumlah node DOM tetap kecil.
@@ -413,12 +413,19 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, user
       }
 
       const coastlineSourceId = "coastline-layer";
-      const coastlineData = activeLayers.garis_pantai ? layers.coastlines : { type: "FeatureCollection", features: [] };
+      // `GeoJsonFeature` di atas sengaja longgar (`coordinates: unknown`) karena
+      // satu koleksi bisa memuat Point/LineString/Polygon sekaligus. MapLibre
+      // menuntut tipe GeoJSON yang ketat, jadi penyempitannya dikerjakan di SATU
+      // titik ini — lewat `unknown`, bukan `any`, sehingga variabel hasilnya
+      // tetap terketik penuh dan salah pakai di bawah tetap ketahuan tsc.
+      const coastlineData = (
+        activeLayers.garis_pantai ? layers.coastlines : { type: "FeatureCollection", features: [] }
+      ) as unknown as GeoJSON.FeatureCollection;
       const coastlineSource = instance.getSource(coastlineSourceId);
       if (coastlineSource) {
-        (coastlineSource as maplibregl.GeoJSONSource).setData(coastlineData as any);
+        (coastlineSource as maplibregl.GeoJSONSource).setData(coastlineData);
       } else {
-        instance.addSource(coastlineSourceId, { type: "geojson", data: coastlineData as any });
+        instance.addSource(coastlineSourceId, { type: "geojson", data: coastlineData });
         instance.addLayer({
           id: "coastline-layer-line",
           type: "line",
@@ -473,7 +480,7 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, user
       // Label persen digambar layer `symbol` (risk-cluster-labels) memakai glyph
       // yang di-host sendiri (lihat `glyphs` di atas).
       const pointSourceId = "risk-points";
-      const pointData = { type: "FeatureCollection", features: riskPointFeatures } as any;
+      const pointData: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: riskPointFeatures };
       const pointSource = instance.getSource(pointSourceId);
       if (pointSource) {
         (pointSource as maplibregl.GeoJSONSource).setData(pointData);
@@ -550,11 +557,14 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, user
         clusterHandlersBound.current = true;
         instance.on("click", "risk-clusters", (event) => {
           const feature = event.features?.[0];
-          if (!feature) return;
+          // Layer cluster selalu menghasilkan Point; penyempitan ini membuat
+          // `coordinates` terbaca tanpa cast, sekaligus jadi penjaga bila
+          // sumbernya suatu saat berubah.
+          if (!feature || feature.geometry.type !== "Point") return;
           // Zoom bertahap agar cluster memecah — lebih tahan versi API daripada
           // getClusterExpansionZoom yang bentuknya berbeda antar rilis MapLibre.
           instance.easeTo({
-            center: (feature.geometry as any).coordinates,
+            center: [feature.geometry.coordinates[0], feature.geometry.coordinates[1]],
             zoom: Math.min(instance.getZoom() + 2, CLUSTER_MAX_ZOOM + 2),
           });
         });

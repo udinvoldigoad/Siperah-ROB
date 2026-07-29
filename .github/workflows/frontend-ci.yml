@@ -1,8 +1,8 @@
 name: CI Frontend
 
 # Sanity check tiap perubahan frontend: dependensi terpasang bersih dari
-# lockfile, type-check TypeScript lolos, dan build production tidak error
-# (termasuk guard ukuran chunk di vite.config.ts).
+# lockfile, type-check TypeScript lolos, anggaran `any` tidak terlampaui, dan
+# build production tidak error (termasuk guard ukuran chunk di vite.config.ts).
 
 on:
   push:
@@ -42,6 +42,11 @@ jobs:
 
       - name: Type-check (tsc)
         run: npx tsc -b --noEmit
+
+      # `tsc` tidak bisa menangkap ini: `any` justru bekerja dengan mematikan
+      # pemeriksaan tipe, jadi pemakaiannya lolos tanpa keluhan. Batasnya nol.
+      - name: Anggaran `any`
+        run: npm run check:any
 
       - name: Build production
         run: npm run build

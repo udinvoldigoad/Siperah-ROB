@@ -56,6 +56,10 @@ final class CheckSystemHealth extends Command
             $issues[] = "{$errorLines} baris ERROR di log Laravel dalam {$hours} jam terakhir";
         }
 
+        foreach ($this->vapidProblems() as $problem) {
+            $issues[] = $problem;
+        }
+
         if ($issues === []) {
             $this->info("Sistem sehat — tidak ada kegagalan pipeline, job, atau error log dalam {$hours} jam terakhir.");
             Log::info('system_health_check: clean', ['hours' => $hours]);
@@ -67,6 +71,61 @@ final class CheckSystemHealth extends Command
         }
         Log::warning('system_health_check: ditemukan masalah', ['hours' => $hours, 'issues' => $issues]);
         return self::FAILURE;
+    }
+
+    /**
+     * Periksa BENTUK kunci VAPID, bukan sekadar ada/tidaknya.
+     *
+     * Latar: di produksi baris `.env` VAPID_PRIVATE_KEY pernah kehilangan
+     * newline sehingga menyatu dengan VAPID_SUBJECT. Nilainya jadi 90 karakter
+     * berisi `=` dan `/`, dan SETIAP pengiriman push gagal di
+     * `Base64Url::decode()`. Tidak ada yang menyadarinya selama dua hari karena
+     * kegagalannya hanya muncul sebagai job antrean gagal — sementara semua
+     * pemeriksaan yang ada cuma menanyakan "kuncinya terisi?", bukan "kuncinya
+     * berbentuk benar?".
+     *
+     * Salah bentuk BUKAN berarti kuncinya hilang: kalau publiknya utuh,
+     * langganan push yang ada tetap sah. Karena itu masalahnya dilaporkan, tidak
+     * memicu regenerasi apa pun.
+     *
+     * @return string[]
+     */
+    private function vapidProblems(): array
+    {
+        $public = (string) config('webpush.vapid.public_key');
+        $private = (string) config('webpush.vapid.private_key');
+        $subject = (string) config('webpush.vapid.subject');
+
+        // Belum dikonfigurasi sama sekali (mis. dev lokal) bukan masalah —
+        // push memang tidak dipakai di situ.
+        if ($public === '' && $private === '') {
+            return [];
+        }
+
+        $problems = [];
+        $decode = static function (string $value): string|false {
+            if (!preg_match('/^[A-Za-z0-9_-]+$/', $value)) {
+                return false;
+            }
+
+            return base64_decode(strtr($value, '-_', '+/').str_repeat('=', (4 - strlen($value) % 4) % 4), true);
+        };
+
+        $publicRaw = $decode($public);
+        if ($publicRaw === false || strlen($publicRaw) !== 65 || $publicRaw[0] !== "\x04") {
+            $problems[] = 'VAPID_PUBLIC_KEY salah bentuk (harus base64url, 65 byte, diawali 0x04) — push browser tidak akan terkirim';
+        }
+
+        $privateRaw = $decode($private);
+        if ($privateRaw === false || strlen($privateRaw) !== 32) {
+            $problems[] = 'VAPID_PRIVATE_KEY salah bentuk (harus base64url, 32 byte) — push browser tidak akan terkirim';
+        }
+
+        if ($subject === '' || !preg_match('#^(mailto:|https://)#', $subject)) {
+            $problems[] = 'VAPID_SUBJECT harus berupa "mailto:..." atau URL https';
+        }
+
+        return $problems;
     }
 
     private function recentErrorLogLines(\DateTimeInterface $since): int
