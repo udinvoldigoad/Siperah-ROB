@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Models\GroundTruthReport;
 use App\Notifications\Concerns\RoutesViaPreferredChannels;
+use App\Notifications\Data\ReportSummary;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -14,38 +14,30 @@ class NewReportReviewNotification extends Notification implements ShouldQueue
     use Queueable;
     use RoutesViaPreferredChannels;
 
+    /** Cuplikan, bukan model - lihat ReportSummary untuk alasannya. */
     public function __construct(
-        public GroundTruthReport $report,
+        public ReportSummary $report,
         public bool $isWithinMonitoringArea
     ) {
-        // Tries can be configured here or in the class property
         $this->tries = 3;
     }
 
-    /**
-     * Get the database representation of the notification.
-     */
     public function toDatabase(object $notifiable): array
     {
-        $region = $this->report->region;
         $title = $this->isWithinMonitoringArea ? 'Laporan baru perlu validasi' : 'Laporan luar pantauan perlu triase';
-        $location = trim(implode(', ', array_filter([$region?->village, $region?->district, $region?->regency])));
-        
+
         return [
             'type' => 'report_review',
             'title' => $title,
-            'body' => "Laporan {$this->report->report_code} masuk di {$location}.",
+            'body' => "Laporan {$this->report->code} masuk di {$this->report->location}.",
             'data' => [
-                'report_id' => $this->report->id, 
-                'report_code' => $this->report->report_code, 
-                'status' => $this->report->status
-            ]
+                'report_id' => $this->report->id,
+                'report_code' => $this->report->code,
+                'status' => $this->report->status,
+            ],
         ];
     }
 
-    /**
-     * Get the web push representation of the notification.
-     */
     public function toWebPush($notifiable, $notification)
     {
         $dbData = $this->toDatabase($notifiable);
@@ -54,15 +46,9 @@ class NewReportReviewNotification extends Notification implements ShouldQueue
             ->icon('/logo.png')
             ->body($dbData['body'])
             ->action('Lihat Laporan', "/#/operator/reports/{$this->report->id}")
-            ->data(['report_code' => $this->report->report_code]);
+            ->data(['report_code' => $this->report->code]);
     }
 
-    /**
-     * Get the WhatsApp representation of the notification.
-     */
-    /**
-     * Get the mail representation of the notification.
-     */
     public function toMail(object $notifiable)
     {
         $dbData = $this->toDatabase($notifiable);

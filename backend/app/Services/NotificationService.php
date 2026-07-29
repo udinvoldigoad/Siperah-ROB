@@ -7,6 +7,7 @@ use App\Models\NotificationSetting;
 use App\Models\Prediction;
 use App\Models\Region;
 use App\Models\User;
+use App\Notifications\Data\ReportSummary;
 use App\Notifications\HighRiskWarningNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -45,8 +46,7 @@ final class NotificationService
         $user = User::find($report->user_id);
         if (!$user) return;
 
-        $notification = new \App\Notifications\ReportStatusUpdatedNotification($report);
-        $user->notify($notification);
+        $user->notify(new \App\Notifications\ReportStatusUpdatedNotification(ReportSummary::from($report)));
     }
 
     public function notifyNewReportForReview(GroundTruthReport $report): void
@@ -55,14 +55,17 @@ final class NotificationService
         $region = $report->region;
 
         $isWithinMonitoringArea = $this->monitoring->isReportWithinMonitoringArea($report);
+        // Cuplikan dibuat SEKALI di luar loop: isinya sama untuk semua penerima,
+        // dan sejak notifikasi tak lagi membawa model, laporan yang terhapus
+        // sebelum antrean sempat jalan tidak lagi menggagalkan job.
+        $summary = ReportSummary::from($report);
 
+        // Penyaringan per penerima dilakukan di dalam loop (preferensi event &
+        // wilayah); di sini cukup ambil kandidatnya.
         $recipients = User::query()
             ->where('status', 'aktif')
             ->whereIn('role', ['admin'])
-            ->get()
-            ->filter(function (User $user) use ($region, $isWithinMonitoringArea): bool {
-                return true;
-            });
+            ->get();
 
         foreach ($recipients as $recipient) {
             $settings = $this->settings($recipient->id);
@@ -78,8 +81,7 @@ final class NotificationService
                 continue;
             }
 
-            $notification = new \App\Notifications\NewReportReviewNotification($report, $isWithinMonitoringArea);
-            $recipient->notify($notification);
+            $recipient->notify(new \App\Notifications\NewReportReviewNotification($summary, $isWithinMonitoringArea));
         }
     }
 
@@ -90,30 +92,25 @@ final class NotificationService
      */
     public function notifyReportSlaOverdue(GroundTruthReport $report): void
     {
-        $report->loadMissing('region');
-        $region = $report->region;
+        $summary = ReportSummary::from($report);
 
         $recipients = User::query()
             ->where('status', 'aktif')
             ->whereIn('role', ['admin'])
-            ->get()
-            ->filter(function (User $user) use ($region, $report): bool {
-                return true;
-            });
+            ->get();
 
         foreach ($recipients as $recipient) {
             $alreadySent = DB::table('notification_inbox')
                 ->where('user_id', $recipient->id)
                 ->where('type', 'report_sla_overdue')
-                ->where('data', 'like', "%{$report->report_code}%")
+                ->where('data', 'like', "%{$summary->code}%")
                 ->exists();
                 
             if ($alreadySent) {
                 continue;
             }
 
-            $notification = new \App\Notifications\ReportSlaOverdueNotification($report);
-            $recipient->notify($notification);
+            $recipient->notify(new \App\Notifications\ReportSlaOverdueNotification($summary));
         }
     }
     

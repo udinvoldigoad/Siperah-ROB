@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Models\GroundTruthReport;
 use App\Notifications\Concerns\RoutesViaPreferredChannels;
+use App\Notifications\Data\ReportSummary;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -14,8 +14,9 @@ class ReportSlaOverdueNotification extends Notification implements ShouldQueue
     use Queueable;
     use RoutesViaPreferredChannels;
 
+    /** Cuplikan, bukan model - lihat ReportSummary untuk alasannya. */
     public function __construct(
-        public GroundTruthReport $report
+        public ReportSummary $report
     ) {
         $this->tries = 3;
     }
@@ -25,12 +26,12 @@ class ReportSlaOverdueNotification extends Notification implements ShouldQueue
         return [
             'type' => 'report_sla_overdue',
             'title' => 'SLA validasi laporan terlewati',
-            'body' => "Laporan {$this->report->report_code} belum selesai diverifikasi lebih dari 1x24 jam.",
+            'body' => "Laporan {$this->report->code} belum selesai diverifikasi lebih dari 1x24 jam.",
             'data' => [
-                'report_id' => $this->report->id, 
-                'report_code' => $this->report->report_code, 
-                'status' => $this->report->status
-            ]
+                'report_id' => $this->report->id,
+                'report_code' => $this->report->code,
+                'status' => $this->report->status,
+            ],
         ];
     }
 
@@ -42,7 +43,7 @@ class ReportSlaOverdueNotification extends Notification implements ShouldQueue
             ->icon('/logo.png')
             ->body($dbData['body'])
             ->action('Cek Laporan', "/#/operator/reports/{$this->report->id}")
-            ->data(['report_code' => $this->report->report_code]);
+            ->data(['report_code' => $this->report->code]);
     }
 
     public function toMail(object $notifiable)

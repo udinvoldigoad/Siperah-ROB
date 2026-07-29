@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Models\GroundTruthReport;
 use App\Notifications\Concerns\RoutesViaPreferredChannels;
+use App\Notifications\Data\ReportSummary;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -14,8 +14,9 @@ class ReportStatusUpdatedNotification extends Notification implements ShouldQueu
     use Queueable;
     use RoutesViaPreferredChannels;
 
+    /** Cuplikan, bukan model - lihat ReportSummary untuk alasannya. */
     public function __construct(
-        public GroundTruthReport $report
+        public ReportSummary $report
     ) {
         $this->tries = 3;
     }
@@ -29,21 +30,21 @@ class ReportStatusUpdatedNotification extends Notification implements ShouldQueu
             'duplikat' => 'Laporan ditandai duplikat',
         ];
         $title = $labels[$this->report->status] ?? 'Status laporan diperbarui';
-        $body = "Laporan {$this->report->report_code} sekarang berstatus {$title}.";
-        
-        if ($this->report->status === 'ditolak' && $this->report->rejection_reason) {
-            $body .= " Alasan: {$this->report->rejection_reason}";
+        $body = "Laporan {$this->report->code} sekarang berstatus {$title}.";
+
+        if ($this->report->status === 'ditolak' && $this->report->rejectionReason) {
+            $body .= " Alasan: {$this->report->rejectionReason}";
         }
-        
+
         return [
             'type' => 'report_status',
             'title' => $title,
             'body' => $body,
             'data' => [
-                'report_id' => $this->report->id, 
-                'report_code' => $this->report->report_code, 
-                'status' => $this->report->status
-            ]
+                'report_id' => $this->report->id,
+                'report_code' => $this->report->code,
+                'status' => $this->report->status,
+            ],
         ];
     }
 
@@ -55,7 +56,7 @@ class ReportStatusUpdatedNotification extends Notification implements ShouldQueu
             ->icon('/logo.png')
             ->body($dbData['body'])
             ->action('Lihat Laporan', "/#/history")
-            ->data(['report_code' => $this->report->report_code]);
+            ->data(['report_code' => $this->report->code]);
     }
 
     public function toMail(object $notifiable)
