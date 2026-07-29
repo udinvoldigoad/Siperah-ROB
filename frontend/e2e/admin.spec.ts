@@ -33,6 +33,21 @@ async function loginAdminOnce(page: Page): Promise<string> {
   return body.access_token as string;
 }
 
+/**
+ * Aksi per baris kini berada di menu titik tiga, bukan tombol berjajar.
+ * Panelnya di-render lewat portal ke <body>, jadi menuitem-nya TIDAK bisa
+ * dicari dari dalam `tr` — dicari di level halaman.
+ */
+async function openRowMenu(page: Page, name: string) {
+  await page.locator("tr", { hasText: name }).getByRole("button", { name: `Aksi untuk ${name}` }).click();
+  return page.getByRole("menu");
+}
+
+async function runRowAction(page: Page, name: string, action: string) {
+  const menu = await openRowMenu(page, name);
+  await menu.getByRole("menuitem", { name: action }).click();
+}
+
 async function createPendingUser(page: Page, token: string, label: string): Promise<{ name: string; email: string }> {
   const name = `E2E ${label} ${Date.now()}`;
   const email = `e2e-${label.toLowerCase()}-${Date.now()}@example.test`;
@@ -91,12 +106,13 @@ test("permohonan akun peneliti tertahan dan alasannya terbaca admin", async ({ p
   await page.goto("/#/admin");
   await page.reload();
 
-  // Baris peneliti menunggu TIDAK punya tombol Setujui langsung — admin harus
-  // membuka permohonannya lebih dulu.
+  // Menu baris peneliti menunggu TIDAK memuat "Setujui" — admin harus membuka
+  // permohonannya lebih dulu.
   const row = page.locator("tr", { hasText: name });
   await expect(row).toBeVisible();
-  await expect(row.getByRole("button", { name: "Setujui" })).toHaveCount(0);
-  await row.getByRole("button", { name: "Tinjau Permohonan" }).click();
+  const menu = await openRowMenu(page, name);
+  await expect(menu.getByRole("menuitem", { name: "Setujui" })).toHaveCount(0);
+  await menu.getByRole("menuitem", { name: "Tinjau Permohonan" }).click();
 
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText(purpose)).toBeVisible();
@@ -120,17 +136,17 @@ test("admin approve, reject, dan nonaktifkan user", async ({ page }) => {
   // (dulu menampilkan enum mentah huruf kecil).
   const approveRow = page.locator("tr", { hasText: approveName });
   await expect(approveRow).toBeVisible();
-  await approveRow.getByRole("button", { name: "Setujui" }).click();
+  await runRowAction(page, approveName, "Setujui");
   await expect(approveRow.getByText("Aktif", { exact: true })).toBeVisible();
 
   // ── Reject: user menunggu -> ditolak (lewat modal konfirmasi) ───
   const rejectRow = page.locator("tr", { hasText: rejectName });
-  await rejectRow.getByRole("button", { name: "Tolak" }).click();
+  await runRowAction(page, rejectName, "Tolak");
   await page.getByRole("dialog").getByRole("button", { name: "Ya, tolak akun" }).click();
   await expect(rejectRow.getByText("Ditolak", { exact: true })).toBeVisible();
 
   // ── Nonaktifkan: user aktif tadi -> nonaktif ────────────────────
-  await approveRow.getByRole("button", { name: "Nonaktifkan" }).click();
+  await runRowAction(page, approveName, "Nonaktifkan");
   await page.getByRole("dialog").getByRole("button", { name: "Ya, nonaktifkan" }).click();
   await expect(approveRow.getByText("Nonaktif", { exact: true })).toBeVisible();
 

@@ -116,6 +116,124 @@ function panelPlacement(rect: DOMRect): { top?: number; bottom?: number; left: n
   };
 }
 
+type RowAction = {
+  key: string;
+  label: string;
+  icon: string;
+  tone?: "primary" | "danger";
+  onSelect: () => void;
+};
+
+/**
+ * Menu titik tiga untuk aksi per baris.
+ *
+ * Sebelumnya tiap baris memajang 3 tombol sekaligus, sehingga kolom Aksi jauh
+ * lebih lebar daripada kolom datanya sendiri dan tabel ikut melebar. Aksinya
+ * tetap sama persis — hanya dikumpulkan ke satu pemicu.
+ *
+ * Panelnya memakai pola yang sama dengan RegionCombobox di bawah: portal +
+ * posisi fixed, karena tabel berada di dalam wadah yang menggulung dan menu
+ * biasa akan terpotong. Menggulung MEMINDAHKAN panel, bukan menutupnya.
+ */
+function RowActionsMenu({ actions, label, disabled }: {
+  actions: RowAction[];
+  label: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (triggerRef.current?.contains(t) || panelRef.current?.contains(t)) return;
+      setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      triggerRef.current?.focus();
+    };
+    const reposition = (e?: Event) => {
+      if (e && panelRef.current?.contains(e.target as Node)) return;
+      const r = triggerRef.current?.getBoundingClientRect();
+      if (!r) return;
+      if (r.bottom < 0 || r.top > window.innerHeight) { setOpen(false); return; }
+      setRect(r);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", reposition, true);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, true);
+    };
+  }, [open]);
+
+  const toggle = () => {
+    if (!open) setRect(triggerRef.current?.getBoundingClientRect() ?? null);
+    setOpen((v) => !v);
+  };
+
+  const MENU_WIDTH = 210;
+  const placement = rect ? panelPlacement(rect) : null;
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="admin-row-menu-trigger"
+        onClick={toggle}
+        disabled={disabled}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={label}
+        title={label}
+      >
+        <Icon name="more_vert" style={{ fontSize: 20 }} />
+      </button>
+      {open && rect && placement && createPortal(
+        <div
+          ref={panelRef}
+          className="admin-row-menu"
+          role="menu"
+          aria-label={label}
+          style={{
+            position: "fixed",
+            width: MENU_WIDTH,
+            top: placement.top,
+            bottom: placement.bottom,
+            // Diratakan ke tepi KANAN pemicu: kolom Aksi ada di ujung kanan
+            // tabel, jadi membuka ke kiri menjauh dari tepi layar.
+            left: Math.max(8, Math.min(rect.right - MENU_WIDTH, window.innerWidth - MENU_WIDTH - 8)),
+          }}
+        >
+          {actions.map((action) => (
+            <button
+              key={action.key}
+              type="button"
+              role="menuitem"
+              className={`admin-row-menu-item${action.tone ? ` ${action.tone}` : ""}`}
+              onClick={() => { setOpen(false); action.onSelect(); }}
+            >
+              <Icon name={action.icon} style={{ fontSize: 18, flexShrink: 0 }} />
+              {action.label}
+            </button>
+          ))}
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
+
 /**
  * Dropdown wilayah/kabupaten dengan kotak pencarian. Panel di-render lewat
  * portal + posisi fixed agar tidak terpotong oleh modal (overflow-y: auto).
@@ -464,6 +582,38 @@ export function AdminUsersPage() {
   };
   const cancelEdit = () => setEditingId(null);
 
+  /**
+   * Aksi yang berlaku untuk satu baris, urut dari yang paling sering dipakai.
+   * Permohonan peneliti sengaja hanya punya "Tinjau Permohonan" — keputusannya
+   * diambil di dalam modal supaya keterangan pemohon terbaca lebih dulu.
+   */
+  const rowActions = (user: UserData): RowAction[] => {
+    const kelola: RowAction = { key: "kelola", label: "Kelola", icon: "edit", onSelect: () => startEdit(user) };
+
+    if (user.status === "menunggu" && user.role === "peneliti") {
+      return [
+        { key: "tinjau", label: "Tinjau Permohonan", icon: "fact_check", tone: "primary", onSelect: () => setReviewUser(user) },
+        kelola,
+      ];
+    }
+
+    if (user.status === "menunggu") {
+      return [
+        { key: "setujui", label: "Setujui", icon: "check_circle", tone: "primary", onSelect: () => handleApprove(user.id, user.name) },
+        { key: "tolak", label: "Tolak", icon: "cancel", tone: "danger", onSelect: () => confirmReject(user.id, user.name) },
+        kelola,
+      ];
+    }
+
+    return [
+      user.status === "aktif"
+        ? { key: "nonaktifkan", label: "Nonaktifkan", icon: "block", onSelect: () => confirmDeactivate(user) }
+        : { key: "aktifkan", label: "Aktifkan", icon: "how_to_reg", tone: "primary", onSelect: () => handleActivate(user) },
+      kelola,
+      { key: "hapus", label: "Hapus", icon: "delete", tone: "danger", onSelect: () => confirmDelete(user) },
+    ];
+  };
+
   // Modal kelola: Escape menutup & scroll halaman dikunci saat terbuka.
   useEffect(() => {
     if (!editingId) return;
@@ -628,6 +778,41 @@ export function AdminUsersPage() {
         .admin-create-footer { align-items: center; background: var(--surface); border-top: 1px solid var(--line); display: flex; gap: 14px; justify-content: space-between; padding: 16px 22px; flex-wrap: wrap; }
         /* Label ringkas di modal tinjau permohonan peneliti. */
         .review-label { color: var(--ink-soft); font-size: 11.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
+
+        /* Menu aksi per baris (titik tiga). */
+        .admin-row-menu-trigger {
+          align-items: center; background: transparent; border: 1px solid transparent;
+          border-radius: 10px; color: var(--ink-soft); cursor: pointer; display: inline-flex;
+          height: 36px; justify-content: center; transition: all 0.15s ease; width: 36px;
+        }
+        .admin-row-menu-trigger:hover:not(:disabled) { background: var(--surface-soft); border-color: var(--line); color: var(--ink); }
+        .admin-row-menu-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .admin-row-menu-trigger:disabled { cursor: not-allowed; opacity: 0.45; }
+        .admin-row-menu {
+          background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+          box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18); overflow: hidden; padding: 6px;
+          z-index: 1200;
+        }
+        .admin-row-menu-item {
+          align-items: center; background: transparent; border: none; border-radius: 8px;
+          color: var(--ink); cursor: pointer; display: flex; font: inherit; font-size: 13px;
+          font-weight: 600; gap: 10px; padding: 9px 10px; text-align: left; width: 100%;
+        }
+        .admin-row-menu-item:hover { background: var(--surface-soft); }
+        .admin-row-menu-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+        .admin-row-menu-item.primary { color: var(--accent); }
+        .admin-row-menu-item.danger { color: var(--critical); }
+
+        /* Batasi kolom instansi/wilayah agar tabel tak melebar mengikuti teks
+           terpanjang. max-width saja tak cukup pada tabel auto-layout — butuh
+           width sekaligus untuk mengunci lebarnya. */
+        .users-org-cell {
+          max-width: 220px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          width: 220px;
+        }
         .admin-create-hint { align-items: flex-start; color: var(--ink-soft); display: flex; font-size: 12.5px; gap: 8px; line-height: 1.5; max-width: 480px; }
         .admin-create-hint .material-symbols-outlined, .admin-create-hint .material-symbols-rounded { color: var(--accent); font-size: 17px; }
         @media (max-width: 640px) { .admin-create-grid { grid-template-columns: 1fr; } }
@@ -1243,87 +1428,28 @@ export function AdminUsersPage() {
                             {userStatusLabel(user.status)}
                           </span>
                         </td>
-                        <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: 13 }}>
+                        {/* Kolom terpanjang di tabel ini: nama wilayah lengkap
+                            ("Panjang Utara, Panjang, Kota Bandar Lampung") dulu
+                            memaksa seluruh tabel melebihi wadahnya sehingga
+                            kolom Aksi terpotong. Dipotong dengan elipsis; teks
+                            penuhnya tetap terbaca lewat tooltip. */}
+                        <td
+                          className="users-org-cell"
+                          style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: 13 }}
+                          title={user.institution || user.region_name || undefined}
+                        >
                           {user.institution || user.region_name || "-"}
                         </td>
                         <td style={{ padding: "16px 24px", textAlign: "right", whiteSpace: "nowrap" }}>
-                          <div style={{ display: "inline-flex", gap: 8, justifyContent: "flex-end" }}>
-                            {user.status === "menunggu" && user.role === "peneliti" ? (
-                              // Permohonan peneliti: satu pintu, lewat modal
-                              // tinjau — keputusannya butuh keterangan pemohon.
-                              <>
-                                <motion.button
-                                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                  disabled={isActing}
-                                  style={{ background: "var(--accent)", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, padding: "6px 12px", cursor: "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}
-                                  onClick={() => setReviewUser(user)}
-                                >
-                                  <Icon name="fact_check" style={{ fontSize: 16 }} /> Tinjau Permohonan
-                                </motion.button>
-                                <button type="button" className="btn secondary" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => startEdit(user)} aria-label={`Kelola akun ${user.name}`}>
-                                  <Icon name="edit" style={{ fontSize: 16 }} /> Kelola
-                                </button>
-                              </>
-                            ) : user.status === "menunggu" ? (
-                              <>
-                                <motion.button
-                                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                  disabled={isActing}
-                                  style={{ background: "var(--low)", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, padding: "6px 12px", cursor: "pointer", fontWeight: 600 }}
-                                  onClick={() => handleApprove(user.id, user.name)}
-                                >
-                                  Setujui
-                                </motion.button>
-                                <motion.button
-                                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                  disabled={isActing}
-                                  style={{ background: "var(--critical)", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, padding: "6px 12px", cursor: "pointer", fontWeight: 600 }}
-                                  onClick={() => confirmReject(user.id, user.name)}
-                                >
-                                  Tolak
-                                </motion.button>
-                                <button type="button" className="btn secondary" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => startEdit(user)} aria-label={`Kelola akun ${user.name}`}>
-                                  <Icon name="edit" style={{ fontSize: 16 }} /> Kelola
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                {user.status === "aktif" ? (
-                                  <motion.button
-                                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                    className="btn secondary"
-                                    disabled={isActing}
-                                    style={{ fontSize: 12, padding: "6px 12px", color: "var(--medium)" }}
-                                    onClick={() => confirmDeactivate(user)}
-                                  >
-                                    <Icon name="block" style={{ fontSize: 16 }} /> Nonaktifkan
-                                  </motion.button>
-                                ) : (
-                                  <motion.button
-                                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                    className="btn secondary"
-                                    disabled={isActing}
-                                    style={{ fontSize: 12, padding: "6px 12px", color: "var(--low)" }}
-                                    onClick={() => handleActivate(user)}
-                                  >
-                                    <Icon name="how_to_reg" style={{ fontSize: 16 }} /> Aktifkan
-                                  </motion.button>
-                                )}
-                                <motion.button
-                                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                  className="btn secondary"
-                                  disabled={isActing}
-                                  style={{ fontSize: 12, padding: "6px 12px", color: "var(--critical)" }}
-                                  onClick={() => confirmDelete(user)}
-                                >
-                                  <Icon name="delete" style={{ fontSize: 16 }} /> Hapus
-                                </motion.button>
-                                <button type="button" className="btn secondary" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => startEdit(user)} aria-label={`Kelola akun ${user.name}`}>
-                                  <Icon name="edit" style={{ fontSize: 16 }} /> Kelola
-                                </button>
-                              </>
-                            )}
-                          </div>
+                          {/* Aksinya identik dengan sebelumnya, hanya dikumpulkan
+                              ke menu titik tiga. Daftarnya tetap bergantung pada
+                              status & peran, jadi tak ada aksi yang tak berlaku
+                              (mis. "Setujui" pada akun yang sudah aktif). */}
+                          <RowActionsMenu
+                            label={`Aksi untuk ${user.name}`}
+                            disabled={isActing}
+                            actions={rowActions(user)}
+                          />
                         </td>
                       </motion.tr>
                     );})}
