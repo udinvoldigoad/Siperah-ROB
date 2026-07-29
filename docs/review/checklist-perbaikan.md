@@ -25,13 +25,13 @@
 |---|---|---|---|---|---|---|
 | 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) | 1 | 0 | 1 | 2 | **2 ✅** |
 | 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **4 ✅** |
-| 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | 0 |
+| 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | **1** |
 | 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | 0 |
 | 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | 0 |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | 0 |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | 0 |
 | 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | 0 |
-| | **Total** | **1** | **23** | **15** | **39** | **6** |
+| | **Total** | **1** | **23** | **15** | **39** | **7** |
 
 ---
 
@@ -83,13 +83,15 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
 
 ## 3. 🧠 Logika bisnis
 
-- [ ] 🟠 **`LB-1` — Kolom `institution` menanggung dua makna berbeda** — `backend/app/Http/Requests/RegisterRequest.php:33` *(bukti: kode)*
+- [ ] 🟠 **`LB-1` — Kolom `institution` menanggung dua makna berbeda** — `backend/app/Http/Requests/RegisterRequest.php:33` *(bukti: kode)* *(DITUNDA — keputusan pemilik, 2026-07-29: "biarin aja")*
   Untuk **warga** isinya "Desa / Wilayah" (opsional); untuk **peneliti** isinya "Instansi / Universitas" (wajib). Kolom yang sama, label berbeda tergantung peran — dan pencarian admin (`AdminController::users`) menyapu kolom ini tanpa membedakan keduanya, sehingga mencari nama kampus juga bisa mengembalikan warga yang kebetulan tinggal di desa bernama mirip.
-  **Aksi:** pisahkan jadi dua kolom, atau sempitkan `institution` khusus lembaga dan pindahkan desa warga ke `region_id`.
+  **Aksi bila kelak dikerjakan:** pisahkan jadi dua kolom, atau sempitkan `institution` khusus lembaga dan pindahkan desa warga ke `region_id`.
 
-- [ ] 🟠 **`LB-2` — Dua konsep "tujuan" hidup berdampingan tanpa saling tahu** — `backend/app/Models/User.php:38`, `backend/app/Models/ApiAccessRequest.php:18` *(bukti: kode)*
-  `users.research_purpose` (alasan permohonan **akun** peneliti) dan `api_access_requests.purpose` (alasan permohonan **kunci API**) adalah dua kolom terpisah yang menjawab pertanyaan serupa. Admin meninjau keduanya di layar berbeda tanpa rujukan silang, jadi tidak terlihat kalau alasannya bertentangan.
-  **Aksi:** tampilkan `research_purpose` di modal tinjau izin API sebagai konteks, atau satukan jadi satu riwayat permohonan per pengguna.
+- [x] 🟠 **`LB-2` — Dua konsep "tujuan" hidup berdampingan tanpa saling tahu** — ✅ *disatukan 2026-07-29; izin kini diminta sekali saat akun dibuat*
+  **Keputusan pemilik:** izinnya cukup diminta saat pendaftaran; pembuatan kunci API tidak perlu izin kedua. Jadi bukan "tampilkan sebagai konteks" seperti usulan awal — salah satu konsepnya dihapus.
+  Alur `api_access_requests` dibuang seluruhnya: model, 5 route, 2 endpoint controller, notifikasi hasil tinjauan, form pengajuan di portal peneliti, modal tinjau di admin, dan tabelnya (migrasi penghapus). **Aman:** di produksi tabel itu berisi **0 baris** dan **0 kunci API** pernah dibuat — diperiksa langsung ke DB produksi sebelum migrasi ditulis.
+  **Yang menjaga sekarang tinggal satu, dan itu memang cukup:** pendaftaran peneliti mewajibkan `research_purpose` dan lahir berstatus `menunggu`; login menolak akun yang belum `aktif`. Jadi setiap peneliti yang sampai ke tombol "Buat Kunci" sudah pernah ditinjau admin. Dikunci `ApiKeyAccessGateTest` (5 tes) — termasuk penjaga bahwa endpoint izin lama benar-benar 404, dan bahwa peneliti `menunggu` tak pernah mendapat token sama sekali (kalau gerbang login itu bocor, seluruh alasan menghapus izin kedua ikut gugur).
+  **Tampilan admin ikut dirapikan** sesuai permintaan: banner "pendaftaran baru" dan panel "permohonan akses API" — dua antrean yang menanyakan hal serupa di layar berbeda — digabung jadi satu bagian **Perizinan akun**, menyebut berapa di antaranya permohonan peneliti yang membawa alasan tertulis. Tombolnya menyaring tabel yang sudah ada ke antrean `menunggu`, bukan membuka daftar kedua: aksi "Tinjau Permohonan" per baris sudah menampilkan alasan pemohon.
 
 - [ ] 🟠 **`LB-3` — Dashboard operator mencampur dua cakupan dalam satu layar** — `backend/app/Http/Controllers/Api/DashboardController.php:112,116` *(bukti: kode)*
   KPI `pending_reports` dihitung **se-provinsi**, sementara `region_statuses` di layar yang sama tetap **per wilayah**. Pembaca wajar menyimpulkan keduanya berasal dari cakupan yang sama, padahal tidak — angka KPI bisa jauh lebih besar dari jumlah baris di bawahnya.

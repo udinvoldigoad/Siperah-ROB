@@ -78,9 +78,6 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/admin/users/{user}/reject', [AdminController::class, 'rejectUser']);
         Route::patch('/admin/users/{user}', [AdminController::class, 'updateUser']);
         Route::delete('/admin/users/{user}', [AdminController::class, 'destroyUser']);
-        Route::get('/admin/api-access-requests', [AdminController::class, 'apiAccessRequests']);
-        Route::post('/admin/api-access-requests/{apiAccessRequest}/approve', [AdminController::class, 'approveApiAccessRequest']);
-        Route::post('/admin/api-access-requests/{apiAccessRequest}/reject', [AdminController::class, 'rejectApiAccessRequest']);
         Route::get('/admin/audit-logs', [AuditController::class, 'index']);
     });
 
@@ -92,8 +89,6 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/research/api-reference', [ResearchController::class, 'apiReference']);
         Route::get('/research/api-keys', [ResearchController::class, 'apiKeys']);
         Route::post('/research/api-keys', [ResearchController::class, 'regenerateKey']);
-        Route::get('/research/api-access-request', [ResearchController::class, 'apiAccessRequest']);
-        Route::post('/research/api-access-request', [ResearchController::class, 'storeApiAccessRequest']);
     });
 
     Route::get('/notifications/settings', [NotificationController::class, 'show']);

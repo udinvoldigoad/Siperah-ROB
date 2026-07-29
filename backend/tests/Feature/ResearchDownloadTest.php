@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\ApiAccessRequest;
 use App\Models\ApiKey;
 use App\Models\AuditLog;
 use App\Models\Dataset;
@@ -167,14 +166,9 @@ final class ResearchDownloadTest extends TestCase
 
     public function test_regenerating_key_revokes_previous_active_key(): void
     {
+        // Tak ada izin terpisah yang perlu disiapkan: sejak izin diminta sekali
+        // saat pendaftaran, peneliti AKTIF sudah pasti pernah ditinjau admin.
         $researcher = $this->makeUser('peneliti');
-        // Peneliti wajib punya izin akses API yang disetujui untuk membuat kunci.
-        ApiAccessRequest::create([
-            'id' => (string) Str::uuid(),
-            'user_id' => $researcher->id,
-            'purpose' => 'Uji regenerasi kunci — izin akses API telah disetujui.',
-            'status' => 'disetujui',
-        ]);
         [$oldRawKey, $oldKey] = $this->makeApiKey($researcher, ['predictions:read']);
 
         $newRawKey = $this->actingAs($researcher)

@@ -282,6 +282,10 @@ final class DatabaseSeeder extends Seeder
                 'region_id' => null,
                 'status' => 'aktif',
                 'institution' => 'Universitas Lampung',
+                // Sejak izin diminta sekali saat pendaftaran (bukan lagi lewat
+                // permohonan kunci API terpisah), inilah keterangan yang dibaca
+                // admin di modal tinjau permohonan. Tanpa ini layar demo kosong.
+                'research_purpose' => 'Penelitian akademik pemodelan risiko banjir rob pesisir Lampung 2024-2026 untuk kebutuhan disertasi dan mitigasi wilayah.',
             ],
             [
                 'id' => '22222222-2222-4222-8222-eeeeeeeeeeee',
@@ -306,34 +310,6 @@ final class DatabaseSeeder extends Seeder
                 ]),
             );
         }
-
-        $this->seedResearcherApiPermit();
-    }
-
-    /**
-     * Izin akses API yang SUDAH disetujui untuk peneliti demo.
-     *
-     * Sejak alur perizinan diperkenalkan, `canGenerateApiKey()` menolak peneliti
-     * tanpa izin berstatus `disetujui` — sehingga peneliti demo tak pernah bisa
-     * membuat API key dan tombolnya berlabel "Ajukan Izin API". Tanpa baris ini
-     * lingkungan demo/uji tak konsisten dengan cerita yang ditampilkannya.
-     */
-    private function seedResearcherApiPermit(): void
-    {
-        DB::table('api_access_requests')->updateOrInsert(
-            ['id' => '33333333-3333-4333-8333-aaaaaaaaaaaa'],
-            [
-                'user_id' => '22222222-2222-4222-8222-dddddddddddd', // peneliti@siperah.local
-                'purpose' => 'Penelitian akademik pemodelan risiko banjir rob pesisir Lampung.',
-                'organization' => 'Universitas Lampung',
-                'project_title' => 'Pemodelan Risiko Rob Pesisir Lampung',
-                'status' => 'disetujui',
-                'reviewed_by' => '22222222-2222-4222-8222-aaaaaaaaaaaa', // admin@siperah.local
-                'reviewed_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        );
     }
 
     // ── Predictions ────────────────────────────────────────────────
