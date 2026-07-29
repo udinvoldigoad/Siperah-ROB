@@ -588,8 +588,6 @@ textarea { min-height: 100px; resize: vertical; }
 .metric-card.medium strong { color: var(--medium); }
 
 @media (max-width: 1024px) {
-  .app-main { margin-left: 0; }
-  .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
   .detail-layout { grid-template-columns: 1fr; }
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
 }
