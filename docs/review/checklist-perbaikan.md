@@ -24,13 +24,13 @@
 | # | Kategori | 🔴 | 🟠 | 🟡 | Total | Selesai |
 |---|---|---|---|---|---|---|
 | 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) | 1 | 0 | 1 | 2 | **2 ✅** |
-| 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | 0 |
+| 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **1** |
 | 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | 0 |
 | 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | 0 |
 | 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | 0 |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | 0 |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 2 | 3 | 0 |
-| | **Total** | **1** | **11** | **8** | **20** | **2** |
+| | **Total** | **1** | **11** | **8** | **20** | **3** |
 
 ---
 
@@ -57,9 +57,10 @@ Dua item ini menyangkut server yang sedang berjalan, bukan kode. Keduanya butuh 
 
 Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
 
-- [ ] 🟠 **`KM-1` — `phone_number` divalidasi & ditampilkan, tapi tak ada satu pun form yang mengisinya** — `backend/app/Http/Requests/RegisterRequest.php:34`, `backend/app/Http/Resources/UserResource.php:16` *(bukti: kode)*
-  Kolom ini punya aturan validasi, kolom DB, dan muncul di respons API — tetapi pencarian `phone_number` di seluruh `frontend/src` menghasilkan **0 kemunculan**. Sempat diwajibkan untuk pendaftaran peneliti lalu dicabut atas permintaan.
-  **Aksi:** pilih satu — kembalikan sebagai isian opsional di profil, atau buang dari request & resource (kolom DB boleh tinggal).
+- [x] 🟠 **`KM-1` — `phone_number` divalidasi & ditampilkan, tapi tak ada satu pun form yang mengisinya** — ✅ *dibuang seluruhnya 2026-07-29*
+  Dibuang dari 7 titik kode (2 request, resource, `$fillable`, 2 controller, seeder), `schema.sql`, dan ERD; kolom DB-nya dihapus lewat migrasi idempoten.
+  **Aman:** di produksi hanya 5 baris terisi, semuanya akun demo `@siperah.local` dengan nomor placeholder seeder — tidak ada pengguna sungguhan yang punya nomor.
+  **Catatan:** ini mengubah bentuk respons `UserResource` (breaking), diambil setelah dipastikan frontend tak pernah membacanya dan endpoint publik `/api/v1/*` tak memakai resource ini.
 
 - [ ] 🟡 **`KM-2` — Akun seed `operator@` & `provinsi@` menyandang nama peran yang sudah dihapus** — `frontend/e2e/helpers.ts:11-12` *(bukti: kode)*
   Keduanya kini berperan `admin`. Dipertahankan **sengaja** sebagai admin tambahan agar limiter login (10/menit per email+IP) tidak tertabrak antar-spec, dan alasannya sudah dicatat di komentar. Tapi namanya tetap menyesatkan pembaca baru.

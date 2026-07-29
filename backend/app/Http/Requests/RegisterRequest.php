@@ -31,7 +31,6 @@ class RegisterRequest extends FormRequest
             // Peneliti: WAJIB — inilah bahan yang dipakai admin untuk menilai
             // permohonan, dan akun peneliti tertahan sampai admin menyetujui.
             'institution' => ['nullable', 'string', 'max:150', 'required_if:account_type,peneliti'],
-            'phone_number' => ['nullable', 'string', 'max:20'],
             'research_purpose' => [
                 'nullable',
                 'string',

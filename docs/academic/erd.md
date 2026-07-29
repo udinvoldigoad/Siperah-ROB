@@ -12,10 +12,11 @@ erDiagram
         uuid id PK
         varchar name
         varchar email UK
+        timestamptz email_verified_at
         varchar password_hash
-        varchar phone_number
         user_role role
         varchar institution
+        text research_purpose
         uuid region_id FK
         user_status status
         timestamptz last_login_at

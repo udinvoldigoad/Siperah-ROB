@@ -111,7 +111,6 @@ final class AuthController
             'name' => $data['name'],
             'email' => $data['email'],
             'password_hash' => Hash::make($data['password']),
-            'phone_number' => $data['phone_number'] ?? null,
             'institution' => $data['institution'] ?? null,
             'research_purpose' => $isPeneliti ? $data['research_purpose'] : null,
             'region_id' => $data['region_id'] ?? null,

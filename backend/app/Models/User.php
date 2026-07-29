@@ -33,7 +33,6 @@ class User extends Authenticatable
         'name',
         'email',
         'password_hash',
-        'phone_number',
         'institution',
         'research_purpose',
         'region_id',

@@ -18,7 +18,6 @@ final class StoreAdminUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:150'],
             'email' => ['required', 'string', 'email', 'max:150', Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:8'],
-            'phone_number' => ['nullable', 'string', 'max:30'],
             'role' => ['required', 'string', 'in:warga,peneliti,admin'],
             'institution' => ['nullable', 'string', 'max:150', 'required_if:role,peneliti'],
             'status' => ['required', 'string', 'in:menunggu,aktif,nonaktif,ditolak'],
