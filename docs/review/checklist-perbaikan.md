@@ -23,14 +23,14 @@
 
 | # | Kategori | 🔴 | 🟠 | 🟡 | Total | Selesai |
 |---|---|---|---|---|---|---|
-| 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) | 1 | 0 | 1 | 2 | **1** |
+| 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) | 1 | 0 | 1 | 2 | **2 ✅** |
 | 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | 0 |
 | 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | 0 |
 | 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | 0 |
 | 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | 0 |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | 0 |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 2 | 3 | 0 |
-| | **Total** | **1** | **11** | **8** | **20** | **1** |
+| | **Total** | **1** | **11** | **8** | **20** | **2** |
 
 ---
 
@@ -45,9 +45,11 @@ Dua item ini menyangkut server yang sedang berjalan, bukan kode. Keduanya butuh 
   **Dugaan awal yang meleset:** dokumen ini sempat menulis bahwa perbaikan akan membatalkan semua langganan push. Keliru dua kali — regenerasi tak diperlukan, dan langganan terdaftar ternyata **0**.
   **Pencegahan:** `system:health-check` kini memeriksa *bentuk* ketiga variabel (bukan sekadar terisi), dan `.env.example` mendokumentasikannya. Ditutup `VapidHealthCheckTest` (6 tes).
 
-- [ ] 🟡 **`PR-2` — Direktori sampah di docroot server** — *(bukti: produksi)*
-  Ada `backend/public\assets` dan `backend/public\index.html` — nama berisi **backslash harfiah**, sisa unggahan `tar` dari Windows. Tidak mengganggu (Apache menyajikan `public/assets` yang benar) tapi mengotori `git status` server dan membingungkan saat diagnosa.
-  **Aksi:** hapus keduanya di server; pastikan skrip deploy tidak membuatnya lagi.
+- [x] 🟡 **`PR-2` — Entri bernama backslash di `backend/` server** — ✅ *dibersihkan 2026-07-29; penjaga masuk skrip deploy*
+  Letaknya bukan di dalam docroot seperti dugaan awal: keduanya berada di `backend/` dengan backslash sebagai **bagian dari nama berkas** (`public\assets`, `public\index.html`), sisa unggahan berpath Windows. Isinya 41 aset build basi, **2,5 MB**, tertanggal 26 Juli.
+  Apache tak pernah menyajikannya (docroot = `backend/public/`), jadi kesalahannya tak menimbulkan gejala apa pun — baru ketahuan berbulan kemudian lewat `git status`.
+  **Pencegahan:** `scripts/deploy-hostinger.sh` kini menggagalkan deploy bila entri semacam itu muncul lagi setelah unggahan. Diuji dua arah: lolos saat bersih, menangkap saat entri palsu ditanam.
+  **Catatan:** seluruh deploy 29 Juli hanya menghasilkan path yang benar, jadi skrip yang sekarang memang bukan penyebabnya.
 
 ---
 

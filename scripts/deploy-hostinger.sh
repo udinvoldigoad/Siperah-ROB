@@ -26,6 +26,20 @@ ssh -p "$SSH_PORT" "$SSH_HOST" "cd $REMOTE_APP && git pull --ff-only"
 echo "==> 3/4 Upload frontend build"
 tar -C frontend/dist -czf - . | ssh -p "$SSH_PORT" "$SSH_HOST" "cd $REMOTE_APP/backend/public && tar xzf -"
 
+# Penjaga: unggahan dari Windows pernah membuat entri bernama HARFIAH
+# "public\assets" & "public\index.html" (backslash jadi bagian nama berkas,
+# bukan pemisah folder) di dalam backend/. Apache tak pernah menyajikannya,
+# jadi kesalahannya tak terlihat — 2,5 MB aset basi baru ketahuan berbulan
+# kemudian lewat `git status`. Gagalkan deploy segera bila terulang.
+# grep -F (pencocokan literal) dipakai supaya backslash tak perlu di-escape
+# lagi setelah menembus bash lokal -> ssh -> shell remote.
+STRAY=$(ssh -p "$SSH_PORT" "$SSH_HOST" "ls -1 $REMOTE_APP/backend | grep -F '\\' || true")
+if [ -n "$STRAY" ]; then
+  echo "FATAL: ada entri bernama backslash di backend/ — unggahan memakai path Windows:"
+  echo "$STRAY"
+  exit 1
+fi
+
 echo "==> 4/4 Composer + optimasi Laravel"
 ssh -p "$SSH_PORT" "$SSH_HOST" "cd $REMOTE_APP/backend \
   && mkdir -p bootstrap/cache resources/views \
