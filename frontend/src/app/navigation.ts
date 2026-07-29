@@ -12,6 +12,7 @@ export const navItems: NavItem[] = [
   { href: "#/reports", icon: "add_location_alt", label: "Lapor", roles: ["warga", "admin"] },
   { href: "#/history", icon: "history", label: "Riwayat Laporan", roles: ["warga", "peneliti", "admin"] },
   { href: "#/operator", icon: "assignment_turned_in", label: "Operator", roles: ["admin"] },
+  { href: "#/province", icon: "monitoring", label: "Pantauan Provinsi", roles: ["admin"] },
   { href: "#/research", icon: "database", label: "Arsip Data", roles: ["peneliti", "admin"] },
   { href: "#/admin", icon: "manage_accounts", label: "Pengguna & Perizinan", roles: ["admin"] },
   { href: "#/audit", icon: "policy", label: "Audit", roles: ["admin"] }
