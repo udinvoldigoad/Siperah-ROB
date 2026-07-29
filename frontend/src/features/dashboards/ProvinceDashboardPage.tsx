@@ -280,7 +280,9 @@ export function ProvinceDashboardPage() {
   }, [summary.trend_30_days]);
 
   return (
-    <AppShell active="province" title="Dashboard BPBD Provinsi Lampung">
+    // Judul tak lagi menyebut "BPBD Provinsi": perannya sudah dihapus saat
+    // penyederhanaan peran, dan halaman ini kini menu pantauan milik admin.
+    <AppShell active="province" title="Pantauan Provinsi Lampung">
       <style>{`
         /* Filter banner provinsi: kontrol modern seragam + 3 kolom di mobile. */
         .prov-filter { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
