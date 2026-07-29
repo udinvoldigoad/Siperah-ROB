@@ -2,17 +2,47 @@ type ApiOptions = RequestInit & { token?: string };
 
 export const apiBase = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
+/**
+ * Body JSON yang menyertai respons galat.
+ *
+ * Tiga field pertama benar-benar dipakai pemanggil untuk bercabang (panel
+ * status akun & alur verifikasi email di LoginPage/OAuthCallbackPage), jadi
+ * diketikkan eksplisit. Index signature-nya menampung sisa field yang
+ * dikirim backend tanpa memaksa tipe ini ikut berubah setiap kali endpoint
+ * baru menambah sesuatu — tetap `unknown`, jadi tak bisa dipakai sembarangan.
+ */
+export interface ApiErrorBody {
+  message?: string;
+  account_status?: string;
+  requires_email_verification?: boolean;
+  [key: string]: unknown;
+}
+
 /** Error API yang membawa status HTTP & body respons agar pemanggil bisa
  *  membedakan kasus (mis. 403 dengan account_status saat login). */
 export class ApiError extends Error {
   status: number;
-  body: any;
-  constructor(message: string, status: number, body: any) {
+  body: ApiErrorBody | null;
+  constructor(message: string, status: number, body: ApiErrorBody | null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.body = body;
   }
+}
+
+/**
+ * Ambil pesan yang layak ditampilkan dari nilai apa pun yang tertangkap `catch`.
+ *
+ * `catch` di TypeScript memberi `unknown` — bukan `Error` — karena JavaScript
+ * memang bisa melempar apa saja. Pola lama `catch (err: any)` lalu `err.message`
+ * menutupi itu: kalau yang terlempar ternyata string atau objek biasa,
+ * `err.message` diam-diam `undefined` dan pengguna melihat pesan kosong.
+ * Helper ini membuat kasus itu jatuh ke `fallback`, bukan ke ketiadaan.
+ */
+export function errorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
 }
 
 export function apiUrl(path: string): string {
@@ -50,9 +80,9 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     }
 
     let msg = `API ${response.status}: ${response.statusText}`;
-    let body: any = null;
+    let body: ApiErrorBody | null = null;
     try {
-      body = await response.json();
+      body = (await response.json()) as ApiErrorBody;
       if (body?.message) msg = body.message;
     } catch {}
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { api } from "../../shared/api/client";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
@@ -25,7 +25,17 @@ type ModeAwamData = {
   prediction_status?: "fresh" | "stale" | "unavailable" | null;
   last_generated_at?: string | null;
   prediction_notice?: string | null;
-  region: { village: string | null; district: string | null; regency: string | null };
+  // `provenance_status` memang dikirim backend (PublicMapController::modeAwam)
+  // dan dipakai menandai data contoh; sebelumnya absen dari tipe ini sehingga
+  // pembacanya harus lewat `as any`.
+  region: {
+    id?: string;
+    village: string | null;
+    district: string | null;
+    regency: string | null;
+    provenance_status?: string | null;
+    data_source?: string | null;
+  };
   forecast: { data: ForecastItem[] } | ForecastItem[];
   nearby_reports: NearbyReport[];
 };
@@ -36,7 +46,53 @@ type ForecastItem = { id: string; prediction_date: string; risk_class: RiskClass
 type NearbyReport = { id: string; report_code: string; severity: "ringan" | "sedang" | "parah" | "sangat_parah"; water_height_cm: number | null; incident_time: string; status: string; region?: { village?: string | null; district?: string | null; regency?: string | null } | null };
 
 type ModeAwamResponse = {
-  data: ModeAwamData;
+  data: ModeAwamData | null;
+  /** Terisi saat backend tak punya data untuk koordinat itu (bukan galat HTTP). */
+  message?: string;
+};
+
+/** Bentuk minimum `/public/map` yang benar-benar dibaca halaman ini: centroid & nama wilayah. */
+type PublicMapResponse = {
+  data?: {
+    regions?: {
+      features?: Array<{
+        geometry?: { coordinates?: unknown };
+        properties?: { village?: string | null; district?: string | null; regency?: string | null };
+      }>;
+    };
+  };
+};
+
+type ForecastDay = { day: string; label: string; percent: number; color: string };
+/** Kartu tindakan: `[judul, penjelasan, nama ikon]`. */
+type ActionCard = string[];
+
+/**
+ * Props `CitizenModeDesktop` & `CitizenModeMobile` — keduanya menerima
+ * PERSIS daftar yang sama (lihat `commonProps` di bawah).
+ *
+ * Sebelumnya keduanya diketik `: any`, sehingga 6 callback `.map()` di dalamnya
+ * ikut terpaksa `: any` dan salah ketik nama prop tidak pernah tertangkap tsc.
+ * Kedua komponen itu sendiri masih ~300 baris JSX yang hampir identik — dedup-nya
+ * dilacak terpisah sebagai `AU-15` di docs/review/checklist-perbaikan.md.
+ */
+type CitizenModeViewProps = {
+  data: ModeAwamData | undefined;
+  error: string;
+  dataLoaded: boolean;
+  locationNote: string;
+  coordinates: { lat: number; lon: number } | null;
+  setCoordinates: Dispatch<SetStateAction<{ lat: number; lon: number } | null>>;
+  setLocationNote: Dispatch<SetStateAction<string>>;
+  requestGpsLocation: () => void;
+  wilayahOptions: WilayahOption[];
+  risk: string;
+  cardStyle: ReturnType<typeof getCardStyle>;
+  forecastDays: ForecastDay[];
+  currentLocation: string;
+  actionCards: ActionCard[];
+  handleShareWhatsApp: () => void;
+  handleCopyWarning: () => Promise<void>;
 };
 
 const meters = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 });
@@ -249,7 +305,7 @@ function CitizenModeDesktop({
   data, error, dataLoaded, setCoordinates, setLocationNote,
   requestGpsLocation, wilayahOptions, risk, cardStyle, forecastDays, currentLocation, actionCards,
   handleShareWhatsApp, handleCopyWarning
-}: any) {
+}: CitizenModeViewProps) {
   return (
     <AppShell active="awam" title="Status Bahaya Saya" subtitle="Panduan mitigasi dan peringatan dini disajikan dalam bahasa yang mudah dipahami.">
       <style>{`
@@ -394,7 +450,7 @@ function CitizenModeDesktop({
               </div>
             ) : (
             <div className="citizen-forecast-grid">
-              {forecastDays.map(({ day, label, percent, color }: any, i: number) => (
+              {forecastDays.map(({ day, label, percent, color }, i) => (
                 <motion.div
                   key={day}
                   className="citizen-forecast-day"
@@ -442,7 +498,7 @@ function CitizenModeDesktop({
               </thead>
               <tbody>
                 {data?.nearby_reports.length === 0 && <tr><td colSpan={4} style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>Belum ada laporan tervalidasi di sekitar lokasi ini.</td></tr>}
-                {data?.nearby_reports.map((report: any) => {
+                {data?.nearby_reports.map((report) => {
                   const region = [report.region?.village, report.region?.district, report.region?.regency].filter(Boolean).join(", ") || "Wilayah pesisir";
                   const time = new Date(report.incident_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
                   return <tr key={report.id} style={{ borderBottom: "1px solid var(--line)" }}>
@@ -475,7 +531,7 @@ function CitizenModeDesktop({
                 Rekomendasi Tindakan
               </div>
               <div className="citizen-recommendations">
-                {actionCards.map(([title, copy, icon]: any) => {
+                {actionCards.map(([title, copy, icon]) => {
                   const isReportBtn = title === "Laporkan kejadian";
                   return (
                     <motion.div
@@ -551,7 +607,7 @@ function CitizenModeMobile({
   data, error, dataLoaded, setCoordinates, setLocationNote,
   requestGpsLocation, wilayahOptions, risk, cardStyle, forecastDays, currentLocation, actionCards,
   handleShareWhatsApp, handleCopyWarning
-}: any) {
+}: CitizenModeViewProps) {
 
   return (
     <AppShell active="awam" title="Status Bahaya Saya">
@@ -734,7 +790,7 @@ function CitizenModeMobile({
           </div>
         )}
         <div className="mobile-forecast-scroller">
-          {forecastDays.map(({ day, label, percent, color }: any, i: number) => (
+          {forecastDays.map(({ day, label, percent, color }, i) => (
             <div key={day} className="mobile-forecast-card">
               <div style={{ fontSize: 12, color: "var(--ink-soft)", fontWeight: 700, marginBottom: 12 }}>{day}</div>
               <div style={{ height: 100, width: 14, borderRadius: 999, background: "var(--line)", position: "relative", margin: "0 auto 12px auto" }}>
@@ -756,7 +812,7 @@ function CitizenModeMobile({
       <motion.section variants={itemVariants} initial="hidden" animate="show" style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: "1.1rem", margin: "0 0 16px 0", fontWeight: 700 }}>Langkah Mitigasi</h2>
         <div className="mobile-bento-grid">
-          {actionCards.map(([title, copy, icon]: any, i: number) => {
+          {actionCards.map(([title, copy, icon], i) => {
             const isReportBtn = title === "Laporkan kejadian";
             return (
               <div 
@@ -793,7 +849,7 @@ function CitizenModeMobile({
               Belum ada laporan di sekitar Anda.
             </div>
           )}
-          {data?.nearby_reports.map((report: any) => {
+          {data?.nearby_reports.map((report) => {
             const region = [report.region?.village, report.region?.district].filter(Boolean).join(", ") || "Wilayah pesisir";
             const time = new Date(report.incident_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
             return (
@@ -852,10 +908,10 @@ export function CitizenModePage() {
   // Daftar wilayah pesisir yang dipantau, diambil dari peta publik (centroid tiap zona).
   useEffect(() => {
     let alive = true;
-    api<any>("/public/map")
+    api<PublicMapResponse>("/public/map")
       .then((response) => {
         if (!alive) return;
-        const features: any[] = response.data?.regions?.features ?? [];
+        const features = response.data?.regions?.features ?? [];
         const seen = new Set<string>();
         const options: WilayahOption[] = [];
         for (const feature of features) {
@@ -938,7 +994,7 @@ export function CitizenModePage() {
     setDataLoaded(false);
 
     const params = coordinates ? `?lat=${coordinates.lat}&lon=${coordinates.lon}` : "";
-    api<any>(`/public/mode-awam${params}`)
+    api<ModeAwamResponse>(`/public/mode-awam${params}`)
       .then((response) => {
         if (alive) {
           setData(response.data ?? undefined);
@@ -992,7 +1048,7 @@ export function CitizenModePage() {
   const cardStyle = getCardStyle(data?.risk_class ?? undefined);
   // If we are showing dummy data, or if data is not available, we should prioritize the actual locationNote (which now holds the real geocoded name)
   // rather than the dummy region's name.
-  const isDummyData = (data?.region as any)?.provenance_status === "demo" || risk === "Tidak Tersedia";
+  const isDummyData = data?.region?.provenance_status === "demo" || risk === "Tidak Tersedia";
   const currentLocation = (data?.region && !isDummyData) 
     ? [data.region.village, data.region.district, data.region.regency].filter(Boolean).join(", ") 
     : locationNote;
@@ -1002,7 +1058,7 @@ export function CitizenModePage() {
   // grafik (dulu hero bisa "Sangat Tinggi" sementara 7 bar di bawahnya
   // dipaksa "Rendah 0%": kontradiksi di layar peringatan).
   const forecastDays = data && data.is_monitored
-    ? (Array.isArray(data.forecast) ? data.forecast : data.forecast.data).map((item: any) => {
+    ? (Array.isArray(data.forecast) ? data.forecast : data.forecast.data).map((item) => {
         const rawDate = item.prediction_date.split("T")[0].split(" ")[0]; // YYYY-MM-DD
         const riskClass = item.risk_class as RiskClass;
         return {

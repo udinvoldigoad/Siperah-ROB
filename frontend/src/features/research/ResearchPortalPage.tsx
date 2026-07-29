@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AppShell } from "../../shared/components/AppShell";
-import { api, apiUrl } from "../../shared/api/client";
+import { api, apiUrl, errorMessage } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
@@ -182,8 +182,8 @@ export function ResearchPortalPage() {
       anchor.remove();
       URL.revokeObjectURL(url);
       toast.success(`Dataset ${format.toUpperCase()} mulai diunduh.`);
-    } catch (err: any) {
-      toast.error(err.message || "Gagal mengunduh dataset.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal mengunduh dataset."));
     }
   };
 
@@ -220,8 +220,8 @@ export function ResearchPortalPage() {
         const statsRes = await api<ResearchStatsResponse>("/research/stats");
         setStats(statsRes.data);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Gagal memuat portal penelitian.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal memuat portal penelitian."));
     } finally {
       setIsLoading(false);
     }
@@ -237,8 +237,8 @@ export function ResearchPortalPage() {
     try {
       const res = await api<UsageResponse>("/research/usage");
       setUsage(res.data);
-    } catch (err: any) {
-      toast.error(err.message || "Gagal memuat statistik penggunaan API.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal memuat statistik penggunaan API."));
     } finally {
       setUsageLoading(false);
     }
@@ -270,8 +270,8 @@ export function ResearchPortalPage() {
       setIsPermitFormOpen(false);
       const permitRes = await api<ApiAccessResponse>("/research/api-access-request");
       setPermit(permitRes.data);
-    } catch (err: any) {
-      toast.error(err.message || "Gagal mengirim permohonan izin.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal mengirim permohonan izin."));
     } finally {
       setPermitSubmitting(false);
     }
@@ -297,8 +297,8 @@ export function ResearchPortalPage() {
 
       const keysRes = await api<ApiKeyResponse>("/research/api-keys");
       setApiKeys(keysRes.data);
-    } catch (err: any) {
-      toast.error(err.message || "Gagal meregenerasi API key.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal meregenerasi API key."));
     }
   };
 

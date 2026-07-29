@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Icon } from "../../shared/components/Icon";
-import { api } from "../../shared/api/client";
+import { api, errorMessage } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -32,7 +32,7 @@ export function ForgotPasswordPage() {
 
     setIsLoading(true);
     try {
-      const res: any = await api("/auth/forgot-password", {
+      await api("/auth/forgot-password", {
         method: "POST",
         body: JSON.stringify({ email }),
       });
@@ -41,8 +41,8 @@ export function ForgotPasswordPage() {
       // Backend sengaja tidak membocorkan apakah email terdaftar
       // (anti-enumeration) — jangan mengklaim OTP pasti terkirim.
       toast.success("Jika email terdaftar, kode OTP telah dikirim. Berlaku 10 menit.");
-    } catch (err: any) {
-      toast.error(err.message || "Gagal mengirim kode OTP.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal mengirim kode OTP."));
     } finally {
       setIsLoading(false);
     }
@@ -74,8 +74,8 @@ export function ForgotPasswordPage() {
       });
       toast.success("Kata sandi berhasil diperbarui!");
       setTimeout(() => { window.location.hash = "#/login"; }, 1500);
-    } catch (err: any) {
-      toast.error(err.message || "Gagal mereset kata sandi.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal mereset kata sandi."));
       // OTP salah/kedaluwarsa: kembalikan user ke langkah OTP dengan kode
       // dikosongkan. Tanpa ini user menekan "Simpan" berulang dengan OTP yang
       // sama sampai jatah 5 percobaan habis, tanpa jalan kembali.
@@ -91,15 +91,15 @@ export function ForgotPasswordPage() {
     if (cooldown > 0) return;
     setIsLoading(true);
     try {
-      const res: any = await api("/auth/forgot-password", {
+      await api("/auth/forgot-password", {
         method: "POST",
         body: JSON.stringify({ email }),
       });
       setOtp(["", "", "", "", "", ""]);
       setCooldown(60);
       toast.success("Jika email terdaftar, kode OTP baru telah dikirim. Berlaku 10 menit.");
-    } catch (err: any) {
-      toast.error(err.message || "Gagal mengirim ulang OTP.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal mengirim ulang OTP."));
     } finally {
       setIsLoading(false);
     }

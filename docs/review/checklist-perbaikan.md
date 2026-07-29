@@ -24,14 +24,14 @@
 | # | Kategori | 🔴 | 🟠 | 🟡 | Total | Selesai |
 |---|---|---|---|---|---|---|
 | 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) | 1 | 0 | 1 | 2 | **2 ✅** |
-| 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **3** |
+| 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **4 ✅** |
 | 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | 0 |
 | 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | 0 |
 | 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | 0 |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | 0 |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | 0 |
 | 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | 0 |
-| | **Total** | **1** | **23** | **15** | **39** | **5** |
+| | **Total** | **1** | **23** | **15** | **39** | **6** |
 
 ---
 
@@ -72,9 +72,12 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
   Bukan sekadar headernya yang basi: **70% isi dokumen** dibungkus `<!-- -->`, sehingga sebagian besar temuan tak pernah terlihat saat dirender. Memperbarui angkanya saja tak akan memperbaiki itu.
   Ke-26 item terbukanya dibuka ulang terhadap kode hari ini — 5 gugur, 21 dipindahkan (jadi 18 entri `AU-*`). Alasan tiap yang gugur tercatat di [§8.6](#86-yang-digugurkan-dan-alasannya).
 
-- [ ] 🟡 **`KM-4` — 59 pemakaian `any` di frontend** — `frontend/src` *(bukti: kode)*
-  Naik dari 54 saat audit sebelumnya. Sudah tercatat di audit lama sebagai ditunda; dicatat ulang di sini hanya sebagai penanda tren agar tidak diam-diam bertambah terus.
-  **Aksi:** tetapkan batas atas dan turunkan bertahap, mulai dari `catch (err: any)` yang paling gampang diketikkan ulang.
+- [x] 🟡 **`KM-4` — 59 pemakaian `any` di frontend** — ✅ *59 → **0**, 2026-07-29*
+  **27 `catch (err: any)`** → `catch (err: unknown)` + helper `errorMessage(err, fallback)` di `shared/api/client.ts`. Pola lama `err.message || "…"` diam-diam menghasilkan pesan kosong bila yang terlempar bukan `Error`; helper-nya membuat kasus itu jatuh ke fallback.
+  **6 `Variants: any`** → `type Variants` framer-motion (pola yang sudah dipakai 4 berkas lain). **`ApiError.body`** kini `ApiErrorBody` — tiga field yang benar-benar dipakai bercabang diketik eksplisit, sisanya `unknown`. **13 di `CitizenModePage`** hilang lewat satu tipe `CitizenModeViewProps`; begitu props-nya terketik, 6 callback `.map()` ikut tersimpul sendiri. **6 di `PublicMapPage`** → tipe GeoJSON asli; dua cast `as any` disatukan jadi satu konversi ber-`unknown` yang terdokumentasi di batas jaringan.
+  **Temuan sampingan:** `region.provenance_status` memang dikirim `PublicMapController::modeAwam` tapi absen dari tipenya, jadi pembacanya terpaksa `as any` — tipenya yang salah, bukan datanya. Dua `const res: any = await api(...)` di `ForgotPasswordPage` ternyata tak pernah dibaca sama sekali.
+  **Batas atasnya dijaga:** `npm run check:any` (skrip tanpa dependensi, batas **0**) berjalan di `frontend-ci.yml` setelah `tsc` — sebab `tsc` justru tak bisa menangkap ini, `any` bekerja dengan mematikan pemeriksaan tipe. Diuji dua arah: menolak `any` yang ditanam, dan meloloskannya bila ditandai `/* any-ok: alasan */`.
+  **Sisa yang sengaja dibiarkan:** tak ada. Dedup JSX `CitizenModeDesktop`/`Mobile` tetap terbuka sebagai [`AU-15`](#85-testing--refactor-yang-ditunda) — itu duplikasi, bukan tipe.
 
 ---
 
@@ -232,8 +235,9 @@ Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% te
   **Aksi:** suite pytest di `ml-api` yang jalan pada PR menyentuh `ml-api/**`, dan buat kegagalan konektivitas benar-benar menggagalkan job.
 
 - [ ] 🟠 **`AU-15` — `CitizenModePage.tsx` 1.053 baris dengan Desktop & Mobile hampir identik** — `frontend/src/features/public-map/CitizenModePage.tsx:244` *(bukti: kode)*
-  `CitizenModeDesktop` (~300 baris JSX) dan `CitizenModeMobile` (~290) menduplikasi blok forecast/actionCards/nearby, dengan 13 props identik yang semuanya bertipe `any`. Setiap perubahan harus ditulis dua kali. Ini halaman publik yang paling banyak dilihat warga dan tidak punya test komponen.
-  **Ditunda sengaja** di audit sebelumnya agar kegagalan refactor tidak menyeret perbaikan bug lain saat revert — keputusan itu masih berlaku, dicatat di sini supaya tidak terlupakan. Beririsan dengan [`KM-4`](#2--kode-mati--sisa-peralihan).
+  `CitizenModeDesktop` (~300 baris JSX) dan `CitizenModeMobile` (~290) menduplikasi blok forecast/actionCards/nearby. Setiap perubahan harus ditulis dua kali. Ini halaman publik yang paling banyak dilihat warga dan tidak punya test komponen.
+  **Ditunda sengaja** di audit sebelumnya agar kegagalan refactor tidak menyeret perbaikan bug lain saat revert — keputusan itu masih berlaku.
+  **Sudah lebih mudah dikerjakan sejak [`KM-4`](#2--kode-mati--sisa-peralihan):** ke-13 props yang dulu `any` kini punya satu tipe bersama `CitizenModeViewProps`, jadi sub-komponen yang diekstrak akan langsung terjaga tsc — yang tersisa murni memindahkan JSX.
 
 - [ ] 🟠 **`AU-16` — Tidak ada `app/Enums`: status, peran, dan kelas risiko sebagai literal string** — `backend/app/Services/ReportAccessService.php:28-32` *(bukti: kode)*
   DB memakai enum Postgres, PHP tidak memetakannya. Ini bukan kerapian belaka — bukti kerugiannya ada di docblock file itu sendiri: saat peran disederhanakan 5→3, cabang `'bpbd_provinsi', 'admin'` tak sengaja berubah jadi `'peneliti', 'admin'`, yang **menaikkan peneliti dari 403 menjadi akses penuh ke laporan berisi identitas pelapor**. Enum akan membuat kekeliruan seperti itu gagal saat kompilasi.

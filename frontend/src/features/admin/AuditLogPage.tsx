@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
-import { api, downloadFile } from "../../shared/api/client";
+import { api, downloadFile, errorMessage } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
 import { EmptyState } from "../../shared/components/EmptyState";
 import { roleLabel } from "../../shared/constants/roles";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
 interface AuditLogData {
   id: string;
@@ -49,12 +49,12 @@ const outcomes: Record<string, string> = {
   partial: "Sebagian",
 };
 
-const containerVariants: any = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } }
 };
 
-const itemVariants: any = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
@@ -169,8 +169,8 @@ export function AuditLogPage() {
     try {
       await downloadFile("/admin/audit-logs", "audit_logs.csv", { action, outcome, search, format: "csv" });
       toast.success("Export audit log berhasil diunduh.");
-    } catch (err: any) {
-      toast.error(err.message || "Gagal export audit log.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal export audit log."));
     }
   };
 

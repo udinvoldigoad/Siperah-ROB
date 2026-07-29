@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { useToast } from "../../shared/components/Toast";
 import { fetchOperatorReports, severityLabels, updateOperatorReportStatus, type OperatorReport, type ReportSeverity } from "../reports/reportData";
-import { api, downloadFile } from "../../shared/api/client";
+import { api, downloadFile, errorMessage } from "../../shared/api/client";
 import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 
-const containerVariants: any = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -15,7 +15,7 @@ const containerVariants: any = {
   }
 };
 
-const itemVariants: any = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
@@ -127,7 +127,7 @@ export function OperatorDashboardPage() {
       await updateOperatorReportStatus(report.id, "divalidasi");
       await loadReports();
       toast.success(`Laporan ${report.code} berhasil divalidasi ke database.`);
-    } catch (err: any) {
+    } catch {
       toast.error("Gagal melakukan validasi laporan.");
     }
   };
@@ -137,7 +137,7 @@ export function OperatorDashboardPage() {
       await updateOperatorReportStatus(report.id, "ditolak", "Ditolak oleh operator BPBD");
       await loadReports();
       toast.info(`Laporan ${report.code} telah ditolak.`);
-    } catch (err: any) {
+    } catch {
       toast.error("Gagal melakukan penolakan laporan.");
     }
   };
@@ -152,8 +152,8 @@ export function OperatorDashboardPage() {
     try {
       await downloadFile("/dashboard/operator/reports/export", "dashboard-operator-laporan.csv");
       toast.success("Export laporan operator berhasil diunduh.");
-    } catch (err: any) {
-      toast.error(err.message || "Gagal export laporan operator.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal export laporan operator."));
     }
   };
 

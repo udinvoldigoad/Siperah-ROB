@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
-import { api, apiUrl, downloadFile } from "../../shared/api/client";
+import { api, apiUrl, downloadFile, errorMessage } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { riskLabels } from "../../shared/constants/risk";
@@ -166,8 +166,8 @@ export function ProvinceDashboardPage() {
         regency: selectedRegency === "all" ? "" : selectedRegency,
       });
       toast.success("Export CSV provinsi mulai diunduh.");
-    } catch (err: any) {
-      toast.error(err.message || "Gagal mengekspor CSV provinsi.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal mengekspor CSV provinsi."));
     }
   };
 

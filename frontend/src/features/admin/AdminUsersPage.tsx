@@ -1,14 +1,14 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AppShell } from "../../shared/components/AppShell";
-import { api, apiUrl, downloadFile } from "../../shared/api/client";
+import { api, apiUrl, downloadFile, errorMessage } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
 import { EmptyState } from "../../shared/components/EmptyState";
 import { roleLabel } from "../../shared/constants/roles";
 import { userStatusLabel, userStatusOptions } from "../../shared/constants/userStatus";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 interface UserData {
   id: string;
@@ -80,12 +80,12 @@ interface ApiAccessRequestItem {
   user: { id: string; name: string; email: string; institution: string | null; role: string };
 }
 
-const containerVariants: any = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } }
 };
 
-const itemVariants: any = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
@@ -508,8 +508,8 @@ export function AdminUsersPage() {
       toast.success(successMsg);
       await fetchUsers();
       setConfirm(null);
-    } catch (err: any) {
-      toast.error(err.message || `Gagal ${label}.`);
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, `Gagal ${label}.`));
     } finally {
       setActing(false);
     }
@@ -648,10 +648,10 @@ export function AdminUsersPage() {
       toast.success(`Akun "${user.name}" berhasil diperbarui.`);
       setEditingId(null);
       await fetchUsers();
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Tetap di mode edit agar admin bisa memperbaiki — mis. mengubah role ke
       // operator tanpa mengisi wilayah akan ditolak backend dengan pesan jelas.
-      toast.error(err.message || "Gagal memperbarui akun.");
+      toast.error(errorMessage(err, "Gagal memperbarui akun."));
     } finally {
       setActing(false);
     }
@@ -674,8 +674,8 @@ export function AdminUsersPage() {
       setNewUser({ name: "", email: "", password: "", role: "warga", status: "aktif", institution: "", region_id: "" });
       setCreateOpen(false);
       fetchUsers();
-    } catch (err: any) {
-      toast.error(err.message || "Gagal membuat pengguna.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal membuat pengguna."));
     } finally {
       setIsCreating(false);
     }
@@ -687,8 +687,8 @@ export function AdminUsersPage() {
       // hasil unduhan harus sama dengan yang sedang dilihat admin.
       await downloadFile("/admin/users/export", "admin-users.csv", { role, status, search: appliedSearch });
       toast.success("Export pengguna berhasil diunduh.");
-    } catch (err: any) {
-      toast.error(err.message || "Gagal export pengguna.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal export pengguna."));
     }
   };
 

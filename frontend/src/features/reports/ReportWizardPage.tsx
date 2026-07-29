@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { api } from "../../shared/api/client";
+import { api, errorMessage } from "../../shared/api/client";
 import { AppShell } from "../../shared/components/AppShell";
 import { useToast } from "../../shared/components/Toast";
 import { statusLabels, type ReportStatus } from "./reportData";
@@ -228,8 +228,8 @@ export function ReportWizardPage() {
       setWaterHeight("");
       setIncidentTime(currentTimeValue());
       setDeclarationAccepted(false);
-    } catch (error: any) {
-      const message = error.message || "Laporan belum terkirim. Cek isian dan coba lagi.";
+    } catch (error: unknown) {
+      const message = errorMessage(error, "Laporan belum terkirim. Cek isian dan coba lagi.");
       setSubmitError(message);
       toast.error(message);
     } finally {

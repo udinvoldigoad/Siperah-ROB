@@ -6,6 +6,7 @@ import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { Skeleton } from "../../shared/components/Skeleton";
 import { useToast } from "../../shared/components/Toast";
+import { errorMessage } from "../../shared/api/client";
 import { fetchOperatorReport, severityLabels, statusLabels, updateOperatorReportStatus, type OperatorReport, type ReportStatus } from "./reportData";
 
 export function ReportDetailPage({ reportId }: { reportId: string }) {
@@ -27,7 +28,7 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
       .then((data) => { setReport(data); setError(""); })
       // Teruskan pesan asli API — 403 "di luar wilayah kerja" atau 404 jauh
       // lebih mungkin daripada "backend mati", dan pesan generik menyesatkan.
-      .catch((err: any) => setError(err?.message || "Laporan belum bisa dimuat. Coba lagi sebentar."))
+      .catch((err: unknown) => setError(errorMessage(err, "Laporan belum bisa dimuat. Coba lagi sebentar.")))
       .finally(() => setIsLoading(false));
   }, [reportId]);
 
@@ -44,8 +45,8 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
       setIsSaving(true);
       setReport(await updateOperatorReportStatus(reportId, status, reason));
       setError("");
-    } catch (err: any) {
-      setError(err?.message || "Status laporan belum tersimpan. Coba lagi sebentar.");
+    } catch (err: unknown) {
+      setError(errorMessage(err, "Status laporan belum tersimpan. Coba lagi sebentar."));
     } finally {
       setIsSaving(false);
     }
@@ -63,8 +64,8 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
       toast.info(`Laporan ${code} telah ditolak.`);
       // Kembali ke dashboard operator setelah laporan ditolak.
       window.location.hash = "#/operator";
-    } catch (err: any) {
-      setError(err?.message || "Status laporan belum tersimpan. Coba lagi sebentar.");
+    } catch (err: unknown) {
+      setError(errorMessage(err, "Status laporan belum tersimpan. Coba lagi sebentar."));
     } finally {
       setIsSaving(false);
     }

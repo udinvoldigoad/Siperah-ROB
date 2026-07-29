@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { useToast } from "../../shared/components/Toast";
-import { api } from "../../shared/api/client";
+import { api, errorMessage } from "../../shared/api/client";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 interface NotificationSettings {
@@ -64,8 +64,8 @@ export function NotificationSettingsPage() {
       setChannels(sanitize(data.channels, CHANNEL_ALIASES, VALID_CHANNELS));
       setEventTypes(sanitize(data.event_types, EVENT_ALIASES, VALID_EVENTS));
       setMonitoredRegions(data.monitored_regions || []);
-    } catch (err: any) {
-      toast.error(err.message || "Gagal memuat pengaturan notifikasi.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal memuat pengaturan notifikasi."));
     }
   };
 
@@ -110,8 +110,8 @@ export function NotificationSettingsPage() {
         })
       });
       return true;
-    } catch (err: any) {
-      toast.error(err.message || 'Gagal mengaktifkan push notifikasi browser.');
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, 'Gagal mengaktifkan push notifikasi browser.'));
       return false;
     }
   };
@@ -164,8 +164,8 @@ export function NotificationSettingsPage() {
         }),
       });
       toast.success("Pengaturan notifikasi berhasil disimpan!");
-    } catch (err: any) {
-      toast.error(err.message || "Gagal menyimpan pengaturan.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal menyimpan pengaturan."));
     } finally {
       setIsLoading(false);
     }
