@@ -67,11 +67,9 @@ final class PublicMapController
             $query->whereDate('prediction_date', $filters['date']);
         } else {
             // Tanpa parameter tanggal, default ke prediksi TERDEKAT yang akan
-            // datang (aturan yang sama dengan peta). Sebelumnya orderBy desc
-            // tanpa filter membuat halaman pertama berisi H+30 — konsumen
-            // (mis. metrik OnboardingPage) menampilkannya sebagai "saat ini".
-            $nearest = Prediction::whereDate('prediction_date', '>=', AppTime::today())
-                ->min('prediction_date') ?: Prediction::max('prediction_date');
+            // datang (aturan yang sama dengan peta).
+            $nearest = (clone $query)->whereDate('prediction_date', '>=', AppTime::today())
+                ->min('prediction_date') ?: (clone $query)->max('prediction_date');
             if ($nearest) {
                 $query->whereDate('prediction_date', $nearest);
             }
