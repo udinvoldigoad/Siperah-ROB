@@ -25,13 +25,13 @@
 |---|---|---|---|---|---|---|
 | 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) | 1 | 0 | 1 | 2 | **2 ✅** |
 | 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **4 ✅** |
-| 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | **2** |
-| 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | 0 |
-| 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | **1** |
+| 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | **3** |
+| 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | **1** |
+| 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | **3** |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | **1** |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | **2** |
-| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | 0 |
-| | **Total** | **1** | **23** | **15** | **39** | **8** |
+| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **4** |
+| | **Total** | **1** | **23** | **15** | **39** | **22** |
 
 ---
 
@@ -109,7 +109,7 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
 
 ## 5. 🏗️ Perawatan & struktur
 
-- [ ] 🟠 **`MT-1` — `AdminUsersPage.tsx` 1.514 baris** — `frontend/src/features/admin/AdminUsersPage.tsx` *(bukti: kode)*
+- [x] 🟠 **`MT-1` — `AdminUsersPage.tsx` 1.514 baris** — `frontend/src/features/admin/AdminUsersPage.tsx` *(bukti: kode)*
   File terbesar di frontend. Memuat 4 modal (tambah pengguna, tinjau izin API, kelola pengguna, tinjau permohonan peneliti), 2 komponen dropdown, tabel, filter, paginasi, dan seluruh CSS-nya dalam satu berkas.
   **Aksi:** pisahkan tiap modal ke berkasnya sendiri; `RowActionsMenu` & `RegionCombobox` layak naik ke `shared/components`.
 
@@ -190,11 +190,11 @@ Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% te
   `validated_by` dan `validated_at` sengaja diisi `null` untuk status selain `divalidasi`/`ditolak`, padahal `duplikat` sama-sama keputusan manusia yang menutup laporan. Laporan terlihat "selesai" tanpa jejak siapa yang memutuskan. Transisi status juga tidak dibatasi — laporan `divalidasi` masih bisa dikembalikan ke `menunggu`.
   **Aksi:** isi kolom resolusi untuk `duplikat` juga, dan batasi transisi yang sah.
 
-- [ ] 🟡 **`AU-8` — `water_height_cm` tanpa batas atas** — `backend/app/Http/Requests/StoreReportRequest.php:20` *(bukti: kode)*
+- [x] 🟡 **`AU-8` — `water_height_cm` tanpa batas atas** — `backend/app/Http/Requests/StoreReportRequest.php:20` *(bukti: kode)*
   Hanya `integer|min:0`. Nilai seperti 999999 lolos dan ikut masuk agregat dashboard serta dataset peneliti. (Bagian lain temuan ini — `incident_time` boleh masa depan — sudah diperbaiki: `before_or_equal` dengan toleransi 10 menit untuk selisih jam perangkat.)
   **Aksi:** tambahkan `max:1000`.
 
-- [ ] 🟡 **`AU-9` — Contoh `risk_probability` di API reference memakai skala 0..1** — `backend/app/Http/Controllers/Api/ResearchController.php:395` *(bukti: kode)*
+- [x] 🟡 **`AU-9` — Contoh `risk_probability` di API reference memakai skala 0..1** — `backend/app/Http/Controllers/Api/ResearchController.php:313` *(sudah 82.13 dengan komentar skala)*
   Contohnya menulis `0.82` sedangkan sistem menyimpan persen (0..100). Konsumen eksternal yang menyalin contoh akan salah menafsirkan skalanya seratus kali lipat.
   **Aksi:** perbaiki contohnya ke skala persen.
 
@@ -210,7 +210,7 @@ Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% te
 
 ### 8.4 Diagnosa
 
-- [ ] 🟠 **`AU-12` — Tiga `catch (\Throwable)` tanpa log di peta publik** — `backend/app/Http/Controllers/Api/PublicMapController.php:231,341,350` *(bukti: kode)*
+- [x] 🟠 **`AU-12` — Tiga `catch (\Throwable)` tanpa log di peta publik** — `backend/app/Services/MapService.php:218,399,408` *(pindah ke MapService saat MT-2)*
   Yang di baris 231 mengubah kegagalan jadi `$features = []`: layer garis pantai lenyap dari peta publik tanpa satu pun jejak. Dua sisanya membuat deteksi PostGIS `return false` diam-diam, sehingga sistem turun ke jalur non-spasial tanpa ada yang tahu.
   **Aksi:** `Log::warning()` di ketiganya — tetap fail-safe, tapi kegagalannya meninggalkan jejak.
 
@@ -233,7 +233,7 @@ Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% te
   DB memakai enum Postgres, PHP tidak memetakannya. Ini bukan kerapian belaka — bukti kerugiannya ada di docblock file itu sendiri: saat peran disederhanakan 5→3, cabang `'bpbd_provinsi', 'admin'` tak sengaja berubah jadi `'peneliti', 'admin'`, yang **menaikkan peneliti dari 403 menjadi akses penuh ke laporan berisi identitas pelapor**. Enum akan membuat kekeliruan seperti itu gagal saat kompilasi.
   **Aksi:** buat `ReportStatus`, `UserRole`, `RiskClass` sebagai backed enum, mulai dari titik yang menentukan otorisasi.
 
-- [ ] 🟡 **`AU-17` — Satu tes lulus tanpa memverifikasi apa pun** — `backend/tests/Feature/ApiFoundationTest.php:766` *(bukti: kode)*
+- [x] 🟡 **`AU-17` — Satu tes lulus tanpa memverifikasi apa pun** — `backend/tests/Feature/ApiFoundationTest.php:789` *(bukti: kode)*
   `test_audit_service_is_fail_safe_when_storage_rejects_payload()` memanggil `AuditService::write()` dengan outcome tak sah lalu berakhir `$this->assertTrue(true)`. Tes ini tak bisa gagal, jadi ia hanya memberi rasa aman palsu bahwa fail-safe audit sudah teruji.
   **Aksi:** `assertDatabaseMissing` pada baris audit yang tak sah, dan pastikan tak ada exception yang lolos.
 

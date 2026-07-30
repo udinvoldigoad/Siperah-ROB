@@ -17,7 +17,7 @@ class StoreReportRequest extends FormRequest
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'region_id' => ['nullable', 'uuid', 'exists:regions,id'],
-            'water_height_cm' => ['required', 'integer', 'min:0'],
+            'water_height_cm' => ['required', 'integer', 'min:0', 'max:1000'],
             'severity' => ['nullable', 'string', 'in:ringan,sedang,parah,sangat_parah'],
             // Toleransi +10 menit untuk selisih jam perangkat; kejadian yang
             // benar-benar di masa depan bukan laporan genangan yang sah.

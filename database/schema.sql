@@ -70,6 +70,7 @@ create table ground_truth_reports (
   validated_by uuid references users(id),
   validated_at timestamptz,
   rejection_reason text,
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

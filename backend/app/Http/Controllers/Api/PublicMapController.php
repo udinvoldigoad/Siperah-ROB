@@ -6,6 +6,7 @@ use App\Http\Resources\PredictionResource;
 use App\Http\Resources\RegionResource;
 use App\Http\Resources\ReportResource;
 use App\Models\GroundTruthReport;
+use App\Models\Prediction;
 use App\Models\Region;
 use App\Services\MapService;
 use App\Services\PredictionService;

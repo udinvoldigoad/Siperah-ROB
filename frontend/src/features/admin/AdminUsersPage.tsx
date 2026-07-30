@@ -1,71 +1,19 @@
-import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
-import { api, apiUrl, downloadFile, errorMessage } from "../../shared/api/client";
+import { api, downloadFile, errorMessage } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
 import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
 import { EmptyState } from "../../shared/components/EmptyState";
+import { RowActionsMenu, type RowAction } from "../../shared/components/RowActionsMenu";
+import { ConfirmDialog, type ConfirmState } from "./components/ConfirmDialog";
+import { CreateUserModal } from "./components/CreateUserModal";
+import { EditUserModal } from "./components/EditUserModal";
+import { ReviewUserModal } from "./components/ReviewUserModal";
 import { roleLabel } from "../../shared/constants/roles";
 import { userStatusLabel, userStatusOptions } from "../../shared/constants/userStatus";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
-
-interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  institution: string | null;
-  region_id: string | null;
-  region_name: string | null;
-  created_at: string | null;
-  // Hanya terisi untuk peneliti — keterangan yang ditulis pemohon saat
-  // mendaftar, dipakai admin untuk memutuskan setujui/tolak.
-  permission_workflow: {
-    status: string;
-    institution: string | null;
-    reason: string | null;
-    email_verified: boolean;
-  } | null;
-}
-
-const ROLE_OPTIONS = [
-  { v: "warga", l: "Warga" },
-  { v: "peneliti", l: "Peneliti" },
-  { v: "admin", l: "Admin" },
-] as const;
-
-interface UserMeta {
-  current_page: number;
-  last_page: number;
-  total: number;
-  from: number | null;
-  to: number | null;
-}
-
-interface UserSummary {
-  total: number;
-  aktif: number;
-  menunggu: number;
-  nonaktif: number;
-  ditolak?: number;
-  peneliti_menunggu: number;
-}
-
-interface UserListResponse {
-  data: UserData[];
-  meta?: UserMeta;
-  summary?: UserSummary;
-}
-
-interface ConfirmState {
-  title: string;
-  message: string;
-  confirmLabel: string;
-  tone: "danger" | "default";
-  onConfirm: () => void;
-}
+import type { UserData, UserMeta, UserSummary, UserListResponse } from "./types";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -77,248 +25,6 @@ const itemVariants: Variants = {
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
 
-type RegionOption = { id: string; regency: string };
-
-/**
- * Tempatkan panel dropdown relatif terhadap trigger tanpa keluar viewport:
- * buka ke bawah bila muat, jatuhkan ke atas bila ruang bawah sempit, dan
- * batasi tinggi ke ruang yang benar-benar tersedia supaya daftar bisa
- * digulung penuh alih-alih terpotong tepi layar.
- */
-function panelPlacement(rect: DOMRect): { top?: number; bottom?: number; left: number; maxHeight: number } {
-  const GAP = 6;
-  const EDGE = 8;
-  const MIN_HEIGHT = 160;
-
-  const below = window.innerHeight - rect.bottom - GAP - EDGE;
-  const above = rect.top - GAP - EDGE;
-  const dropUp = below < MIN_HEIGHT && above > below;
-
-  return {
-    ...(dropUp
-      ? { bottom: window.innerHeight - rect.top + GAP }
-      : { top: rect.bottom + GAP }),
-    left: Math.max(EDGE, Math.min(rect.left, window.innerWidth - rect.width - EDGE)),
-    maxHeight: Math.max(MIN_HEIGHT, dropUp ? above : below),
-  };
-}
-
-type RowAction = {
-  key: string;
-  label: string;
-  icon: string;
-  tone?: "primary" | "danger";
-  onSelect: () => void;
-};
-
-/**
- * Menu titik tiga untuk aksi per baris.
- *
- * Sebelumnya tiap baris memajang 3 tombol sekaligus, sehingga kolom Aksi jauh
- * lebih lebar daripada kolom datanya sendiri dan tabel ikut melebar. Aksinya
- * tetap sama persis — hanya dikumpulkan ke satu pemicu.
- *
- * Panelnya memakai pola yang sama dengan RegionCombobox di bawah: portal +
- * posisi fixed, karena tabel berada di dalam wadah yang menggulung dan menu
- * biasa akan terpotong. Menggulung MEMINDAHKAN panel, bukan menutupnya.
- */
-function RowActionsMenu({ actions, label, disabled }: {
-  actions: RowAction[];
-  label: string;
-  disabled?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const [rect, setRect] = useState<DOMRect | null>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (triggerRef.current?.contains(t) || panelRef.current?.contains(t)) return;
-      setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      setOpen(false);
-      triggerRef.current?.focus();
-    };
-    const reposition = (e?: Event) => {
-      if (e && panelRef.current?.contains(e.target as Node)) return;
-      const r = triggerRef.current?.getBoundingClientRect();
-      if (!r) return;
-      if (r.bottom < 0 || r.top > window.innerHeight) { setOpen(false); return; }
-      setRect(r);
-    };
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    window.addEventListener("resize", reposition);
-    window.addEventListener("scroll", reposition, true);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-      window.removeEventListener("resize", reposition);
-      window.removeEventListener("scroll", reposition, true);
-    };
-  }, [open]);
-
-  const toggle = () => {
-    if (!open) setRect(triggerRef.current?.getBoundingClientRect() ?? null);
-    setOpen((v) => !v);
-  };
-
-  const MENU_WIDTH = 210;
-  const placement = rect ? panelPlacement(rect) : null;
-
-  return (
-    <>
-      <button
-        ref={triggerRef}
-        type="button"
-        className="admin-row-menu-trigger"
-        onClick={toggle}
-        disabled={disabled}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={label}
-        title={label}
-      >
-        <Icon name="more_vert" style={{ fontSize: 20 }} />
-      </button>
-      {open && rect && placement && createPortal(
-        <div
-          ref={panelRef}
-          className="admin-row-menu"
-          role="menu"
-          aria-label={label}
-          style={{
-            position: "fixed",
-            width: MENU_WIDTH,
-            top: placement.top,
-            bottom: placement.bottom,
-            // Diratakan ke tepi KANAN pemicu: kolom Aksi ada di ujung kanan
-            // tabel, jadi membuka ke kiri menjauh dari tepi layar.
-            left: Math.max(8, Math.min(rect.right - MENU_WIDTH, window.innerWidth - MENU_WIDTH - 8)),
-          }}
-        >
-          {actions.map((action) => (
-            <button
-              key={action.key}
-              type="button"
-              role="menuitem"
-              className={`admin-row-menu-item${action.tone ? ` ${action.tone}` : ""}`}
-              onClick={() => { setOpen(false); action.onSelect(); }}
-            >
-              <Icon name={action.icon} style={{ fontSize: 18, flexShrink: 0 }} />
-              {action.label}
-            </button>
-          ))}
-        </div>,
-        document.body,
-      )}
-    </>
-  );
-}
-
-/**
- * Dropdown wilayah/kabupaten dengan kotak pencarian. Panel di-render lewat
- * portal + posisi fixed agar tidak terpotong oleh modal (overflow-y: auto).
- */
-function RegionCombobox({ value, options, onChange, placeholder, currentLabel }: {
-  value: string;
-  options: RegionOption[];
-  onChange: (id: string) => void;
-  placeholder: string;
-  currentLabel?: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [rect, setRect] = useState<DOMRect | null>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (triggerRef.current?.contains(t) || panelRef.current?.contains(t)) return;
-      setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
-    // Panel ini `position: fixed` di luar DOM modal, jadi posisinya harus
-    // dihitung ulang tiap kali ada yang menggulung — BUKAN ditutup. Listener
-    // scroll pakai fase capture, sehingga menggulung daftar di dalam panel pun
-    // ikut tertangkap; dulu itu membuat dropdown menutup sendiri saat dipakai.
-    const reposition = (e?: Event) => {
-      if (e && panelRef.current?.contains(e.target as Node)) return;
-      const r = triggerRef.current?.getBoundingClientRect();
-      if (!r) return;
-      // Trigger tergulung keluar layar → panel tak punya jangkar lagi.
-      if (r.bottom < 0 || r.top > window.innerHeight) { setOpen(false); return; }
-      setRect(r);
-    };
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    window.addEventListener("resize", reposition);
-    window.addEventListener("scroll", reposition, true);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-      window.removeEventListener("resize", reposition);
-      window.removeEventListener("scroll", reposition, true);
-    };
-  }, [open]);
-
-  const toggle = () => {
-    if (!open) setRect(triggerRef.current?.getBoundingClientRect() ?? null);
-    setOpen((v) => !v);
-    setQuery("");
-  };
-
-  const selected = options.find((o) => o.id === value) ?? null;
-  // Nilai tersimpan bisa berupa region_id lama yang bukan id perwakilan;
-  // tampilkan label wilayah saat ini agar trigger tak terlihat kosong.
-  const displayLabel = selected ? selected.regency : value && currentLabel ? currentLabel : null;
-  const needle = query.trim().toLowerCase();
-  const filtered = needle ? options.filter((o) => o.regency.toLowerCase().includes(needle)) : options;
-
-  return (
-    <div className={`admin-combo ${open ? "open" : ""}`}>
-      <button ref={triggerRef} type="button" className="admin-combo-trigger" onClick={toggle} aria-haspopup="listbox" aria-expanded={open}>
-        <span className={displayLabel ? "" : "admin-combo-placeholder"}>{displayLabel ?? placeholder}</span>
-        <Icon name="expand_more" style={{ fontSize: 18, opacity: 0.6, flexShrink: 0 }} />
-      </button>
-      {open && rect && createPortal(
-        <div ref={panelRef} className="admin-combo-panel" style={{ position: "fixed", width: rect.width, ...panelPlacement(rect) }}>
-          <div className="admin-combo-search">
-            <Icon name="search" style={{ fontSize: 16, color: "var(--ink-soft)", flexShrink: 0 }} />
-            <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari kabupaten/kota..." />
-          </div>
-          <div className="admin-combo-list" role="listbox">
-            {filtered.length === 0 ? (
-              <div className="admin-combo-empty">Tidak ditemukan.</div>
-            ) : filtered.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                role="option"
-                aria-selected={o.id === value}
-                className={`admin-combo-option ${o.id === value ? "active" : ""}`}
-                onClick={() => { onChange(o.id); setOpen(false); setQuery(""); }}
-              >
-                <span>{o.regency}</span>
-                {o.id === value && <Icon name="check" style={{ fontSize: 16, flexShrink: 0 }} />}
-              </button>
-            ))}
-          </div>
-        </div>,
-        document.body,
-      )}
-    </div>
-  );
-}
-
 export function AdminUsersPage() {
   const toast = useToast();
   const [users, setUsers] = useState<UserData[]>([]);
@@ -329,32 +35,21 @@ export function AdminUsersPage() {
   const [summary, setSummary] = useState<UserSummary | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [isActing, setActing] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
 
-  // Filters & Search
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
-  // Nilai yang benar-benar dikirim ke API. Kotak pencarian tetap responsif
-  // (state `search` berubah tiap ketikan) tapi request baru ditembakkan setelah
-  // pengetikan berhenti — dulu setiap huruf memicu satu request /admin/users.
   const [appliedSearch, setAppliedSearch] = useState("");
   const [isCreateOpen, setCreateOpen] = useState(false);
 
-  const [regions, setRegions] = useState<RegionOption[]>([]);
-  const [newUser, setNewUser] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "warga",
-    status: "aktif",
-    institution: "",
-    region_id: "",
-  });
+  const [regions, setRegions] = useState<{ id: string; regency: string }[]>([]);
 
-  // Penanda urutan request: pencarian menembak request per ketukan; tanpa ini
-  // respons yang datang belakangan (dari kueri lama) menimpa hasil kueri baru.
   const fetchSeqRef = useRef(0);
+
+  const [reviewUser, setReviewUser] = useState<UserData | null>(null);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   const fetchUsers = useCallback(() => {
     const seq = ++fetchSeqRef.current;
     setIsLoading(true);
@@ -380,9 +75,6 @@ export function AdminUsersPage() {
       .finally(() => { if (seq === fetchSeqRef.current) setIsLoading(false); });
   }, [role, status, appliedSearch, page]);
 
-  // Debounce 350ms: cukup untuk menelan satu kata yang diketik cepat tanpa
-  // terasa lambat. Timer di-reset tiap ketikan, jadi hanya jeda terakhir yang
-  // benar-benar menembak request.
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setAppliedSearch(search);
@@ -395,27 +87,12 @@ export function AdminUsersPage() {
     fetchUsers();
   }, [fetchUsers]);
 
-  // Daftar kabupaten/kota terpantau untuk dropdown wilayah kerja.
   useEffect(() => {
-    api<{ data: RegionOption[] }>("/admin/regions")
+    api<{ data: { id: string; regency: string }[] }>("/admin/regions")
       .then((res) => setRegions(res.data))
       .catch(() => setRegions([]));
   }, []);
 
-  // Modal tambah pengguna: Escape menutup & scroll halaman dikunci saat terbuka.
-  useEffect(() => {
-    if (!isCreateOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setCreateOpen(false); };
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [isCreateOpen]);
-
-  // Ubah filter → kembali ke halaman 1.
   const onFilterChange = (setter: (value: string) => void) => (value: string) => {
     setter(value);
     setPage(1);
@@ -451,22 +128,6 @@ export function AdminUsersPage() {
     onConfirm: () => runAction("menolak akun", api(`/admin/users/${id}/reject`, { method: "POST" }), `Akun "${name}" ditolak.`),
   });
 
-  // ── Tinjau permohonan akun peneliti ────────────────────────────────
-  // Peneliti bisa mengunduh data mentah & memegang kunci API, jadi barisnya
-  // TIDAK diberi tombol Setujui/Tolak langsung seperti warga: admin harus
-  // membuka keterangan pemohon lebih dulu. Keputusannya diambil dari dalam
-  // modal ini agar tak ada jalur "setujui tanpa membaca".
-  const [reviewUser, setReviewUser] = useState<UserData | null>(null);
-
-  useEffect(() => {
-    if (!reviewUser) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setReviewUser(null); };
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
-  }, [reviewUser]);
-
   const confirmDelete = (user: UserData) => setConfirm({
     title: "Hapus pengguna?",
     message: `Akun "${user.name}" akan dihapus dari daftar dan tidak bisa masuk lagi. Jejak audit & laporan lamanya tetap tersimpan untuk keperluan riwayat.`,
@@ -479,8 +140,6 @@ export function AdminUsersPage() {
     ),
   });
 
-  // Aktifkan/Nonaktifkan lewat PATCH status — sebelumnya UI menjanjikan tombol
-  // ini tapi tidak ada, sehingga akun nonaktif/tertolak hanya bisa dihapus.
   const handleActivate = (user: UserData) =>
     runAction("mengaktifkan akun", api(`/admin/users/${user.id}`, { method: "PATCH", body: JSON.stringify({ status: "aktif" }) }), `Akun "${user.name}" diaktifkan.`);
 
@@ -496,22 +155,11 @@ export function AdminUsersPage() {
     ),
   });
 
-  // ── Kelola pengguna via modal: ubah peran, wilayah/instansi (PATCH).
-  //    Status ditangani tombol cepat (Aktifkan/Nonaktifkan/Setujui/Tolak). ──
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<{ role: string; institution: string; region_id: string }>({ role: "", institution: "", region_id: "" });
-
   const startEdit = (user: UserData) => {
     setEditingId(user.id);
-    setEditDraft({ role: user.role, institution: user.institution ?? "", region_id: user.region_id ?? "" });
   };
   const cancelEdit = () => setEditingId(null);
 
-  /**
-   * Aksi yang berlaku untuk satu baris, urut dari yang paling sering dipakai.
-   * Permohonan peneliti sengaja hanya punya "Tinjau Permohonan" — keputusannya
-   * diambil di dalam modal supaya keterangan pemohon terbaca lebih dulu.
-   */
   const rowActions = (user: UserData): RowAction[] => {
     const kelola: RowAction = { key: "kelola", label: "Kelola", icon: "edit", onSelect: () => startEdit(user) };
 
@@ -539,77 +187,8 @@ export function AdminUsersPage() {
     ];
   };
 
-  // Modal kelola: Escape menutup & scroll halaman dikunci saat terbuka.
-  useEffect(() => {
-    if (!editingId) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setEditingId(null); };
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [editingId]);
-
-  const saveEdit = async (user: UserData) => {
-    const payload: Record<string, unknown> = {};
-    if (editDraft.role !== user.role) payload.role = editDraft.role;
-    // institution hanya disentuh saat field-nya benar-benar tampil (peneliti).
-    // Untuk role lain kolom itu berisi "Desa/Wilayah" dari registrasi warga —
-    // dulu ikut dinolkan diam-diam setiap kali admin menekan Simpan.
-    if (editDraft.role === "peneliti") {
-      const nextInstitution = editDraft.institution.trim();
-      if (nextInstitution !== (user.institution ?? "")) payload.institution = nextInstitution || null;
-    }
-    const nextRegion = editDraft.role === "peneliti" ? "" : editDraft.region_id;
-    if (nextRegion !== (user.region_id ?? "")) payload.region_id = nextRegion || null;
-
-    if (Object.keys(payload).length === 0) { cancelEdit(); return; }
-
-    setActing(true);
-    try {
-      await api(`/admin/users/${user.id}`, { method: "PATCH", body: JSON.stringify(payload) });
-      toast.success(`Akun "${user.name}" berhasil diperbarui.`);
-      setEditingId(null);
-      await fetchUsers();
-    } catch (err: unknown) {
-      // Tetap di mode edit agar admin bisa memperbaiki — mis. mengubah role ke
-      // operator tanpa mengisi wilayah akan ditolak backend dengan pesan jelas.
-      toast.error(errorMessage(err, "Gagal memperbarui akun."));
-    } finally {
-      setActing(false);
-    }
-  };
-
-  const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (isCreating) return;
-    setIsCreating(true);
-    try {
-      await api("/admin/users", {
-        method: "POST",
-        body: JSON.stringify({
-          ...newUser,
-          institution: newUser.institution || null,
-          region_id: newUser.region_id || null,
-        }),
-      });
-      toast.success(`Akun "${newUser.name}" berhasil dibuat.`);
-      setNewUser({ name: "", email: "", password: "", role: "warga", status: "aktif", institution: "", region_id: "" });
-      setCreateOpen(false);
-      fetchUsers();
-    } catch (err: unknown) {
-      toast.error(errorMessage(err, "Gagal membuat pengguna."));
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
   const handleExportUsers = async () => {
     try {
-      // Bawa filter aktif — tombol export berada tepat di atas bar filter,
-      // hasil unduhan harus sama dengan yang sedang dilihat admin.
       await downloadFile("/admin/users/export", "admin-users.csv", { role, status, search: appliedSearch });
       toast.success("Export pengguna berhasil diunduh.");
     } catch (err: unknown) {
@@ -621,19 +200,12 @@ export function AdminUsersPage() {
   const pendingCount = summary?.menunggu ?? 0;
   const penelitiPending = summary?.peneliti_menunggu ?? 0;
 
-  /**
-   * Saring tabel ke antrean yang menunggu keputusan. Sengaja memakai tabel yang
-   * sudah ada, bukan daftar kedua di dalam modal: aksi "Tinjau Permohonan" di
-   * menu tiap baris sudah membuka alasan pemohon, jadi daftar terpisah hanya
-   * menduplikasi tempat yang sama dengan aturan filter sendiri.
-   */
   const showPendingQueue = () => {
     setRole("");
     setStatus("menunggu");
     setPage(1);
   };
-  // Nonaktif + ditolak digabung dalam satu kartu "Akses Ditutup" — tanpa
-  // ditolak, aktif+menunggu+nonaktif tidak pernah sama dengan Total Terdaftar.
+
   const closedCount = (summary?.nonaktif ?? 0) + (summary?.ditolak ?? 0);
   const totalCount = summary?.total ?? users.length;
   const pageNumbers = meta
@@ -661,11 +233,6 @@ export function AdminUsersPage() {
         .admin-modal-head p { color: var(--ink-soft); font-size: 13px; margin: 4px 0 0; }
         .admin-modal-close { align-items: center; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 10px; color: var(--ink-soft); cursor: pointer; display: inline-flex; flex-shrink: 0; height: 36px; justify-content: center; transition: all 0.15s ease; width: 36px; }
         .admin-modal-close:hover { background: var(--surface-muted); border-color: var(--accent); color: var(--ink); }
-        /* Filter status permohonan API: dropdown ringkas, tak keluar batas modal. */
-        .api-filter { display: flex; align-items: center; gap: 10px; padding: 4px 24px 0; }
-        .api-filter label { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); flex-shrink: 0; }
-        .api-filter select { flex: 1; min-width: 0; height: 40px; padding: 0 36px 0 12px; border: 1px solid var(--line); border-radius: 10px; background-color: var(--surface); color: var(--ink); font-size: 13px; cursor: pointer; }
-        .api-filter select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
         .admin-create-grid { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 22px; }
         .admin-field { display: grid; gap: 7px; }
         .admin-field.span-2 { grid-column: 1 / -1; }
@@ -697,53 +264,8 @@ export function AdminUsersPage() {
         .admin-role-pill { align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; cursor: pointer; display: inline-flex; font-size: 13px; font-weight: 600; gap: 6px; justify-content: center; padding: 10px 14px; text-align: center; transition: all 0.15s ease; width: 100%; }
         .admin-role-pill:hover { border-color: var(--accent); }
         .admin-role-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-        .admin-combo { position: relative; }
-        .admin-combo-trigger { align-items: center; background-color: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-sizing: border-box; color: var(--ink); cursor: pointer; display: flex; font: inherit; font-size: 14px; gap: 8px; height: 46px; justify-content: space-between; padding: 0 14px; transition: border-color 0.15s ease, box-shadow 0.15s ease; width: 100%; }
-        .admin-combo-trigger:hover { border-color: var(--accent); }
-        .admin-combo.open .admin-combo-trigger { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
-        .admin-combo-trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .admin-combo-placeholder { color: var(--ink-soft); opacity: 0.7; }
-        /* Kolom flex: kotak cari tetap, daftar yang menyusut mengikuti
-           max-height panel (dihitung dari ruang viewport oleh panelPlacement). */
-        .admin-combo-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18); display: flex; flex-direction: column; overflow: hidden; z-index: 10001; }
-        .admin-combo-search { align-items: center; border-bottom: 1px solid var(--line); display: flex; flex: 0 0 auto; gap: 8px; padding: 10px 12px; }
-        .admin-combo-search input { background: transparent; border: 0; color: var(--ink); flex: 1; font: inherit; font-size: 13px; outline: none; min-width: 0; }
-        .admin-combo-list { flex: 1 1 auto; max-height: 220px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 6px; }
-        .admin-combo-option { align-items: center; background: transparent; border: 0; border-radius: 8px; color: var(--ink); cursor: pointer; display: flex; font: inherit; font-size: 13.5px; gap: 8px; justify-content: space-between; padding: 10px 12px; text-align: left; width: 100%; }
-        .admin-combo-option:hover { background: var(--surface-soft); }
-        .admin-combo-option.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-        .admin-combo-empty { color: var(--ink-soft); font-size: 13px; padding: 14px 12px; text-align: center; }
         .admin-create-footer { align-items: center; background: var(--surface); border-top: 1px solid var(--line); display: flex; gap: 14px; justify-content: space-between; padding: 16px 22px; flex-wrap: wrap; }
-        /* Label ringkas di modal tinjau permohonan peneliti. */
         .review-label { color: var(--ink-soft); font-size: 11.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
-
-        /* Menu aksi per baris (titik tiga). */
-        .admin-row-menu-trigger {
-          align-items: center; background: transparent; border: 1px solid transparent;
-          border-radius: 10px; color: var(--ink-soft); cursor: pointer; display: inline-flex;
-          height: 36px; justify-content: center; transition: all 0.15s ease; width: 36px;
-        }
-        .admin-row-menu-trigger:hover:not(:disabled) { background: var(--surface-soft); border-color: var(--line); color: var(--ink); }
-        .admin-row-menu-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-        .admin-row-menu-trigger:disabled { cursor: not-allowed; opacity: 0.45; }
-        .admin-row-menu {
-          background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
-          box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18); overflow: hidden; padding: 6px;
-          z-index: 1200;
-        }
-        .admin-row-menu-item {
-          align-items: center; background: transparent; border: none; border-radius: 8px;
-          color: var(--ink); cursor: pointer; display: flex; font: inherit; font-size: 13px;
-          font-weight: 600; gap: 10px; padding: 9px 10px; text-align: left; width: 100%;
-        }
-        .admin-row-menu-item:hover { background: var(--surface-soft); }
-        .admin-row-menu-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-        .admin-row-menu-item.primary { color: var(--accent); }
-        .admin-row-menu-item.danger { color: var(--critical); }
-
-        /* Batasi kolom instansi/wilayah agar tabel tak melebar mengikuti teks
-           terpanjang. max-width saja tak cukup pada tabel auto-layout — butuh
-           width sekaligus untuk mengunci lebarnya. */
         .users-org-cell {
           max-width: 220px;
           overflow: hidden;
@@ -756,7 +278,6 @@ export function AdminUsersPage() {
         @media (max-width: 640px) { .admin-create-grid { grid-template-columns: 1fr; } }
 
         @media (max-width: 768px) {
-          /* KPI jadi 2 kolom di mobile (override aturan global 1fr !important). */
           .metric-grid.admin-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px !important; }
           .metric-grid.admin-kpis .metric-card { padding: 18px !important; }
           .metric-grid.admin-kpis .metric-card span { font-size: 12px !important; }
@@ -764,7 +285,6 @@ export function AdminUsersPage() {
           .metric-grid.admin-kpis .metric-card small { font-size: 11px !important; }
         }
 
-        /* Header aksi & filter daftar pengguna: kontrol modern + rapi di mobile. */
         .users-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .users-filter { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
         .users-filter select { height: 42px; border-radius: 10px; border: 1px solid var(--line); background-color: var(--surface); color: var(--ink); font: inherit; font-size: 13px; min-width: 160px; padding: 0 34px 0 12px; box-sizing: border-box; cursor: pointer; }
@@ -781,12 +301,7 @@ export function AdminUsersPage() {
         }
       `}</style>
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="content" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-        
-        {/* Perizinan akun — SATU-SATUNYA antrean persetujuan di halaman ini.
-            Dulu ada dua: banner "pendaftaran baru" plus panel "permohonan akses
-            API" yang menanyakan hal serupa (alasan memakai data) di layar
-            berbeda, tanpa saling merujuk. Sejak izin diminta sekali saat akun
-            dibuat, antreannya ikut jadi satu. */}
+
         <motion.section
           variants={itemVariants}
           className="panel"
@@ -818,12 +333,9 @@ export function AdminUsersPage() {
           )}
         </motion.section>
 
-        {/* KPI Grid */}
         <motion.div variants={itemVariants} className="metric-grid admin-kpis" style={{ marginBottom: 32 }}>
           {[
             { title: "Pengguna Aktif", val: activeCount, sub: "Dapat masuk ke dashboard", cls: "success" },
-            // "warning" tak pernah ada di tokens.css sehingga kartu ini tak
-            // pernah ter-highlight; kelas amber yang benar adalah "medium".
             { title: "Menunggu Approval", val: pendingCount, sub: "Butuh validasi admin", cls: pendingCount > 0 ? "medium" : "" },
             { title: "Akses Ditutup", val: closedCount, sub: "Nonaktif & ditolak", cls: "" },
             { title: "Total Terdaftar", val: totalCount, sub: "Seluruh role pengguna", cls: "" }
@@ -846,302 +358,28 @@ export function AdminUsersPage() {
           ))}
         </motion.div>
 
-        {/* Modal tambah pengguna — dipicu tombol "Tambah Pengguna" di header Daftar Pengguna Sistem. */}
-        {createPortal(
-          <AnimatePresence>
-            {isCreateOpen && (
-              <motion.div
-                className="admin-confirm-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              onClick={() => setCreateOpen(false)}
-            >
-              <motion.div
-                className="admin-modal-card"
-                initial={{ opacity: 0, scale: 0.96, y: 12 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: 12 }}
-                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                onClick={(e) => e.stopPropagation()}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="create-user-title"
-              >
-                <div className="admin-modal-head">
-                  <div>
-                    <h2 id="create-user-title">Tambah Pengguna</h2>
-                    <p>Buat akun admin/operator/provinsi/peneliti secara manual.</p>
-                  </div>
-                  <button type="button" className="admin-modal-close" onClick={() => setCreateOpen(false)} aria-label="Tutup">
-                    <Icon name="close" />
-                  </button>
-                </div>
-                <form onSubmit={handleCreateUser} autoComplete="off">
-                  <div className="admin-create-grid">
-                    <div className="admin-field span-2">
-                      <label><Icon name="badge" /> Peran</label>
-                      <div className="admin-role-pills">
-                        {[
-                          { v: "warga", l: "Warga" },
-                          { v: "peneliti", l: "Peneliti" },
-                          { v: "admin", l: "Admin" },
-                        ].map((opt) => (
-                          <button
-                            key={opt.v}
-                            type="button"
-                            className={`admin-role-pill ${newUser.role === opt.v ? "active" : ""}`}
-                            onClick={() => setNewUser((u) => ({
-                              ...u,
-                              role: opt.v,
-                              // Bersihkan field yang jadi tersembunyi agar tak terkirim data usang.
-                              institution: opt.v === "peneliti" ? u.institution : "",
-                              region_id: opt.v === "peneliti" ? "" : u.region_id,
-                            }))}
-                          >
-                            {opt.l}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="admin-field">
-                      <label><Icon name="person" /> Nama lengkap</label>
-                      <input required autoComplete="off" placeholder="cth. Siti Amalia" value={newUser.name} onChange={(e) => setNewUser((u) => ({ ...u, name: e.target.value }))} />
-                    </div>
-                    <div className="admin-field">
-                      <label><Icon name="mail" /> Email</label>
-                      <input required type="email" autoComplete="off" placeholder="nama@instansi.go.id" value={newUser.email} onChange={(e) => setNewUser((u) => ({ ...u, email: e.target.value }))} />
-                    </div>
-                    <div className="admin-field">
-                      <label><Icon name="lock" /> Password awal</label>
-                      <input required type="password" minLength={8} name="siperah-new-user-pw" autoComplete="new-password" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="Minimal 8 karakter" value={newUser.password} onChange={(e) => setNewUser((u) => ({ ...u, password: e.target.value }))} />
-                    </div>
-                    {newUser.role === "peneliti" ? (
-                      <div className="admin-field">
-                        <label><Icon name="apartment" /> Instansi</label>
-                        <input required placeholder="Wajib untuk peneliti" value={newUser.institution} onChange={(e) => setNewUser((u) => ({ ...u, institution: e.target.value }))} />
-                      </div>
-                    ) : (
-                      <div className="admin-field">
-                        <label><Icon name="pin_drop" /> Wilayah / kabupaten terpantau (opsional)</label>
-                        <RegionCombobox
-                          value={newUser.region_id}
-                          options={regions}
-                          onChange={(id) => setNewUser((u) => ({ ...u, region_id: id }))}
-                          placeholder={regions.length ? "Pilih wilayah…" : "Memuat wilayah…"}
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <div className="admin-create-footer">
-                    <span className="admin-create-hint">
-                      <Icon name="info" />
-                      {"Pilih wilayah pantauan bila relevan untuk akun ini."}
-                    </span>
-                    <button type="submit" className="btn primary" disabled={isCreating} data-loading={isCreating || undefined}><Icon name="save" /> {isCreating ? "Menyimpan..." : "Simpan Pengguna"}</button>
-                  </div>
-                </form>
-              </motion.div>
-            </motion.div>
-          )}
-          </AnimatePresence>,
-          document.body
-        )}
+        <CreateUserModal
+          isOpen={isCreateOpen}
+          onClose={() => setCreateOpen(false)}
+          regions={regions}
+          onCreated={fetchUsers}
+        />
 
-        {/* Modal kelola pengguna — ubah peran & wilayah/instansi. Status via tombol daftar. */}
-        {createPortal(
-          <AnimatePresence>
-            {editingUser && (
-              <motion.div
-                className="admin-confirm-overlay"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
-                onClick={() => !isActing && cancelEdit()}
-              >
-                <motion.div
-                  className="admin-modal-card"
-                  initial={{ opacity: 0, scale: 0.96, y: 12 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.96, y: 12 }}
-                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                  onClick={(e) => e.stopPropagation()}
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="edit-user-title"
-                >
-                  <div className="admin-modal-head">
-                    <div>
-                      <h2 id="edit-user-title">Kelola Pengguna</h2>
-                      <p>{editingUser.name} · {editingUser.email}</p>
-                    </div>
-                    <button type="button" className="admin-modal-close" onClick={cancelEdit} aria-label="Tutup">
-                      <Icon name="close" />
-                    </button>
-                  </div>
-                  <form onSubmit={(e) => { e.preventDefault(); saveEdit(editingUser); }} autoComplete="off">
-                    <div className="admin-create-grid">
-                      <div className="admin-field span-2">
-                        <label><Icon name="badge" /> Peran</label>
-                        <div className="admin-role-pills">
-                          {ROLE_OPTIONS.map((opt) => (
-                            <button
-                              key={opt.v}
-                              type="button"
-                              className={`admin-role-pill ${editDraft.role === opt.v ? "active" : ""}`}
-                              onClick={() => setEditDraft((d) => ({
-                                ...d,
-                                role: opt.v,
-                                institution: opt.v === "peneliti" ? d.institution : "",
-                                region_id: opt.v === "peneliti" ? "" : d.region_id,
-                              }))}
-                            >
-                              {opt.l}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      {editDraft.role === "peneliti" ? (
-                        <div className="admin-field span-2">
-                          <label><Icon name="apartment" /> Instansi</label>
-                          <input required value={editDraft.institution} onChange={(e) => setEditDraft((d) => ({ ...d, institution: e.target.value }))} placeholder="Nama instansi / universitas" />
-                        </div>
-                      ) : (
-                        <div className="admin-field span-2">
-                          <label><Icon name="pin_drop" /> Wilayah / kabupaten terpantau (opsional)</label>
-                          <RegionCombobox
-                            value={editDraft.region_id}
-                            options={regions}
-                            onChange={(id) => setEditDraft((d) => ({ ...d, region_id: id }))}
-                            placeholder={regions.length ? "Pilih wilayah…" : "Memuat wilayah…"}
-                            currentLabel={editingUser.region_name ?? undefined}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div className="admin-create-footer">
-                      <span className="admin-create-hint">
-                        <Icon name="info" />
-                        Status akun (aktif/nonaktif) diatur lewat tombol di daftar. Di sini hanya peran & wilayah/instansi.
-                      </span>
-                      <button type="submit" className="btn primary" disabled={isActing} data-loading={isActing || undefined}><Icon name="save" /> Simpan Perubahan</button>
-                    </div>
-                  </form>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>,
-          document.body
-        )}
+        <EditUserModal
+          user={editingUser}
+          onClose={cancelEdit}
+          regions={regions}
+          onSaved={fetchUsers}
+        />
 
-        {/* Modal tinjau permohonan akun peneliti — satu-satunya jalan untuk
-            menyetujui/menolak peneliti, agar keterangan pemohon selalu terbaca
-            lebih dulu. */}
-        {createPortal(
-          <AnimatePresence>
-            {reviewUser && (
-              <motion.div
-                className="admin-confirm-overlay"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
-                onClick={() => setReviewUser(null)}
-              >
-                <motion.div
-                  className="admin-modal-card"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 12 }}
-                  onClick={(e) => e.stopPropagation()}
-                  role="dialog"
-                  aria-modal="true"
-                  aria-label={`Tinjau permohonan akun peneliti ${reviewUser.name}`}
-                >
-                  <div className="admin-modal-head">
-                    <div>
-                      <h2>Permohonan Akun Peneliti</h2>
-                      <p>Periksa keterangan pemohon sebelum memutuskan.</p>
-                    </div>
-                    <button type="button" className="admin-modal-close" onClick={() => setReviewUser(null)} aria-label="Tutup">
-                      <Icon name="close" style={{ fontSize: 18 }} />
-                    </button>
-                  </div>
+        <ReviewUserModal
+          user={reviewUser}
+          onClose={() => setReviewUser(null)}
+          onApprove={handleApprove}
+          onReject={(id, name) => confirmReject(id, name)}
+          isActing={isActing}
+        />
 
-                  <div style={{ padding: "20px 24px", display: "grid", gap: 16 }}>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>{reviewUser.name}</div>
-                      <div style={{ fontSize: 13, color: "var(--ink-soft)", wordBreak: "break-word" }}>{reviewUser.email}</div>
-                    </div>
-
-                    {/* Peringatan keras: menyetujui akun yang alamat emailnya
-                        belum terbukti = menyerahkan akses data ke alamat yang
-                        mungkin bukan milik pemohon. */}
-                    {reviewUser.permission_workflow?.email_verified ? (
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 700, color: "#166534" }}>
-                        <Icon name="verified" style={{ fontSize: 18 }} /> Email sudah diverifikasi pemohon
-                      </div>
-                    ) : (
-                      <div role="alert" style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 14px", borderRadius: 10, border: "1px solid var(--critical)", color: "#991b1b", fontSize: 12.5, lineHeight: 1.5 }}>
-                        <Icon name="warning" style={{ fontSize: 18, flexShrink: 0 }} />
-                        <span><strong>Email belum diverifikasi.</strong> Pemohon belum memasukkan kode OTP, jadi belum terbukti alamat ini miliknya. Sebaiknya tunggu verifikasi sebelum menyetujui.</span>
-                      </div>
-                    )}
-
-                    <div style={{ display: "grid", gap: 14, padding: "16px", borderRadius: 14, background: "var(--surface-soft)", border: "1px solid var(--line)" }}>
-                      <div>
-                        <div className="review-label">Tujuan penggunaan data</div>
-                        <div style={{ color: "var(--ink)", fontSize: 13.5, lineHeight: 1.6, marginTop: 4, whiteSpace: "pre-wrap" }}>
-                          {reviewUser.permission_workflow?.reason || "— (permohonan lama, tanpa keterangan)"}
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-                        <div>
-                          <div className="review-label">Instansi</div>
-                          <div style={{ color: "var(--ink)", fontSize: 13.5, marginTop: 4 }}>{reviewUser.institution || "—"}</div>
-                        </div>
-                        <div>
-                          <div className="review-label">Diajukan</div>
-                          <div style={{ color: "var(--ink)", fontSize: 13.5, marginTop: 4 }}>
-                            {reviewUser.created_at ? new Date(reviewUser.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "—"}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                      <button
-                        type="button"
-                        className="btn outline"
-                        disabled={isActing}
-                        data-loading={isActing || undefined}
-                        style={{ color: "var(--critical)", borderColor: "var(--critical)", fontSize: 12.5 }}
-                        onClick={() => { const u = reviewUser; setReviewUser(null); confirmReject(u.id, u.name); }}
-                      >
-                        <Icon name="close" style={{ fontSize: 16 }} /> Tolak
-                      </button>
-                      <button
-                        type="button"
-                        className="btn primary"
-                        disabled={isActing}
-                        data-loading={isActing || undefined}
-                        style={{ fontSize: 12.5 }}
-                        onClick={() => { const u = reviewUser; setReviewUser(null); handleApprove(u.id, u.name); }}
-                      >
-                        <Icon name="check" style={{ fontSize: 16 }} /> Setujui Akun Peneliti
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>,
-          document.body
-        )}
-
-        {/* Filters and List */}
         <motion.div variants={itemVariants} className="panel flush" style={{ overflow: "hidden", marginBottom: 32 }}>
           <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
             <h2 style={{ margin: 0, fontSize: "1.2rem" }}>Daftar Pengguna Sistem</h2>
@@ -1151,7 +389,6 @@ export function AdminUsersPage() {
             </div>
           </div>
 
-          {/* Filters Bar */}
           <div className="users-filter" style={{ padding: "16px 24px", background: "var(--surface-soft)", borderBottom: "1px solid var(--line)" }}>
             <select
               value={role}
@@ -1182,17 +419,14 @@ export function AdminUsersPage() {
                 placeholder="Cari nama, email..."
                 maxLength={100}
                 value={search}
-                // Reset halaman ditangani efek debounce, bukan di sini —
-                // kalau tidak, halaman ikut melompat tiap huruf diketik.
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
           </div>
 
-          {/* Table container */}
           <div>
             {isLoading ? (
-              <div style={{ padding: "16px 24px" }}><LoadingBlock rows={6} label="Memuat daftar pengguna…" /></div>
+              <div style={{ padding: "16px 24px" }}><LoadingBlock rows={6} label="Memuat daftar pengguna\u2026" /></div>
             ) : error ? (
               <div style={{ padding: "56px 20px", textAlign: "center", color: "var(--ink-soft)", display: "grid", justifyItems: "center", gap: 4 }}>
                 <Icon name="error" style={{ fontSize: 48, color: "var(--critical)", opacity: 0.85, marginBottom: 8 }} />
@@ -1245,11 +479,6 @@ export function AdminUsersPage() {
                             {userStatusLabel(user.status)}
                           </span>
                         </td>
-                        {/* Kolom terpanjang di tabel ini: nama wilayah lengkap
-                            ("Panjang Utara, Panjang, Kota Bandar Lampung") dulu
-                            memaksa seluruh tabel melebihi wadahnya sehingga
-                            kolom Aksi terpotong. Dipotong dengan elipsis; teks
-                            penuhnya tetap terbaca lewat tooltip. */}
                         <td
                           className="users-org-cell"
                           style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: 13 }}
@@ -1258,10 +487,6 @@ export function AdminUsersPage() {
                           {user.institution || user.region_name || "-"}
                         </td>
                         <td style={{ padding: "16px 24px", textAlign: "right", whiteSpace: "nowrap" }}>
-                          {/* Aksinya identik dengan sebelumnya, hanya dikumpulkan
-                              ke menu titik tiga. Daftarnya tetap bergantung pada
-                              status & peran, jadi tak ada aksi yang tak berlaku
-                              (mis. "Setujui" pada akun yang sudah aktif). */}
                           <RowActionsMenu
                             label={`Aksi untuk ${user.name}`}
                             disabled={isActing}
@@ -1280,7 +505,7 @@ export function AdminUsersPage() {
           {!isLoading && !error && meta && meta.last_page > 1 && (
             <nav className="admin-pagination" aria-label="Navigasi halaman pengguna">
               <span style={{ color: "var(--ink-soft)", fontSize: 12 }}>
-                Menampilkan {meta.from ?? 0}–{meta.to ?? 0} dari {meta.total} pengguna
+                Menampilkan {meta.from ?? 0}\u2013{meta.to ?? 0} dari {meta.total} pengguna
               </span>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <button type="button" className="admin-page-btn" disabled={page <= 1} onClick={() => changePage(page - 1)} aria-label="Halaman sebelumnya">
@@ -1288,7 +513,7 @@ export function AdminUsersPage() {
                 </button>
                 {pageNumbers.map((n, i) => (
                   <span key={n} style={{ display: "contents" }}>
-                    {i > 0 && n - pageNumbers[i - 1] > 1 && <span style={{ alignSelf: "center", padding: "0 3px" }}>…</span>}
+                    {i > 0 && n - pageNumbers[i - 1] > 1 && <span style={{ alignSelf: "center", padding: "0 3px" }}>\u2026</span>}
                     <button type="button" className={`admin-page-btn ${n === meta.current_page ? "active" : ""}`} onClick={() => changePage(n)} aria-current={n === meta.current_page ? "page" : undefined}>{n}</button>
                   </span>
                 ))}
@@ -1299,33 +524,15 @@ export function AdminUsersPage() {
             </nav>
           )}
         </motion.div>
-      </motion.div>
 
-      {confirm && createPortal(
-        <div className="admin-confirm-overlay" role="dialog" aria-modal="true" aria-label={confirm.title} onClick={() => !isActing && setConfirm(null)}>
-          <div className="admin-confirm-card" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-              <Icon name={confirm.tone === "danger" ? "warning" : "help"} style={{ fontSize: 24, color: confirm.tone === "danger" ? "var(--critical)" : "var(--accent)" }} />
-              <h2 style={{ margin: 0, fontSize: "1.1rem" }}>{confirm.title}</h2>
-            </div>
-            <p style={{ margin: "0 0 20px", fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.6 }}>{confirm.message}</p>
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
-              <button type="button" className="btn secondary" disabled={isActing} data-loading={isActing || undefined} onClick={() => setConfirm(null)}>Batal</button>
-              <button
-                type="button"
-                className="btn primary"
-                disabled={isActing}
-                data-loading={isActing || undefined}
-                onClick={confirm.onConfirm}
-                style={confirm.tone === "danger" ? { background: "var(--critical)", borderColor: "var(--critical)" } : undefined}
-              >
-                {isActing ? "Memproses…" : confirm.confirmLabel}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body,
-      )}
+        {confirm && (
+          <ConfirmDialog
+            {...confirm}
+            onClose={() => setConfirm(null)}
+            isActing={isActing}
+          />
+        )}
+      </motion.div>
     </AppShell>
   );
 }

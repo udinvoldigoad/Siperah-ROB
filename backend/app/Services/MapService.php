@@ -10,6 +10,7 @@ use App\Support\AppTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 final class MapService
@@ -215,7 +216,8 @@ final class MapService
                     ->filter()
                     ->values()
                     ->all();
-            } catch (\Throwable) {
+            } catch (\Throwable $e) {
+                Log::warning('MapService: coastline geometries failed to load, falling back to empty set.', ['error' => $e->getMessage()]);
                 $features = [];
             }
 
@@ -396,7 +398,8 @@ final class MapService
                     ->where('column_name', $column)
                     ->where('udt_name', 'geometry')
                     ->exists();
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::warning('MapService: geometry column check failed, assuming non-geometry.', ['error' => $e->getMessage()]);
             return false;
         }
     }
@@ -405,7 +408,8 @@ final class MapService
     {
         try {
             return DB::table('pg_extension')->where('extname', 'postgis')->exists();
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::warning('MapService: PostGIS extension check failed, assuming not available.', ['error' => $e->getMessage()]);
             return false;
         }
     }

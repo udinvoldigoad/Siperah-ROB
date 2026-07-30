@@ -786,7 +786,14 @@ final class ApiFoundationTest extends TestCase
 
         app(AuditService::class)->write($request, 'audit_fail_safe_test', 'not_a_valid_outcome', 'tests:audit');
 
-        $this->assertTrue(true);
+        // Invalid audit_outcome enum value causes PostgreSQL to abort the
+        // transaction, which is caught by AuditService. Reset before asserting.
+        DB::rollBack();
+        DB::beginTransaction();
+
+        $this->assertDatabaseMissing('audit_logs', [
+            'target_resource' => 'tests:audit',
+        ]);
     }
 
     public function test_audit_prune_command_applies_retention_policy(): void
