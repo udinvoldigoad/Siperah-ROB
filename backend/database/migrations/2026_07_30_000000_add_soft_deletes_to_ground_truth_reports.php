@@ -12,15 +12,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('ground_truth_reports', function (Blueprint $table): void {
-            $table->softDeletes();
-        });
+        if (!Schema::hasColumn('ground_truth_reports', 'deleted_at')) {
+            Schema::table('ground_truth_reports', function (Blueprint $table): void {
+                $table->softDeletes();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('ground_truth_reports', function (Blueprint $table): void {
-            $table->dropSoftDeletes();
-        });
+        if (Schema::hasColumn('ground_truth_reports', 'deleted_at')) {
+            Schema::table('ground_truth_reports', function (Blueprint $table): void {
+                $table->dropSoftDeletes();
+            });
+        }
     }
 };
