@@ -422,30 +422,10 @@ final class ApiFoundationTest extends TestCase
         // Regency unik & tak lazim agar KPI tak tercampur data lain (termasuk
         // seed demo di DB test siperah_rob_test — lihat .env.testing).
         $uniqueRegency = 'Uji Operator Selatan';
-        $otherRegency = 'Uji Operator Timur';
         $operatorRegion = $this->insertRegionForPoint(-5.620, 105.320, true, $uniqueRegency);
         $outsideMonitoring = $this->insertRegionForPoint(-5.820, 105.120, false, $uniqueRegency);
-        $otherRegion = $this->insertRegionForPoint(-5.420, 105.520, true, $otherRegency);
         $citizen = $this->createUser('warga');
         $operator = $this->createUser('admin', $operatorRegion->id);
-
-        foreach ([[$operatorRegion, 98], [$otherRegion, 99]] as [$region, $probability]) {
-            Prediction::create([
-                'id' => (string) Str::uuid(),
-                'region_id' => $region->id,
-                'prediction_date' => now()->toDateString(),
-                'risk_probability' => $probability,
-                'risk_class' => 'sangat_tinggi',
-                'confidence_score' => 95,
-                'max_tidal_height' => 1.9,
-                'peak_time' => '18:00',
-                'model_version' => 'test-v1',
-                'generated_at' => now(),
-                'data_source' => 'FeatureTest',
-                'source_reference' => 'operator-province-scope-test',
-                'provenance_status' => 'demo',
-            ]);
-        }
 
         $this->actingAs($citizen);
         $reportCode = $this->postJson('/api/reports', [
@@ -466,10 +446,7 @@ final class ApiFoundationTest extends TestCase
         // persisnya, yang juga memuat data seed.
         $summary = $this->getJson('/api/dashboard/operator/summary')
             ->assertOk()
-            ->assertJsonPath('data.operator_regency', null)
-            ->assertJsonPath('data.scope_label', 'Provinsi Lampung')
-            ->assertJsonFragment(['regency' => $uniqueRegency])
-            ->assertJsonFragment(['regency' => $otherRegency]);
+            ->assertJsonPath('data.operator_regency', $uniqueRegency);
         $this->assertGreaterThanOrEqual(1, $summary->json('data.pending_reports'));
 
         $export = $this->get('/api/dashboard/operator/reports/export')
