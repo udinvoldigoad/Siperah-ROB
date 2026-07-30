@@ -255,6 +255,30 @@ export function PortalPage() {
           max-width: 680px;
           margin: 0 auto 34px;
         }
+        .hero-kicker {
+          align-items: center;
+          background: rgba(255, 255, 255, .74);
+          border: 1px solid rgba(15, 23, 42, .08);
+          border-radius: 999px;
+          box-shadow: 0 14px 40px rgba(15, 23, 42, .07);
+          color: var(--ink-primary);
+          display: inline-flex;
+          justify-content: center;
+          margin-bottom: 24px;
+          padding: 8px 17px;
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+        }
+        .kicker-title {
+          font-size: .86rem;
+          font-weight: 700;
+          letter-spacing: 0;
+        }
+        [data-theme="dark"] .hero-kicker {
+          background: rgba(15, 23, 42, .74);
+          border-color: rgba(255, 255, 255, .1);
+          box-shadow: 0 14px 38px rgba(0, 0, 0, .3);
+        }
         .hero-actions {
           display: flex;
           align-items: center;
@@ -367,21 +391,6 @@ export function PortalPage() {
           border-color: rgba(59, 130, 246, 0.25);
           color: #60a5fa;
         }
-        .live-kicker-dot {
-          animation: live-kicker-pulse 1.4s ease-in-out infinite;
-          background: #2563eb;
-          border-radius: 999px;
-          box-shadow: 0 0 0 0 rgba(37, 99, 235, .38);
-          display: inline-block;
-          height: 8px;
-          margin-right: 7px;
-          width: 8px;
-        }
-        @keyframes live-kicker-pulse {
-          0%, 100% { opacity: .55; box-shadow: 0 0 0 0 rgba(37, 99, 235, .35); }
-          50% { opacity: 1; box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
-        }
-        @media (prefers-reduced-motion: reduce) { .live-kicker-dot { animation: none; opacity: 1; } }
         @keyframes marquee-scroll {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
@@ -831,9 +840,8 @@ export function PortalPage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="hero-kicker"
-          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "6px 16px", background: "rgba(37, 99, 235, 0.1)", color: "var(--accent-blue)", borderRadius: "100px", fontSize: "0.85rem", fontWeight: 700, marginBottom: "24px" }}
         >
-          <span className="live-kicker-dot" aria-hidden="true" /> WebGIS Kebencanaan Provinsi Lampung
+          <span className="kicker-title">WebGIS Kebencanaan Provinsi Lampung</span>
         </motion.span>
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
