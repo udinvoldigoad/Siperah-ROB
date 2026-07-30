@@ -296,7 +296,7 @@ export function ResearchPortalPage() {
         {/* API Key Management Header row */}
         {isResearcher && <div className="cred-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", background: "var(--surface)", padding: "16px 24px", borderRadius: "var(--radius)", border: "1px solid var(--line)" }}>
           <div className="cred-card-info" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "var(--ocean-light, #e0f2fe)", color: "var(--ocean-dark, #0284c7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "var(--ocean-light)", color: "var(--ocean-dark)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Icon name="vpn_key" style={{ fontSize: "20px" }} />
             </div>
             <div>
@@ -366,7 +366,7 @@ export function ResearchPortalPage() {
           /* Panduan cepat API: langkah bernomor agar peneliti tak bingung mulai. */
           .api-steps { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 14px; }
           .api-steps li { position: relative; padding-left: 42px; font-size: 13.5px; color: var(--ink-soft); line-height: 1.6; counter-increment: step; }
-          .api-steps li::before { content: counter(step); position: absolute; left: 0; top: -1px; width: 28px; height: 28px; border-radius: 50%; background: var(--ocean-dark, #0284c7); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+          .api-steps li::before { content: counter(step); position: absolute; left: 0; top: -1px; width: 28px; height: 28px; border-radius: 50%; background: var(--ocean-dark); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
           .api-steps strong { color: var(--ink); font-weight: 700; }
           /* Chip kode inline yang rapi — override rule global 'code' (inline-block
              dengan margin/padding besar) yang membuat teks terpisah berantakan. */
@@ -430,11 +430,11 @@ export function ResearchPortalPage() {
                 padding: "12px 0",
                 fontSize: "14px",
                 fontWeight: 600,
-                color: activeTab === idx ? "var(--ocean-dark, #0284c7)" : "var(--ink-soft)",
+                color: activeTab === idx ? "var(--ocean-dark)" : "var(--ink-soft)",
                 border: "none",
                 background: "none",
                 cursor: "pointer",
-                borderBottom: activeTab === idx ? "2px solid var(--ocean-dark, #0284c7)" : "2px solid transparent",
+                borderBottom: activeTab === idx ? "2px solid var(--ocean-dark)" : "2px solid transparent",
                 marginBottom: "-2px",
                 transition: "all 0.2s"
               }}
@@ -527,10 +527,10 @@ export function ResearchPortalPage() {
                         </td>
                         <td style={{ padding: "16px 20px", textAlign: "right" }}>
                           <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                            <button type="button" onClick={() => handleDatasetDownload(ds, "csv")} className="btn primary" style={{ fontSize: "11px", padding: "6px 12px", background: "var(--ocean-dark, #0284c7)", color: "#fff", textDecoration: "none", borderRadius: "6px" }}>
+                            <button type="button" onClick={() => handleDatasetDownload(ds, "csv")} className="btn primary" style={{ fontSize: "11px", padding: "6px 12px", background: "var(--ocean-dark)", color: "#fff", textDecoration: "none", borderRadius: "6px" }}>
                               <Icon name="download" style={{ fontSize: "14px" }} /> CSV
                             </button>
-                            <button type="button" onClick={() => handleDatasetDownload(ds, "xlsx")} className="btn primary" style={{ fontSize: "11px", padding: "6px 12px", background: "#15803d", color: "#fff", textDecoration: "none", borderRadius: "6px", border: "1px solid #166534" }}>
+                            <button type="button" onClick={() => handleDatasetDownload(ds, "xlsx")} className="btn primary" style={{ fontSize: "11px", padding: "6px 12px", background: "var(--green-badge)", color: "#fff", textDecoration: "none", borderRadius: "6px", border: "1px solid var(--green-text)" }}>
                               <Icon name="table_view" style={{ fontSize: "14px" }} /> EXCEL
                             </button>
                             <button type="button" onClick={() => handleDatasetDownload(ds, "json")} className="btn secondary" style={{ fontSize: "11px", padding: "6px 12px", textDecoration: "none", borderRadius: "6px" }}>
@@ -561,7 +561,7 @@ export function ResearchPortalPage() {
                 <div>Menampilkan {datasetMeta?.from ?? (datasets.length ? 1 : 0)}–{datasetMeta?.to ?? datasets.length} dari {datasetMeta?.total ?? datasets.length} dataset</div>
                 <div style={{ display: "flex", gap: "4px" }}>
                   <button className="btn secondary" style={{ padding: "6px 10px" }} disabled={(datasetMeta?.current_page ?? 1) <= 1} onClick={() => changeDatasetPage((datasetMeta?.current_page ?? 1) - 1)}>‹</button>
-                  <button className="btn primary" aria-current="page" style={{ padding: "6px 12px", minWidth: 36, background: "#0284c7", borderColor: "#0369a1", color: "#fff", fontWeight: 700 }}>{datasetMeta?.current_page ?? 1}</button>
+                  <button className="btn primary" aria-current="page" style={{ padding: "6px 12px", minWidth: 36, background: "var(--ocean-mid)", borderColor: "var(--ocean-mid)", color: "var(--ink-inverse)", fontWeight: 700 }}>{datasetMeta?.current_page ?? 1}</button>
                   <button className="btn secondary" style={{ padding: "6px 10px" }} disabled={(datasetMeta?.current_page ?? 1) >= (datasetMeta?.last_page ?? 1)} onClick={() => changeDatasetPage((datasetMeta?.current_page ?? 1) + 1)}>›</button>
                 </div>
               </div>
@@ -572,9 +572,9 @@ export function ResearchPortalPage() {
           {isResearcher && activeTab === 1 && (
             <motion.div className="api-ref" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ maxWidth: "800px" }}>
               {/* Panduan cepat: orientasi "mulai dari mana" sebelum detail teknis. */}
-              <div style={{ marginBottom: "32px", padding: "22px 24px", border: "1px solid var(--line)", borderLeft: "4px solid var(--ocean-dark, #0284c7)", borderRadius: 12, background: "var(--surface-soft)" }}>
+              <div style={{ marginBottom: "32px", padding: "22px 24px", border: "1px solid var(--line)", borderLeft: "4px solid var(--ocean-dark)", borderRadius: 12, background: "var(--surface-soft)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-                  <Icon name="rocket_launch" style={{ color: "var(--ocean-dark, #0284c7)", fontSize: 22 }} />
+                  <Icon name="rocket_launch" style={{ color: "var(--ocean-dark)", fontSize: 22 }} />
                   <div style={{ fontSize: 16, fontWeight: 800, color: "var(--ink)" }}>Cara Pakai API — 3 Langkah</div>
                 </div>
                 <ol className="api-steps">
@@ -598,7 +598,7 @@ export function ResearchPortalPage() {
 
               <div style={{ marginBottom: "32px" }}>
                 <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: "var(--ink)" }}>Base URL</div>
-                <div style={{ background: "#0f172a", borderRadius: "8px", padding: "16px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "13px" }}>
+                <div style={{ background: "var(--footer-bg)", borderRadius: "8px", padding: "16px", color: "var(--footer-text)", fontFamily: "monospace", fontSize: "13px" }}>
                   {apiReference?.base_path ?? "/api/v1"}
                 </div>
               </div>
@@ -615,7 +615,7 @@ export function ResearchPortalPage() {
                     )}
                   </div>
                   <div style={{ marginTop: 12, fontSize: 12.5 }}>
-                    <Icon name="info" style={{ fontSize: 15, verticalAlign: "-2px", color: "var(--ocean-dark, #0284c7)" }} /> Belum punya key? Buat lewat tombol <strong>“Buat Kunci”</strong> di kartu <em>Kredensial API Aktif</em>. Ganti kunci kapan saja dengan <strong>“Regenerasi”</strong> (kunci lama otomatis dicabut).
+                    <Icon name="info" style={{ fontSize: 15, verticalAlign: "-2px", color: "var(--ocean-dark)" }} /> Belum punya key? Buat lewat tombol <strong>“Buat Kunci”</strong> di kartu <em>Kredensial API Aktif</em>. Ganti kunci kapan saja dengan <strong>“Regenerasi”</strong> (kunci lama otomatis dicabut).
                   </div>
                 </div>
               </div>
@@ -625,9 +625,9 @@ export function ResearchPortalPage() {
                 {(apiReference?.endpoints ?? []).map((ep, i) => (
                   <div key={i} style={{ padding: "20px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface)" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: "16px", marginBottom: ep.example_request ? "14px" : 0 }}>
-                      <div style={{ background: "#dcfce7", color: "#15803d", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 700, fontFamily: "monospace" }}>{ep.method}</div>
+                      <div style={{ background: "var(--green-badge-bg)", color: "var(--green-badge)", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 700, fontFamily: "monospace" }}>{ep.method}</div>
                       <div>
-                        <div style={{ fontFamily: "monospace", fontSize: "13px", color: "var(--ocean-dark, #0284c7)", marginBottom: "6px", fontWeight: 600 }}>{ep.path}</div>
+                        <div style={{ fontFamily: "monospace", fontSize: "13px", color: "var(--ocean-dark)", marginBottom: "6px", fontWeight: 600 }}>{ep.path}</div>
                         <div style={{ fontSize: "13px", color: "var(--ink-soft)", lineHeight: 1.5 }}>{ep.description} Scope: <code>{ep.scope}</code></div>
                         {ep.query && Object.keys(ep.query).length > 0 && (
                           <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
@@ -640,14 +640,14 @@ export function ResearchPortalPage() {
                     </div>
                     {ep.example_request && (
                       <details style={{ marginTop: "12px" }}>
-                        <summary style={{ cursor: "pointer", fontSize: "12px", fontWeight: 600, color: "var(--ocean-dark, #0284c7)" }}>Lihat contoh request &amp; response</summary>
+                        <summary style={{ cursor: "pointer", fontSize: "12px", fontWeight: 600, color: "var(--ocean-dark)" }}>Lihat contoh request &amp; response</summary>
                         <div style={{ marginTop: "10px" }}>
                           <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", marginBottom: "6px" }}>Request</div>
-                          <pre style={{ background: "#0f172a", borderRadius: 6, padding: "14px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "12px", lineHeight: 1.5, overflowX: "auto", margin: 0 }}>{ep.example_request}</pre>
+                          <pre style={{ background: "var(--footer-bg)", borderRadius: 6, padding: "14px", color: "var(--footer-text)", fontFamily: "monospace", fontSize: "12px", lineHeight: 1.5, overflowX: "auto", margin: 0 }}>{ep.example_request}</pre>
                           {ep.example_response != null && (
                             <>
                               <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", margin: "12px 0 6px" }}>Response (200)</div>
-                              <pre style={{ background: "#0f172a", borderRadius: 6, padding: "14px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "12px", lineHeight: 1.5, overflowX: "auto", margin: 0 }}>{JSON.stringify(ep.example_response, null, 2)}</pre>
+                              <pre style={{ background: "var(--footer-bg)", borderRadius: 6, padding: "14px", color: "var(--footer-text)", fontFamily: "monospace", fontSize: "12px", lineHeight: 1.5, overflowX: "auto", margin: 0 }}>{JSON.stringify(ep.example_response, null, 2)}</pre>
                             </>
                           )}
                         </div>
@@ -673,7 +673,7 @@ export function ResearchPortalPage() {
                 <div style={{ marginBottom: "32px" }}>
                   <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "12px", color: "var(--ink)" }}>Format Error</div>
                   <div style={{ padding: "16px 20px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface)" }}>
-                    <pre style={{ background: "#0f172a", borderRadius: 6, padding: "12px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "12px", margin: "0 0 12px", overflowX: "auto" }}>{JSON.stringify(apiReference.error_format.shape, null, 2)}</pre>
+                    <pre style={{ background: "var(--footer-bg)", borderRadius: 6, padding: "12px", color: "var(--footer-text)", fontFamily: "monospace", fontSize: "12px", margin: "0 0 12px", overflowX: "auto" }}>{JSON.stringify(apiReference.error_format.shape, null, 2)}</pre>
                     <div className="api-error-codes">
                       {Object.entries(apiReference.error_format.codes).map(([code, desc]) => (
                         <div key={code} className="api-error-row"><code>{code}</code><span>{desc}</span></div>
@@ -684,7 +684,7 @@ export function ResearchPortalPage() {
               )}
 
               <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "12px", color: "var(--ink)" }}>Contoh Request</div>
-              <div style={{ background: "#0f172a", borderRadius: 8, padding: "20px", color: "#e2e8f0", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.6, overflowX: "auto" }}>
+              <div style={{ background: "var(--footer-bg)", borderRadius: 8, padding: "20px", color: "var(--footer-text)", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.6, overflowX: "auto" }}>
                 <span style={{ color: "#93c5fd" }}>curl</span> -H <span style={{ color: "#86efac" }}>"{apiReference?.authentication.header ?? "X-API-Key: spr_xxx"}"</span> \<br />
                 &nbsp;&nbsp;<span style={{ color: "#86efac" }}>"{apiReference?.base_path ?? "/api/v1"}/predictions/daily?from=2026-05-21&amp;to=2026-05-21"</span>
               </div>
@@ -725,8 +725,8 @@ export function ResearchPortalPage() {
                             const failH = d.total > 0 ? Math.round((d.failed / d.total) * 100) : 0;
                             return (
                               <div key={d.day} title={`${d.day}: ${d.total} panggilan (${d.failed} gagal)`} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%", position: "relative" }}>
-                                <div style={{ height: `${h}%`, background: "var(--ocean-light, #bae6fd)", borderRadius: "3px 3px 0 0", display: "flex", flexDirection: "column", justifyContent: "flex-end", minHeight: d.total > 0 ? "2px" : 0 }}>
-                                  {failH > 0 && <div style={{ height: `${failH}%`, background: "var(--critical, #dc2626)", borderRadius: "3px 3px 0 0" }} />}
+                                <div style={{ height: `${h}%`, background: "var(--ocean-light)", borderRadius: "3px 3px 0 0", display: "flex", flexDirection: "column", justifyContent: "flex-end", minHeight: d.total > 0 ? "2px" : 0 }}>
+                                  {failH > 0 && <div style={{ height: `${failH}%`, background: "var(--critical)", borderRadius: "3px 3px 0 0" }} />}
                                 </div>
                               </div>
                             );
@@ -735,8 +735,8 @@ export function ResearchPortalPage() {
                       );
                     })()}
                     <div style={{ display: "flex", gap: "16px", marginTop: "12px", fontSize: "11px", color: "var(--ink-soft)" }}>
-                      <span><span style={{ display: "inline-block", width: 10, height: 10, background: "var(--ocean-light, #bae6fd)", borderRadius: 2, marginRight: 4, verticalAlign: "middle" }} />Berhasil</span>
-                      <span><span style={{ display: "inline-block", width: 10, height: 10, background: "var(--critical, #dc2626)", borderRadius: 2, marginRight: 4, verticalAlign: "middle" }} />Gagal</span>
+                      <span><span style={{ display: "inline-block", width: 10, height: 10, background: "var(--ocean-light)", borderRadius: 2, marginRight: 4, verticalAlign: "middle" }} />Berhasil</span>
+                      <span><span style={{ display: "inline-block", width: 10, height: 10, background: "var(--critical)", borderRadius: 2, marginRight: 4, verticalAlign: "middle" }} />Gagal</span>
                     </div>
                   </div>
 
@@ -756,10 +756,10 @@ export function ResearchPortalPage() {
                         <tbody>
                           {usage.per_endpoint.map((row, i) => (
                             <tr key={row.endpoint} style={{ borderBottom: i === usage.per_endpoint.length - 1 ? "none" : "1px solid var(--line)" }}>
-                              <td style={{ padding: "14px 20px", fontSize: "13px", fontFamily: "monospace", color: "var(--ocean-dark, #0284c7)" }}>{row.endpoint}</td>
+                              <td style={{ padding: "14px 20px", fontSize: "13px", fontFamily: "monospace", color: "var(--ocean-dark)" }}>{row.endpoint}</td>
                               <td style={{ padding: "14px 20px", fontSize: "13px", color: "var(--ink)", textAlign: "right", fontWeight: 600 }}>{row.total.toLocaleString("id-ID")}</td>
                               <td style={{ padding: "14px 20px", fontSize: "13px", color: "var(--ink)", textAlign: "right" }}>{row.success.toLocaleString("id-ID")}</td>
-                              <td style={{ padding: "14px 20px", fontSize: "13px", textAlign: "right", color: row.failed > 0 ? "var(--critical, #dc2626)" : "var(--ink-soft)", fontWeight: row.failed > 0 ? 600 : 400 }}>{row.failed.toLocaleString("id-ID")}</td>
+                              <td style={{ padding: "14px 20px", fontSize: "13px", textAlign: "right", color: row.failed > 0 ? "var(--critical)" : "var(--ink-soft)", fontWeight: row.failed > 0 ? 600 : 400 }}>{row.failed.toLocaleString("id-ID")}</td>
                             </tr>
                           ))}
                           {usage.per_endpoint.length === 0 && (
@@ -802,7 +802,7 @@ export function ResearchPortalPage() {
                     {entries.map(([license, items]) => (
                       <div key={license} style={{ padding: "20px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--surface)" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-                          <Icon name="gavel" style={{ fontSize: "18px", color: "var(--ocean-dark, #0284c7)" }} />
+                          <Icon name="gavel" style={{ fontSize: "18px", color: "var(--ocean-dark)" }} />
                           <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--ink)" }}>{license}</div>
                           <span style={{ fontSize: "11px", color: "var(--ink-soft)" }}>({items.length} dataset)</span>
                         </div>
