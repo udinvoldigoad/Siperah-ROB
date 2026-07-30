@@ -303,18 +303,17 @@ export function ProvinceDashboardPage() {
         }
         .prov-reset:hover { background: rgba(220, 38, 38, .08); }
 
+        /* KPI — selaras dengan operator-kpis */
+        .metric-grid.province-kpis .metric-card { min-height: 0; padding: 18px 20px; gap: 6px; }
+        .metric-grid.province-kpis .metric-card span { font-size: 12px; font-weight: 600; }
+        .metric-grid.province-kpis .metric-card strong { font-size: 1.8rem; font-weight: 700; }
+        .metric-grid.province-kpis .metric-card small { font-size: 11px; }
+
         @media (max-width: 768px) {
           .prov-filter { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; }
           .prov-control, .prov-reset { width: 100%; min-width: 0 !important; padding: 0 8px; font-size: 12.5px; }
           .prov-reset-suffix { display: none; }
-
-          /* KPI jadi 2 kolom di mobile (override aturan global 1fr !important),
-             padding & angka diringkas agar proporsional. */
-          .metric-grid.province-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px !important; }
-          .metric-grid.province-kpis .metric-card { padding: 18px !important; }
-          .metric-grid.province-kpis .metric-card span { font-size: 12px !important; }
-          .metric-grid.province-kpis .metric-card strong { font-size: 28px !important; }
-          .metric-grid.province-kpis .metric-card small { font-size: 11px !important; }
+          .metric-grid.province-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px; }
         }
       `}</style>
       <motion.div
@@ -355,29 +354,31 @@ export function ProvinceDashboardPage() {
         </motion.div>
 
         {/* KPI Grid */}
-        <motion.div variants={containerVariants} className="metric-grid province-kpis" style={{ marginBottom: "32px", gap: "24px" }}>
-          <motion.div variants={itemVariants} className="metric-card" style={{ padding: "28px", borderRadius: 8 }}>
-            <span style={{ fontSize: "14px", color: "var(--ink-soft)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Wilayah Pantau Aktif</span>
-            <strong style={{ color: "var(--accent)", fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.monitored_regencies}</strong>
-            <small style={{ fontSize: "13px", color: "var(--ink-soft)", display: "block", marginTop: "12px" }}>Kabupaten & Kota di Lampung</small>
-          </motion.div>
-          <motion.div variants={itemVariants} className="metric-card critical" style={{ padding: "28px", borderRadius: 8 }}>
-            <span style={{ fontSize: "14px", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Zona Risiko Tinggi</span>
-            <strong style={{ fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.high_risk_villages}</strong>
-            <small style={{ fontSize: "13px", display: "block", marginTop: "12px" }}>Kelurahan kelas Tinggi & Sangat Tinggi</small>
-          </motion.div>
-          <motion.div variants={itemVariants} className="metric-card medium" style={{ padding: "28px", borderRadius: 8 }}>
-            <span style={{ fontSize: "14px", color: "var(--ink-soft)", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Warga Terdampak Potensial</span>
-            <strong style={{ fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{toNumber(summary.risk_population).toLocaleString("id-ID")}</strong>
-            <small style={{ fontSize: "13px", color: "var(--ink-soft)", display: "block", marginTop: "12px" }}>
-              {summary.population_audit?.status === "bps_verified" ? "BPS terverifikasi" : summary.population_audit?.status === "region_population_available" ? "Berdasarkan data region" : "Data populasi belum lengkap"}
-            </small>
-          </motion.div>
-          <motion.div variants={itemVariants} className="metric-card success" style={{ padding: "28px", borderRadius: 8 }}>
-            <span style={{ fontSize: "14px", fontWeight: 600, display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Laporan Masuk (Bulan Ini)</span>
-            <strong style={{ fontSize: "36px", fontWeight: 900, display: "block", lineHeight: 1 }}>{summary.validated_reports_this_month}</strong>
-            <small style={{ fontSize: "13px", display: "block", marginTop: "12px" }}>Telah divalidasi oleh operator</small>
-          </motion.div>
+        <motion.div variants={containerVariants} className="metric-grid province-kpis" style={{ marginBottom: "32px" }}>
+          {[
+            { title: "Wilayah Pantau Aktif", val: summary.monitored_regencies, sub: "Kabupaten & Kota di Lampung", cls: "" },
+            { title: "Zona Risiko Tinggi", val: summary.high_risk_villages, sub: "Kelurahan kelas Tinggi & Sangat Tinggi", cls: "critical" },
+            { title: "Warga Terdampak Potensial", val: toNumber(summary.risk_population).toLocaleString("id-ID"), sub: summary.population_audit?.status === "bps_verified" ? "BPS terverifikasi" : summary.population_audit?.status === "region_population_available" ? "Berdasarkan data region" : "Data populasi belum lengkap", cls: "medium", customColor: "var(--medium)" },
+            { title: "Laporan Masuk (Bulan Ini)", val: summary.validated_reports_this_month, sub: "Telah divalidasi oleh operator", cls: "success" },
+          ].map((kpi, idx) => (
+            <motion.div
+              key={idx}
+              variants={itemVariants}
+              whileHover={{ y: -6, boxShadow: "0 12px 32px rgba(0,0,0,0.08)" }}
+              className={`metric-card ${kpi.cls}`}
+            >
+              <span style={{ color: kpi.customColor ? "var(--ink-soft)" : undefined }}>{kpi.title}</span>
+              <motion.strong
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2 + (idx * 0.1), type: "spring", stiffness: 200 }}
+                style={{ color: kpi.customColor }}
+              >
+                {kpi.val}
+              </motion.strong>
+              <small style={{ color: kpi.customColor ? "var(--ink-soft)" : undefined }}>{kpi.sub}</small>
+            </motion.div>
+          ))}
         </motion.div>
 
         {/* Full Width Layout */}
