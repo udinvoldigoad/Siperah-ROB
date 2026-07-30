@@ -25,7 +25,7 @@
 |---|---|---|---|---|---|---|
 | 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) | 1 | 0 | 1 | 2 | **2 ✅** |
 | 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **4 ✅** |
-| 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | **1** |
+| 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | **2** |
 | 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | 0 |
 | 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | 0 |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | 0 |
@@ -117,7 +117,7 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
   Keduanya melebihi `DashboardController` (507) yang sudah ditandai kegemukan di audit sebelumnya.
   **Aksi:** tarik logika kueri ke service, samakan polanya dengan `ReportAccessService`.
 
-- [ ] 🟠 **`MT-3` — Dua normalisasi nama wilayah yang berdiri sendiri-sendiri** — `backend/app/Http/Controllers/Api/DashboardController.php:503` & `backend/app/Services/NotificationService.php` (`matchesMonitoredRegions`) *(bukti: kode)*
+- [x] 🟠 **`MT-3` — Dua normalisasi nama wilayah yang berdiri sendiri-sendiri** — `backend/app/Http/Controllers/Api/DashboardController.php:503` & `backend/app/Services/NotificationService.php` (`matchesMonitoredRegions`) *(bukti: kode)* ✅ `b690e99`
   Keduanya sama-sama membuang prefiks "Kabupaten/Kota" agar "Bandar Lampung" cocok dengan "Kota Bandar Lampung", tapi ditulis terpisah. Kalau satu diperbaiki dan yang lain tidak, notifikasi dan dashboard akan diam-diam menyaring wilayah secara berbeda — kegagalan yang tak menimbulkan error, hanya data yang hilang.
   **Aksi:** satukan jadi satu helper (mis. `App\Support\RegionName`) dan pakai di kedua tempat.
 
