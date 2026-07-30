@@ -249,7 +249,7 @@ export function NotificationSettingsPage() {
               </div>
             </div>
             {channelOptions.map((ch) => (
-              <label key={ch.id} className="ns-row" style={{ flexWrap: "wrap" }}>
+              <div key={ch.id} className="ns-row" style={{ flexWrap: "wrap" }}>
                 <span className="ns-left">
                   <span className="ns-ico"><Icon name={ch.icon} style={{ fontSize: 19, color: "var(--ink-soft)" }} /></span>
                   <span>
@@ -265,17 +265,17 @@ export function NotificationSettingsPage() {
                       style={{ padding: "4px 10px", fontSize: 11, minHeight: 0 }}
                       disabled={testingChannel === ch.id}
                       data-loading={testingChannel === ch.id || undefined}
-                      onClick={(e) => { e.preventDefault(); sendTestNotification(ch.id); }}
+                      onClick={() => sendTestNotification(ch.id)}
                     >
                       {testingChannel === ch.id ? "Mengirim..." : "Kirim Uji"}
                     </button>
                   )}
-                  <span className="ns-switch">
+                  <label className="ns-switch">
                     <input type="checkbox" checked={channels.includes(ch.id)} onChange={() => toggleChannel(ch.id)} />
                     <span className="ns-track" />
-                  </span>
+                  </label>
                 </span>
-              </label>
+              </div>
             ))}
           </motion.section>
 
