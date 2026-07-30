@@ -28,7 +28,7 @@
 | 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | **2** |
 | 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | 0 |
 | 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | 0 |
-| 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | 0 |
+| 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | **1** |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | 0 |
 | 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | 0 |
 | | **Total** | **1** | **23** | **15** | **39** | **7** |
@@ -125,9 +125,9 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
 
 ## 6. 🧪 Test & tooling
 
-- [ ] 🟠 **`TS-1` — Tak ada cara cepat menguji pengiriman email** — `backend/app/Console/Commands/SendTestNotification.php` *(bukti: kode)*
+- [x] 🟠 **`TS-1` — Tak ada cara cepat menguji pengiriman email** — `backend/app/Console/Commands/SendTestNotification.php` *(bukti: kode)*
   `php artisan notify:test <email>` hanya mengirim `TestPushNotification` yang kanalnya push saja. Saat memperbaiki kanal email, tidak ada perintah untuk membuktikan SMTP produksi benar-benar jalan tanpa memicu kejadian sungguhan.
-  **Aksi:** tambahkan opsi `--mail` yang mengirim notifikasi uji lewat kanal mail.
+  **Aksi:** tambahkan opsi `--mail` yang mengirim notifikasi uji lewat kanal mail. ✅ `b690e99`
 
 ---
 

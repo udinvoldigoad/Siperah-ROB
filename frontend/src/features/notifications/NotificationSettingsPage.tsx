@@ -171,6 +171,23 @@ export function NotificationSettingsPage() {
     }
   };
 
+  const [testingChannel, setTestingChannel] = useState<string | null>(null);
+
+  const sendTestNotification = async (channel: string) => {
+    setTestingChannel(channel);
+    try {
+      await api("/notifications/test", {
+        method: "POST",
+        body: JSON.stringify({ channel }),
+      });
+      toast.success(channel === "email" ? "Email uji coba dikirim." : "Notifikasi push uji dikirim.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Gagal mengirim notifikasi uji."));
+    } finally {
+      setTestingChannel(null);
+    }
+  };
+
   const channelOptions = [
     { id: "browser", icon: "notifications", title: "Push Notifikasi Browser", desc: "Notifikasi real-time di desktop & mobile" },
     { id: "email", icon: "mail", title: "Email Instansi", desc: "Pesan dikirim ke alamat email Anda" },
@@ -232,7 +249,7 @@ export function NotificationSettingsPage() {
               </div>
             </div>
             {channelOptions.map((ch) => (
-              <label key={ch.id} className="ns-row">
+              <label key={ch.id} className="ns-row" style={{ flexWrap: "wrap" }}>
                 <span className="ns-left">
                   <span className="ns-ico"><Icon name={ch.icon} style={{ fontSize: 19, color: "var(--ink-soft)" }} /></span>
                   <span>
@@ -240,9 +257,23 @@ export function NotificationSettingsPage() {
                     <span className="ns-row-desc" style={{ display: "block" }}>{ch.desc}</span>
                   </span>
                 </span>
-                <span className="ns-switch">
-                  <input type="checkbox" checked={channels.includes(ch.id)} onChange={() => toggleChannel(ch.id)} />
-                  <span className="ns-track" />
+                <span style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+                  {channels.includes(ch.id) && (
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      style={{ padding: "4px 10px", fontSize: 11, minHeight: 0 }}
+                      disabled={testingChannel === ch.id}
+                      data-loading={testingChannel === ch.id || undefined}
+                      onClick={(e) => { e.preventDefault(); sendTestNotification(ch.id); }}
+                    >
+                      {testingChannel === ch.id ? "Mengirim..." : "Kirim Uji"}
+                    </button>
+                  )}
+                  <span className="ns-switch">
+                    <input type="checkbox" checked={channels.includes(ch.id)} onChange={() => toggleChannel(ch.id)} />
+                    <span className="ns-track" />
+                  </span>
                 </span>
               </label>
             ))}

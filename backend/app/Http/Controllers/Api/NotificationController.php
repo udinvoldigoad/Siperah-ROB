@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\NotificationSettingsRequest;
+use App\Notifications\TestMailNotification;
+use App\Notifications\TestPushNotification;
 use App\Services\AuditService;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
@@ -97,5 +99,28 @@ final class NotificationController
         $request->user()->deletePushSubscription($request->endpoint);
         
         return response()->json(['message' => 'Berhasil menghapus push notifikasi browser.']);
+    }
+
+    public function sendTest(Request $request): JsonResponse
+    {
+        $channel = (string) $request->input('channel', 'browser');
+        $user = $request->user();
+
+        if ($channel === 'email') {
+            $user->notify(new TestMailNotification);
+            $this->audit->write($request, 'test_notification', 'success', "user:{$user->id}", ['channel' => 'email']);
+
+            return response()->json(['message' => 'Email uji coba dikirim. Cek kotak masuk Anda.']);
+        }
+
+        $count = $user->pushSubscriptions()->count();
+        if ($count === 0) {
+            return response()->json(['message' => 'Belum ada perangkat terdaftar. Aktifkan Push Notifikasi Browser terlebih dahulu.'], 400);
+        }
+
+        $user->notify(new TestPushNotification);
+        $this->audit->write($request, 'test_notification', 'success', "user:{$user->id}", ['channel' => 'browser']);
+
+        return response()->json(['message' => "Notifikasi push uji dikirim ke {$count} perangkat."]);
     }
 }
