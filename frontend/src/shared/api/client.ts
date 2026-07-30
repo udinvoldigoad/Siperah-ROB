@@ -85,7 +85,11 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     try {
       body = (await response.json()) as ApiErrorBody;
       if (body?.message) msg = body.message;
-    } catch {}
+    } catch {
+      if (import.meta.env.DEV) {
+        response.clone().text().then((raw) => console.debug("[api] non-JSON error response", raw));
+      }
+    }
 
     if (response.status === 401 && !isLoginPath) {
       msg = "Sesi Anda telah habis. Silakan login kembali.";

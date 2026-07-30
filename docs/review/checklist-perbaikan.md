@@ -141,7 +141,7 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
   Kolomnya `text` tanpa batas; `max:1000` hanya dijaga `RegisterRequest`. Jalur lain yang menulis kolom ini di kemudian hari tidak akan terjaga.
   **Aksi:** *(cukup disadari)* — satu-satunya jalur tulis adalah RegisterRequest.
 
-- [ ] 🟡 **`DT-3` — `catch {}` menelan galat parse JSON di klien API** — `frontend/src/shared/api/client.ts:57` *(bukti: kode)*
+- [x] 🟡 **`DT-3` — `catch {}` menelan galat parse JSON di klien API** — `frontend/src/shared/api/client.ts:57` *(bukti: kode)*
   Kalau respons galat bukan JSON (mis. halaman error HTML dari server), badannya dibuang diam-diam dan pengguna hanya melihat pesan generik. Sengaja fail-safe, tapi menyulitkan diagnosa persis saat paling dibutuhkan.
   **Aksi:** tetap jangan melempar, tapi `console.debug` badan mentahnya saat `import.meta.env.DEV`.
 
