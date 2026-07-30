@@ -7,9 +7,9 @@ use App\Http\Resources\ApiKeyResource;
 use App\Models\ApiKey;
 use App\Models\Dataset;
 use App\Services\AuditService;
+use App\Services\ResearchDatasetService;
 use App\Support\AppTime;
 use App\Support\CsvWriter;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -20,11 +20,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ResearchController
 {
-    /** Hitungan rekaman hanya berubah saat pipeline ML jalan (harian)
-     *  atau saat operator memvalidasi laporan — 30 menit lebih dari cukup. */
-    private const RECORD_COUNT_TTL_MINUTES = 30;
-
-    public function __construct(private readonly AuditService $audit) {}
+    public function __construct(
+        private readonly AuditService $audit,
+        private readonly ResearchDatasetService $datasets,
+    ) {}
 
     public function datasets(Request $request): JsonResponse
     {
@@ -63,12 +62,8 @@ final class ResearchController
 
         $paginator = $query->paginate($filters['per_page'] ?? 10);
 
-        // REKAMAN dihitung langsung dari query data nyata (sama dengan yang
-        // diekspor saat download), bukan kolom seeder statis — agar angka selalu
-        // cocok dengan isi CSV/JSON yang bisa diunduh. Hitungannya di-cache
-        // (lihat datasetRecordCount) karena tiap dataset butuh COUNT sendiri.
         $items = array_map(function (Dataset $dataset): Dataset {
-            $dataset->record_count = $this->datasetRecordCount($dataset);
+            $dataset->record_count = $this->datasets->recordCount($dataset);
 
             return $dataset;
         }, $paginator->items());
@@ -82,22 +77,9 @@ final class ResearchController
                 'total' => $paginator->total(),
                 'from' => $paginator->firstItem(),
                 'to' => $paginator->lastItem(),
-                'available_regencies' => $this->availableRegencies(),
+                'available_regencies' => $this->datasets->availableRegencies(),
             ],
         ]);
-    }
-
-    /** Daftar kabupaten/kota pesisir yang dipantau, untuk opsi filter dataset. */
-    private function availableRegencies(): array
-    {
-        return DB::table('regions')
-            ->whereNotNull('regency')
-            ->where('coastal_flag', true)
-            ->distinct()
-            ->orderBy('regency')
-            ->pluck('regency')
-            ->values()
-            ->all();
     }
 
     public function downloadDataset(Request $request, Dataset $dataset): JsonResponse|StreamedResponse
@@ -108,7 +90,7 @@ final class ResearchController
         ]);
         $data['format'] ??= 'json';
 
-        [$query, $filename] = $this->queryForDataset($dataset);
+        [$query, $filename] = $this->datasets->queryForDataset($dataset);
 
         $this->audit->write($request, 'download_research_dataset', 'success', "datasets:{$dataset->id}", [
             'format' => $data['format'],
@@ -190,7 +172,7 @@ final class ResearchController
             'total_records' => Cache::remember(
                 'research:total-records',
                 now()->addMinutes(self::RECORD_COUNT_TTL_MINUTES),
-                fn (): int => (int) Dataset::all()->sum(fn (Dataset $dataset): int => $this->datasetRecordCount($dataset)),
+                fn (): int => (int) Dataset::all()->sum(fn (Dataset $dataset): int => $this->datasets->recordCount($dataset)),
             ),
             'downloads_this_month' => DB::table('audit_logs')
                 ->where('action', 'download_research_dataset')
@@ -397,10 +379,10 @@ final class ResearchController
     public function dailyPredictions(ResearchDataRequest $request): JsonResponse|StreamedResponse
     {
         $data = $request->validated();
-        $query = $this->dailyPredictionsQuery()
-            ->when($data['from'] ?? null, fn (Builder $q, string $from) => $q->whereDate('prediction_date', '>=', $from))
-            ->when($data['to'] ?? null, fn (Builder $q, string $to) => $q->whereDate('prediction_date', '<=', $to))
-            ->when($data['region'] ?? null, fn (Builder $q, string $region) => $q->where('predictions.region_id', $region))
+        $query = $this->datasets->dailyPredictionsQuery()
+            ->when($data['from'] ?? null, fn ($q, string $from) => $q->whereDate('prediction_date', '>=', $from))
+            ->when($data['to'] ?? null, fn ($q, string $to) => $q->whereDate('prediction_date', '<=', $to))
+            ->when($data['region'] ?? null, fn ($q, string $region) => $q->where('predictions.region_id', $region))
             ->orderByDesc('prediction_date');
 
         return $this->exportOrPaginate($query, $data, 'daily_predictions.csv');
@@ -409,10 +391,10 @@ final class ResearchController
     public function validatedReports(ResearchDataRequest $request): JsonResponse|StreamedResponse
     {
         $data = $request->validated();
-        $query = $this->validatedReportsQuery()
-            ->when($data['from'] ?? null, fn (Builder $q, string $from) => $q->whereDate('reports.incident_time', '>=', $from))
-            ->when($data['to'] ?? null, fn (Builder $q, string $to) => $q->whereDate('reports.incident_time', '<=', $to))
-            ->when($data['region'] ?? null, fn (Builder $q, string $region) => $q->where('reports.region_id', $region))
+        $query = $this->datasets->validatedReportsQuery()
+            ->when($data['from'] ?? null, fn ($q, string $from) => $q->whereDate('reports.incident_time', '>=', $from))
+            ->when($data['to'] ?? null, fn ($q, string $to) => $q->whereDate('reports.incident_time', '<=', $to))
+            ->when($data['region'] ?? null, fn ($q, string $region) => $q->where('reports.region_id', $region))
             ->orderByDesc('reports.incident_time');
 
         return $this->exportOrPaginate($query, $data, 'validated_reports.csv');
@@ -421,129 +403,16 @@ final class ResearchController
     public function tidal(ResearchDataRequest $request): JsonResponse|StreamedResponse
     {
         $data = $request->validated();
-        $query = $this->tidalQuery()
-            ->when($data['station'] ?? null, fn (Builder $q, string $station) => $q->where('tidal_stations.code', $station))
-            ->when($data['from'] ?? null, fn (Builder $q, string $from) => $q->whereDate('recorded_at', '>=', $from))
-            ->when($data['to'] ?? null, fn (Builder $q, string $to) => $q->whereDate('recorded_at', '<=', $to))
+        $query = $this->datasets->tidalQuery()
+            ->when($data['station'] ?? null, fn ($q, string $station) => $q->where('tidal_stations.code', $station))
+            ->when($data['from'] ?? null, fn ($q, string $from) => $q->whereDate('recorded_at', '>=', $from))
+            ->when($data['to'] ?? null, fn ($q, string $to) => $q->whereDate('recorded_at', '<=', $to))
             ->orderByDesc('recorded_at');
 
         return $this->exportOrPaginate($query, $data, 'tidal_data.csv');
     }
 
-    /**
-     * Jumlah rekaman nyata sebuah dataset, di-cache.
-     *
-     * Filternya (periode + cakupan kabupaten) berbeda-beda per dataset, jadi
-     * tak bisa disatukan jadi satu query agregat — yang bisa dilakukan adalah
-     * berhenti menghitung ulang tiap request. Isi datanya sendiri hanya berubah
-     * sekali sehari (pipeline ML) atau saat operator memvalidasi laporan.
-     */
-    private function datasetRecordCount(Dataset $dataset): int
-    {
-        // Tabel `datasets` tidak punya `updated_at` (timestamps=false), jadi
-        // kunci cache dibangun dari SELURUH kolom yang membentuk query-nya:
-        // begitu metadata dataset diubah, kuncinya ikut berubah dan hitungannya
-        // dihitung ulang tanpa perlu invalidasi manual.
-        $signature = md5(json_encode([
-            $dataset->dataset_type,
-            $dataset->period_start?->toDateString(),
-            $dataset->period_end?->toDateString(),
-            $dataset->coverage_regencies,
-        ]));
-
-        return Cache::remember(
-            "research:dataset-count:{$dataset->id}:{$signature}",
-            now()->addMinutes(self::RECORD_COUNT_TTL_MINUTES),
-            fn (): int => (int) $this->queryForDataset($dataset)[0]->count(),
-        );
-    }
-
-    private function queryForDataset(Dataset $dataset): array
-    {
-        $type = mb_strtolower($dataset->dataset_type);
-
-        // Metadata dataset (periode & cakupan kabupaten) HARUS membatasi isi
-        // unduhan — tanpa ini kolom "Periode/Cakupan" di UI mendeskripsikan
-        // subset sementara file berisi seluruh tabel.
-        $coverage = collect($dataset->coverage_regencies ?? [])
-            ->map(fn (string $name) => preg_replace('/^(kabupaten|kota)\s+/i', '', mb_strtolower(trim($name))))
-            ->filter()
-            ->values();
-        $regencyFilter = function (Builder $query) use ($coverage): Builder {
-            if ($coverage->isEmpty()) {
-                return $query;
-            }
-            return $query->where(function (Builder $q) use ($coverage): void {
-                foreach ($coverage as $name) {
-                    $q->orWhereRaw("REGEXP_REPLACE(LOWER(TRIM(regions.regency)), '^(kabupaten|kota)\\s+', '') = ?", [$name]);
-                }
-            });
-        };
-
-        if (str_contains($type, 'tidal') || str_contains($type, 'pasang')) {
-            // Pasut per stasiun laut — cakupan kabupaten tidak berlaku 1:1,
-            // tapi periode tetap dihormati.
-            $query = $this->tidalQuery()
-                ->when($dataset->period_start, fn (Builder $q) => $q->whereDate('recorded_at', '>=', $dataset->period_start))
-                ->when($dataset->period_end, fn (Builder $q) => $q->whereDate('recorded_at', '<=', $dataset->period_end))
-                ->orderByDesc('recorded_at');
-            return [$query, 'tidal_data.csv'];
-        }
-
-        if (str_contains($type, 'ground truth') || str_contains($type, 'report')) {
-            $query = $regencyFilter($this->validatedReportsQuery())
-                ->when($dataset->period_start, fn (Builder $q) => $q->whereDate('reports.incident_time', '>=', $dataset->period_start))
-                ->when($dataset->period_end, fn (Builder $q) => $q->whereDate('reports.incident_time', '<=', $dataset->period_end))
-                ->orderByDesc('reports.incident_time');
-            return [$query, 'validated_reports.csv'];
-        }
-
-        $query = $regencyFilter($this->dailyPredictionsQuery())
-            ->when($dataset->period_start, fn (Builder $q) => $q->whereDate('prediction_date', '>=', $dataset->period_start))
-            ->when($dataset->period_end, fn (Builder $q) => $q->whereDate('prediction_date', '<=', $dataset->period_end))
-            ->orderByDesc('prediction_date');
-        return [$query, 'daily_predictions.csv'];
-    }
-
-    private function dailyPredictionsQuery(): Builder
-    {
-        return DB::table('predictions')
-            ->join('regions', 'predictions.region_id', '=', 'regions.id')
-            ->select([
-                'predictions.id', 'predictions.prediction_date', 'predictions.risk_probability',
-                'predictions.risk_class', 'predictions.confidence_score', 'predictions.max_tidal_height',
-                'predictions.peak_time', 'predictions.model_version', 'predictions.generated_at',
-                'predictions.provenance_status', 'regions.region_code', 'regions.village',
-                'regions.district', 'regions.regency',
-            ]);
-    }
-
-    private function validatedReportsQuery(): Builder
-    {
-        return DB::table('ground_truth_reports as reports')
-            ->join('regions', 'reports.region_id', '=', 'regions.id')
-            ->where('reports.status', 'divalidasi')
-            ->selectRaw(
-                'reports.id, reports.report_code, regions.region_code, regions.village, regions.district, regions.regency,
-                 ROUND(reports.latitude, 3) AS latitude_approx,
-                 ROUND(reports.longitude, 3) AS longitude_approx,
-                 reports.severity, reports.water_height_cm, reports.incident_time, reports.validated_at'
-            );
-    }
-
-    private function tidalQuery(): Builder
-    {
-        return DB::table('tidal_data')
-            ->leftJoin('tidal_stations', 'tidal_data.station_id', '=', 'tidal_stations.id')
-            ->select([
-                'tidal_data.id', 'tidal_stations.code as station_code', 'tidal_stations.name as station_name',
-                'tidal_data.recorded_at', 'tidal_data.tidal_height', 'tidal_data.unit', 'tidal_data.datum',
-                'tidal_data.data_type', 'tidal_data.event_type', 'tidal_data.source',
-                'tidal_data.provenance_status', 'tidal_data.quality_status',
-            ]);
-    }
-
-    private function exportOrPaginate(Builder $query, array $data, string $filename, bool $fullExport = false): JsonResponse|StreamedResponse
+    private function exportOrPaginate($query, array $data, string $filename, bool $fullExport = false): JsonResponse|StreamedResponse
     {
         // Unduhan JSON (fullExport): file lengkap & rapi — pretty-print, semua baris
         // via cursor (hemat memori), sekelas CSV. API v1 tetap paginated/compact.

@@ -27,11 +27,11 @@
 | 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **4 ✅** |
 | 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | **2** |
 | 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | 0 |
-| 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | 0 |
+| 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | **1** |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | **1** |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | **2** |
 | 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | 0 |
-| | **Total** | **1** | **23** | **15** | **39** | **7** |
+| | **Total** | **1** | **23** | **15** | **39** | **8** |
 
 ---
 
@@ -113,7 +113,7 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
   File terbesar di frontend. Memuat 4 modal (tambah pengguna, tinjau izin API, kelola pengguna, tinjau permohonan peneliti), 2 komponen dropdown, tabel, filter, paginasi, dan seluruh CSS-nya dalam satu berkas.
   **Aksi:** pisahkan tiap modal ke berkasnya sendiri; `RowActionsMenu` & `RegionCombobox` layak naik ke `shared/components`.
 
-- [ ] 🟠 **`MT-2` — Controller gemuk: `PublicMapController` 730 baris, `ResearchController` 693** — `backend/app/Http/Controllers/Api/` *(bukti: kode)*
+- [x] 🟠 **`MT-2` — Controller gemuk: `PublicMapController` 730 baris, `ResearchController` 693** — `backend/app/Http/Controllers/Api/` *(bukti: kode)*
   Keduanya melebihi `DashboardController` (507) yang sudah ditandai kegemukan di audit sebelumnya.
   **Aksi:** tarik logika kueri ke service, samakan polanya dengan `ReportAccessService`.
 
