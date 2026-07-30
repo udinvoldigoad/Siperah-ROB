@@ -28,7 +28,6 @@ class UserResource extends JsonResource
             // di atas kolom institution yang sudah tampil. Sekarang isinya
             // alasan asli yang ditulis pemohon saat mendaftar.
             'permission_workflow' => $this->role === 'peneliti' ? [
-                'status' => $this->status,
                 'institution' => $this->institution,
                 'reason' => $this->research_purpose,
                 // Admin tak boleh menyetujui akun yang kepemilikan emailnya

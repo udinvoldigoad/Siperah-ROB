@@ -24,7 +24,8 @@ return new class extends Migration
         // lewat kode PHP, bukan SQL murni, agar logika identik dengan
         // RegionMonitoringService::isPointMonitored (termasuk fallback non-PostGIS).
         $monitoring = app(\App\Services\RegionMonitoringService::class);
-        \App\Models\GroundTruthReport::whereNull('is_within_monitoring_area')
+        \App\Models\GroundTruthReport::withoutGlobalScopes()
+            ->whereNull('is_within_monitoring_area')
             ->with('region')
             ->chunkById(100, function ($reports) use ($monitoring): void {
                 foreach ($reports as $report) {

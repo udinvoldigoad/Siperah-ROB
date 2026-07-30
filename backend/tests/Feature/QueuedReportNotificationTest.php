@@ -49,7 +49,7 @@ final class QueuedReportNotificationTest extends TestCase
             'sla' => $this->queuePayload($user, new ReportSlaOverdueNotification($summary)),
         ];
 
-        GroundTruthReport::where('id', $report->id)->delete();
+        $report->forceDelete();
         self::assertDatabaseMissing('ground_truth_reports', ['id' => $report->id]);
 
         foreach ($payloads as $label => $payload) {
@@ -75,7 +75,7 @@ final class QueuedReportNotificationTest extends TestCase
         $notification = new ReportStatusUpdatedNotification(ReportSummary::from($report));
         $payload = $this->queuePayload($user, $notification);
 
-        GroundTruthReport::where('id', $report->id)->delete();
+        $report->forceDelete();
 
         /** @var SendQueuedNotifications $job */
         $job = unserialize($payload);

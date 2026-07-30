@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GroundTruthReport extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'ground_truth_reports';
 
     public $incrementing = false;
@@ -37,6 +40,7 @@ class GroundTruthReport extends Model
         'water_height_cm' => 'integer',
         'incident_time' => 'datetime',
         'validated_at' => 'datetime',
+        'deleted_at' => 'datetime',
         'is_within_monitoring_area' => 'boolean',
     ];
 

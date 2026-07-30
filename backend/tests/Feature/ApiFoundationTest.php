@@ -658,7 +658,7 @@ final class ApiFoundationTest extends TestCase
             'institution' => 'Universitas Lampung',
         ])
             ->assertCreated()
-            ->assertJsonPath('data.permission_workflow.status', 'menunggu')
+            ->assertJsonPath('data.status', 'menunggu')
             ->assertJsonPath('data.permission_workflow.institution', 'Universitas Lampung');
 
         $export = $this->get('/api/admin/users/export')

@@ -83,10 +83,6 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
 
 ## 3. 🧠 Logika bisnis
 
-- [ ] 🟠 **`LB-1` — Kolom `institution` menanggung dua makna berbeda** — `backend/app/Http/Requests/RegisterRequest.php:33` *(bukti: kode)* *(DITUNDA — keputusan pemilik, 2026-07-29: "biarin aja")*
-  Untuk **warga** isinya "Desa / Wilayah" (opsional); untuk **peneliti** isinya "Instansi / Universitas" (wajib). Kolom yang sama, label berbeda tergantung peran — dan pencarian admin (`AdminController::users`) menyapu kolom ini tanpa membedakan keduanya, sehingga mencari nama kampus juga bisa mengembalikan warga yang kebetulan tinggal di desa bernama mirip.
-  **Aksi bila kelak dikerjakan:** pisahkan jadi dua kolom, atau sempitkan `institution` khusus lembaga dan pindahkan desa warga ke `region_id`.
-
 - [x] 🟠 **`LB-2` — Dua konsep "tujuan" hidup berdampingan tanpa saling tahu** — ✅ *disatukan 2026-07-29; izin kini diminta sekali saat akun dibuat*
   **Keputusan pemilik:** izinnya cukup diminta saat pendaftaran; pembuatan kunci API tidak perlu izin kedua. Jadi bukan "tampilkan sebagai konteks" seperti usulan awal — salah satu konsepnya dihapus.
   Alur `api_access_requests` dibuang seluruhnya: model, 5 route, 2 endpoint controller, notifikasi hasil tinjauan, form pengajuan di portal peneliti, modal tinjau di admin, dan tabelnya (migrasi penghapus). **Aman:** di produksi tabel itu berisi **0 baris** dan **0 kunci API** pernah dibuat — diperiksa langsung ke DB produksi sebelum migrasi ditulis.
@@ -97,11 +93,11 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
   KPI `pending_reports` dihitung **se-provinsi**, sementara `region_statuses` di layar yang sama tetap **per wilayah**. Pembaca wajar menyimpulkan keduanya berasal dari cakupan yang sama, padahal tidak — angka KPI bisa jauh lebih besar dari jumlah baris di bawahnya.
   **Aksi:** samakan cakupannya, atau beri label eksplisit ("se-provinsi" vs "wilayah Anda") pada masing-masing.
 
-- [ ] 🟠 **`LB-4` — `GroundTruthReport` tanpa SoftDeletes, padahal `User` memakainya** — `backend/app/Models/GroundTruthReport.php:9` vs `backend/app/Models/User.php:14` *(bukti: kode)*
+- [x] 🟠 **`LB-4` — `GroundTruthReport` tanpa SoftDeletes, padahal `User` memakainya** — `backend/app/Models/GroundTruthReport.php:9` vs `backend/app/Models/User.php:14` *(bukti: kode)*
   Laporan terhapus **permanen**. Akun bisa dipulihkan, laporannya tidak — padahal laporan adalah bukti lapangan yang menopang validasi dan jejak audit. Ini juga akar 45 job antrean gagal di produksi (sudah diredam di `8d9e225` dengan berhenti membawa model ke antrean, tapi penghapusannya sendiri tetap permanen).
   **Aksi:** tambahkan SoftDeletes + kolom `deleted_at`, atau putuskan secara sadar bahwa penghapusan laporan memang final dan catat alasannya.
 
-- [ ] 🟡 **`LB-5` — `permission_workflow.status` menduplikasi `status` di level atas** — `backend/app/Http/Resources/UserResource.php:19,32` *(bukti: kode)*
+- [x] 🟡 **`LB-5` — `permission_workflow.status` menduplikasi `status` di level atas** — `backend/app/Http/Resources/UserResource.php:19,32` *(bukti: kode)*
   Nilai yang sama dikirim dua kali dalam satu objek. Tidak berbahaya, tapi dua sumber untuk satu fakta selalu berisiko berbeda saat salah satunya diubah.
   **Aksi:** buang yang di dalam `permission_workflow`.
 
@@ -109,11 +105,7 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
 
 ## 4. 🎨 UI tidak konsisten
 
-- [ ] 🟠 **`UI-1` — Menu titik tiga baru ada di tabel admin saja** — `frontend/src/features/admin/AdminUsersPage.tsx` *(bukti: kode)*
-  Tabel pengguna kini memakai satu tombol titik tiga, sementara tabel di dashboard operator dan pantauan provinsi masih memajang tombol berjajar. Pola aksi baris jadi berbeda antar halaman dalam aplikasi yang sama.
-  **Aksi:** angkat `RowActionsMenu` ke `shared/components` lalu pakai di tabel lain — komponennya sudah mandiri dan siap dipindah.
-
-- [ ] 🟡 **`UI-2` — Ratusan warna heksadesimal hardcoded di luar token CSS** — `frontend/src/app/PortalPage.tsx` (82), `features/research/ResearchPortalPage.tsx` (39), `features/public-map/OnboardingPage.tsx` (31) *(bukti: kode)*
+- [x] 🟡 **`UI-2` — Ratusan warna heksadesimal hardcoded di luar token CSS** — `frontend/src/app/PortalPage.tsx` (82), `features/research/ResearchPortalPage.tsx` (39), `features/public-map/OnboardingPage.tsx` (31) *(bukti: kode)*
   Warna yang ditulis langsung tidak ikut berubah saat tema gelap aktif. Audit sebelumnya sudah menemukan token yang hilang menyebabkan dark mode mati; ini sumber masalah yang sejenis dan belum tersentuh.
   **Aksi:** pindahkan ke variabel di `shared/styles/tokens.css`, dahulukan `PortalPage` karena itu halaman pertama yang dilihat tamu.
 
