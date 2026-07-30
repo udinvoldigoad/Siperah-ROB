@@ -93,7 +93,7 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
   **Yang menjaga sekarang tinggal satu, dan itu memang cukup:** pendaftaran peneliti mewajibkan `research_purpose` dan lahir berstatus `menunggu`; login menolak akun yang belum `aktif`. Jadi setiap peneliti yang sampai ke tombol "Buat Kunci" sudah pernah ditinjau admin. Dikunci `ApiKeyAccessGateTest` (5 tes) — termasuk penjaga bahwa endpoint izin lama benar-benar 404, dan bahwa peneliti `menunggu` tak pernah mendapat token sama sekali (kalau gerbang login itu bocor, seluruh alasan menghapus izin kedua ikut gugur).
   **Tampilan admin ikut dirapikan** sesuai permintaan: banner "pendaftaran baru" dan panel "permohonan akses API" — dua antrean yang menanyakan hal serupa di layar berbeda — digabung jadi satu bagian **Perizinan akun**, menyebut berapa di antaranya permohonan peneliti yang membawa alasan tertulis. Tombolnya menyaring tabel yang sudah ada ke antrean `menunggu`, bukan membuka daftar kedua: aksi "Tinjau Permohonan" per baris sudah menampilkan alasan pemohon.
 
-- [ ] 🟠 **`LB-3` — Dashboard operator mencampur dua cakupan dalam satu layar** — `backend/app/Http/Controllers/Api/DashboardController.php:112,116` *(bukti: kode)*
+- [x] 🟠 **`LB-3` — Dashboard operator mencampur dua cakupan dalam satu layar** — `backend/app/Http/Controllers/Api/DashboardController.php:112,116` *(bukti: kode)*
   KPI `pending_reports` dihitung **se-provinsi**, sementara `region_statuses` di layar yang sama tetap **per wilayah**. Pembaca wajar menyimpulkan keduanya berasal dari cakupan yang sama, padahal tidak — angka KPI bisa jauh lebih besar dari jumlah baris di bawahnya.
   **Aksi:** samakan cakupannya, atau beri label eksplisit ("se-provinsi" vs "wilayah Anda") pada masing-masing.
 
