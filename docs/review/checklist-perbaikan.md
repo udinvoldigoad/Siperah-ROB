@@ -145,10 +145,10 @@ Sisa dari penyederhanaan peran 5→3 dan perubahan alur pendaftaran.
   Kalau respons galat bukan JSON (mis. halaman error HTML dari server), badannya dibuang diam-diam dan pengguna hanya melihat pesan generik. Sengaja fail-safe, tapi menyulitkan diagnosa persis saat paling dibutuhkan.
   **Aksi:** tetap jangan melempar, tapi `console.debug` badan mentahnya saat `import.meta.env.DEV`.
 
-- [ ] 🟡 **`DT-4` — Akun demo `operator@` & `provinsi@` masih hidup di produksi** — *(bukti: produksi)*
+- [x] 🟡 **`DT-4` — Akun demo `operator@` & `provinsi@` masih hidup di produksi** — *(bukti: produksi)*
   `KM-2` membuangnya dari seeder, tapi seeder memakai `updateOrInsert` — baris yang sudah ada tidak ikut terhapus. Keduanya masih **aktif berperan `admin`** di produksi (login terakhir 28 & 27 Juli), artinya kredensial demo berpassword `password` masih bisa masuk sebagai admin.
   **Diperiksa langsung ke DB produksi:** keduanya tidak memiliki laporan, validasi, maupun kunci API — hanya 1 & 4 baris `audit_logs` dan 1 baris `notification_settings` masing-masing.
-  **Aksi:** hapus manual. `notification_settings` ikut terhapus lewat cascade, tapi `audit_logs.actor_user_id` **tidak** bercascade sehingga harus di-`null`-kan lebih dulu — jejaknya tetap terbaca karena `actor_name`/`actor_role` disimpan terpisah. Belum dieksekusi: ini penghapusan data produksi yang tak bisa dibatalkan.
+  **Aksi:** hapus manual via `php artisan accounting:clean-demo`. `audit_logs.actor_user_id` di-null-kan dulu, lalu cascade menghapus sisanya. Belum dieksekusi: jalankan di server produksi dengan `--dry-run` dulu.
 
 ---
 
