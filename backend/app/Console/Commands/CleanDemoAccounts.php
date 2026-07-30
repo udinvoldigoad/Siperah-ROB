@@ -34,7 +34,8 @@ class CleanDemoAccounts extends Command
 
         $this->warn('Akun demo ditemukan:');
         foreach ($users as $user) {
-            $this->line("  {$user->email} ({$user->name}) — login terakhir: {$user->last_login_at?->toDateTimeString() ?? 'tidak pernah'}");
+            $lastLogin = $user->last_login_at?->toDateTimeString() ?? 'tidak pernah';
+            $this->line("  {$user->email} ({$user->name}) — login terakhir: {$lastLogin}");
         }
 
         if ($this->option('dry-run')) {
