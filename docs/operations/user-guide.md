@@ -23,41 +23,34 @@ Dokumen ini menjelaskan secara lengkap cara menggunakan seluruh fitur dan modul 
 
 ## 1. Pengantar Sistem
 
-SIPERAH-RoB adalah **Sistem Informasi Geografis (SIG)** berbasis WebGIS terpadu yang memanfaatkan kecerdasan buatan (*Machine Learning*) untuk memproyeksikan, memantau, dan memitigasi bencana banjir rob (genangan pasang air laut) di wilayah pesisir **Provinsi Lampung**.
+SIPERAH-RoB adalah **Sistem Informasi Geografis (SIG)** berbasis WebGIS terpadu yang memanfaatkan kecerdasan buatan (_Machine Learning_) untuk memproyeksikan, memantau, dan memitigasi bencana banjir rob (genangan pasang air laut) di wilayah pesisir **Provinsi Lampung**.
 
 ### Fitur Utama
 
-| Fitur | Deskripsi |
-| :--- | :--- |
-| 🗺️ **Peta Risiko Interaktif** | Visualisasi WebGIS zonasi bahaya rob 4 kelas per kelurahan dengan clustering berbasis MapLibre GL. |
-| 📱 **Mode Awam** | Deteksi lokasi GPS otomatis untuk menampilkan ringkasan risiko dalam bahasa non-teknis secara instan. |
-| 📸 **Pelaporan Ground Truth** | Pelaporan kejadian banjir rob terintegrasi dengan peta dan kompresi WebP gambar otomatis. |
-| 📊 **Dashboard Operator & Provinsi** | Pemantauan *real-time* antrean laporan, KPI wilayah, dan tren prediksi 30 hari. |
-| 🔬 **Portal Peneliti** | Unduh dataset historis dan integrasi API untuk keperluan riset akademik. |
-| 🔔 **Notifikasi Multi-Kanal** | Alert via Email dan Push Browser dengan kustomisasi jenis event dan wilayah pantauan. |
-| 🛡️ **Audit Log** | Pencatatan riwayat transaksi sensitif untuk transparansi dan keperluan audit. |
+| Fitur                                | Deskripsi                                                                                             |
+| :----------------------------------- | :---------------------------------------------------------------------------------------------------- |
+| 🗺️ **Peta Risiko Interaktif**        | Visualisasi WebGIS zonasi bahaya rob 4 kelas per kelurahan dengan clustering berbasis MapLibre GL.    |
+| 📱 **Mode Awam**                     | Deteksi lokasi GPS otomatis untuk menampilkan ringkasan risiko dalam bahasa non-teknis secara instan. |
+| 📸 **Pelaporan Ground Truth**        | Pelaporan kejadian banjir rob terintegrasi dengan peta dan kompresi WebP gambar otomatis.             |
+| 📊 **Dashboard Operator & Provinsi** | Pemantauan _real-time_ antrean laporan, KPI wilayah, dan tren prediksi 30 hari.                       |
+| 🔬 **Portal Peneliti**               | Unduh dataset historis dan integrasi API untuk keperluan riset akademik.                              |
+| 🔔 **Notifikasi Multi-Kanal**        | Alert via Email dan Push Browser dengan kustomisasi jenis event dan wilayah pantauan.                 |
+| 🛡️ **Audit Log**                     | Pencatatan riwayat transaksi sensitif untuk transparansi dan keperluan audit.                         |
 
 ### Wilayah Cakupan
 
-Sistem mencakup **15 kabupaten/kota pesisir** di Provinsi Lampung:
+Sistem mencakup **8 kabupaten/kota pesisir** di Provinsi Lampung:
 
-| No | Kabupaten/Kota |
-| :--: | :--- |
-| 1 | Kota Bandar Lampung |
-| 2 | Kabupaten Lampung Selatan |
-| 3 | Kabupaten Pesawaran |
-| 4 | Kabupaten Tanggamus |
-| 5 | Kabupaten Pesisir Barat |
-| 6 | Kabupaten Lampung Timur |
-| 7 | Kabupaten Tulang Bawang |
-| 8 | Kabupaten Tulang Bawang Barat |
-| 9 | Kabupaten Mesuji |
-| 10 | Kabupaten Lampung Tengah |
-| 11 | Kabupaten Lampung Utara |
-| 12 | Kabupaten Way Kanan |
-| 13 | Kabupaten Lampung Barat |
-| 14 | Kabupaten Pringsewu |
-| 15 | Kota Metro |
+| No  | Kabupaten/Kota            |
+| :-: | :------------------------ |
+|  1  | Kota Bandar Lampung       |
+|  2  | Kabupaten Lampung Selatan |
+|  3  | Kabupaten Pesawaran       |
+|  4  | Kabupaten Tanggamus       |
+|  5  | Kabupaten Pesisir Barat   |
+|  6  | Kabupaten Lampung Timur   |
+|  7  | Kabupaten Tulang Bawang   |
+|  8  | Kabupaten Mesuji          |
 
 ---
 
@@ -68,16 +61,16 @@ Sistem mencakup **15 kabupaten/kota pesisir** di Provinsi Lampung:
 - **Browser**: Google Chrome, Mozilla Firefox, Microsoft Edge, atau Safari versi terbaru.
 - **Perangkat**: Dapat diakses dari komputer desktop, laptop, tablet, maupun smartphone.
 - **Koneksi Internet**: Diperlukan koneksi internet yang stabil.
-- **GPS** *(opsional)*: Untuk fitur Mode Awam dan penentuan lokasi otomatis pada pelaporan.
+- **GPS** _(opsional)_: Untuk fitur Mode Awam dan penentuan lokasi otomatis pada pelaporan.
 
 ### Jenis Akun & Hak Akses
 
-| Peran | Cara Mendapatkan Akun | Hak Akses |
-| :--- | :--- | :--- |
-| **Tamu** *(tanpa login)* | Tidak perlu registrasi | Peta publik, Mode Awam, halaman Panduan. |
-| **Warga** | Registrasi mandiri (aktif setelah verifikasi email) | Semua fitur tamu + melapor kejadian rob + riwayat laporan. |
-| **Peneliti** | Registrasi mandiri (memerlukan persetujuan admin) | Unduh dataset + integrasi API + riwayat laporan. |
-| **Admin Sistem** | Dibuat oleh admin lain | Seluruh fitur sistem tanpa terkecuali. |
+| Peran                    | Cara Mendapatkan Akun                               | Hak Akses                                                  |
+| :----------------------- | :-------------------------------------------------- | :--------------------------------------------------------- |
+| **Tamu** _(tanpa login)_ | Tidak perlu registrasi                              | Peta publik, Mode Awam, halaman Panduan.                   |
+| **Warga**                | Registrasi mandiri (aktif setelah verifikasi email) | Semua fitur tamu + melapor kejadian rob + riwayat laporan. |
+| **Peneliti**             | Registrasi mandiri (memerlukan persetujuan admin)   | Unduh dataset + integrasi API + riwayat laporan.           |
+| **Admin Sistem**         | Dibuat oleh admin lain                              | Seluruh fitur sistem tanpa terkecuali.                     |
 
 ---
 
@@ -95,8 +88,8 @@ Sistem mencakup **15 kabupaten/kota pesisir** di Provinsi Lampung:
    - **Nama Lengkap** — nama yang akan ditampilkan di sistem.
    - **Email** — harus email valid (digunakan untuk verifikasi OTP).
    - **Kata Sandi** — minimal 8 karakter.
-   - **Institusi** *(khusus Peneliti)* — nama universitas/lembaga riset.
-   - **Tujuan Penelitian** *(khusus Peneliti)* — deskripsi singkat tujuan penggunaan data.
+   - **Institusi** _(khusus Peneliti)_ — nama universitas/lembaga riset.
+   - **Tujuan Penelitian** _(khusus Peneliti)_ — deskripsi singkat tujuan penggunaan data.
 6. Klik tombol **Daftar**.
 7. Sistem akan mengirimkan **kode OTP 6 digit** ke email Anda.
 8. Masukkan kode OTP pada halaman verifikasi. Kode berlaku selama **10 menit**.
@@ -140,7 +133,7 @@ Peta publik menampilkan zonasi bahaya rob per kelurahan pesisir se-Provinsi Lamp
 #### Cara Menggunakan Peta
 
 1. **Navigasi Peta**:
-   - Gunakan *scroll* mouse / *pinch* layar sentuh untuk zoom in/out.
+   - Gunakan _scroll_ mouse / _pinch_ layar sentuh untuk zoom in/out.
    - Klik dan seret untuk menggeser peta.
    - Klik pada kelurahan/desa untuk melihat pop-up detail.
 
@@ -148,25 +141,25 @@ Peta publik menampilkan zonasi bahaya rob per kelurahan pesisir se-Provinsi Lamp
    - Gunakan tombol di bagian atas peta untuk memilih horizon waktu prediksi.
    - Opsi yang tersedia:
 
-     | Tombol | Keterangan |
-     | :--- | :--- |
-     | **Hari ini** | Prakiraan risiko hari ini |
-     | **+1 hari** | Prakiraan risiko besok |
-     | **+2 hari** | Prakiraan risiko 2 hari ke depan |
-     | **+3 hari** | Prakiraan risiko 3 hari ke depan |
-     | **+7 hari** | Prakiraan risiko 7 hari ke depan |
+     | Tombol       | Keterangan                       |
+     | :----------- | :------------------------------- |
+     | **Hari ini** | Prakiraan risiko hari ini        |
+     | **+1 hari**  | Prakiraan risiko besok           |
+     | **+2 hari**  | Prakiraan risiko 2 hari ke depan |
+     | **+3 hari**  | Prakiraan risiko 3 hari ke depan |
+     | **+7 hari**  | Prakiraan risiko 7 hari ke depan |
 
 3. **Layer Control (Kontrol Lapisan)**:
    - Klik ikon **Layer** (di pojok peta) untuk menampilkan/menyembunyikan lapisan:
 
-     | Lapisan | Ikon | Deskripsi |
-     | :--- | :---: | :--- |
-     | Zona Bahaya Rob | 🔴🟠🟡🟢 | Pewarnaan kelurahan berdasarkan tingkat risiko. |
-     | Laporan Warga | 📍 | Titik-titik lokasi laporan banjir rob yang tervalidasi. |
-     | Pasang Surut | 🌊 | Posisi stasiun pengamatan pasang surut. |
-     | Garis Pantai | 〰️ | Garis pantai Provinsi Lampung. |
-     | Infrastruktur Kritis | 🏗️ | Lokasi infrastruktur penting di pesisir. |
-     | Rute Evakuasi | 🛤️ | Jalur evakuasi yang tersedia. |
+     | Lapisan              |   Ikon   | Deskripsi                                               |
+     | :------------------- | :------: | :------------------------------------------------------ |
+     | Zona Bahaya Rob      | 🔴🟠🟡🟢 | Pewarnaan kelurahan berdasarkan tingkat risiko.         |
+     | Laporan Warga        |    📍    | Titik-titik lokasi laporan banjir rob yang tervalidasi. |
+     | Pasang Surut         |    🌊    | Posisi stasiun pengamatan pasang surut.                 |
+     | Garis Pantai         |    〰️    | Garis pantai Provinsi Lampung.                          |
+     | Infrastruktur Kritis |    🏗️    | Lokasi infrastruktur penting di pesisir.                |
+     | Rute Evakuasi        |    🛤️    | Jalur evakuasi yang tersedia.                           |
 
 4. **Filter Kabupaten/Kota**:
    - Gunakan dropdown **Kabupaten** untuk memfokuskan peta ke wilayah tertentu.
@@ -180,13 +173,13 @@ Peta publik menampilkan zonasi bahaya rob per kelurahan pesisir se-Provinsi Lamp
      - Persentase probabilitas risiko.
      - Estimasi populasi terdampak.
      - Grafik prakiraan pasang surut.
-     - Skor kepercayaan model (*confidence score*).
+     - Skor kepercayaan model (_confidence score_).
 
 6. **Peringatan Aktif**:
    - Jika ada peringatan cuaca/pasang ekstrem, banner peringatan akan muncul di bagian atas peta.
    - Banner menampilkan judul peringatan, pesan detail, dan daftar kabupaten terdampak.
 
-> **Catatan tentang Klaster Peta**: Lingkaran klaster pada peta menampilkan **rata-rata persentase probabilitas** wilayah, namun diwarnai berdasarkan **risiko tertinggi** (`maxRank`) desa di dalamnya. Ini bertujuan memicu kewaspadaan dini sebelum pengguna melakukan *zoom-in* ke level kelurahan.
+> **Catatan tentang Klaster Peta**: Lingkaran klaster pada peta menampilkan **rata-rata persentase probabilitas** wilayah, namun diwarnai berdasarkan **risiko tertinggi** (`maxRank`) desa di dalamnya. Ini bertujuan memicu kewaspadaan dini sebelum pengguna melakukan _zoom-in_ ke level kelurahan.
 
 ### B. Mode Awam (`#/awam`)
 
@@ -201,16 +194,17 @@ Mode Awam dirancang untuk menyajikan informasi risiko banjir rob dalam **bahasa 
 3. Sistem akan menampilkan **kartu risiko** dengan informasi:
    - **Status Risiko**: Ditampilkan dalam bahasa sederhana:
 
-     | Status | Warna Kartu | Makna |
-     | :--- | :---: | :--- |
-     | **Aman** | 🔵 Biru | Risiko rendah, tidak ada ancaman signifikan. |
-     | **Waspada** | 🟡 Kuning | Risiko sedang, pantau perkembangan kondisi. |
-     | **Siaga** | 🟠 Oranye | Risiko tinggi, bersiap dan waspada terhadap potensi rob. |
-     | **Bahaya Ekstrem** | 🔴 Merah | Risiko sangat tinggi, segera ikuti arahan evakuasi. |
+     | Status             | Warna Kartu | Makna                                                    |
+     | :----------------- | :---------: | :------------------------------------------------------- |
+     | **Aman**           |   🔵 Biru   | Risiko rendah, tidak ada ancaman signifikan.             |
+     | **Waspada**        |  🟡 Kuning  | Risiko sedang, pantau perkembangan kondisi.              |
+     | **Siaga**          |  🟠 Oranye  | Risiko tinggi, bersiap dan waspada terhadap potensi rob. |
+     | **Bahaya Ekstrem** |  🔴 Merah   | Risiko sangat tinggi, segera ikuti arahan evakuasi.      |
 
    - **Pesan Panduan**: Rekomendasi tindakan keselamatan sesuai level risiko.
    - **Tinggi Muka Air Laut Maksimum**: Estimasi ketinggian pasang tertinggi.
    - **Waktu Puncak Pasang**: Prakiraan jam puncak pasang air laut.
+
 4. **Prakiraan 7 Hari ke Depan**: Di bawah kartu utama, terdapat timeline prakiraan harian yang menunjukkan tren risiko.
 5. **Laporan Terdekat**: Jika ada laporan kejadian rob tervalidasi di sekitar lokasi Anda, sistem akan menampilkan daftarnya beserta waktu kejadian dan tingkat keparahan.
 
@@ -231,13 +225,13 @@ Pengguna dengan peran **Warga** memiliki seluruh hak akses fitur publik, ditamba
 
 ### Menu Navigasi Warga
 
-| Menu | Rute | Deskripsi |
-| :--- | :--- | :--- |
-| 🗺️ Peta Risiko | `#/map` | Peta interaktif zonasi bahaya rob. |
-| 📱 Mode Awam | `#/awam` | Cek risiko lokasi dalam bahasa sederhana. |
-| ❓ Panduan | `#/onboarding` | Halaman panduan penggunaan sistem. |
-| 📝 Lapor | `#/reports` | Formulir pelaporan kejadian banjir rob. |
-| 📋 Riwayat Laporan | `#/history` | Daftar riwayat laporan yang pernah dikirim. |
+| Menu               | Rute           | Deskripsi                                   |
+| :----------------- | :------------- | :------------------------------------------ |
+| 🗺️ Peta Risiko     | `#/map`        | Peta interaktif zonasi bahaya rob.          |
+| 📱 Mode Awam       | `#/awam`       | Cek risiko lokasi dalam bahasa sederhana.   |
+| ❓ Panduan         | `#/onboarding` | Halaman panduan penggunaan sistem.          |
+| 📝 Lapor           | `#/reports`    | Formulir pelaporan kejadian banjir rob.     |
+| 📋 Riwayat Laporan | `#/history`    | Daftar riwayat laporan yang pernah dikirim. |
 
 ### A. Melaporkan Banjir Rob (Ground Truth)
 
@@ -261,14 +255,15 @@ Pelaporan menggunakan **wizard 3 langkah** yang memandu Anda secara bertahap:
 1. **Tinggi Air (cm)**: Masukkan estimasi ketinggian genangan air rob dalam sentimeter.
    - Sistem otomatis menghitung tingkat keparahan berdasarkan tinggi air:
 
-     | Tinggi Air | Keparahan |
-     | :--- | :--- |
-     | < 10 cm | 🟢 **Ringan** |
-     | 10–30 cm | 🟡 **Sedang** |
-     | 31–80 cm | 🟠 **Parah** |
-     | > 80 cm | 🔴 **Sangat Parah** |
+     | Tinggi Air | Keparahan           |
+     | :--------- | :------------------ |
+     | < 10 cm    | 🟢 **Ringan**       |
+     | 10–30 cm   | 🟡 **Sedang**       |
+     | 31–80 cm   | 🟠 **Parah**        |
+     | > 80 cm    | 🔴 **Sangat Parah** |
 
    - Anda juga dapat memilih tingkat keparahan secara manual melalui kartu pilihan.
+
 2. **Deskripsi Kejadian**: Jelaskan kondisi yang Anda amati secara singkat (wajib diisi).
 
 #### Langkah 3 — Bukti Foto
@@ -285,7 +280,7 @@ Pelaporan menggunakan **wizard 3 langkah** yang memandu Anda secara bertahap:
 
 - Anda akan menerima **Kode Laporan** unik (format: `ROB-XXXXXXXX`).
 - Simpan kode ini untuk menelusuri status validasi laporan Anda.
-- Status awal laporan: **Menunggu** *(menunggu validasi operator BPBD)*.
+- Status awal laporan: **Menunggu** _(menunggu validasi operator BPBD)_.
 
 ### B. Menelusuri Riwayat Laporan (`#/history`)
 
@@ -297,13 +292,13 @@ Pelaporan menggunakan **wizard 3 langkah** yang memandu Anda secara bertahap:
    - **Tingkat Keparahan** — Ringan/Sedang/Parah/Sangat Parah.
    - **Status Validasi**:
 
-     | Status | Badge | Arti |
-     | :--- | :---: | :--- |
-     | `menunggu` | 🟡 | Belum ditinjau operator. |
-     | `perlu_review` | 🟠 | Ditandai untuk ditinjau ulang. |
-     | `divalidasi` | 🟢 | Disetujui oleh operator, data masuk ke ground truth. |
-     | `ditolak` | 🔴 | Ditolak beserta alasan penolakan. |
-     | `duplikat` | ⚪ | Sudah ada laporan serupa untuk kejadian yang sama. |
+     | Status         | Badge | Arti                                                 |
+     | :------------- | :---: | :--------------------------------------------------- |
+     | `menunggu`     |  🟡   | Belum ditinjau operator.                             |
+     | `perlu_review` |  🟠   | Ditandai untuk ditinjau ulang.                       |
+     | `divalidasi`   |  🟢   | Disetujui oleh operator, data masuk ke ground truth. |
+     | `ditolak`      |  🔴   | Ditolak beserta alasan penolakan.                    |
+     | `duplikat`     |  ⚪   | Sudah ada laporan serupa untuk kejadian yang sama.   |
 
 ---
 
@@ -313,28 +308,28 @@ Pengguna dengan peran **Peneliti** memiliki akses ke **Portal Peneliti** untuk m
 
 ### Menu Navigasi Peneliti
 
-| Menu | Rute | Deskripsi |
-| :--- | :--- | :--- |
-| 🗺️ Peta Risiko | `#/map` | Peta interaktif zonasi bahaya rob. |
-| 📋 Riwayat Laporan | `#/history` | Daftar laporan yang pernah dikirim. |
-| 🔬 Arsip Data | `#/research` | Portal unduh dataset dan manajemen API. |
+| Menu               | Rute         | Deskripsi                               |
+| :----------------- | :----------- | :-------------------------------------- |
+| 🗺️ Peta Risiko     | `#/map`      | Peta interaktif zonasi bahaya rob.      |
+| 📋 Riwayat Laporan | `#/history`  | Daftar laporan yang pernah dikirim.     |
+| 🔬 Arsip Data      | `#/research` | Portal unduh dataset dan manajemen API. |
 
 ### A. Mengunduh Dataset Historis
 
 1. Buka menu **Arsip Data** (`#/research`).
 2. Tab **Katalog Dataset** menampilkan seluruh dataset yang tersedia:
 
-   | Dataset | Deskripsi |
-   | :--- | :--- |
-   | **Histori Prediksi ML** | Seluruh riwayat proyeksi probabilitas harian per kelurahan. |
-   | **Laporan Ground Truth Warga** | Rekaman koordinat kejadian banjir rob yang tervalidasi BPBD. |
-   | **Tinggi Muka Air Laut per Jam** | Data historis pasang surut dari stasiun pengamatan. |
+   | Dataset                          | Deskripsi                                                    |
+   | :------------------------------- | :----------------------------------------------------------- |
+   | **Histori Prediksi ML**          | Seluruh riwayat proyeksi probabilitas harian per kelurahan.  |
+   | **Laporan Ground Truth Warga**   | Rekaman koordinat kejadian banjir rob yang tervalidasi BPBD. |
+   | **Tinggi Muka Air Laut per Jam** | Data historis pasang surut dari stasiun pengamatan.          |
 
 3. Untuk setiap dataset, informasi yang ditampilkan:
    - Nama dan deskripsi dataset.
-   - Tipe dataset (*prediction*, *ground_truth*, *tidal*).
+   - Tipe dataset (_prediction_, _ground_truth_, _tidal_).
    - Periode data (tanggal awal – akhir).
-   - Resolusi (*harian*, *per jam*).
+   - Resolusi (_harian_, _per jam_).
    - Jumlah rekaman (record count).
    - Lisensi penggunaan data.
    - Cakupan kabupaten.
@@ -350,11 +345,11 @@ Pengguna dengan peran **Peneliti** memiliki akses ke **Portal Peneliti** untuk m
 
 Di bagian atas portal, terdapat kartu statistik ringkasan:
 
-| Metrik | Keterangan |
-| :--- | :--- |
-| **Jumlah Dataset** | Total dataset yang tersedia untuk diunduh. |
-| **Total Rekaman** | Jumlah keseluruhan baris data di semua dataset. |
-| **Unduhan Bulan Ini** | Jumlah unduhan yang Anda lakukan bulan berjalan. |
+| Metrik                     | Keterangan                                       |
+| :------------------------- | :----------------------------------------------- |
+| **Jumlah Dataset**         | Total dataset yang tersedia untuk diunduh.       |
+| **Total Rekaman**          | Jumlah keseluruhan baris data di semua dataset.  |
+| **Unduhan Bulan Ini**      | Jumlah unduhan yang Anda lakukan bulan berjalan. |
 | **Panggilan API Hari Ini** | Jumlah panggilan API yang Anda lakukan hari ini. |
 
 ### C. Integrasi API (API Key)
@@ -391,11 +386,11 @@ Authorization: Bearer spr_xxxx...
 
 #### Endpoint API v1 yang Tersedia
 
-| Method | Endpoint | Deskripsi | Izin |
-| :---: | :--- | :--- | :--- |
-| `GET` | `/api/v1/predictions/daily` | Prediksi harian per kelurahan. | `predictions:read` |
-| `GET` | `/api/v1/reports` | Laporan ground truth tervalidasi. | `reports:read` |
-| `GET` | `/api/v1/tidal` | Data pasang surut historis. | `tidal:read` |
+| Method | Endpoint                    | Deskripsi                         | Izin               |
+| :----: | :-------------------------- | :-------------------------------- | :----------------- |
+| `GET`  | `/api/v1/predictions/daily` | Prediksi harian per kelurahan.    | `predictions:read` |
+| `GET`  | `/api/v1/reports`           | Laporan ground truth tervalidasi. | `reports:read`     |
+| `GET`  | `/api/v1/tidal`             | Data pasang surut historis.       | `tidal:read`       |
 
 > **Rate Limit**: Setiap API Key memiliki batasan jumlah panggilan per periode (rate limiting). Pastikan menggunakan API secara bertanggung jawab.
 
@@ -411,18 +406,18 @@ Admin Sistem memiliki **akses penuh ke seluruh fitur** dalam SIPERAH-RoB, termas
 
 ### Menu Navigasi Admin
 
-| Menu | Rute | Deskripsi |
-| :--- | :--- | :--- |
-| 🗺️ Peta Risiko | `#/map` | Peta interaktif zonasi bahaya rob. |
-| 📱 Mode Awam | `#/awam` | Cek risiko lokasi dalam bahasa sederhana. |
-| ❓ Panduan | `#/onboarding` | Halaman panduan penggunaan sistem. |
-| 📝 Lapor | `#/reports` | Formulir pelaporan kejadian banjir rob. |
-| 📋 Riwayat Laporan | `#/history` | Daftar riwayat laporan. |
-| ✅ Operator | `#/operator` | Dashboard operator — validasi laporan warga. |
-| 📈 Pantauan Provinsi | `#/province` | Dashboard eksekutif tingkat provinsi. |
-| 🔬 Arsip Data | `#/research` | Portal unduh dataset dan manajemen API. |
-| 👤 Pengguna & Perizinan | `#/admin` | Manajemen pengguna dan permohonan akses. |
-| 🛡️ Audit | `#/audit` | Log audit aktivitas sistem. |
+| Menu                    | Rute           | Deskripsi                                    |
+| :---------------------- | :------------- | :------------------------------------------- |
+| 🗺️ Peta Risiko          | `#/map`        | Peta interaktif zonasi bahaya rob.           |
+| 📱 Mode Awam            | `#/awam`       | Cek risiko lokasi dalam bahasa sederhana.    |
+| ❓ Panduan              | `#/onboarding` | Halaman panduan penggunaan sistem.           |
+| 📝 Lapor                | `#/reports`    | Formulir pelaporan kejadian banjir rob.      |
+| 📋 Riwayat Laporan      | `#/history`    | Daftar riwayat laporan.                      |
+| ✅ Operator             | `#/operator`   | Dashboard operator — validasi laporan warga. |
+| 📈 Pantauan Provinsi    | `#/province`   | Dashboard eksekutif tingkat provinsi.        |
+| 🔬 Arsip Data           | `#/research`   | Portal unduh dataset dan manajemen API.      |
+| 👤 Pengguna & Perizinan | `#/admin`      | Manajemen pengguna dan permohonan akses.     |
+| 🛡️ Audit                | `#/audit`      | Log audit aktivitas sistem.                  |
 
 ---
 
@@ -434,14 +429,14 @@ Dashboard operator dirancang untuk **mengelola antrean laporan warga** dan **mem
 
 Di bagian atas dashboard, terdapat 4 kartu metrik utama:
 
-| Metrik | Deskripsi |
-| :--- | :--- |
-| **Kelurahan Terpantau** | Jumlah total desa pesisir dalam wilayah kerja. |
-| **Kelurahan Kritis** | Jumlah kelurahan yang berstatus bahaya tinggi/sangat tinggi hari ini. |
-| **Laporan Menunggu** | Jumlah laporan warga yang belum divalidasi. |
-| **Validasi Bulan Ini** | Jumlah laporan yang sudah diproses bulan berjalan. |
+| Metrik                  | Deskripsi                                                             |
+| :---------------------- | :-------------------------------------------------------------------- |
+| **Kelurahan Terpantau** | Jumlah total desa pesisir dalam wilayah kerja.                        |
+| **Kelurahan Kritis**    | Jumlah kelurahan yang berstatus bahaya tinggi/sangat tinggi hari ini. |
+| **Laporan Menunggu**    | Jumlah laporan warga yang belum divalidasi.                           |
+| **Validasi Bulan Ini**  | Jumlah laporan yang sudah diproses bulan berjalan.                    |
 
-> **Auto-refresh**: Dashboard memperbarui data KPI secara otomatis setiap **30 detik** tanpa memuat ulang halaman. Jika ada laporan baru masuk, *toast notification* akan muncul.
+> **Auto-refresh**: Dashboard memperbarui data KPI secara otomatis setiap **30 detik** tanpa memuat ulang halaman. Jika ada laporan baru masuk, _toast notification_ akan muncul.
 
 #### Mengelola Antrean Laporan
 
@@ -457,11 +452,11 @@ Di bagian atas dashboard, terdapat 4 kartu metrik utama:
 4. Klik tombol **Kelola** pada laporan untuk membuka detail lengkap.
 5. Pilih salah satu tindakan:
 
-   | Aksi | Efek |
-   | :--- | :--- |
-   | ✅ **Validasi** | Laporan disetujui. Status berubah menjadi `divalidasi`, data masuk ke *ground truth*, dan langsung muncul di peta publik. |
-   | ❌ **Tolak** | Laporan ditolak. Wajib mengisi **alasan penolakan** (mis. "Bukan banjir rob, melainkan genangan drainase"). |
-   | 📋 **Duplikat** | Laporan ditandai sebagai duplikat dari laporan lain pada kejadian dan lokasi yang sama. |
+   | Aksi            | Efek                                                                                                                      |
+   | :-------------- | :------------------------------------------------------------------------------------------------------------------------ |
+   | ✅ **Validasi** | Laporan disetujui. Status berubah menjadi `divalidasi`, data masuk ke _ground truth_, dan langsung muncul di peta publik. |
+   | ❌ **Tolak**    | Laporan ditolak. Wajib mengisi **alasan penolakan** (mis. "Bukan banjir rob, melainkan genangan drainase").               |
+   | 📋 **Duplikat** | Laporan ditandai sebagai duplikat dari laporan lain pada kejadian dan lokasi yang sama.                                   |
 
 6. Tab **Riwayat** menampilkan seluruh laporan yang sudah diproses (`divalidasi` atau `ditolak`).
 
@@ -474,14 +469,14 @@ Di bagian atas dashboard, terdapat 4 kartu metrik utama:
 
 Di bagian bawah dashboard, tabel **Status Kelurahan** menampilkan:
 
-| Kolom | Deskripsi |
-| :--- | :--- |
-| Kelurahan | Nama desa/kelurahan pesisir. |
-| Kecamatan | Nama kecamatan. |
-| Kabupaten | Nama kabupaten/kota. |
-| Populasi | Estimasi jumlah penduduk. |
+| Kolom          | Deskripsi                                                    |
+| :------------- | :----------------------------------------------------------- |
+| Kelurahan      | Nama desa/kelurahan pesisir.                                 |
+| Kecamatan      | Nama kecamatan.                                              |
+| Kabupaten      | Nama kabupaten/kota.                                         |
+| Populasi       | Estimasi jumlah penduduk.                                    |
 | Tingkat Risiko | Status bahaya hari ini (Rendah/Sedang/Tinggi/Sangat Tinggi). |
-| Probabilitas | Persentase probabilitas risiko. |
+| Probabilitas   | Persentase probabilitas risiko.                              |
 
 ---
 
@@ -491,12 +486,12 @@ Dashboard eksekutif tingkat provinsi menyediakan **pandangan menyeluruh** terhad
 
 #### Kartu KPI Provinsi
 
-| Metrik | Deskripsi |
-| :--- | :--- |
-| **Kabupaten Terpantau** | Jumlah total kabupaten/kota yang tercakup dalam sistem. |
-| **Kelurahan Bahaya Tinggi** | Jumlah kelurahan berstatus Tinggi atau Sangat Tinggi hari ini. |
-| **Populasi Berisiko** | Total estimasi penduduk di kelurahan bahaya tinggi/sangat tinggi. |
-| **Validasi Laporan Bulan Ini** | Total laporan warga yang tervalidasi bulan berjalan. |
+| Metrik                         | Deskripsi                                                         |
+| :----------------------------- | :---------------------------------------------------------------- |
+| **Kabupaten Terpantau**        | Jumlah total kabupaten/kota yang tercakup dalam sistem.           |
+| **Kelurahan Bahaya Tinggi**    | Jumlah kelurahan berstatus Tinggi atau Sangat Tinggi hari ini.    |
+| **Populasi Berisiko**          | Total estimasi penduduk di kelurahan bahaya tinggi/sangat tinggi. |
+| **Validasi Laporan Bulan Ini** | Total laporan warga yang tervalidasi bulan berjalan.              |
 
 #### Grafik Tren Prediksi 30 Hari
 
@@ -511,16 +506,16 @@ Dashboard eksekutif tingkat provinsi menyediakan **pandangan menyeluruh** terhad
 
 Tabel interaktif yang menampilkan ringkasan per kabupaten/kota:
 
-| Kolom | Deskripsi |
-| :--- | :--- |
-| Kabupaten | Nama kabupaten/kota. |
-| Rendah | Jumlah kelurahan risiko rendah. |
-| Sedang | Jumlah kelurahan risiko sedang. |
-| Tinggi | Jumlah kelurahan risiko tinggi. |
-| Sangat Tinggi | Jumlah kelurahan risiko sangat tinggi. |
-| Populasi Berisiko | Estimasi total penduduk terdampak. |
-| Probabilitas Maks | Probabilitas tertinggi di kabupaten tsb. |
-| Tren | Perubahan dibanding periode sebelumnya (↑ naik / ↓ turun / ─ stabil). |
+| Kolom             | Deskripsi                                                             |
+| :---------------- | :-------------------------------------------------------------------- |
+| Kabupaten         | Nama kabupaten/kota.                                                  |
+| Rendah            | Jumlah kelurahan risiko rendah.                                       |
+| Sedang            | Jumlah kelurahan risiko sedang.                                       |
+| Tinggi            | Jumlah kelurahan risiko tinggi.                                       |
+| Sangat Tinggi     | Jumlah kelurahan risiko sangat tinggi.                                |
+| Populasi Berisiko | Estimasi total penduduk terdampak.                                    |
+| Probabilitas Maks | Probabilitas tertinggi di kabupaten tsb.                              |
+| Tren              | Perubahan dibanding periode sebelumnya (↑ naik / ↓ turun / ─ stabil). |
 
 - Tabel dapat **diurutkan** dengan mengklik header kolom.
 - Gunakan **filter kabupaten** atau **filter bulan** di bagian atas untuk menyaring data.
@@ -528,6 +523,7 @@ Tabel interaktif yang menampilkan ringkasan per kabupaten/kota:
 #### Tabel Kelurahan Terdampak Tertinggi (Top Impacted)
 
 Menampilkan daftar kelurahan dengan skor risiko tertinggi, lengkap dengan:
+
 - Probabilitas risiko.
 - Kelas risiko.
 - Estimasi populasi terdampak beserta sumber data populasi.
@@ -546,12 +542,12 @@ Halaman ini memungkinkan admin untuk mengelola seluruh akun pengguna dalam siste
 
 #### Kartu Ringkasan Pengguna
 
-| Metrik | Deskripsi |
-| :--- | :--- |
-| Total Pengguna | Jumlah keseluruhan akun terdaftar. |
-| Aktif | Jumlah akun berstatus aktif. |
-| Menunggu | Jumlah akun yang menunggu persetujuan. |
-| Nonaktif | Jumlah akun yang telah dinonaktifkan. |
+| Metrik            | Deskripsi                                            |
+| :---------------- | :--------------------------------------------------- |
+| Total Pengguna    | Jumlah keseluruhan akun terdaftar.                   |
+| Aktif             | Jumlah akun berstatus aktif.                         |
+| Menunggu          | Jumlah akun yang menunggu persetujuan.               |
+| Nonaktif          | Jumlah akun yang telah dinonaktifkan.                |
 | Peneliti Menunggu | Jumlah permohonan akun peneliti yang belum ditinjau. |
 
 #### Mengelola Akun Pengguna
@@ -564,15 +560,15 @@ Halaman ini memungkinkan admin untuk mengelola seluruh akun pengguna dalam siste
    - Filter berdasarkan status (Aktif, Menunggu, Nonaktif, Ditolak).
 3. **Aksi per Pengguna**:
 
-   | Aksi | Deskripsi |
-   | :--- | :--- |
+   | Aksi           | Deskripsi                                                            |
+   | :------------- | :------------------------------------------------------------------- |
    | ✅ **Setujui** | Menyetujui akun yang berstatus `menunggu` (khususnya akun peneliti). |
-   | ❌ **Tolak** | Menolak permohonan akun. |
-   | ✏️ **Edit** | Mengubah data pengguna secara *inline* langsung pada tabel: |
-   |  | • **Peran**: Warga → Peneliti → Admin (dan sebaliknya). |
-   |  | • **Status**: Aktif ↔ Nonaktif (nonaktifkan akun secara instan). |
-   |  | • **Wilayah Kerja**: Menetapkan wilayah untuk operator. |
-   | 🗑️ **Hapus** | Menghapus akun secara permanen. |
+   | ❌ **Tolak**   | Menolak permohonan akun.                                             |
+   | ✏️ **Edit**    | Mengubah data pengguna secara _inline_ langsung pada tabel:          |
+   |                | • **Peran**: Warga → Peneliti → Admin (dan sebaliknya).              |
+   |                | • **Status**: Aktif ↔ Nonaktif (nonaktifkan akun secara instan).     |
+   |                | • **Wilayah Kerja**: Menetapkan wilayah untuk operator.              |
+   | 🗑️ **Hapus**   | Menghapus akun secara permanen.                                      |
 
 4. **Membuat Pengguna Baru**:
    - Klik tombol **Tambah Pengguna**.
@@ -603,15 +599,15 @@ Log audit mencatat seluruh aktivitas sensitif dalam sistem untuk keperluan trans
    - Total log, jumlah Berhasil, Ditolak, Gagal, dan Sebagian.
 3. **Tabel Log Audit** menampilkan:
 
-   | Kolom | Deskripsi |
-   | :--- | :--- |
-   | Waktu | Tanggal dan jam aktivitas terjadi. |
-   | Aktor | Nama dan peran pengguna yang melakukan aksi. |
-   | Aksi | Jenis tindakan (login, validasi, ekspor, ubah role, dll.). |
-   | Target | Resource yang terdampak. |
-   | Hasil | Berhasil / Gagal / Ditolak / Sebagian. |
-   | IP | Alamat IP pengguna. |
-   | Payload | Detail parameter data yang diubah (format JSON). |
+   | Kolom   | Deskripsi                                                  |
+   | :------ | :--------------------------------------------------------- |
+   | Waktu   | Tanggal dan jam aktivitas terjadi.                         |
+   | Aktor   | Nama dan peran pengguna yang melakukan aksi.               |
+   | Aksi    | Jenis tindakan (login, validasi, ekspor, ubah role, dll.). |
+   | Target  | Resource yang terdampak.                                   |
+   | Hasil   | Berhasil / Gagal / Ditolak / Sebagian.                     |
+   | IP      | Alamat IP pengguna.                                        |
+   | Payload | Detail parameter data yang diubah (format JSON).           |
 
 4. **Filter & Cari**:
    - Filter berdasarkan **Hasil** (Berhasil, Gagal, Ditolak, Sebagian).
@@ -629,20 +625,20 @@ Setiap pengguna yang login dapat mengkustomisasi **preferensi notifikasi** melal
 
 ### Kanal Notifikasi
 
-| Kanal | Deskripsi |
-| :--- | :--- |
+| Kanal                 | Deskripsi                                                      |
+| :-------------------- | :------------------------------------------------------------- |
 | 🔔 **Browser (Push)** | Notifikasi push langsung di browser (memerlukan izin browser). |
-| 📧 **Email** | Notifikasi dikirim ke email terdaftar. |
+| 📧 **Email**          | Notifikasi dikirim ke email terdaftar.                         |
 
 ### Jenis Event yang Dapat Dipantau
 
-| Event | Deskripsi |
-| :--- | :--- |
-| 🔴 **Bahaya Sangat Tinggi** | Saat ada kelurahan mencapai level risiko Sangat Tinggi. |
-| 📸 **Laporan Ground Truth** | Saat ada laporan baru dari warga di wilayah pantauan. |
-| 🔄 **Pembaruan Model** | Saat model ML diperbarui atau prediksi harian selesai dijalankan. |
-| 📊 **Ringkasan Harian** | Rangkuman kondisi risiko harian untuk wilayah pantauan. |
-| ⚠️ **Peringatan BMKG** | Saat ada peringatan cuaca/pasang ekstrem dari BMKG. |
+| Event                       | Deskripsi                                                         |
+| :-------------------------- | :---------------------------------------------------------------- |
+| 🔴 **Bahaya Sangat Tinggi** | Saat ada kelurahan mencapai level risiko Sangat Tinggi.           |
+| 📸 **Laporan Ground Truth** | Saat ada laporan baru dari warga di wilayah pantauan.             |
+| 🔄 **Pembaruan Model**      | Saat model ML diperbarui atau prediksi harian selesai dijalankan. |
+| 📊 **Ringkasan Harian**     | Rangkuman kondisi risiko harian untuk wilayah pantauan.           |
+| ⚠️ **Peringatan BMKG**      | Saat ada peringatan cuaca/pasang ekstrem dari BMKG.               |
 
 ### Wilayah Pantauan
 
@@ -669,23 +665,23 @@ Setiap pengguna yang login dapat mengkustomisasi **preferensi notifikasi** melal
 
 Kelas risiko dihasilkan oleh model **Random Forest Classifier** yang dijalankan setiap hari:
 
-| Kelas | Warna | Keterangan |
-| :---: | :---: | :--- |
-| **Rendah** | 🟢 `#16a34a` | Probabilitas rendah, tidak ada indikasi ancaman rob signifikan. |
-| **Sedang** | 🟡 `#d97706` | Probabilitas moderat, perlu memantau perkembangan pasang surut. |
-| **Tinggi** | 🟠 `#f4510b` | Probabilitas tinggi, siaga terhadap potensi genangan rob. |
+|       Kelas       |    Warna     | Keterangan                                                         |
+| :---------------: | :----------: | :----------------------------------------------------------------- |
+|    **Rendah**     | 🟢 `#16a34a` | Probabilitas rendah, tidak ada indikasi ancaman rob signifikan.    |
+|    **Sedang**     | 🟡 `#d97706` | Probabilitas moderat, perlu memantau perkembangan pasang surut.    |
+|    **Tinggi**     | 🟠 `#f4510b` | Probabilitas tinggi, siaga terhadap potensi genangan rob.          |
 | **Sangat Tinggi** | 🔴 `#e52421` | Probabilitas sangat tinggi, ancaman rob serius — siapkan mitigasi. |
 
 ### Tingkat Keparahan Laporan (Ground Truth)
 
 Tingkat keparahan ditentukan berdasarkan **tinggi genangan air** yang dilaporkan warga:
 
-| Keparahan | Tinggi Air | Warna |
-| :--- | :--- | :---: |
-| **Ringan** | < 10 cm | 🟢 `#16a34a` |
-| **Sedang** | 10–30 cm | 🟡 `#d97706` |
-| **Parah** | 31–80 cm | 🟠 `#ea580c` |
-| **Sangat Parah** | > 80 cm | 🔴 `#dc2626` |
+| Keparahan        | Tinggi Air |    Warna     |
+| :--------------- | :--------- | :----------: |
+| **Ringan**       | < 10 cm    | 🟢 `#16a34a` |
+| **Sedang**       | 10–30 cm   | 🟡 `#d97706` |
+| **Parah**        | 31–80 cm   | 🟠 `#ea580c` |
+| **Sangat Parah** | > 80 cm    | 🔴 `#dc2626` |
 
 ---
 
@@ -694,29 +690,37 @@ Tingkat keparahan ditentukan berdasarkan **tinggi genangan air** yang dilaporkan
 ### Umum
 
 **Q: Seberapa akurat prediksi banjir rob SIPERAH-RoB?**
+
 > Prediksi adalah alat kewaspadaan, **bukan kepastian kejadian**. Gunakan informasi risiko bersama arahan resmi BPBD dan kondisi nyata di lapangan.
 
 **Q: Data apa yang digunakan model prediksi?**
+
 > Model memadukan: (1) data cuaca dan gelombang laut historis dari Open-Meteo (reanalisis ERA5), (2) proyeksi pasang surut berbasis model harmonik per stasiun, (3) faktor spasial elevasi & jarak ke pantai per kelurahan, (4) kejadian rob riil (BNPB DIBI), serta (5) laporan lapangan warga yang telah divalidasi BPBD.
 
 **Q: Siapa saja yang bisa menggunakan SIPERAH-RoB?**
+
 > Peta publik dapat diakses oleh siapa saja tanpa login. Fitur pelaporan tersedia untuk warga terdaftar. Dashboard BPBD dikhususkan untuk admin sistem. Portal penelitian untuk peneliti yang disetujui.
 
 **Q: Seberapa sering peta diperbarui?**
+
 > Prediksi diperbarui otomatis setiap hari sekitar **pukul 06:00 WIB** melalui pipeline model ML di GitHub Actions. Laporan warga yang telah divalidasi operator langsung tampil di peta.
 
 ### Teknis
 
 **Q: Mengapa lokasi GPS saya tidak terdeteksi?**
+
 > Pastikan Anda telah memberikan **izin akses lokasi** di browser Anda. Pada Chrome: klik ikon gembok di address bar → Site Settings → Location → Allow.
 
 **Q: Format foto apa yang didukung untuk pelaporan?**
+
 > JPG, PNG, dan WebP. Maksimal 5 foto dengan ukuran masing-masing ≤ 2 MB. Foto akan otomatis dikompres ke WebP.
 
 **Q: Bagaimana jika saya lupa kata sandi?**
+
 > Gunakan fitur **Lupa Kata Sandi** di halaman login. Kode OTP akan dikirim ke email terdaftar.
 
 **Q: Bagaimana cara mendapatkan API Key untuk riset?**
+
 > Daftar sebagai **Peneliti**, tunggu persetujuan admin, lalu ajukan permohonan akses API di Portal Peneliti. Setelah disetujui, Anda dapat membuat API Key.
 
 ---
