@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\GroundTruthReport;
 use App\Models\NotificationSetting;
 use App\Models\Prediction;
+use App\Support\RegionName;
 use App\Models\Region;
 use App\Models\User;
 use App\Notifications\Data\ReportSummary;
@@ -190,16 +191,13 @@ final class NotificationService
      */
     private function matchesMonitoredRegions(Region $region, array $monitored): bool
     {
-        // Normalisasi prefiks "Kota/Kabupaten": DB menyimpan "Kota Bandar
-        // Lampung" sedangkan UI menawarkan "Bandar Lampung" — tanpa ini
-        // langganan wilayah tidak pernah cocok dan notifikasi hilang diam-diam.
-        $normalize = static fn (string $name): string => trim(
-            (string) preg_replace('/^(kabupaten|kota)\s+/i', '', mb_strtolower(trim($name)))
+        $haystack = array_map(
+            static fn (string $name): string => RegionName::normalize($name),
+            array_filter([$region->village, $region->district, $region->regency]),
         );
-        $haystack = array_map($normalize, array_filter([$region->village, $region->district, $region->regency]));
 
         return collect($monitored)->contains(
-            fn (string $item) => in_array($normalize($item), $haystack, true)
+            fn (string $item) => in_array(RegionName::normalize($item), $haystack, true)
         );
     }
 

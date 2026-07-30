@@ -8,6 +8,7 @@ use App\Services\RegionMonitoringService;
 use App\Services\ReportAccessService;
 use App\Support\AppTime;
 use App\Support\CsvWriter;
+use App\Support\RegionName;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -489,6 +490,6 @@ final class DashboardController
 
     private function normalizeRegency(string $regency): string
     {
-        return preg_replace('/^(kabupaten|kota)\s+/i', '', mb_strtolower(trim($regency))) ?? '';
+        return RegionName::normalize($regency);
     }
 }
