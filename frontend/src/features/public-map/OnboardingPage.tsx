@@ -158,8 +158,8 @@ export function OnboardingPage() {
               marginBottom: "40px"
             }}
           >
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "var(--accent-soft)", color: "var(--accent)", padding: "6px 16px", borderRadius: "100px", fontSize: "0.85rem", fontWeight: 700, margin: "0 auto 24px" }}>
-            <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--accent)" }} /> WebGIS Kebencanaan Provinsi Lampung
+          <div className="onboarding-kicker">
+            <span className="onboarding-kicker-title">WebGIS Kebencanaan Provinsi Lampung</span>
           </div>
           <h1 className="dark-text" style={{ fontSize: "clamp(2.5rem, 4vw, 3.5rem)", fontWeight: 900, margin: "0 auto 20px", maxWidth: 800, letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             Sistem Informasi Prediksi Risiko<br />Banjir Rob Terpadu Provinsi Lampung.

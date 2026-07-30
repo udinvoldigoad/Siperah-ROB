@@ -26,6 +26,7 @@ type OperatorSummary = {
   pending_reports: number;
   monthly_validations: number;
   operator_regency?: string | null;
+  scope_label?: string | null;
   latest_prediction_date?: string | null;
   region_statuses: {
     id: string;
@@ -134,7 +135,7 @@ export function OperatorDashboardPage() {
 
   const handleReject = async (report: OperatorReport) => {
     try {
-      await updateOperatorReportStatus(report.id, "ditolak", "Ditolak oleh operator BPBD");
+      await updateOperatorReportStatus(report.id, "ditolak", "Ditolak oleh admin BPBD");
       await loadReports();
       toast.info(`Laporan ${report.code} telah ditolak.`);
     } catch {
@@ -146,19 +147,19 @@ export function OperatorDashboardPage() {
   // halaman ini saja -- dengan paginasi, `reports` cuma memuat laporan halaman aktif.
   const pendingCount = summary.pending_reports;
   const triageCountOnPage = reports.filter((r) => !r.isWithinMonitoringArea || r.status === "perlu_review").length;
-  const operatorArea = summary.operator_regency ?? "wilayah kerja operator";
+  const operatorArea = summary.scope_label ?? summary.operator_regency ?? "Provinsi Lampung";
 
   const handleExport = async () => {
     try {
-      await downloadFile("/dashboard/operator/reports/export", "dashboard-operator-laporan.csv");
-      toast.success("Export laporan operator berhasil diunduh.");
+      await downloadFile("/dashboard/operator/reports/export", "dashboard-admin-laporan.csv");
+      toast.success("Export laporan admin berhasil diunduh.");
     } catch (err: unknown) {
-      toast.error(errorMessage(err, "Gagal export laporan operator."));
+      toast.error(errorMessage(err, "Gagal export laporan admin."));
     }
   };
 
   return (
-    <AppShell active="operator" title="Dashboard Operator BPBD">
+    <AppShell active="operator" title="Dashboard Admin BPBD">
       <style>{`
         .operator-pagination { align-items: center; border-top: 1px solid var(--line); display: flex; gap: 8px; justify-content: space-between; padding: 14px 24px; flex-wrap: wrap; }
         .operator-page-btn { align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); cursor: pointer; display: inline-flex; height: 34px; justify-content: center; min-width: 34px; padding: 0 10px; }
@@ -499,7 +500,7 @@ export function OperatorDashboardPage() {
                   </motion.tr>
                 );})}
                 {summary.region_statuses.length === 0 && (
-                  <tr><td colSpan={3} style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>Belum ada data prediksi wilayah operator.</td></tr>
+                  <tr><td colSpan={3} style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>Belum ada data prediksi untuk cakupan provinsi.</td></tr>
                 )}
                 </tbody>
               </table>

@@ -22,28 +22,14 @@ final class DashboardController
     ) {}
 
     /**
-     * FR-OPS-1—5: Dashboard operator BPBD kabupaten/kota.
-     * Filter berdasarkan region_id operator (wilayah kerjanya).
+     * FR-OPS-1—5: Dashboard operasional admin BPBD.
+     * Sejak role operator kabupaten dihapus, admin bekerja di cakupan provinsi.
      */
     public function operatorSummary(Request $request): JsonResponse
     {
         $user = $request->user();
-        $regionId = $user?->region_id;
-
-        // Jika operator punya region, filter per regency yang sama
-        $regency = null;
-        if ($regionId) {
-            $regency = DB::table('regions')->where('id', $regionId)->value('regency');
-        }
 
         $regionQuery = $this->monitoredRegionsQuery();
-        if ($regency) {
-            $normalizedRegency = $this->normalizeRegency($regency);
-            $regionQuery->whereRaw(
-                "REGEXP_REPLACE(LOWER(TRIM(regency)), '^(kabupaten|kota)\\s+', '') = ?",
-                [$normalizedRegency],
-            );
-        }
         $regionIds = $regionQuery->pluck('id');
         // Konsisten dengan peta risiko & dashboard provinsi: pakai prediksi
         // TERDEKAT yang akan datang (>= hari ini), fallback ke tanggal terbaru.
@@ -112,7 +98,8 @@ final class DashboardController
             'pending_reports' => $pending,
             'monthly_validations' => $monthlyValidations,
             'latest_prediction_date' => $latestPredictionDate,
-            'operator_regency' => $regency,
+            'operator_regency' => null,
+            'scope_label' => 'Provinsi Lampung',
             'region_statuses' => $riskStatuses,
             'pending_report_queue' => $pendingReports,
         ]]);
@@ -280,7 +267,7 @@ final class DashboardController
                 ]);
             }
             fclose($output);
-        }, 'dashboard-operator-laporan.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }, 'dashboard-admin-laporan.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     private function regencyRiskRows(?string $latestPredictionDate, ?string $selectedRegency = null)
