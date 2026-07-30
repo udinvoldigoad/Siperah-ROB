@@ -66,49 +66,47 @@ export function PortalPage() {
       <style>{`
         /* Elite Design System Styles */
         .siperah-landing-root {
-          --bg-primary: #f6f9fc;
-          --bg-card: #FFFFFF;
-          --bg-card-dark: #0f172a;
-          --ink-primary: #0f172a;
-          --ink-muted: #475569;
-          --border-color: #e2e8f0;
-          --accent-blue: #1557b0;
+          --bg-primary: var(--bg);
+          --bg-card: var(--surface);
+          --bg-card-dark: var(--ink);
+          --ink-primary: var(--ink);
+          --ink-muted: var(--ink-soft);
+          --border-color: var(--line);
+          --accent-blue: var(--blue-accent);
           --accent-blue-soft: #eff6ff;
           --bg-header: rgba(246, 249, 252, 0.88);
-          --brand-bg: #ffffff;
+          --brand-bg: var(--surface);
           --bg-overlay-start: rgba(246, 249, 252, 0.7);
           --bg-overlay-end: rgba(246, 249, 252, 1);
           --bg-marquee: rgba(255, 255, 255, 0.62);
-          --ink-inverse: #ffffff;
-          --bg-footer: #0f172a;
+          --bg-footer: var(--footer-bg);
         }
 
         [data-theme="dark"] .siperah-landing-root {
-          --bg-primary: #020617;
-          --bg-card: #0f172a;
-          --bg-card-dark: #FFFFFF;
-          --ink-primary: #f8fafc;
-          --ink-muted: #94a3b8;
-          --border-color: #334155;
-          --accent-blue: #3b82f6;
-          --accent-blue-soft: #1e3a8a;
+          --bg-primary: var(--bg);
+          --bg-card: var(--surface);
+          --bg-card-dark: var(--surface);
+          --ink-primary: var(--ink);
+          --ink-muted: var(--ink-soft);
+          --border-color: var(--line);
+          --accent-blue: var(--blue-accent);
+          --accent-blue-soft: var(--blue-soft);
           --bg-header: rgba(2, 6, 23, 0.88);
-          --brand-bg: #0f172a;
+          --brand-bg: var(--surface);
           --bg-overlay-start: rgba(2, 6, 23, 0.85);
           --bg-overlay-end: rgba(2, 6, 23, 1);
           --bg-marquee: rgba(15, 23, 42, 0.62);
-          --ink-inverse: #020617;
-          --bg-footer: #000000;
+          --bg-footer: var(--footer-bg);
         }
 
         /* Component-Specific Dark Mode Overrides */
-        [data-theme="dark"] .siperah-landing-root .bento-card-el.dark-theme { background: #1e293b; border-color: #334155; }
-        [data-theme="dark"] .siperah-landing-root .warning-factor-box { background: #0f172a; border-color: #1e293b; }
-        [data-theme="dark"] .siperah-landing-root .warning-factor-label { background: #451a03; border-color: #78350f; color: #fef3c7; }
-        [data-theme="dark"] .siperah-landing-root .reporting-step { background: #0f172a; border-color: #1e293b; }
-        [data-theme="dark"] .siperah-landing-root .reporting-step-icon { background: #1e293b; color: #38bdf8; }
-        [data-theme="dark"] .siperah-landing-root .landing-map-frame { background: #0f172a; border-color: #1e293b; box-shadow: 0 16px 40px rgba(0, 0, 0, .4); }
-        [data-theme="dark"] .siperah-landing-root .reporting-step-number { background: #0284c7; border-color: #0f172a; box-shadow: 0 0 0 1px #0369a1; }
+        [data-theme="dark"] .siperah-landing-root .bento-card-el.dark-theme { background: var(--surface); border-color: var(--line); }
+        [data-theme="dark"] .siperah-landing-root .warning-factor-box { background: var(--surface); border-color: var(--line); }
+        [data-theme="dark"] .siperah-landing-root .warning-factor-label { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber-text); }
+        [data-theme="dark"] .siperah-landing-root .reporting-step { background: var(--surface); border-color: var(--line); }
+        [data-theme="dark"] .siperah-landing-root .reporting-step-icon { background: var(--surface); color: var(--ocean-dark); }
+        [data-theme="dark"] .siperah-landing-root .landing-map-frame { background: var(--surface); border-color: var(--line); box-shadow: 0 16px 40px rgba(0, 0, 0, .4); }
+        [data-theme="dark"] .siperah-landing-root .reporting-step-number { background: var(--ocean-mid); border-color: var(--surface); box-shadow: 0 0 0 1px var(--ocean-mid); }
 
         .siperah-landing-root {
           color: var(--ink-primary);
@@ -160,8 +158,8 @@ export function PortalPage() {
           width: 30px;
           height: 30px;
           background: var(--brand-bg);
-          color: #2563eb;
-          border: 2px solid #2563eb;
+          color: var(--blue-accent);
+          border: 2px solid var(--blue-accent);
           border-radius: 8px;
           font-size: 1.1rem;
         }
@@ -328,7 +326,7 @@ export function PortalPage() {
           width: 100%;
           height: 100vh;
           background-image:
-            radial-gradient(circle at 50% 18%, rgba(37, 99, 235, .12), transparent 34%),
+            radial-gradient(circle at 50% 18%, rgba(37, 99, 235, .08), transparent 34%),
             linear-gradient(var(--bg-overlay-start), var(--bg-overlay-end)),
             linear-gradient(rgba(148, 163, 184, 0.14) 1px, transparent 1px),
             linear-gradient(90deg, rgba(148, 163, 184, 0.14) 1px, transparent 1px),
@@ -377,19 +375,18 @@ export function PortalPage() {
           justify-content: center;
           width: 32px;
           height: 32px;
-          background: rgba(37, 99, 235, 0.08);
-          border: 1px solid rgba(37, 99, 235, 0.15);
-          border-radius: 8px;
-          color: #2563eb;
+          background: var(--blue-soft);
+          border: 1px solid var(--blue-accent);
+          color: var(--blue-accent);
           flex-shrink: 0;
         }
         .marquee-item span .material-symbols-outlined {
           font-size: 18px;
         }
         [data-theme="dark"] .marquee-item span {
-          background: rgba(59, 130, 246, 0.15);
-          border-color: rgba(59, 130, 246, 0.25);
-          color: #60a5fa;
+          background: var(--blue-soft);
+          border-color: var(--blue-accent);
+          color: var(--ocean-dark);
         }
         @keyframes marquee-scroll {
           0% { transform: translateX(0); }
@@ -446,7 +443,7 @@ export function PortalPage() {
         }
         .bento-card-el:hover {
           transform: translateY(-3px);
-          border-color: rgba(21, 87, 176, .34);
+          border-color: var(--blue-accent);
           box-shadow: 0 18px 44px rgba(15, 23, 42, .08);
         }
 
@@ -455,9 +452,9 @@ export function PortalPage() {
         .card-span-5 { grid-column: span 5; }
         
         .bento-card-el.dark-theme {
-          background: #eaf3ff;
+          background: var(--blue-soft);
           color: var(--ink-primary);
-          border-color: #cfe2fb;
+          border-color: var(--blue-accent);
         }
         .bento-card-el.dark-theme h3 { color: var(--ink-primary); }
         .bento-card-el.dark-theme p { color: var(--ink-muted); }
@@ -502,7 +499,7 @@ export function PortalPage() {
           padding-top: 24px;
         }
         .dark-theme .card-links-row {
-          border-color: #cfe2fb;
+          border-color: var(--blue-accent);
         }
         .card-action-link {
           display: inline-flex;
@@ -527,16 +524,15 @@ export function PortalPage() {
           border-radius: 12px;
           overflow: hidden;
           border: 1px solid var(--border-color);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
         }
         .dark-theme .card-preview-container {
-          border-color: rgba(255, 255, 255, 0.1);
+          border-color: var(--line);
         }
 
         .warning-factor-box {
           align-self: stretch;
-          background: #dbeafe;
-          border: 1px solid #7dd3fc;
+          background: var(--blue-soft);
+          border: 1px solid var(--ocean-border);
           border-radius: 16px;
           box-shadow: 0 16px 40px rgba(2, 132, 199, .14);
           display: flex;
@@ -547,10 +543,10 @@ export function PortalPage() {
         }
         .warning-factor-label {
           align-items: center;
-          background: #fef3c7;
-          border: 1px solid #f4cf68;
+          background: var(--amber-bg);
+          border: 1px solid var(--amber-border);
           border-radius: 8px;
-          color: #92400e;
+          color: var(--amber-text);
           display: inline-flex;
           font-size: 12px;
           font-weight: 800;
@@ -560,7 +556,7 @@ export function PortalPage() {
           padding: 8px 11px;
           text-transform: uppercase;
         }
-        .warning-factor-label .material-symbols-outlined { color: #d97706; font-size: 18px; }
+        .warning-factor-label .material-symbols-outlined { color: var(--amber); font-size: 18px; }
         .warning-factor-list { display: grid; list-style: none; margin: 0; padding: 0; }
         .warning-factor-list li {
           align-items: center;
@@ -573,11 +569,11 @@ export function PortalPage() {
           padding: 13px 2px;
         }
         .warning-factor-list li:last-child { border-bottom: 0; padding-bottom: 2px; }
-        .warning-factor-list .material-symbols-outlined { color: #d97706; font-size: 20px; }
+        .warning-factor-list .material-symbols-outlined { color: var(--amber); font-size: 20px; }
         .guide-definition-grid { align-items: stretch !important; }
         .landing-map-frame {
-          background: #dbeafe;
-          border: 1px solid #bae6fd;
+          background: var(--blue-soft);
+          border: 1px solid var(--ocean-border);
           border-radius: 16px;
           box-shadow: 0 16px 40px rgba(2, 132, 199, .1);
           min-height: 400px;
@@ -602,13 +598,13 @@ export function PortalPage() {
           text-align: center;
           transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
         }
-        .reporting-step:hover { border-color: #93c5fd; box-shadow: 0 18px 38px rgba(15, 23, 42, .08); transform: translateY(-4px); }
+        .reporting-step:hover { border-color: var(--ocean-border); box-shadow: 0 18px 38px rgba(15, 23, 42, .08); transform: translateY(-4px); }
         .reporting-step-number {
           align-items: center;
-          background: #0284c7;
-          border: 5px solid #e0f2fe;
+          background: var(--ocean-mid);
+          border: 5px solid var(--ocean-light);
           border-radius: 999px;
-          box-shadow: 0 0 0 1px #7dd3fc;
+          box-shadow: 0 0 0 1px var(--ocean-border);
           color: #fff;
           display: inline-flex;
           font-size: 15px;
@@ -622,9 +618,9 @@ export function PortalPage() {
         }
         .reporting-step-icon {
           align-items: center;
-          background: #e0f2fe;
+          background: var(--ocean-light);
           border-radius: 9px;
-          color: #0284c7;
+          color: var(--ocean-mid);
           display: flex;
           height: 38px;
           justify-content: center;
@@ -647,10 +643,10 @@ export function PortalPage() {
         }
         .mock-logs-table th, .mock-logs-table td {
           padding: 10px 14px;
-          border-bottom: 1px solid rgba(18, 19, 20, 0.05);
+          border-bottom: 1px solid var(--line);
         }
         .mock-logs-table th {
-          background: rgba(18, 19, 20, 0.03);
+          background: var(--surface-soft);
           font-weight: 700;
         }
         .status-badge {
@@ -660,8 +656,8 @@ export function PortalPage() {
           font-size: 0.72rem;
           font-weight: 700;
         }
-        .status-badge.success { background: #DCFCE7; color: #15803D; }
-        .status-badge.fail { background: #FEE2E2; color: #B91C1C; }
+        .status-badge.success { background: var(--green-badge-bg); color: var(--green-badge); }
+        .status-badge.fail { background: var(--red-badge-bg); color: var(--red-badge); }
 
         /* Floating Mitigasi Help Trigger */
         .mitigasi-trigger {
@@ -803,7 +799,7 @@ export function PortalPage() {
           .footer-contact-col { text-align: left !important; min-width: 0 !important; }
           .footer-bottom { margin-top: 30px !important; }
         }
-        .footer-contact-link:hover { color: #fff !important; }
+        .footer-contact-link:hover { color: var(--ink-inverse) !important; }
       `}</style>
 
       {/* Grid Ambient Background Pattern */}
@@ -812,7 +808,7 @@ export function PortalPage() {
       {/* Full-Width Header */}
         <header className={`landing-header-full${isScrolled ? " is-scrolled" : ""}`}>
           <a className="brand-link" href="#/" style={{ gap: "12px" }}>
-            <img src="/logo.png" alt="Logo SIPERAH" style={{ width: "48px", height: "48px", objectFit: "contain", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }} />
+            <img src="/logo.png" alt="Logo SIPERAH" style={{ width: "48px", height: "48px", objectFit: "contain", borderRadius: "12px" }} />
             SIPERAH-RoB
           </a>
         <nav className="nav-links-wrap">
@@ -948,11 +944,11 @@ export function PortalPage() {
                 Pusat kendali dan monitoring prediksi risiko, analisis dampak, dan manajemen logistik untuk operator dan pengambil keputusan.
               </p>
               <div style={{ marginTop: 40, width: "100%", height: 180, background: "var(--bg-primary)", borderRadius: 12, border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", padding: 16, gap: 12 }}>
-                  <div style={{ display: "flex", gap: 8 }}>
-                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ef4444" }} />
-                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#f59e0b" }} />
-                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#10b981" }} />
-                  </div>
+                   <div style={{ display: "flex", gap: 8 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--critical)" }} />
+                      <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--medium)" }} />
+                      <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--low)" }} />
+                   </div>
                   <div style={{ display: "flex", gap: 12, flex: 1 }}>
                      <div style={{ width: "35%", height: "100%", background: "var(--bg-card)", borderRadius: 8 }} />
                      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1009,14 +1005,14 @@ export function PortalPage() {
             </ul>
           </div>
           <div>
-            <h2 style={{ fontSize: "3rem", fontWeight: 800, color: "var(--ink-primary)", marginBottom: "24px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>Apa itu <span style={{ color: "#0284c7" }}>Banjir Rob?</span></h2>
+            <h2 style={{ fontSize: "3rem", fontWeight: 800, color: "var(--ink-primary)", marginBottom: "24px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>Apa itu <span style={{ color: "var(--ocean-dark)" }}>Banjir Rob?</span></h2>
             <p style={{ fontSize: "1.15rem", color: "var(--ink-muted)", lineHeight: 1.8, marginBottom: "40px" }}>
               Banjir rob adalah genangan air laut yang meluap ke daratan, sering kali terjadi secara berulang. Di pesisir Lampung, fenomena ini tidak hanya dipicu oleh pasang surut astronomis, tetapi juga diperparah oleh cuaca ekstrem dan aktivitas manusia yang menyebabkan penurunan permukaan tanah.
             </p>
             <motion.a 
               href="#/map" 
               whileHover={{ y: -3, boxShadow: "0 15px 35px rgba(15,23,42,0.3)" }}
-              style={{ background: "#0f172a", color: "#fff", padding: "16px 28px", borderRadius: "10px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "12px", boxShadow: "0 10px 25px rgba(15,23,42,0.2)", fontSize: "1rem" }}
+              style={{ background: "var(--ink)", color: "var(--ink-inverse)", padding: "16px 28px", borderRadius: "10px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "12px", boxShadow: "0 10px 25px rgba(15,23,42,0.2)", fontSize: "1rem" }}
             >
               Lihat Peta Risiko <Icon name="arrow_forward" />
             </motion.a>
@@ -1037,10 +1033,10 @@ export function PortalPage() {
               Sistem Machine Learning kami memproyeksikan probabilitas banjir ke dalam empat kelas warna yang intuitif. Hal ini memudahkan Anda dan pengambil kebijakan untuk memprioritaskan tindakan mitigasi pada area yang paling berisiko.
             </p>
             <div style={{ display: "grid", gap: "16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#ef4444" }}></div><strong style={{ minWidth: "120px" }}>Sangat Tinggi</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&gt;75% Probabilitas)</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#f97316" }}></div><strong style={{ minWidth: "120px" }}>Tinggi</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(55–75% Probabilitas)</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#f59e0b" }}></div><strong style={{ minWidth: "120px" }}>Sedang</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(30–55% Probabilitas)</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#10b981" }}></div><strong style={{ minWidth: "120px" }}>Rendah</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&lt;30% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "var(--critical)" }}></div><strong style={{ minWidth: "120px" }}>Sangat Tinggi</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&gt;75% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "var(--high)" }}></div><strong style={{ minWidth: "120px" }}>Tinggi</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(55–75% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "var(--medium)" }}></div><strong style={{ minWidth: "120px" }}>Sedang</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(30–55% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "var(--low)" }}></div><strong style={{ minWidth: "120px" }}>Rendah</strong><span style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>(&lt;30% Probabilitas)</span></div>
             </div>
           </div>
           <div className="landing-map-frame" style={{ order: 2 }}>
@@ -1078,7 +1074,7 @@ export function PortalPage() {
             </div>
           </div>
           <div style={{ marginTop: "40px" }}>
-            <a href={!userIsLoggedIn ? "#/login" : currentRole === "warga" ? "#/reports" : dashboardRoute} className="btn solid" style={{ background: "var(--ocean-dark, #0f172a)", color: "#fff", padding: "14px 32px", borderRadius: "10px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            <a href={!userIsLoggedIn ? "#/login" : currentRole === "warga" ? "#/reports" : dashboardRoute} className="btn solid" style={{ background: "var(--ink)", color: "var(--ink-inverse)", padding: "14px 32px", borderRadius: "10px", textDecoration: "none", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
               Mulai Melapor Sekarang <Icon name="add_circle" />
             </a>
           </div>
@@ -1132,20 +1128,20 @@ export function PortalPage() {
       </section>
 
       {/* Minimal Landing Footer */}
-      <footer className="site-footer" style={{ background: "var(--bg-footer)", color: "#cbd5e1", padding: "60px 40px 40px", marginTop: "auto", borderTop: "1px solid var(--border-color)" }}>
+      <footer className="site-footer" style={{ background: "var(--bg-footer)", color: "var(--footer-text)", padding: "60px 40px 40px", marginTop: "auto", borderTop: "1px solid var(--border-color)" }}>
         <div className="site-footer-inner" style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", flexWrap: "wrap", gap: "40px", justifyContent: "space-between" }}>
           <div className="footer-brand-col" style={{ lineHeight: '1.6', maxWidth: "400px" }}>
-            <strong style={{ fontSize: '1.15rem', color: '#fff', letterSpacing: '-0.01em' }}>SIPERAH-RoB</strong>
-            <p style={{ margin: '8px 0 0', fontSize: '0.92rem', color: '#94a3b8', lineHeight: 1.6 }}>Sistem Informasi Prediksi Risiko Banjir Rob Terpadu Provinsi Lampung.</p>
+            <strong style={{ fontSize: '1.15rem', color: 'var(--ink-inverse)', letterSpacing: '-0.01em' }}>SIPERAH-RoB</strong>
+            <p style={{ margin: '8px 0 0', fontSize: '0.92rem', color: 'var(--footer-muted)', lineHeight: 1.6 }}>Sistem Informasi Prediksi Risiko Banjir Rob Terpadu Provinsi Lampung.</p>
           </div>
           <div className="footer-contact-col" style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'right', minWidth: "260px" }}>
-            <strong style={{ color: "#fff", fontSize: '0.95rem' }}>Pusdalops BPBD Provinsi Lampung</strong>
-            <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Jl. Beringin Raya No. 1, Teluk Betung, Bandar Lampung</span>
-            <a href="mailto:tanggap@bpbd.lampungprov.go.id" className="footer-contact-link" style={{ fontSize: '0.9rem', color: '#cbd5e1', textDecoration: 'none', wordBreak: 'break-word' }}>tanggap@bpbd.lampungprov.go.id</a>
-            <a href="tel:+62721123456" className="footer-contact-link" style={{ fontSize: '0.9rem', color: '#cbd5e1', textDecoration: 'none' }}>(0721) 123456</a>
+            <strong style={{ color: "var(--ink-inverse)", fontSize: '0.95rem' }}>Pusdalops BPBD Provinsi Lampung</strong>
+            <span style={{ fontSize: '0.9rem', color: 'var(--footer-muted)' }}>Jl. Beringin Raya No. 1, Teluk Betung, Bandar Lampung</span>
+            <a href="mailto:tanggap@bpbd.lampungprov.go.id" className="footer-contact-link" style={{ fontSize: '0.9rem', color: 'var(--footer-text)', textDecoration: 'none', wordBreak: 'break-word' }}>tanggap@bpbd.lampungprov.go.id</a>
+            <a href="tel:+62721123456" className="footer-contact-link" style={{ fontSize: '0.9rem', color: 'var(--footer-text)', textDecoration: 'none' }}>(0721) 123456</a>
           </div>
         </div>
-        <div className="footer-bottom" style={{ maxWidth: "1200px", margin: "40px auto 0", paddingTop: "24px", borderTop: "1px solid #1e293b", textAlign: "center", fontSize: "0.85rem", color: "#64748b" }}>
+        <div className="footer-bottom" style={{ maxWidth: "1200px", margin: "40px auto 0", paddingTop: "24px", borderTop: "1px solid var(--footer-line)", textAlign: "center", fontSize: "0.85rem", color: "var(--footer-muted)" }}>
           SIPERAH-RoB &copy; 2026. Institut Teknologi Sumatera
         </div>
       </footer>
