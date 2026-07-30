@@ -39,7 +39,7 @@ SIPERAH-RoB adalah **Sistem Informasi Geografis (SIG)** berbasis WebGIS terpadu 
 
 ### Wilayah Cakupan
 
-Sistem mencakup **15 kabupaten/kota pesisir** di Provinsi Lampung:
+Sistem memantau **8 kabupaten/kota pesisir** di Provinsi Lampung yang memiliki stasiun pengamatan pasang surut dan menjadi target prediksi pipeline ML:
 
 | No | Kabupaten/Kota |
 | :--: | :--- |
@@ -50,14 +50,9 @@ Sistem mencakup **15 kabupaten/kota pesisir** di Provinsi Lampung:
 | 5 | Kabupaten Pesisir Barat |
 | 6 | Kabupaten Lampung Timur |
 | 7 | Kabupaten Tulang Bawang |
-| 8 | Kabupaten Tulang Bawang Barat |
-| 9 | Kabupaten Mesuji |
-| 10 | Kabupaten Lampung Tengah |
-| 11 | Kabupaten Lampung Utara |
-| 12 | Kabupaten Way Kanan |
-| 13 | Kabupaten Lampung Barat |
-| 14 | Kabupaten Pringsewu |
-| 15 | Kota Metro |
+| 8 | Kabupaten Mesuji |
+
+> **Catatan**: Peta interaktif menampilkan seluruh 15 kabupaten/kota di Provinsi Lampung untuk navigasi, tetapi prediksi risiko banjir rob hanya tersedia untuk 8 kabupaten/kota pesisir di atas. Kelurahan/desa yang dipantau ditentukan oleh flag `coastal_flag` berdasarkan jarak ke garis pantai BIG (≤ 1 km).
 
 ---
 
