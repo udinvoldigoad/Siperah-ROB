@@ -786,11 +786,8 @@ final class ApiFoundationTest extends TestCase
 
         app(AuditService::class)->write($request, 'audit_fail_safe_test', 'not_a_valid_outcome', 'tests:audit');
 
-        // Invalid audit_outcome enum value causes PostgreSQL to abort the
-        // transaction, which is caught by AuditService. Reset before asserting.
-        DB::rollBack();
-        DB::beginTransaction();
-
+        // AuditService now wraps the INSERT in DB::transaction() (savepoint),
+        // so the outer transaction stays healthy even after an enum violation.
         $this->assertDatabaseMissing('audit_logs', [
             'target_resource' => 'tests:audit',
         ]);
