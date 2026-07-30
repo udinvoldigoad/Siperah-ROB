@@ -123,9 +123,6 @@ export function OnboardingPage() {
             :root[data-theme="dark"] .citizen-hero-metrics .panel { background: rgba(30, 41, 59, 0.6); border-color: rgba(255,255,255,0.05); }
             .citizen-hero-metrics .panel:hover { transform: scale(1.03); background: rgba(255, 255, 255, 0.85); }
             :root[data-theme="dark"] .citizen-hero-metrics .panel:hover { background: rgba(30, 41, 59, 0.9); }
-            .onboarding-kicker { align-items: center; background: rgba(255, 255, 255, .74); border: 1px solid rgba(15, 23, 42, .08); border-radius: 999px; box-shadow: 0 14px 40px rgba(15, 23, 42, .07); color: #0f172a; display: inline-flex; margin: 0 auto 24px; padding: 8px 17px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
-            :root[data-theme="dark"] .onboarding-kicker { background: rgba(15, 23, 42, .74); border-color: rgba(255, 255, 255, .1); color: #f8fafc; box-shadow: 0 14px 38px rgba(0, 0, 0, .3); }
-            .onboarding-kicker-title { font-size: .86rem; font-weight: 700; letter-spacing: 0; }
             .faq-item { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 16px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: all 0.3s ease; }
             :root[data-theme="dark"] .faq-item { background: rgba(30, 41, 59, 0.5); border-color: rgba(255,255,255,0.05); }
             .faq-item:hover { background: rgba(255, 255, 255, 0.85); border-color: rgba(255, 255, 255, 0.8); box-shadow: 0 8px 25px rgba(0,0,0,0.06); }
@@ -165,8 +162,8 @@ export function OnboardingPage() {
               marginBottom: "40px"
             }}
           >
-          <div className="onboarding-kicker">
-            <span className="onboarding-kicker-title">WebGIS Kebencanaan Provinsi Lampung</span>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "var(--accent-soft)", color: "var(--accent)", padding: "6px 16px", borderRadius: "100px", fontSize: "0.85rem", fontWeight: 700, margin: "0 auto 24px" }}>
+            <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--accent)" }} /> WebGIS Kebencanaan Provinsi Lampung
           </div>
           <h1 className="dark-text" style={{ fontSize: "clamp(2.5rem, 4vw, 3.5rem)", fontWeight: 900, margin: "0 auto 20px", maxWidth: 800, letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             Sistem Informasi Prediksi Risiko<br />Banjir Rob Terpadu Provinsi Lampung.
