@@ -1,0 +1,93 @@
+name: E2E Nightly (Playwright)
+
+# Suite Playwright (frontend/e2e) hanya berjalan di mesin lokal — tidak ada
+# workflow yang memanggilnya, jadi bisa membusuk tanpa ketahuan. Job ini
+# menjalankannya tiap malam (02:30 UTC = 09:30 WIB) dan bisa dipicu manual.
+# Ini memakai server & DB uji yang sama dengan dev lokal: backend artisan
+# serve --env=testing di port 8123, vite dev di 5273, DB siperah_rob_test
+# di-reset (migrate:fresh --seed) oleh global-setup.
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgis/postgis:17-3.4-alpine
+        env:
+          POSTGRES_DB: siperah_rob_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:8Z1n3Q5m9qk1E1f4y2r6t8u0v3w5x7y9A1b3c5d7e9f=
+      APP_DEBUG: "true"
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: siperah_rob_test
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      FILESYSTEM_DISK: local
+      SANCTUM_STATEFUL_DOMAINS: localhost,127.0.0.1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo_pgsql, pgsql, mbstring, bcmath, gd, zip, intl, exif
+          coverage: none
+
+      - name: Cache dependensi Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-
+
+      - name: composer install
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm ci
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Pastikan ekstensi PostGIS aktif
+        run: PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d siperah_rob_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+
+      # global-setup Playwright menjalankan migrate:fresh --seed --env=testing
+      # sendiri, jadi cukup panggil `npm run e2e` — kedua server (backend 8123,
+      # vite 5273) di-orchestrate oleh config playwright.
+      - name: Run Playwright E2E
+        working-directory: frontend
+        run: npm run e2e
