@@ -1,6 +1,6 @@
 # 🔧 Checklist Perbaikan Lanjutan — SIPERAH-RoB
 
-> **Dibuat:** 2026-07-29 · **39 temuan** · Semua rujukan `file:baris` sudah dibuka & diverifikasi.
+> **Dibuat:** 2026-07-29 · **36 item** (dari 39 temuan audit awal; 3 digugurkan/disatukan saat revisi) · Semua rujukan `file:baris` sudah dibuka & diverifikasi.
 > **Cakupan:** kode mati, bug, logika bisnis, UI tak konsisten, perawatan, data.
 > **Dokumen tunggal.** Sejak 2026-07-29 file ini menggantikan `audit-perbaikan.md` (audit 2026-07-26), yang sudah dihapus. Item terbukanya diperiksa ulang terhadap kode hari ini lalu dipindahkan ke [§8](#8--warisan-audit-2026-07-26); yang tidak dipindahkan beserta alasannya ada di [§8.6](#86-yang-digugurkan-dan-alasannya).
 
@@ -25,13 +25,13 @@
 |---|---|---|---|---|---|---|
 | 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) | 1 | 0 | 1 | 2 | **2 ✅** |
 | 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **4 ✅** |
-| 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | **3** |
-| 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | **1** |
-| 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | **3** |
-| 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | **1** |
+| 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 2 | 1 | 3 | **3 ✅** |
+| 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 0 | 1 | 1 | **1 ✅** |
+| 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | **3 ✅** |
+| 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | **1 ✅** |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | **4 ✅** |
 | 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **18 ✅** |
-| | **Total** | **1** | **23** | **15** | **39** | **36** |
+| | **Total** | **1** | **20** | **15** | **36** | **36 ✅** |
 
 ---
 
