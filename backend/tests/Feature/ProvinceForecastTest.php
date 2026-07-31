@@ -6,7 +6,6 @@ use App\Models\Prediction;
 use App\Models\Region;
 use App\Support\AppTime;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -24,12 +23,6 @@ use Tests\TestCase;
 final class ProvinceForecastTest extends TestCase
 {
     use DatabaseTransactions;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        Cache::flush();
-    }
 
     public function test_forecast_is_aggregated_per_date_not_per_village(): void
     {

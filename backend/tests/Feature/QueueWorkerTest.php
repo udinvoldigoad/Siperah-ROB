@@ -27,6 +27,11 @@ final class QueueWorkerTest extends TestCase
         config(['queue.default' => 'database']);
         DB::table('jobs')->delete();
         $jobsBefore = 0;
+        // `failed_jobs` bersifat global (bukan milik test ini): baris sisa dari
+        // test lain yang sengaja membuat job gagal akan membuat `assertSame(0)`
+        // meledak. Assert DELTA alih-alih nilai absolut — yang diuji adalah
+        // worker ini tidak menambah failed job baru.
+        $failedBefore = DB::table('failed_jobs')->count();
 
         $region = $this->insertRegion();
         $operator = $this->makeUser('admin', $region->id);
@@ -47,7 +52,7 @@ final class QueueWorkerTest extends TestCase
         ]));
 
         $this->assertSame($jobsBefore, DB::table('jobs')->count(), 'Antrean harus kosong kembali setelah worker jalan.');
-        $this->assertSame(0, DB::table('failed_jobs')->count(), 'Tidak boleh ada failed job.');
+        $this->assertSame($failedBefore, DB::table('failed_jobs')->count(), 'Worker tidak boleh menambah failed job.');
         $this->assertTrue(
             DB::table('notification_inbox')
                 ->where('user_id', $operator->id)

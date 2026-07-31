@@ -8,7 +8,6 @@ use App\Support\AppTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -37,7 +36,6 @@ final class PreDawnDateAnchorTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Cache::flush();
         CarbonImmutable::setTestNow(CarbonImmutable::parse(self::UTC_NOW, 'UTC'));
     }
 

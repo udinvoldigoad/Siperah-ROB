@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
@@ -35,7 +34,6 @@ final class DeletedAccountRestoreTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Cache::flush();
         config(['services.frontend.url' => self::FRONTEND]);
     }
 

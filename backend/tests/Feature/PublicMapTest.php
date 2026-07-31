@@ -8,7 +8,6 @@ use App\Models\Region;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -18,19 +17,14 @@ use Tests\TestCase;
  * horizon tanggal (default = tanggal prediksi terdekat >= hari ini, fallback ke
  * tanggal terakhir), tanggal eksplisit, dan export CSV dengan filter yang sama.
  *
- * Respons /public/map di-cache 15 menit dengan key filter — cache array test
- * bertahan antar test satu proses, jadi setiap test flush cache + pakai nama
- * kabupaten unik agar tidak membaca payload basi milik test lain.
+ * Respons /public/map di-cache 15 menit dengan key filter; cache array bertahan
+ * antar test satu proses. Cache di-flush terpusat oleh `Tests\TestCase::setUp`,
+ * jadi tiap test membaca payload segar miliknya sendiri. Nama kabupaten unik
+ * tetap dipakai agar baris regions antar-test tidak saling tumpang tindih.
  */
 final class PublicMapTest extends TestCase
 {
     use DatabaseTransactions;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        Cache::flush();
-    }
 
     public function test_map_returns_geojson_regions_reports_and_layer_collections(): void
     {

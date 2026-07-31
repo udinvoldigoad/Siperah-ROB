@@ -8,7 +8,6 @@ use App\Models\Region;
 use App\Models\User;
 use App\Support\AppTime;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -28,12 +27,6 @@ use Tests\TestCase;
 final class ResearchDatasetCountTest extends TestCase
 {
     use DatabaseTransactions;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        Cache::flush();
-    }
 
     public function test_record_count_reflects_real_rows_not_the_seeder_column(): void
     {

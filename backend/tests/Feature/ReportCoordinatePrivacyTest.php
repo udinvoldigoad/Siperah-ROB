@@ -6,7 +6,6 @@ use App\Models\GroundTruthReport;
 use App\Models\Region;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -26,12 +25,6 @@ final class ReportCoordinatePrivacyTest extends TestCase
     private const EXACT_LON = 105.260987;
     private const ROUNDED_LAT = -5.445;
     private const ROUNDED_LON = 105.261;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        Cache::flush(); // payload peta publik di-cache; jangan pakai sisa test lain
-    }
 
     public function test_public_mode_awam_returns_only_approximate_coordinates(): void
     {

@@ -13,9 +13,9 @@ use Tests\TestCase;
  * kredensial salah, registrasi (default warga+aktif, tak bisa eskalasi role),
  * dan logout mencabut token. Negative path RBAC dicakup RbacNegativePathTest.
  *
- * Catatan rate limiter: registrasi dibatasi 5/jam per IP (cache array di test,
- * counter berbagi satu proses PHPUnit) — total panggilan /auth/register di file
- * ini dijaga maksimal 4.
+ * Rate limiter: counter registrasi (5/jam per IP) tersimpan di cache store yang
+ * di-flush `Tests\TestCase::setUp`, jadi tiap test mulai dari nol dan jumlah
+ * panggilan /auth/register di file ini tidak perlu dijaga di bawah batas lagi.
  */
 final class AuthFlowTest extends TestCase
 {
