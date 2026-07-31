@@ -230,15 +230,12 @@ final class ReportController
 
     public function validateReport(Request $request, string $report): JsonResponse
     {
-        $reportData = GroundTruthReport::findOrFail($report);
-        $this->access->authorizeReview($request->user(), $reportData);
-        
-        $reportData->update([
+        $reportData = $this->transitionReviewStatus($request, $report, [
             'status' => 'divalidasi',
             'validated_by' => $request->user()->id,
             'validated_at' => now(),
+            'rejection_reason' => null,
         ]);
-        $reportData->load(['region', 'reporter', 'validator', 'photos']);
         $this->notifications->notifyReportStatus($reportData);
         $this->writeAudit($request, 'validate_report', $reportData);
 
@@ -250,16 +247,12 @@ final class ReportController
 
     public function rejectReport(RejectReportRequest $request, string $report): JsonResponse
     {
-        $reportData = GroundTruthReport::findOrFail($report);
-        $this->access->authorizeReview($request->user(), $reportData);
-
-        $reportData->update([
+        $reportData = $this->transitionReviewStatus($request, $report, [
             'status' => 'ditolak',
             'validated_by' => $request->user()->id,
             'validated_at' => now(),
             'rejection_reason' => $request->input('reason'),
         ]);
-        $reportData->load(['region', 'reporter', 'validator', 'photos']);
         $this->notifications->notifyReportStatus($reportData);
         $this->writeAudit($request, 'reject_report', $reportData);
 
@@ -271,18 +264,13 @@ final class ReportController
 
     public function updateStatus(UpdateReportStatusRequest $request, string $report): JsonResponse
     {
-        $reportData = GroundTruthReport::findOrFail($report);
-        $this->access->authorizeReview($request->user(), $reportData);
-
         $status = $request->input('status');
-
-        $reportData->update([
+        $reportData = $this->transitionReviewStatus($request, $report, [
             'status' => $status,
             'rejection_reason' => $request->input('rejection_reason'),
             'validated_by' => in_array($status, ['divalidasi', 'ditolak']) ? $request->user()->id : null,
             'validated_at' => in_array($status, ['divalidasi', 'ditolak']) ? now() : null,
         ]);
-        $reportData->load(['region', 'reporter', 'validator', 'photos']);
         $this->notifications->notifyReportStatus($reportData);
         $this->writeAudit($request, 'update_report_status', $reportData);
 
@@ -290,6 +278,31 @@ final class ReportController
             'message' => 'Status laporan diperbarui',
             'data' => new ReportResource($reportData)
         ]);
+    }
+
+    /**
+     * Transisi status yang atomik: status hanya ditulis bila barisnya MASIH
+     * menunggu/perlu_review saat UPDATE dieksekusi. Kalau admin lain (atau
+     * double-click) memenangkan balapan, UPDATE menyentuh 0 baris dan permintaan
+     * ini ditolak 409 — mencegah notifikasi ganda yang saling bertentangan.
+     */
+    private function transitionReviewStatus(Request $request, string $report, array $update): GroundTruthReport
+    {
+        $reportData = GroundTruthReport::findOrFail($report);
+        $this->access->authorizeReview($request->user(), $reportData);
+
+        $affected = DB::transaction(fn (): int => GroundTruthReport::query()
+            ->whereKey($reportData->getKey())
+            ->whereIn('status', ['menunggu', 'perlu_review'])
+            ->update($update));
+
+        if ($affected === 0) {
+            throw ValidationException::withMessages([
+                'status' => 'Laporan sudah diproses pengguna lain. Muat ulang untuk melihat status terbaru.',
+            ]);
+        }
+
+        return $reportData->refresh()->load(['region', 'reporter', 'validator', 'photos']);
     }
 
     private function writeAudit(Request $request, string $action, GroundTruthReport $report): void
