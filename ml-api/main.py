@@ -412,8 +412,20 @@ def run_predict(conn):
 
     for region in regions:
         region_id, regency, district, village = region[0], region[1], region[2], region[3]
-        dist_to_coast_m = float(region[4]) if region[4] is not None else 0.0
-        avg_elevation_m = float(region[5]) if region[5] is not None else 0.0
+        dist_raw = region[4]
+        elev_raw = region[5]
+        spatial_missing = dist_raw is None or elev_raw is None
+
+        if spatial_missing:
+            # Data spasial hilang: probabilitas risiko tidak boleh maksimal.
+            # Pakai nilai konservatif (elevasi 2m, jarak 500m) → faktor ~0.37
+            # agar wilayah ini TIDAK tampak lebih berisiko daripada yang datanya
+            # lengkap, dan tandai provenance_status agar operator bisa memprioritaskan.
+            avg_elevation_m = 2.0
+            dist_to_coast_m = 500.0
+        else:
+            dist_to_coast_m = float(dist_raw)
+            avg_elevation_m = float(elev_raw)
         
         station_key = labeler._normalize_regency(regency)
         if station_key not in station_results:
@@ -423,7 +435,7 @@ def run_predict(conn):
         tide_lookup = tide_lookups[station_key]
 
         # Logika Spasial: Probabilitas turun eksponensial seiring tingginya elevasi dan jauhnya dari pantai
-        # Elevasi 5m = exp(-2.5) = ~8% probabilitas asli. Elevasi 0m = 100%.
+        # Elevasi 5m = exp(-2.5) = ~8% probabilitas asli. Elevasi 0m (nol valid) = 100%.
         spatial_factor = np.exp(-avg_elevation_m * 0.5) * np.exp(-dist_to_coast_m / 1000.0)
 
         for _, row in result.iterrows():
@@ -461,7 +473,7 @@ def run_predict(conn):
                 generated_at,
                 data_source,
                 f"{train_model.MODEL_VERSION} - {row['horizon_type']} - stasiun {station_key}",
-                "official",
+                "partial" if spatial_missing else "official",
             ))
 
     # Batch insert: satu roundtrip per ratusan baris. Insert per baris memakan
