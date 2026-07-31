@@ -20,6 +20,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ResearchController
 {
+    private const RECORD_COUNT_TTL_MINUTES = 30;
+
     public function __construct(
         private readonly AuditService $audit,
         private readonly ResearchDatasetService $datasets,
