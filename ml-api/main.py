@@ -449,12 +449,16 @@ def run_predict(conn):
             final_prob = base_prob * spatial_factor
             
             raw_prob = round(final_prob * 100.0, 2)
+            # confidence dari model mencerminkan prob_rob mentah — skalakan
+            # sebanding agar tetap sejalan dengan final_prob yang sudah
+            # disesuaikan secara spasial.
+            adj_confidence = float(row["confidence"]) * spatial_factor
             
             try:
                 contract = PredictionContract(
                     risk_probability=raw_prob,
                     risk_class=predict_forecast.risk_class_from_probability(final_prob),
-                    confidence_score=float(row["confidence"]),
+                    confidence_score=round(adj_confidence, 2),
                     max_tidal_height=round(float(tide_row["tide_height_cm"]) / 100, 3),
                     peak_time=tide_row["peak_time"]
                 )
