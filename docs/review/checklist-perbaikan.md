@@ -30,8 +30,8 @@
 | 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | **3** |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | **1** |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | **4 ✅** |
-| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **13** |
-| | **Total** | **1** | **23** | **15** | **39** | **31** |
+| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **14** |
+| | **Total** | **1** | **23** | **15** | **39** | **32** |
 
 ---
 
@@ -220,7 +220,7 @@ Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% te
   15 tes e2e nyata (`login`/`admin`/`map`/`province`/`research`/`report-flow`) hanya berjalan bila seseorang mengetikkannya di mesin lokal. Tak ada satu pun dari lima workflow yang memanggilnya, jadi suite ini bisa membusuk tanpa ketahuan.
   **Aksi:** tambahkan job Playwright — nightly sudah cukup untuk mulai.
 
-- [ ] 🟠 **`AU-14` — Pipeline ML Python tanpa test, dan CI-nya menelan kegagalan** — `.github/workflows/ml-predict.yml:37` *(bukti: kode)*
+- [x] 🟠 **`AU-14` — Pipeline ML Python tanpa test, dan CI-nya menelan kegagalan** — `.github/workflows/ml-predict.yml:37` *(bukti: kode)* ✅ `2587a90`
   `main.py`, `feature_engineering`, `predict_forecast`, `labeler`, dan `PredictionContract` tidak punya pytest sama sekali; yang ada hanya uji wrapper PHP dengan stub. Workflow-nya pun berjalan terjadwal langsung ke DB **produksi**, dan cek konektivitasnya diakhiri `|| echo "GAGAL/TIMEOUT"` sehingga kegagalan tidak pernah menggagalkan job.
   **Aksi:** suite pytest di `ml-api` yang jalan pada PR menyentuh `ml-api/**`, dan buat kegagalan konektivitas benar-benar menggagalkan job.
 
