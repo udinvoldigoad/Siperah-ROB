@@ -1,0 +1,42 @@
+name: CI ML Pipeline (pytest)
+
+# Unit test pipeline ML (ml-api) tanpa DB dan tanpa API eksternal: kontrak
+# prediksi, fitur, pelabelan, model harmonik pasut, dan parsing Open-Meteo.
+# Jalan tiap perubahan menyentuh ml-api/** supaya regresi ketahuan sebelum
+# prediksi harian dipicu cron — suite ini dulu tidak ada sama sekali (AU-14).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ml-api/**"
+      - ".github/workflows/ml-api-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "ml-api/**"
+      - ".github/workflows/ml-api-ci.yml"
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ml-api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ml-api/requirements-dev.txt
+
+      - name: Install dependensi + pytest
+        run: pip install -r requirements-dev.txt
+
+      - name: Run pytest
+        run: python -m pytest -q

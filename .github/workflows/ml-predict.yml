@@ -29,13 +29,23 @@ jobs:
 
       - name: Tes konektivitas API cuaca dari runner
         run: |
+          failed=0
           for url in \
             "https://api.open-meteo.com/v1/forecast?latitude=-5.45&longitude=105.26&daily=precipitation_sum&timezone=Asia%2FJakarta" \
             "https://marine-api.open-meteo.com/v1/marine?latitude=-5.55&longitude=105.32&daily=wave_height_max&timezone=Asia%2FJakarta" \
             "https://archive-api.open-meteo.com/v1/archive?latitude=-5.45&longitude=105.26&start_date=2026-07-01&end_date=2026-07-02&daily=precipitation_sum&timezone=Asia%2FJakarta"; do
             echo "== $url"
-            curl -sS --max-time 20 -o /dev/null -w "   HTTP %{http_code} dalam %{time_total}s\n" "$url" || echo "   GAGAL/TIMEOUT"
+            # -f: HTTP >= 400 ikut menggagalkan (curl exit 22); kegagalan jaringan
+            # dicatat dan dijumlahkan, lalu job keluar non-zero di akhir — kalau
+            # tidak, step ini tak pernah menggagalkan run walau semua API mati.
+            if curl -fsS --max-time 20 -o /dev/null -w "   HTTP %{http_code} dalam %{time_total}s\n" "$url"; then
+              :
+            else
+              echo "   GAGAL/TIMEOUT"
+              failed=1
+            fi
           done
+          exit $failed
 
       - name: Jalankan prediksi & tulis ke database
         working-directory: ml-api
