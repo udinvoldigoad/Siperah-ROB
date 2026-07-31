@@ -1,6 +1,6 @@
 """
 feature_engineering.py
-Mengubah data mentah menjadi tabel fitur harian siap pakai untuk model Random Forest.
+Mengubah data mentah menjadi tabel fitur harian siap pakai untuk model XGBoost.
 Di-update untuk menyesuaikan fitur dengan dataset nyata dari Excel.
 """
 

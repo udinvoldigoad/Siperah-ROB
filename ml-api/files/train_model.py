@@ -1,9 +1,9 @@
 """
 train_model.py
-Training Random Forest untuk prediksi banjir rob (short-term, H+1 s/d H+7).
+Training XGBoost untuk prediksi banjir rob (short-term, H+1 s/d H+7).
 
 Pipeline (Fase 2.2 roadmap):
-  time-based split -> SMOTE (hanya train, dengan guard) -> RandomForest
+  time-based split -> SMOTE (hanya train, dengan guard) -> XGBoost
   (+ optional RandomizedSearchCV TimeSeriesSplit) -> evaluasi
   (Recall/F1/ROC-AUC/PR-AUC) -> simpan artefak + metrics JSON ke models/.
 
@@ -116,7 +116,7 @@ def train_xgboost(train_df: pd.DataFrame, tune: bool = True,
     return search.best_estimator_
 
 
-def evaluate_model(model: RandomForestClassifier, test_df: pd.DataFrame) -> dict:
+def evaluate_model(model: XGBClassifier, test_df: pd.DataFrame) -> dict:
     """Evaluasi lengkap; return dict metrik untuk disimpan/diaudit."""
     X_test = test_df[FEATURE_COLS]
     y_test = test_df[TARGET_COL]
@@ -155,7 +155,7 @@ def evaluate_model(model: RandomForestClassifier, test_df: pd.DataFrame) -> dict
     return metrics
 
 
-def save_model(model: RandomForestClassifier, metrics: dict | None = None,
+def save_model(model: XGBClassifier, metrics: dict | None = None,
                path: Path = MODEL_PATH) -> Path:
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "feature_cols": FEATURE_COLS,
@@ -167,7 +167,7 @@ def save_model(model: RandomForestClassifier, metrics: dict | None = None,
     return path
 
 
-def load_model(path: Path = MODEL_PATH) -> RandomForestClassifier | None:
+def load_model(path: Path = MODEL_PATH) -> XGBClassifier | None:
     """Muat model tersimpan; None bila belum ada / skema fitur berubah."""
     if not Path(path).exists():
         return None
