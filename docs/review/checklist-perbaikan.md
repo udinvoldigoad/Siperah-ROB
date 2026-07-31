@@ -30,8 +30,8 @@
 | 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | **3** |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | **1** |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | **4 ✅** |
-| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **17** |
-| | **Total** | **1** | **23** | **15** | **39** | **35** |
+| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **18 ✅** |
+| | **Total** | **1** | **23** | **15** | **39** | **36** |
 
 ---
 
@@ -172,9 +172,10 @@ Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% te
   Keduanya mendaftarkan signature `ml:predict`; yang menang bergantung urutan pendaftaran, jadi salah satunya dead code dan cron bisa memanggil yang bukan dimaksud. Opsi `--simulate` milik `RunMlPrediction` tidak dikenal argparse `main.py`.
   **Aksi:** hapus atau ganti nama salah satu, lalu pastikan cron memanggil yang tersisa.
 
-- [ ] 🟡 **`AU-4` — Type hint `RandomForestClassifier` padahal modelnya XGBoost** — `ml-api/files/train_model.py:119,158,170` *(bukti: kode)*
+- [x] 🟡 **`AU-4` — Type hint `RandomForestClassifier` padahal modelnya XGBoost** — `ml-api/files/train_model.py:119,158,170` *(bukti: kode)*
   Impor-nya tak ada (anotasi Python malas dievaluasi, jadi tak crash), dan docstring di baris 6 juga masih menulis RandomForest sementara baris 90 membangun `XGBClassifier`. Menyesatkan pembaca — termasuk penguji skripsi.
   **Aksi:** ganti ke `XGBClassifier` dan selaraskan docstring.
+  **Sudah dikerjakan** — type hint `evaluate_model`/`save_model`/`load_model` diganti ke `XGBClassifier`, dan docstring modul `train_model.py` + `feature_engineering.py` diselaraskan ("Random Forest" → "XGBoost"). `python -m pytest`: 42 passed. ✅ `15efbf9`
 
 ### 8.2 Korektness backend
 
