@@ -141,16 +141,40 @@ final class NotificationService
 
         $sent = 0;
         $recipients = User::query()->where('status', 'aktif')->get();
+        if ($recipients->isEmpty()) {
+            return 0;
+        }
+
+        $recipientIds = $recipients->pluck('id');
+
+        // Pra-muat SEMUA baris pengaturan dalam satu query, bukan firstOrCreate
+        // per user di dalam loop — jalur ini tumbuh seiring jumlah warga
+        // terdaftar dan dipicu cron harian. Akun tanpa baris memakai default,
+        // isinya identik dengan yang dulu ditulis firstOrCreate, hanya kini
+        // tidak di-persist (hanya baca untuk menyalurkan notifikasi).
+        $settingsByUser = NotificationSetting::whereIn('user_id', $recipientIds)
+            ->get()
+            ->keyBy('user_id');
+
+        // Penanda "sudah dikirim" diambil sebagai satu query kolektif, bukan
+        // exists() per user.
+        $alreadySent = DB::table('notification_inbox')
+            ->whereIn('user_id', $recipientIds)
+            ->where('type', 'high_risk_warning')
+            ->where('data', 'like', '%'.$predictionDate.'%')
+            ->pluck('user_id')
+            ->flip();
 
         foreach ($recipients as $recipient) {
-            $settings = $this->settings($recipient->id);
-            if (!in_array('bahaya_sangat_tinggi', $settings->event_types ?? [], true)) {
+            $settings = $settingsByUser->get($recipient->id);
+            $eventTypes = $settings?->event_types ?? NotificationSetting::DEFAULT_EVENT_TYPES;
+            if (!in_array('bahaya_sangat_tinggi', $eventTypes, true)) {
                 continue;
             }
 
             $scoped = $predictions;
             if (in_array($recipient->role, ['warga', 'peneliti'], true)) {
-                $monitored = $settings->monitored_regions ?? [];
+                $monitored = $settings?->monitored_regions ?? [];
                 if ($monitored !== []) {
                     $scoped = $predictions->filter(fn (Prediction $prediction) => $this->matchesMonitoredRegions($prediction->region, $monitored));
                 }
@@ -162,12 +186,7 @@ final class NotificationService
 
             // Satu peringatan per user per tanggal prediksi (command boleh
             // dijalankan berulang tanpa spam).
-            $alreadySent = DB::table('notification_inbox')
-                ->where('user_id', $recipient->id)
-                ->where('type', 'high_risk_warning')
-                ->where('data', 'like', '%'.$predictionDate.'%')
-                ->exists();
-            if ($alreadySent) {
+            if ($alreadySent->has($recipient->id)) {
                 continue;
             }
 

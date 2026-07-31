@@ -81,6 +81,49 @@ final class NotificationBehaviorTest extends TestCase
         $this->assertSame(1, $inboxCount);
     }
 
+    public function test_high_risk_notification_query_count_does_not_grow_with_user_count(): void
+    {
+        // Regresi AU-11: dulu tiap user memicu firstOrCreate settings (SELECT,
+        // kadang INSERT) + exists() ke notification_inbox — 2 query per user.
+        // Pra-muat kolektif membuat jumlah query konstan.
+        $region = $this->makeRegion('Kabupaten Notif N1');
+        $this->makePrediction($region, 'sangat_tinggi');
+
+        for ($i = 0; $i < 8; $i++) {
+            $user = $this->makeUser('warga');
+            $this->setMonitoredRegions($user, [$region->village]);
+        }
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        app(NotificationService::class)->notifyHighRiskPredictions(CarbonImmutable::today()->toDateString());
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        // Pengiriman notifikasi itu sendiri wajar memakai query per penerima
+        // (insert inbox + kanal). Yang diunci di sini: pembacaan PENGATURAN dan
+        // penanda "sudah dikirim" harus KOLEKTIF — tepat satu query ber-`in (...)`
+        // per tabel (pra-muat untuk semua user), bukan query terpisah per user
+        // di dalam loop.
+        $collectiveSelects = static fn (string $table) => array_filter(
+            $queries,
+            fn (array $q): bool => str_starts_with(trim(mb_strtolower($q['query'])), 'select')
+                && str_contains(mb_strtolower($q['query']), $table)
+                && str_contains(mb_strtolower($q['query']), ' in ('),
+        );
+
+        self::assertCount(
+            1,
+            $collectiveSelects('notification_settings'),
+            'Settings harus dipra-muat sekali lewat whereIn, bukan per user.',
+        );
+        self::assertCount(
+            1,
+            $collectiveSelects('notification_inbox'),
+            'Penanda sudah-dikirim harus dibaca sekali lewat whereIn, bukan per user.',
+        );
+    }
+
     private function setMonitoredRegions(User $user, array $regions): void
     {
         $settings = app(NotificationService::class)->settings($user->id);
