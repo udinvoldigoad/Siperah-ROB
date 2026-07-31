@@ -30,8 +30,8 @@
 | 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | **3** |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | **1** |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | **4 ✅** |
-| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **14** |
-| | **Total** | **1** | **23** | **15** | **39** | **32** |
+| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **15** |
+| | **Total** | **1** | **23** | **15** | **39** | **33** |
 
 ---
 
@@ -224,10 +224,11 @@ Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% te
   `main.py`, `feature_engineering`, `predict_forecast`, `labeler`, dan `PredictionContract` tidak punya pytest sama sekali; yang ada hanya uji wrapper PHP dengan stub. Workflow-nya pun berjalan terjadwal langsung ke DB **produksi**, dan cek konektivitasnya diakhiri `|| echo "GAGAL/TIMEOUT"` sehingga kegagalan tidak pernah menggagalkan job.
   **Aksi:** suite pytest di `ml-api` yang jalan pada PR menyentuh `ml-api/**`, dan buat kegagalan konektivitas benar-benar menggagalkan job.
 
-- [ ] 🟠 **`AU-15` — `CitizenModePage.tsx` 1.053 baris dengan Desktop & Mobile hampir identik** — `frontend/src/features/public-map/CitizenModePage.tsx:244` *(bukti: kode)*
+- [x] 🟠 **`AU-15` — `CitizenModePage.tsx` 1.053 baris dengan Desktop & Mobile hampir identik** — `frontend/src/features/public-map/CitizenModePage.tsx:244` *(bukti: kode)*
   `CitizenModeDesktop` (~300 baris JSX) dan `CitizenModeMobile` (~290) menduplikasi blok forecast/actionCards/nearby. Setiap perubahan harus ditulis dua kali. Ini halaman publik yang paling banyak dilihat warga dan tidak punya test komponen.
   **Ditunda sengaja** di audit sebelumnya agar kegagalan refactor tidak menyeret perbaikan bug lain saat revert — keputusan itu masih berlaku.
   **Sudah lebih mudah dikerjakan sejak [`KM-4`](#2--kode-mati--sisa-peralihan):** ke-13 props yang dulu `any` kini punya satu tipe bersama `CitizenModeViewProps`, jadi sub-komponen yang diekstrak akan langsung terjaga tsc — yang tersisa murni memindahkan JSX.
+  **Sudah dikerjakan** — blok yang sama persis (status badge, prediction notice, guidance, kolom forecast, kartu tindakan, badge laporan, tombol bagikan, panel info model, helper & animasi) dipindah ke `frontend/src/features/public-map/CitizenModeParts.tsx`; kedua view kini hanya memuat struktur tata letak masing-masing. `tsc -b`, `npm run build`, dan `npm run check:any` hijau. ✅ `4f67e31`
 
 - [ ] 🟠 **`AU-16` — Tidak ada `app/Enums`: status, peran, dan kelas risiko sebagai literal string** — `backend/app/Services/ReportAccessService.php:28-32` *(bukti: kode)*
   DB memakai enum Postgres, PHP tidak memetakannya. Ini bukan kerapian belaka — bukti kerugiannya ada di docblock file itu sendiri: saat peran disederhanakan 5→3, cabang `'bpbd_provinsi', 'admin'` tak sengaja berubah jadi `'peneliti', 'admin'`, yang **menaikkan peneliti dari 403 menjadi akses penuh ke laporan berisi identitas pelapor**. Enum akan membuat kekeliruan seperti itu gagal saat kompilasi.
