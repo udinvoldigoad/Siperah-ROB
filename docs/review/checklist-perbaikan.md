@@ -30,8 +30,8 @@
 | 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | **3** |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | **1** |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | **4 ✅** |
-| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **15** |
-| | **Total** | **1** | **23** | **15** | **39** | **33** |
+| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **16** |
+| | **Total** | **1** | **23** | **15** | **39** | **34** |
 
 ---
 
@@ -230,9 +230,10 @@ Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% te
   **Sudah lebih mudah dikerjakan sejak [`KM-4`](#2--kode-mati--sisa-peralihan):** ke-13 props yang dulu `any` kini punya satu tipe bersama `CitizenModeViewProps`, jadi sub-komponen yang diekstrak akan langsung terjaga tsc — yang tersisa murni memindahkan JSX.
   **Sudah dikerjakan** — blok yang sama persis (status badge, prediction notice, guidance, kolom forecast, kartu tindakan, badge laporan, tombol bagikan, panel info model, helper & animasi) dipindah ke `frontend/src/features/public-map/CitizenModeParts.tsx`; kedua view kini hanya memuat struktur tata letak masing-masing. `tsc -b`, `npm run build`, dan `npm run check:any` hijau. ✅ `4f67e31`
 
-- [ ] 🟠 **`AU-16` — Tidak ada `app/Enums`: status, peran, dan kelas risiko sebagai literal string** — `backend/app/Services/ReportAccessService.php:28-32` *(bukti: kode)*
+- [x] 🟠 **`AU-16` — Tidak ada `app/Enums`: status, peran, dan kelas risiko sebagai literal string** — `backend/app/Services/ReportAccessService.php:28-32` *(bukti: kode)*
   DB memakai enum Postgres, PHP tidak memetakannya. Ini bukan kerapian belaka — bukti kerugiannya ada di docblock file itu sendiri: saat peran disederhanakan 5→3, cabang `'bpbd_provinsi', 'admin'` tak sengaja berubah jadi `'peneliti', 'admin'`, yang **menaikkan peneliti dari 403 menjadi akses penuh ke laporan berisi identitas pelapor**. Enum akan membuat kekeliruan seperti itu gagal saat kompilasi.
   **Aksi:** buat `ReportStatus`, `UserRole`, `RiskClass` sebagai backed enum, mulai dari titik yang menentukan otorisasi.
+  **Sudah dikerjakan (cakupan: jalur otorisasi)** — `backend/app/Enums/{UserRole,ReportStatus,RiskClass}.php` dibuat sebagai backed enum yang mencerminkan enum Postgres; dipakai di titik penentu keputusan: `ReportAccessService` (`match (UserRole::tryFrom(...))` — peneliti/peran tak dikenal selalu jatuh ke `default` → 403, peran baru yang lupa ditangani melempar `UnhandledMatchError`), middleware `AuthenticateApiKey` (gate `peneliti/admin`), `ReportController` (transisi & filter status laporan, `ReportStatus::tryFrom($status)?->isDecision()`), `AdminController` (guard menurunkan role sendiri), `AuthController` (penetapan role registrasi), `NotificationService` (penerima role admin + alert risiko sangat tinggi), `MapService` (filter zona kritis + pesan panduan mode awam). `composer test`: 202 tests OK. ✅ `5f34a44`
 
 - [x] 🟡 **`AU-17` — Satu tes lulus tanpa memverifikasi apa pun** — `backend/tests/Feature/ApiFoundationTest.php:789` *(bukti: kode)*
   `test_audit_service_is_fail_safe_when_storage_rejects_payload()` memanggil `AuditService::write()` dengan outcome tak sah lalu berakhir `$this->assertTrue(true)`. Tes ini tak bisa gagal, jadi ia hanya memberi rasa aman palsu bahwa fail-safe audit sudah teruji.
