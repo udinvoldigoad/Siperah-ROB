@@ -30,8 +30,8 @@
 | 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | **3** |
 | 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | **1** |
 | 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | **4 ✅** |
-| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **16** |
-| | **Total** | **1** | **23** | **15** | **39** | **34** |
+| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **17** |
+| | **Total** | **1** | **23** | **15** | **39** | **35** |
 
 ---
 
@@ -239,9 +239,10 @@ Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% te
   `test_audit_service_is_fail_safe_when_storage_rejects_payload()` memanggil `AuditService::write()` dengan outcome tak sah lalu berakhir `$this->assertTrue(true)`. Tes ini tak bisa gagal, jadi ia hanya memberi rasa aman palsu bahwa fail-safe audit sudah teruji.
   **Aksi:** `assertDatabaseMissing` pada baris audit yang tak sah, dan pastikan tak ada exception yang lolos.
 
-- [ ] 🟡 **`AU-18` — Tiga tes bergantung pada state global DB/cache, bukan state miliknya sendiri** — `backend/tests/Feature/QueueWorkerTest.php:52`, `AuthFlowTest.php:16-18`, `PublicMapTest.php:21-23` *(bukti: kode)*
+- [x] 🟡 **`AU-18` — Tiga tes bergantung pada state global DB/cache, bukan state miliknya sendiri** — `backend/tests/Feature/QueueWorkerTest.php:52`, `AuthFlowTest.php:16-18`, `PublicMapTest.php:21-23` *(bukti: kode)*
   `QueueWorkerTest` meng-assert `failed_jobs` **global** bernilai 0 — satu baris sisa run lain menggagalkannya. `AuthFlowTest` menjaga jumlah panggilan `/auth/register` maksimal 4 agar tak menabrak limiter 5/jam. `PublicMapTest` memakai nama kabupaten unik + `Cache::flush()` karena cache array bertahan antar tes. Ketiganya sudah didokumentasikan di komentar, jadi ini kerapuhan yang dikelola, bukan yang tersembunyi — tetapi tetap gagal karena sebab yang tak ada hubungannya dengan yang diuji.
   **Aksi:** assert delta alih-alih nilai absolut, dan `RateLimiter::clear()` + flush cache terpusat di base `TestCase`.
+  **Sudah dikerjakan** — `Tests\TestCase::setUp` kini mem-flush cache (driver `array` bertahan antar-test satu proses) sehingga sekaligus mereset counter rate limiter registrasi/login; `QueueWorkerTest` meng-assert DELTA `failed_jobs`; `Cache::flush()` manual per-file dihapus dari `PublicMapTest`, `ProvinceForecastTest`, `ResearchDatasetCountTest`, `ReportCoordinatePrivacyTest`, `PreDawnDateAnchorTest`, `DeletedAccountRestoreTest` (tinggal nama kabupaten unik yang tetap). `composer test`: 202 tests OK. ✅ `502e8ab`
 
 ### 8.6 Yang digugurkan dan alasannya
 
