@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\UserRole;
 use App\Models\ApiKey;
 use App\Services\AuditService;
 use Closure;
@@ -34,7 +35,7 @@ final class AuthenticateApiKey
         $request->setUserResolver(fn () => $apiKey->user);
         // Harus SELARAS dengan peran yang boleh membuat key (routes/api.php grup
         // role:peneliti,admin + ResearchController::canGenerateApiKey).
-        if (!in_array($apiKey->user->role, ['peneliti', 'admin'], true)) {
+        if (!in_array($apiKey->user->role, [UserRole::Peneliti->value, UserRole::Admin->value], true)) {
             $this->audit($request, 'api_key_request', 'denied', $request->path(), ['api_key_id' => $apiKey->id, 'reason' => 'owner_role_not_allowed']);
             return new JsonResponse(['data' => null, 'message' => 'Pemilik API key tidak memiliki akses data penelitian.'], 403);
         }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\UserRole;
 use App\Http\Resources\UserResource;
 use App\Http\Requests\StoreAdminUserRequest;
 use App\Http\Requests\UpdateAdminUserRequest;
@@ -156,7 +157,7 @@ final class AdminController
         $userData = User::findOrFail($user);
         abort_if(
             $userData->id === $request->user()->id
-                && (($data['role'] ?? 'admin') !== 'admin' || in_array($data['status'] ?? 'aktif', ['nonaktif', 'ditolak'], true)),
+                && (($data['role'] ?? UserRole::Admin->value) !== UserRole::Admin->value || in_array($data['status'] ?? 'aktif', ['nonaktif', 'ditolak'], true)),
             422,
             'Admin tidak dapat menurunkan role atau menonaktifkan akunnya sendiri.',
         );

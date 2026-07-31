@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\ReportStatus;
+use App\Enums\UserRole;
 use App\Models\GroundTruthReport;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,22 +22,25 @@ final class ReportAccessService
      * Catatan sejarah: saat peran disederhanakan 5→3, cabang lama
      * `'bpbd_provinsi', 'admin'` sempat berubah jadi `'peneliti', 'admin'` —
      * menaikkan peneliti dari 403 menjadi akses penuh. Itu tidak disengaja.
+     * `match` kini membedakan peran via `UserRole` sehingga peneliti maupun
+     * peran tak dikenal selalu jatuh ke `default` → 403, dan peran baru yang
+     * lupa ditangani akan melempar `UnhandledMatchError` alih-alih sunyi.
      */
     public function accessible(User $user): Builder
     {
         $query = GroundTruthReport::query();
 
-        return match ($user->role) {
-            'warga' => $query->where('user_id', $user->id),
-            'admin' => $query,
+        return match (UserRole::tryFrom($user->role)) {
+            UserRole::Warga => $query->where('user_id', $user->id),
+            UserRole::Admin => $query,
             default => abort(403, 'Role ini tidak memiliki akses ke laporan ground truth.'),
         };
     }
 
     public function authorizeView(User $user, GroundTruthReport $report): void
     {
-        if ($user->role === 'admin') return;
-        if ($user->role === 'warga') {
+        if ($user->role === UserRole::Admin->value) return;
+        if ($user->role === UserRole::Warga->value) {
             abort_unless($report->user_id === $user->id, 403, 'Anda hanya dapat mengakses laporan sendiri.');
             return;
         }
@@ -44,10 +49,10 @@ final class ReportAccessService
 
     public function authorizeReview(User $user, GroundTruthReport $report): void
     {
-        abort_unless($user->role === 'admin', 403);
+        abort_unless($user->role === UserRole::Admin->value, 403);
         $this->authorizeView($user, $report);
         abort_unless(
-            in_array($report->status, ['menunggu', 'perlu_review'], true),
+            in_array($report->status, [ReportStatus::Menunggu->value, ReportStatus::PerluReview->value], true),
             409,
             'Hanya laporan menunggu atau perlu_review yang dapat diproses.',
         );

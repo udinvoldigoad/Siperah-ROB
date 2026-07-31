@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\UserRole;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
@@ -130,7 +131,7 @@ final class AuthController
         // Keduanya tetap mengirim OTP: verifikasi email berjalan paralel dengan
         // antrean admin, sehingga admin tak perlu meninjau permohonan dari
         // alamat email yang belum terbukti dimiliki pemohon.
-        $user->role = $isPeneliti ? 'peneliti' : 'warga';
+        $user->role = $isPeneliti ? UserRole::Peneliti->value : UserRole::Warga->value;
         $user->status = $isPeneliti ? 'menunggu' : 'aktif';
         $user->save();
 

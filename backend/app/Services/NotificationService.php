@@ -7,6 +7,8 @@ use App\Models\NotificationSetting;
 use App\Models\Prediction;
 use App\Support\RegionName;
 use App\Models\Region;
+use App\Enums\RiskClass;
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Notifications\Data\ReportSummary;
 use App\Notifications\HighRiskWarningNotification;
@@ -65,7 +67,7 @@ final class NotificationService
         // wilayah); di sini cukup ambil kandidatnya.
         $recipients = User::query()
             ->where('status', 'aktif')
-            ->whereIn('role', ['admin'])
+            ->whereIn('role', [UserRole::Admin->value])
             ->get();
 
         foreach ($recipients as $recipient) {
@@ -97,7 +99,7 @@ final class NotificationService
 
         $recipients = User::query()
             ->where('status', 'aktif')
-            ->whereIn('role', ['admin'])
+            ->whereIn('role', [UserRole::Admin->value])
             ->get();
 
         foreach ($recipients as $recipient) {
@@ -130,7 +132,7 @@ final class NotificationService
     {
         $predictions = Prediction::with('region')
             ->whereDate('prediction_date', $predictionDate)
-            ->where('risk_class', 'sangat_tinggi')
+            ->where('risk_class', RiskClass::SangatTinggi->value)
             ->get()
             ->filter(fn (Prediction $prediction) => $prediction->region !== null)
             ->values();
@@ -173,7 +175,7 @@ final class NotificationService
             }
 
             $scoped = $predictions;
-            if (in_array($recipient->role, ['warga', 'peneliti'], true)) {
+            if (in_array($recipient->role, [UserRole::Warga->value, UserRole::Peneliti->value], true)) {
                 $monitored = $settings?->monitored_regions ?? [];
                 if ($monitored !== []) {
                     $scoped = $predictions->filter(fn (Prediction $prediction) => $this->matchesMonitoredRegions($prediction->region, $monitored));

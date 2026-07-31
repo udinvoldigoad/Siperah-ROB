@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ReportStatus;
 use App\Http\Requests\StoreReportRequest;
 use App\Http\Requests\UpdateReportStatusRequest;
 use App\Http\Requests\RejectReportRequest;
@@ -51,7 +52,11 @@ final class ReportController
         }
 
         if ($request->query('sla_status') === 'terlambat' || $request->query('sla') === 'overdue') {
-            $query->whereNotIn('status', ['divalidasi', 'ditolak', 'duplikat'])
+            $query->whereNotIn('status', [
+                ReportStatus::Divalidasi->value,
+                ReportStatus::Ditolak->value,
+                ReportStatus::Duplikat->value,
+            ])
                 ->where('created_at', '<', now()->subDay());
         }
 
@@ -124,7 +129,7 @@ final class ReportController
                     'water_height_cm' => $data['water_height_cm'],
                     'incident_time' => $data['incident_time'],
                     'description' => $data['description'],
-                    'status' => $isPointMonitored ? 'menunggu' : 'perlu_review',
+                    'status' => $isPointMonitored ? ReportStatus::Menunggu->value : ReportStatus::PerluReview->value,
                     'is_within_monitoring_area' => $isPointMonitored,
                 ]);
 
@@ -198,7 +203,7 @@ final class ReportController
         // (pemilik / operator wilayahnya / BPBD provinsi / admin) saat mereka
         // mengambil detail laporan. Tanda tangan relatif (absolute:false) agar
         // tahan perbedaan domain/proxy di production.
-        $isPublic = $report->status === 'divalidasi';
+        $isPublic = $report->status === ReportStatus::Divalidasi->value;
         if (!$isPublic) {
             abort_unless(
                 $request->hasValidSignature(absolute: false),
@@ -231,7 +236,7 @@ final class ReportController
     public function validateReport(Request $request, string $report): JsonResponse
     {
         $reportData = $this->transitionReviewStatus($request, $report, [
-            'status' => 'divalidasi',
+            'status' => ReportStatus::Divalidasi->value,
             'validated_by' => $request->user()->id,
             'validated_at' => now(),
             'rejection_reason' => null,
@@ -248,7 +253,7 @@ final class ReportController
     public function rejectReport(RejectReportRequest $request, string $report): JsonResponse
     {
         $reportData = $this->transitionReviewStatus($request, $report, [
-            'status' => 'ditolak',
+            'status' => ReportStatus::Ditolak->value,
             'validated_by' => $request->user()->id,
             'validated_at' => now(),
             'rejection_reason' => $request->input('reason'),
@@ -267,7 +272,7 @@ final class ReportController
         $status = $request->input('status');
         // `duplikat` sama seperti `divalidasi`/`ditolak`: keputusan manusia yang
         // menutup laporan, jadi harus meninggalkan jejak siapa & kapan.
-        $isDecision = in_array($status, ['divalidasi', 'ditolak', 'duplikat'], true);
+        $isDecision = ReportStatus::tryFrom($status)?->isDecision() ?? false;
         $reportData = $this->transitionReviewStatus($request, $report, [
             'status' => $status,
             'rejection_reason' => $request->input('rejection_reason'),
@@ -296,7 +301,7 @@ final class ReportController
 
         $affected = DB::transaction(fn (): int => GroundTruthReport::query()
             ->whereKey($reportData->getKey())
-            ->whereIn('status', ['menunggu', 'perlu_review'])
+            ->whereIn('status', [ReportStatus::Menunggu->value, ReportStatus::PerluReview->value])
             ->update($update));
 
         if ($affected === 0) {
@@ -325,7 +330,11 @@ final class ReportController
 
         return GroundTruthReport::query()
             ->where('user_id', $userId)
-            ->whereIn('status', ['menunggu', 'perlu_review', 'divalidasi'])
+            ->whereIn('status', [
+                ReportStatus::Menunggu->value,
+                ReportStatus::PerluReview->value,
+                ReportStatus::Divalidasi->value,
+            ])
             ->whereBetween('incident_time', [$incidentTime->subHours(2), $incidentTime->addHours(2)])
             ->whereBetween('latitude', [$latitude - $latPadding, $latitude + $latPadding])
             ->whereBetween('longitude', [$longitude - $lonPadding, $longitude + $lonPadding])

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\RiskClass;
 use App\Models\GroundTruthReport;
 use App\Models\Prediction;
 use App\Models\Region;
@@ -232,7 +233,7 @@ final class MapService
             return $bmkg;
         }
 
-        $critical = $predictions->filter(fn (Prediction $prediction) => $prediction->risk_class === 'sangat_tinggi');
+        $critical = $predictions->filter(fn (Prediction $prediction) => $prediction->risk_class === RiskClass::SangatTinggi->value);
         if ($critical->isEmpty()) {
             return null;
         }
@@ -340,11 +341,11 @@ final class MapService
             return 'Lokasi ini belum masuk area prediksi rob. Tetap waspada bila melihat genangan, dan laporan warga tetap bisa dikirim untuk ditinjau BPBD.';
         }
 
-        return match ($riskClass) {
-            'sangat_tinggi' => 'Risiko rob sangat tinggi. Hindari area rendah dekat pesisir, amankan barang penting, dan ikuti arahan BPBD.',
-            'tinggi' => 'Risiko rob tinggi. Kurangi aktivitas di area rendah dekat pesisir dan pantau perubahan pasang.',
-            'sedang' => 'Risiko rob sedang. Tetap pantau kondisi sekitar, terutama saat mendekati waktu puncak pasang.',
-            'rendah' => 'Risiko rob rendah saat ini. Tetap cek pembaruan berkala dan laporkan jika melihat genangan.',
+        return match (RiskClass::tryFrom($riskClass)) {
+            RiskClass::SangatTinggi => 'Risiko rob sangat tinggi. Hindari area rendah dekat pesisir, amankan barang penting, dan ikuti arahan BPBD.',
+            RiskClass::Tinggi => 'Risiko rob tinggi. Kurangi aktivitas di area rendah dekat pesisir dan pantau perubahan pasang.',
+            RiskClass::Sedang => 'Risiko rob sedang. Tetap pantau kondisi sekitar, terutama saat mendekati waktu puncak pasang.',
+            RiskClass::Rendah => 'Risiko rob rendah saat ini. Tetap cek pembaruan berkala dan laporkan jika melihat genangan.',
             default => 'Prediksi untuk wilayah ini belum tersedia. Tetap waspada saat pasang tinggi dan laporkan bila melihat genangan.',
         };
     }
