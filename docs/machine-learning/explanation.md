@@ -5,10 +5,10 @@ Dokumen ini menjelaskan secara teknis bagaimana model Machine Learning (ML) beke
 ---
 
 ## 1. Ikhtisar Model (Model Overview)
-Model prediksi utama yang digunakan dalam SIPERAH-RoB berpusat pada **Random Forest Classifier (v1.2.0)**. Model ini bertugas untuk memberikan *daily forecast* (prakiraan harian) ancaman banjir rob pada level kelurahan (region) hingga 7 hari ke depan.
+Model prediksi utama yang digunakan dalam SIPERAH-RoB berpusat pada **XGBoost Classifier** (`flood_classifier_v1`). Model ini bertugas untuk memberikan *daily forecast* (prakiraan harian) ancaman banjir rob pada level kelurahan (region) hingga 7 hari ke depan.
 
 - **Tipe Model:** Classification (Supervised Learning)
-- **Algoritma:** Random Forest Ensembles (menggunakan Scikit-Learn/XGBoost)
+- **Algoritma:** XGBoost (dengan SMOTE + class balancing)
 - **Granularitas Prediksi:** Per hari (Daily), Per wilayah pesisir (Kelurahan)
 - **Output:** `risk_class` (Rendah, Sedang, Tinggi, Sangat Tinggi) beserta `risk_probability` (Probabilitas numerik 0-100%).
 
@@ -68,4 +68,4 @@ Hal terpenting dari SIPERAH-RoB adalah **Validasi Ground Truth**.
 
 Setiap kali operator BPBD memvalidasi laporan warga di menu *Validasi Laporan*, data laporan warga (tinggi air, keparahan, foto lapangan) secara otomatis direkam ke dataset **"Geospatial Ground Truth"**. 
 
-Pada akhir tahun/bulan, peneliti atau *Data Scientist* dapat men-download dataset *Ground Truth* ini beserta dataset pasang surut historis, kemudian membandingkannya dengan output model lama. Dengan data ini, model Random Forest secara periodik di-**retrain** agar bobot cuaca, topografi, dan pasang surut semakin relevan (drift mitigation) dengan perubahan kondisi alam terbaru di Provinsi Lampung.
+Pada akhir tahun/bulan, peneliti atau *Data Scientist* dapat men-download dataset *Ground Truth* ini beserta dataset pasang surut historis, kemudian membandingkannya dengan output model lama. Dengan data ini, model XGBoost secara periodik di-**retrain** agar bobot cuaca, topografi, dan pasang surut semakin relevan (drift mitigation) dengan perubahan kondisi alam terbaru di Provinsi Lampung.

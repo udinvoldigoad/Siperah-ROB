@@ -1,7 +1,7 @@
 # 🌊 SIPERAH-RoB
 > **Sistem Informasi Prediksi Risiko Banjir Rob Terpadu Provinsi Lampung**
 
-[![Version](https://img.shields.io/badge/Version-1.2.0-blue.svg?style=for-the-badge)](file:///c:/laragon/www/Siperah-ROB/README.md)
+[![Version](https://img.shields.io/badge/Version-1.2.0-blue.svg?style=for-the-badge)](https://github.com/udinvoldigoad/Siperah-ROB)
 [![Laravel](https://img.shields.io/badge/Laravel-11-red.svg?style=for-the-badge&logo=laravel)](https://laravel.com)
 [![React](https://img.shields.io/badge/React-18-cyan.svg?style=for-the-badge&logo=react)](https://react.dev)
 [![Python](https://img.shields.io/badge/Python-3.11-yellow.svg?style=for-the-badge&logo=python)](https://python.org)
@@ -19,7 +19,7 @@ SIPERAH-RoB adalah **Sistem Informasi Geografis (SIG)** berbasis WebGIS terpadu 
 | **Frontend** | React 18, TypeScript, MapLibre GL JS, CSS Vanilla | Aplikasi SPA responsif dengan visualisasi peta interaktif berkinerja tinggi. |
 | **Backend** | Laravel 11, PHP 8.4, Sanctum, Database Queue | REST API terpusat, pengelola otorisasi (RBAC), audit logs, dan cron worker. |
 | **Database** | Supabase (PostgreSQL 17), PostGIS Extension | Penyimpan data spasial wilayah pesisir dan koordinat laporan warga. |
-| **ML Engine** | Python 3.11, scikit-learn, Pandas, imbalanced-learn | Pipeline data cuaca ERA5, model Random Forest Classifier, dan balancing SMOTE. |
+| **ML Engine** | Python 3.11, XGBoost, Pandas, imbalanced-learn | Pipeline data cuaca ERA5, model XGBoost Classifier, dan balancing SMOTE. |
 | **CI/CD & Jobs** | GitHub Actions, hPanel Cron Scheduler | Otomasi deployment, uji integrasi (CI), dan Retraining/Prediction ML harian. |
 
 ---
@@ -74,7 +74,7 @@ sequenceDiagram
     DB-->>GH: Parameter Harmonik & Wilayah
     GH->>OM: Tarik Prakiraan Cuaca, Angin, & Gelombang
     OM-->>GH: Data Prakiraan Meteorologi
-    Note over GH: Jalankan Model Machine Learning<br>(Random Forest Classifier v1.2.0)
+    Note over GH: Jalankan Model Machine Learning<br>(XGBoost Classifier)
     GH->>DB: Batch Insert Hasil Prediksi H+0 s.d. H+30 (predictions)
     DB-->>GH: Berhasil Ditulis
     API->>DB: Query Prediksi untuk Peta WebGIS / Mode Awam
@@ -91,7 +91,7 @@ Seluruh modul dan dokumentasi resmi tugas akhir dikompilasi secara rapi di dalam
 | Berkas Utama | Kode Blok | Deskripsi Utama |
 | :--- | :---: | :--- |
 | 📖 [Panduan Deployment Produksi](docs/operations/deployment.md) | `D1` | Prosedur deploy Hostinger + Supabase + cron worker. |
-| 📋 [Matriks Ketertelusuran SKPL](docs/academic/skpl-traceability-matrix.md) | `D2` | Pemetaan Kebutuhan FR ke UI, API, dan berkas pengujian. |
+| 📋 [Matriks Ketertelusuran SKPL](docs/academic/skpl.md) | `D2` | Pemetaan Kebutuhan FR ke UI, API, dan berkas pengujian. |
 | 🔌 [Kontrak & Referensi API Peneliti](docs/operations/api-contract.md) | `D3` | API key, rate limit, dan endpoint penelitian v1. |
 | 🗄️ [Diagram Skema Database (ERD)](docs/academic/erd.md) | `D4` | Diagram relasi entitas PostgreSQL/PostGIS. |
 <!-- slide -->

@@ -172,7 +172,7 @@ Time-based Split:
     ↓
 SMOTE Oversampling (hanya pada data training)
     ↓
-RandomForestClassifier + GridSearchCV (TimeSeriesSplit k=5)
+XGBClassifier + RandomizedSearchCV (TimeSeriesSplit k=5)
     ↓
 Evaluasi: Recall, F1-Score, ROC-AUC, PR-AUC
     ↓
@@ -250,7 +250,7 @@ Laporan warga tervalidasi di `ground_truth_reports` (status = `divalidasi`) digu
 
 | Versi | Target | Algoritma |
 |---|---|---|
-| **v1** (sekarang) | Klasifikasi biner, 7 hari, per region | Random Forest |
+| **v1** (sekarang) | Klasifikasi biner, 7 hari, per region | XGBoost |
 | **v2** | Multi-kelas (Rendah/Sedang/Tinggi/Sangat Tinggi), regresi ketinggian air | XGBoost / LightGBM |
 | **v3** | Prediksi per titik koordinat (spasial tinggi) | Gradient Boosting + Spatial features |
 | **v4** | Nowcasting real-time (< 1 jam) dari sensor IoT | LSTM / Online Learning |

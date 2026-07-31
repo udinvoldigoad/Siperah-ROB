@@ -157,7 +157,7 @@ SIPERAH-RoB adalah sistem informasi geografis (SIG) berbasis web yang memprediks
 
 ## 8. Model Prediksi & Sumber Data
 
-- **Model**: Random Forest v1.2.0 (baseline yang tercantum di mockup).
+- **Model**: XGBoost Classifier `flood_classifier_v1` (baseline yang tercantum di mockup).
 - **Performa**: akurasi 87%, precision 0.89, recall 0.85 — dievaluasi pada data historis 2018–2024; performa terbaik pada horizon 0–3 hari ke depan.
 - **Sumber data**:
   - BMKG — data pasang surut real-time & historis

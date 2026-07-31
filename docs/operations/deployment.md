@@ -23,14 +23,14 @@ Aplikasi tidak lagi menggunakan VPS/Redis/Nginx yang kompleks. Arsitektur final 
 
 ## 3. Langkah Deployment Awal & Harian
 
-Deployment dilakukan dari komputer lokal menggunakan skrip otomatis [deploy-hostinger.sh](file:///c:/laragon/www/Siperah-ROB/scripts/deploy-hostinger.sh).
+Deployment dilakukan dari komputer lokal menggunakan skrip otomatis [deploy-hostinger.sh](../../scripts/deploy-hostinger.sh).
 
 ### Langkah 1: Salin Kredensial Deploy
 Buat berkas `scripts/deploy.env` (jangan di-commit ke Git karena berkas ini berisi rahasia) dari template `deploy.env.example`:
 ```bash
 SSH_HOST="username@ip_address"
 SSH_PORT="65002"
-REMOTE_APP="~/domains/siperah-rob.girimulyo.com"
+REMOTE_APP="~/apps/siperah-rob"
 SITE_URL="https://siperah-rob.girimulyo.com"
 ```
 
@@ -80,9 +80,9 @@ Karena Hostinger tidak dapat menjalankan worker daemon persisten (seperti Superv
 
 1. **Jadwalkan Laravel Cron** di hPanel Hostinger untuk berjalan **setiap menit**:
    ```bash
-   * * * * * /opt/alt/php84/usr/bin/php -d extension=pdo_pgsql -d extension=pgsql ~/domains/siperah-rob.girimulyo.com/backend/artisan schedule:run >> /dev/null 2>&1
+   * * * * * /opt/alt/php84/usr/bin/php -d extension=pdo_pgsql -d extension=pgsql ~/apps/siperah-rob/backend/artisan schedule:run >> /dev/null 2>&1
    ```
-2. **Kuras Antrean Otomatis**: Di dalam [bootstrap/app.php](file:///c:/laragon/www/Siperah-ROB/backend/bootstrap/app.php), scheduler telah dikonfigurasi untuk menjalankan worker antrean database secara aman setiap menit:
+2. **Kuras Antrean Otomatis**: Di dalam [bootstrap/app.php](../../backend/bootstrap/app.php), scheduler telah dikonfigurasi untuk menjalankan worker antrean database secara aman setiap menit:
    ```php
    $schedule->command('queue:work --stop-when-empty --tries=3 --max-time=50')
        ->everyMinute()

@@ -471,6 +471,6 @@ ml-api/
 > Setelah data historis berhasil diunduh, lanjutkan ke langkah berikutnya:
 > ```bash
 > python -m files.feature_engineering   # Buat fitur lengkap
-> python -m files.train_model            # Latih model Random Forest
+> python -m files.train_model            # Latih model XGBoost
 > python main.py --mode=predict          # Generate prediksi
 > ```

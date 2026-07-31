@@ -7,8 +7,7 @@ hubung (`kebab-case`); akronim resmi dokumen (PRD, SKPL, ERD, UAT) dipertahankan
 | Berkas | Isi |
 | :--- | :--- |
 | [prd.md](academic/prd.md) | Product Requirements Document |
-| [skpl.docx](academic/skpl.docx) | Spesifikasi Kebutuhan Perangkat Lunak (dokumen sumber) |
-| [skpl-traceability-matrix.md](academic/skpl-traceability-matrix.md) | Matriks ketertelusuran kebutuhan → UI/API/test |
+| [skpl.md](academic/skpl.md) | Matriks ketertelusuran kebutuhan → UI/API/test |
 | [erd.md](academic/erd.md) | Entity-Relationship Diagram |
 | [architecture.md](academic/architecture.md) | Arsitektur sistem |
 | [uat-results.md](academic/uat-results.md) | Hasil User Acceptance Testing |
@@ -33,7 +32,6 @@ hubung (`kebab-case`); akronim resmi dokumen (PRD, SKPL, ERD, UAT) dipertahankan
 ## 📝 `review/` — Tinjauan kualitas
 | Berkas | Isi |
 | :--- | :--- |
-| [checklist-perbaikan.md](review/checklist-perbaikan.md) | Ceklis perbaikan teknis yang masih terbuka — satu-satunya daftar aktif |
 | [copywriting.md](review/copywriting.md) | Tinjauan konsistensi copywriting & istilah |
 
 ## 🗒️ `internal/` — Catatan kerja
@@ -41,6 +39,4 @@ Bukan bagian dari dokumen yang diserahkan; disimpan sebagai arsip proses.
 
 | Berkas | Isi |
 | :--- | :--- |
-| [task-checklist.md](internal/task-checklist.md) | Daftar tugas pengembangan |
-| [pre-handover.md](internal/pre-handover.md) | Urutan tugas pra-serah-terima |
 | [initial-mockup.md](internal/initial-mockup.md) | Mockup awal dari dosen |

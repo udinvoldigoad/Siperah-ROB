@@ -663,7 +663,7 @@ Setiap pengguna yang login dapat mengkustomisasi **preferensi notifikasi** melal
 
 ### Kelas Risiko Banjir Rob (Prediksi ML)
 
-Kelas risiko dihasilkan oleh model **Random Forest Classifier** yang dijalankan setiap hari:
+Kelas risiko dihasilkan oleh model **XGBoost Classifier** yang dijalankan setiap hari:
 
 |       Kelas       |    Warna     | Keterangan                                                         |
 | :---------------: | :----------: | :----------------------------------------------------------------- |
