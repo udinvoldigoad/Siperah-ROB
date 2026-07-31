@@ -23,15 +23,14 @@
 
 | # | Kategori | 🔴 | 🟠 | 🟡 | Total | Selesai |
 |---|---|---|---|---|---|---|
-| 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) | 1 | 0 | 1 | 2 | **2 ✅** |
-| 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **4 ✅** |
-| 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | **3** |
-| 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | **1** |
-| 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | **3** |
-| 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | **1** |
-| 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | **2** |
+| 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) |✅|
+| 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) |✅|
+| 3 | [Logika bisnis](#3--logika-bisnis) |✅|
+| 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) |✅|
+| 5 | [Perawatan & struktur](#5--perawatan--struktur) |✅|
+| 6 | [Test & tooling](#6--test--tooling) |✅|
+| 7 | [Data & skema](#7--data--skema) |✅|
 | 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **4** |
-| | **Total** | **1** | **23** | **15** | **39** | **22** |
 
 ---
 
@@ -160,15 +159,15 @@ Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% te
 
 ### 8.1 Korektness pipeline ML
 
-- [ ] 🟠 **`AU-1` — Wilayah tanpa data spasial diperlakukan sebagai wilayah paling berbahaya** — `ml-api/main.py:415-427` *(bukti: kode)*
+- [x] 🟠 **`AU-1` — Wilayah tanpa data spasial diperlakukan sebagai wilayah paling berbahaya** — `ml-api/main.py:415-427` *(bukti: kode)* ✅ `a5b23c7`
   `distance_to_coast_m` dan `avg_elevation_m` yang `NULL` dibaca sebagai `0.0`, sehingga `spatial_factor = exp(0) × exp(0) = 1.0` — nilai **maksimum**. Wilayah yang datanya belum terisi jadi tampak lebih berisiko daripada wilayah pesisir berelevasi rendah yang datanya lengkap. Ini kebalikan dari yang dimaksud, dan keluarannya adalah peringatan banjir yang dibaca warga.
   **Aksi:** bedakan "nol yang valid" dari "data hilang" — lewati wilayahnya, atau pakai faktor konservatif yang eksplisit dan tandai `provenance_status`.
 
-- [ ] 🟠 **`AU-2` — `confidence_score` tidak sejalan dengan `risk_probability`** — `ml-api/main.py:437-445` *(bukti: kode)*
+- [x] 🟠 **`AU-2` — `confidence_score` tidak sejalan dengan `risk_probability`** — `ml-api/main.py:437-445` *(bukti: kode)* ✅ `95728c6`
   `risk_probability` dihitung dari `final_prob` (sudah dikali `spatial_factor`), tetapi `confidence_score` diambil apa adanya dari `row["confidence"]` milik probabilitas **mentah**. Hasilnya bisa terbaca "risiko rendah 4%" berdampingan dengan "keyakinan 80%" — dua angka yang menjelaskan hal berbeda tapi disajikan sebagai satu kesatuan.
   **Aksi:** hitung ulang keyakinan dari `final_prob`, atau pisahkan penamaannya agar jelas mereka mengukur hal berbeda.
 
-- [ ] 🟠 **`AU-3` — Dua command Artisan memakai nama `ml:predict` yang sama** — `backend/app/Console/Commands/RunMlPrediction.php:10` & `RunMlPredictions.php:10` *(bukti: kode)*
+- [x] 🟠 **`AU-3` — Dua command Artisan memakai nama `ml:predict` yang sama** — `backend/app/Console/Commands/RunMlPrediction.php:10` & `RunMlPredictions.php:10` *(bukti: kode)* ✅ `39ae79c`
   Keduanya mendaftarkan signature `ml:predict`; yang menang bergantung urutan pendaftaran, jadi salah satunya dead code dan cron bisa memanggil yang bukan dimaksud. Opsi `--simulate` milik `RunMlPrediction` tidak dikenal argparse `main.py`.
   **Aksi:** hapus atau ganti nama salah satu, lalu pastikan cron memanggil yang tersisa.
 
@@ -178,15 +177,15 @@ Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% te
 
 ### 8.2 Korektness backend
 
-- [ ] 🟠 **`AU-5` — Aksi validasi/tolak/ubah-status laporan tanpa penguncian** — `backend/app/Http/Controllers/Api/ReportController.php:231,251,272` *(bukti: kode)*
+- [x] 🟠 **`AU-5` — Aksi validasi/tolak/ubah-status laporan tanpa penguncian** — `backend/app/Http/Controllers/Api/ReportController.php:231,251,272` *(bukti: kode)* ✅ `ce38094`
   `authorizeReview()` memeriksa status lalu `update()` menulisnya — non-atomik. Dua admin (atau satu double-click) sama-sama lolos pemeriksaan, keduanya menulis, dan pelapor menerima **notifikasi ganda** yang bisa saling bertentangan.
   **Aksi:** bungkus `DB::transaction` + `lockForUpdate`, atau jadikan update kondisional (`where('status', ...)`) dan tolak bila 0 baris terpengaruh.
 
-- [ ] 🟠 **`AU-6` — Callback Google menautkan akun by-email tanpa memeriksa klaim email terverifikasi** — `backend/app/Http/Controllers/Api/GoogleAuthController.php:52,91-96` *(bukti: kode)*
+- [x] 🟠 **`AU-6` — Callback Google menautkan akun by-email tanpa memeriksa klaim email terverifikasi** — `backend/app/Http/Controllers/Api/GoogleAuthController.php:52,91-96` *(bukti: kode)* ✅ `1f74353`
   Pencarian pengguna memakai `orWhere('email', $googleUser->email)`, lalu `email_verified_at ??= now()` — tanpa membaca klaim `email_verified` dari Google. Akun Google yang emailnya belum terverifikasi (mungkin di Workspace yang dikelola sendiri) karenanya bisa menaut ke akun SIPERAH yang sudah ada dan langsung masuk.
   **Aksi:** tolak penautan bila klaim `email_verified` bukan `true`; sisa cabang `catch` (`?error=google_auth_failed`) juga masih belum teruji.
 
-- [ ] 🟡 **`AU-7` — Status `duplikat` tidak mencatat siapa & kapan** — `backend/app/Http/Controllers/Api/ReportController.php:282-283` *(bukti: kode)*
+- [x] 🟡 **`AU-7` — Status `duplikat` tidak mencatat siapa & kapan** — `backend/app/Http/Controllers/Api/ReportController.php:282-283` *(bukti: kode)* ✅ `d07c09c`
   `validated_by` dan `validated_at` sengaja diisi `null` untuk status selain `divalidasi`/`ditolak`, padahal `duplikat` sama-sama keputusan manusia yang menutup laporan. Laporan terlihat "selesai" tanpa jejak siapa yang memutuskan. Transisi status juga tidak dibatasi — laporan `divalidasi` masih bisa dikembalikan ke `menunggu`.
   **Aksi:** isi kolom resolusi untuk `duplikat` juga, dan batasi transisi yang sah.
 
@@ -200,11 +199,11 @@ Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% te
 
 ### 8.3 Performa
 
-- [ ] 🟠 **`AU-10` — Export laporan lazy-load `reporter` 1.000× untuk kolom yang tak pernah ditulis** — `backend/app/Http/Controllers/Api/DashboardController.php:256-262` & `:472` *(bukti: kode)*
+- [x] 🟠 **`AU-10` — Export laporan lazy-load `reporter` 1.000× untuk kolom yang tak pernah ditulis** — `backend/app/Http/Controllers/Api/DashboardController.php:256-262` & `:472` *(bukti: kode)* ✅ `06b710a`
   Query-nya `->with('region')` saja, tetapi `reportSummary()` membaca `$report->reporter?->name`. Header CSV-nya (`Kode, Status, Keparahan, Tinggi Air CM, Wilayah, Waktu Kejadian, SLA, Dibuat`) tidak memuat nama pelapor sama sekali — jadi 1.000 query dijalankan untuk nilai yang dibuang. `isReportWithinMonitoringArea()` per baris patut diperiksa dengan cara yang sama.
   **Aksi:** tambahkan `with('reporter')`, atau pakai varian ringkas yang tidak menyentuh relasi itu.
 
-- [ ] 🟠 **`AU-11` — Notifikasi risiko tinggi menjalankan 2 query per pengguna, atas seluruh pengguna, setiap hari** — `backend/app/Services/NotificationService.php:142-147` *(bukti: kode)*
+- [x] 🟠 **`AU-11` — Notifikasi risiko tinggi menjalankan 2 query per pengguna, atas seluruh pengguna, setiap hari** — `backend/app/Services/NotificationService.php:142-147` *(bukti: kode)* ✅ `b6f29b7`
   `notifyHighRiskPredictions()` mengambil **semua** user aktif, lalu di dalam loop memanggil `settings()` (`firstOrCreate` = SELECT, kadang + INSERT) dan sebuah `exists()` ke `notification_inbox`. Berbeda dari jalur laporan yang penerimanya hanya admin, jalur ini tumbuh seiring jumlah warga terdaftar — dan dipicu cron harian.
   **Aksi:** pra-muat pengaturan lewat satu `whereIn`, dan ambil penanda "sudah dikirim" sebagai satu query kolektif.
 
@@ -216,7 +215,7 @@ Dokumen `audit-perbaikan.md` **dihapus** pada 2026-07-29 — isinya sudah 70% te
 
 ### 8.5 Testing & refactor yang ditunda
 
-- [ ] 🟠 **`AU-13` — Suite Playwright tak pernah jalan di CI** — `.github/workflows/` *(bukti: kode)*
+- [x] 🟠 **`AU-13` — Suite Playwright tak pernah jalan di CI** — `.github/workflows/` *(bukti: kode)* ✅ `ccd4d5f`
   15 tes e2e nyata (`login`/`admin`/`map`/`province`/`research`/`report-flow`) hanya berjalan bila seseorang mengetikkannya di mesin lokal. Tak ada satu pun dari lima workflow yang memanggilnya, jadi suite ini bisa membusuk tanpa ketahuan.
   **Aksi:** tambahkan job Playwright — nightly sudah cukup untuk mulai.
 
