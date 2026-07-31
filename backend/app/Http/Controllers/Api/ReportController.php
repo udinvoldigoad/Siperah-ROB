@@ -265,11 +265,14 @@ final class ReportController
     public function updateStatus(UpdateReportStatusRequest $request, string $report): JsonResponse
     {
         $status = $request->input('status');
+        // `duplikat` sama seperti `divalidasi`/`ditolak`: keputusan manusia yang
+        // menutup laporan, jadi harus meninggalkan jejak siapa & kapan.
+        $isDecision = in_array($status, ['divalidasi', 'ditolak', 'duplikat'], true);
         $reportData = $this->transitionReviewStatus($request, $report, [
             'status' => $status,
             'rejection_reason' => $request->input('rejection_reason'),
-            'validated_by' => in_array($status, ['divalidasi', 'ditolak']) ? $request->user()->id : null,
-            'validated_at' => in_array($status, ['divalidasi', 'ditolak']) ? now() : null,
+            'validated_by' => $isDecision ? $request->user()->id : null,
+            'validated_at' => $isDecision ? now() : null,
         ]);
         $this->notifications->notifyReportStatus($reportData);
         $this->writeAudit($request, 'update_report_status', $reportData);

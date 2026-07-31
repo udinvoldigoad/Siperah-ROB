@@ -79,7 +79,7 @@ final class OperatorQueueTest extends TestCase
         $this->assertAudit('reject_report', $report->id);
     }
 
-    public function test_update_status_requires_reason_for_ditolak_and_clears_validator_for_duplikat(): void
+    public function test_update_status_requires_reason_for_ditolak_and_records_duplikat_decision(): void
     {
         [$region, $operator] = $this->makeRegionWithAdmin('Kabupaten Antrean Status');
         $report = $this->makeReport($region, 'menunggu');
@@ -94,10 +94,26 @@ final class OperatorQueueTest extends TestCase
             ->assertJsonPath('data.status', 'duplikat');
 
         $fresh = $report->fresh();
-        $this->assertNull($fresh->validated_by);
-        $this->assertNull($fresh->validated_at);
+        $this->assertSame($operator->id, $fresh->validated_by);
+        $this->assertNotNull($fresh->validated_at);
 
         $this->assertAudit('update_report_status', $report->id);
+    }
+
+    public function test_processed_report_cannot_be_returned_to_queue(): void
+    {
+        [$region, $operator] = $this->makeRegionWithAdmin('Kabupaten Transisi Balik');
+        $report = $this->makeReport($region, 'divalidasi');
+
+        // Laporan yang sudah selesai tidak boleh dikembalikan ke antrean —
+        // dikunci di dua lapis: authorizeReview (status sumber) dan validasi
+        // target status (hanya keputusan).
+        $this->actingAs($operator)
+            ->patchJson("/api/reports/{$report->id}/status", ['status' => 'menunggu'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['status']);
+
+        $this->assertSame('divalidasi', $report->fresh()->status);
     }
 
     public function test_processed_report_cannot_be_processed_again(): void
