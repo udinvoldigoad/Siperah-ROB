@@ -23,14 +23,15 @@
 
 | # | Kategori | 🔴 | 🟠 | 🟡 | Total | Selesai |
 |---|---|---|---|---|---|---|
-| 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) |✅|
-| 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) |✅|
-| 3 | [Logika bisnis](#3--logika-bisnis) |✅|
-| 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) |✅|
-| 5 | [Perawatan & struktur](#5--perawatan--struktur) |✅|
-| 6 | [Test & tooling](#6--test--tooling) |✅|
-| 7 | [Data & skema](#7--data--skema) |✅|
-| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **4** |
+| 1 | [Produksi — butuh keputusan](#1--produksi--butuh-keputusan) | 1 | 0 | 1 | 2 | **2 ✅** |
+| 2 | [Kode mati & sisa peralihan](#2--kode-mati--sisa-peralihan) | 0 | 1 | 3 | 4 | **4 ✅** |
+| 3 | [Logika bisnis](#3--logika-bisnis) | 0 | 4 | 1 | 5 | **3** |
+| 4 | [UI tidak konsisten](#4--ui-tidak-konsisten) | 0 | 1 | 1 | 2 | **1** |
+| 5 | [Perawatan & struktur](#5--perawatan--struktur) | 0 | 3 | 0 | 3 | **3** |
+| 6 | [Test & tooling](#6--test--tooling) | 0 | 1 | 0 | 1 | **1** |
+| 7 | [Data & skema](#7--data--skema) | 0 | 1 | 3 | 4 | **4 ✅** |
+| 8 | [Warisan audit 2026-07-26](#8--warisan-audit-2026-07-26) | 0 | 12 | 6 | 18 | **13** |
+| | **Total** | **1** | **23** | **15** | **39** | **31** |
 
 ---
 
