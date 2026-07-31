@@ -4,46 +4,30 @@ import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { useToast } from "../../shared/components/Toast";
 import { getCurrentUser } from "../../shared/auth/session";
-import { severityLabels, type ReportSeverity } from "../reports/reportData";
-import { motion, type Variants } from "framer-motion";
+import { motion } from "framer-motion";
 import type { RiskClass } from "../../shared/types/domain";
-
-type ModeAwamData = {
-  // null saat prediksi tidak tersedia — backend tidak lagi mengarang "rendah/0".
-  risk_class: RiskClass | null;
-  risk_probability: number | null;
-  max_tidal_height: number | null;
-  peak_time: string | null;
-  model_version: string | null;
-  confidence_score: number | null;
-  data_source: string | null;
-  generated_at: string | null;
-  is_monitored: boolean;
-  monitoring_status: string | null;
-  status_label: string | null;
-  guidance_message: string | null;
-  prediction_status?: "fresh" | "stale" | "unavailable" | null;
-  last_generated_at?: string | null;
-  prediction_notice?: string | null;
-  // `provenance_status` memang dikirim backend (PublicMapController::modeAwam)
-  // dan dipakai menandai data contoh; sebelumnya absen dari tipe ini sehingga
-  // pembacanya harus lewat `as any`.
-  region: {
-    id?: string;
-    village: string | null;
-    district: string | null;
-    regency: string | null;
-    provenance_status?: string | null;
-    data_source?: string | null;
-  };
-  forecast: { data: ForecastItem[] } | ForecastItem[];
-  nearby_reports: NearbyReport[];
-};
-
-type WilayahOption = { label: string; lat: number; lon: number };
-
-type ForecastItem = { id: string; prediction_date: string; risk_class: RiskClass; risk_probability: number };
-type NearbyReport = { id: string; report_code: string; severity: "ringan" | "sedang" | "parah" | "sangat_parah"; water_height_cm: number | null; incident_time: string; status: string; region?: { village?: string | null; district?: string | null; regency?: string | null } | null };
+import {
+  CITIZEN_SHARED_STYLES,
+  CitizenActionCard,
+  ErrorBanner,
+  ForecastDayColumn,
+  GuidanceText,
+  ModelInfoPanel,
+  PredictionNotice,
+  ReportSeverityBadge,
+  ReportValidatedBadge,
+  ShareWarningButtons,
+  StatusBadge,
+  containerVariants,
+  itemVariants,
+  reportRegionLabel,
+  reportTimeLabel,
+  type ActionCard,
+  type ForecastDay,
+  type ModeAwamData,
+  type NearbyReport,
+  type WilayahOption,
+} from "./CitizenModeParts";
 
 type ModeAwamResponse = {
   data: ModeAwamData | null;
@@ -63,18 +47,14 @@ type PublicMapResponse = {
   };
 };
 
-type ForecastDay = { day: string; label: string; percent: number; color: string };
-/** Kartu tindakan: `[judul, penjelasan, nama ikon]`. */
-type ActionCard = string[];
-
 /**
  * Props `CitizenModeDesktop` & `CitizenModeMobile` — keduanya menerima
  * PERSIS daftar yang sama (lihat `commonProps` di bawah).
  *
  * Sebelumnya keduanya diketik `: any`, sehingga 6 callback `.map()` di dalamnya
  * ikut terpaksa `: any` dan salah ketik nama prop tidak pernah tertangkap tsc.
- * Kedua komponen itu sendiri masih ~300 baris JSX yang hampir identik — dedup-nya
- * dilacak terpisah sebagai `AU-15` di docs/review/checklist-perbaikan.md.
+ * Bagian JSX yang sama persis kini dipindah ke `./CitizenModeParts` (AU-15);
+ * yang tersisa di sini murni struktur tata letak masing-masing view.
  */
 type CitizenModeViewProps = {
   data: ModeAwamData | undefined;
@@ -132,32 +112,6 @@ const getCardStyle = (riskClass?: RiskClass) => {
       };
   }
 };
-
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.1, ease: "easeOut" } }
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
-};
-
-function confidenceLabel(score: number | null | undefined): string {
-  if (score === null || score === undefined || Number.isNaN(score)) return "—";
-  const normalized = score > 1 ? score / 100 : score;
-  const label = normalized >= 0.8 ? "Tinggi" : normalized >= 0.6 ? "Sedang" : "Rendah";
-  return `${label} (${normalized.toFixed(2)})`;
-}
-
-function formatGeneratedAt(value: string | null | undefined): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  // timeZone eksplisit: tanpa ini perangkat WITA/WIT menampilkan jam lokalnya
-  // sendiri tapi tetap dilabeli "WIB".
-  return `${date.toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })} WIB`;
-}
 
 // Titik tengah bounding box dari geometry GeoJSON (Polygon/MultiPolygon) → [lon, lat].
 function bboxCenter(coordinates: unknown): [number, number] | null {
@@ -310,6 +264,7 @@ function CitizenModeDesktop({
     <AppShell active="awam" title="Status Bahaya Saya" subtitle="Panduan mitigasi dan peringatan dini disajikan dalam bahasa yang mudah dipahami.">
       <style>{`
         ${WILAYAH_PICKER_STYLES}
+        ${CITIZEN_SHARED_STYLES}
         .citizen-mode-layout { grid-template-columns: minmax(0, 1fr) 340px; max-width: 1280px; padding-top: 24px; }
         .citizen-status-card { border-radius: 16px !important; padding: 34px !important; }
         .citizen-location-controls { align-items: center; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; margin-bottom: 28px; }
@@ -348,11 +303,7 @@ function CitizenModeDesktop({
           }
         }
       `}</style>
-      {error && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="alert" style={{ marginBottom: 24, borderLeftColor: "var(--critical)" }}>
-          <Icon name="error" style={{ color: "var(--critical)" }} /> {error}
-        </motion.div>
-      )}
+      {error && <ErrorBanner error={error} marginBottom={24} />}
 
       <motion.div className="detail-layout citizen-mode-layout" variants={containerVariants} initial="hidden" animate="show">
         <div className="stack" style={{ minWidth: 0 }}>
@@ -395,24 +346,11 @@ function CitizenModeDesktop({
                 Status <span style={{ color: "#fff" }}>{risk}</span>
               </h1>
 
-              {data?.status_label && (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.24)", borderRadius: 999, padding: "5px 12px", fontSize: 13, fontWeight: 650, marginBottom: 16 }}>
-                  <Icon name={data.is_monitored ? "radar" : "info"} style={{ fontSize: 16 }} /> {data.status_label}
-                </span>
-              )}
+              {data?.status_label && <StatusBadge data={data} />}
 
-              {data?.prediction_notice && (
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "rgba(245, 158, 11, 0.18)", border: "1px solid rgba(245, 158, 11, 0.5)", borderRadius: 12, padding: "10px 14px", fontSize: 13.5, lineHeight: 1.5, marginBottom: 16, maxWidth: 600 }}>
-                  <Icon name={data.prediction_status === "unavailable" ? "schedule" : "update"} style={{ fontSize: 17, flexShrink: 0, marginTop: 1 }} />
-                  <span>{data.prediction_notice}</span>
-                </div>
-              )}
+              <PredictionNotice data={data} tone="amber" />
 
-              <p style={{ fontSize: "1.15rem", lineHeight: 1.6, color: "rgba(255,255,255,0.95)", maxWidth: "600px", margin: "0 0 40px 0" }}>
-                {data
-                  ? (data.guidance_message ?? "Pantau kondisi rob di sekitar Anda dan ikuti arahan BPBD.")
-                  : (dataLoaded ? "Lokasi Anda berada di luar wilayah pantauan Lampung. Pilih lokasi lain dari daftar di atas untuk melihat status bahaya rob." : "Menganalisis status ancaman rob terbaru di sekitar Anda...")}
-              </p>
+              <GuidanceText data={data} dataLoaded={dataLoaded} />
 
               <div className="citizen-status-metrics">
                 {[
@@ -451,24 +389,7 @@ function CitizenModeDesktop({
             ) : (
             <div className="citizen-forecast-grid">
               {forecastDays.map(({ day, label, percent, color }, i) => (
-                <motion.div
-                  key={day}
-                  className="citizen-forecast-day"
-                  whileHover={{ y: -5 }}
-                  style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}
-                >
-                  <div style={{ fontSize: 13, color: "var(--ink-soft)", fontWeight: 600, marginBottom: 12 }}>{day}</div>
-                  <div style={{ height: 120, width: 12, borderRadius: 999, background: "var(--line)", position: "relative", margin: "8px 0" }}>
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: `${Math.min(percent, 100)}%` }}
-                      transition={{ delay: 0.5 + (i * 0.05), duration: 0.8, type: "spring" }}
-                      style={{ position: "absolute", bottom: 0, left: 0, width: "100%", background: color, borderRadius: 999 }}
-                    />
-                  </div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: color as string, marginTop: 12 }}>{label}</div>
-                  <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>{percent}%</div>
-                </motion.div>
+                <ForecastDayColumn key={day} day={day} label={label} percent={percent} color={color} index={i} className="citizen-forecast-day" />
               ))}
             </div>
             )}
@@ -499,20 +420,14 @@ function CitizenModeDesktop({
               <tbody>
                 {data?.nearby_reports.length === 0 && <tr><td colSpan={4} style={{ padding: "16px 24px", color: "var(--ink-soft)" }}>Belum ada laporan tervalidasi di sekitar lokasi ini.</td></tr>}
                 {data?.nearby_reports.map((report) => {
-                  const region = [report.region?.village, report.region?.district, report.region?.regency].filter(Boolean).join(", ") || "Wilayah pesisir";
-                  const time = new Date(report.incident_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
                   return <tr key={report.id} style={{ borderBottom: "1px solid var(--line)" }}>
-                    <td style={{ padding: "16px 24px", fontWeight: 600, color: "var(--ink)" }}>{region}</td>
+                    <td style={{ padding: "16px 24px", fontWeight: 600, color: "var(--ink)" }}>{reportRegionLabel(report, true)}</td>
                     <td style={{ padding: "16px 24px" }}>
-                      <span className={`badge severity-${report.severity}`}>
-                        {report.water_height_cm ? `${report.water_height_cm} cm` : severityLabels[report.severity as ReportSeverity]}
-                      </span>
+                      <ReportSeverityBadge report={report} />
                     </td>
-                    <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: "14px" }}>{time} WIB</td>
+                    <td style={{ padding: "16px 24px", color: "var(--ink-soft)", fontSize: "14px" }}>{reportTimeLabel(report)}</td>
                     <td style={{ padding: "16px 24px" }}>
-                      <span className="badge status-divalidasi">
-                        <Icon name="verified" style={{ fontSize: 14 }} /> Divalidasi BPBD
-                      </span>
+                      <ReportValidatedBadge label="Divalidasi BPBD" />
                     </td>
                   </tr>;
                 })}
@@ -531,42 +446,9 @@ function CitizenModeDesktop({
                 Rekomendasi Tindakan
               </div>
               <div className="citizen-recommendations">
-                {actionCards.map(([title, copy, icon]) => {
-                  const isReportBtn = title === "Laporkan kejadian";
-                  return (
-                    <motion.div
-                      key={title}
-                      className="citizen-action-card"
-                      whileHover={{ x: 4 }}
-                      style={{
-                        borderRadius: 8,
-                        display: "flex",
-                        gap: 16,
-                        alignItems: "flex-start",
-                        cursor: isReportBtn ? "pointer" : "default"
-                      }}
-                      onClick={() => isReportBtn && (window.location.hash = "#/reports")}
-                    >
-                      <div style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 14,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        background: "var(--surface-soft)",
-                        color: isReportBtn ? "var(--accent-blue)" : "var(--ink-soft)",
-                        flexShrink: 0
-                      }}>
-                        <Icon name={icon} style={{ fontSize: 24 }} />
-                      </div>
-                      <div style={{ paddingTop: 2 }}>
-                        <strong style={{ display: "block", marginBottom: 6, fontSize: "15px", color: isReportBtn ? "var(--accent-blue)" : "var(--ink-primary)" }}>{title}</strong>
-                        <p style={{ margin: 0, fontSize: "14px", color: "var(--ink-soft)", lineHeight: 1.6 }}>{copy}</p>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                {actionCards.map((card) => (
+                  <CitizenActionCard key={card[0]} card={card} variant="desktop" />
+                ))}
               </div>
             </div>
           </motion.section>
@@ -574,26 +456,11 @@ function CitizenModeDesktop({
           {/* Bagikan Panel */}
           <motion.section variants={itemVariants} className="panel">
             <h2 style={{ fontSize: "1.15rem", margin: "0 0 16px 0" }}>Sebarkan Peringatan</h2>
-            <div className="citizen-share-actions">
-              <button className="btn primary" type="button" onClick={handleShareWhatsApp} style={{ width: "100%", justifyContent: "center", background: "#16a34a", borderColor: "#16a34a", fontSize: "14px" }}>
-                <Icon name="share" /> Bagikan via WhatsApp
-              </button>
-              <button className="btn secondary" type="button" onClick={handleCopyWarning} style={{ width: "100%", justifyContent: "center", fontSize: "14px" }}>
-                <Icon name="content_copy" /> Salin Teks Peringatan
-              </button>
-            </div>
+            <ShareWarningButtons onWhatsApp={handleShareWhatsApp} onCopy={handleCopyWarning} />
           </motion.section>
 
           {/* Model Info Panel */}
-          <motion.section variants={itemVariants} className="panel" style={{ background: "var(--surface-soft)", border: "none" }}>
-            <h2 style={{ fontSize: "1.05rem", margin: "0 0 16px 0" }}>Informasi Teknis Model</h2>
-            <div style={{ display: "grid", gap: 10, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span>Model AI</span> <strong style={{ textAlign: "right" }}>{data?.model_version ?? "—"}</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span>Kepercayaan</span> <strong style={{ textAlign: "right", color: "var(--low)" }}>{confidenceLabel(data?.confidence_score)}</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span>Sumber Data</span> <strong style={{ textAlign: "right" }}>{data?.data_source ?? "—"}</strong></div>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span>Pembaruan</span> <strong style={{ textAlign: "right" }}>{formatGeneratedAt(data?.generated_at)}</strong></div>
-            </div>
-          </motion.section>
+          <ModelInfoPanel data={data} />
         </aside>
       </motion.div>
     </AppShell>
@@ -613,6 +480,7 @@ function CitizenModeMobile({
     <AppShell active="awam" title="Status Bahaya Saya">
       <style>{`
         ${WILAYAH_PICKER_STYLES}
+        ${CITIZEN_SHARED_STYLES}
         /* MOBILE NATIVE STYLES */
         .mobile-native-hero {
           background: ${cardStyle.background};
@@ -712,11 +580,7 @@ function CitizenModeMobile({
         }
       `}</style>
       
-      {error && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="alert" style={{ marginBottom: 16, borderLeftColor: "var(--critical)" }}>
-          <Icon name="error" style={{ color: "var(--critical)" }} /> {error}
-        </motion.div>
-      )}
+      {error && <ErrorBanner error={error} marginBottom={16} />}
 
       {/* 1. Mobile Edge-to-Edge Hero */}
       <motion.section 
@@ -743,28 +607,15 @@ function CitizenModeMobile({
             />
           </div>
 
-          {data?.status_label && (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.24)", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 650, marginBottom: 12 }}>
-              <Icon name={data.is_monitored ? "radar" : "info"} style={{ fontSize: 14 }} /> {data.status_label}
-            </span>
-          )}
+          {data?.status_label && <StatusBadge data={data} compact />}
 
-          {data?.prediction_notice && (
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "rgba(255, 255, 255, 0.15)", border: "1px solid rgba(255, 255, 255, 0.25)", borderRadius: 12, padding: "10px 14px", fontSize: 13, lineHeight: 1.5, marginBottom: 16, color: "white" }}>
-              <Icon name={data.prediction_status === "unavailable" ? "schedule" : "update"} style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }} />
-              <span>{data.prediction_notice}</span>
-            </div>
-          )}
+          <PredictionNotice data={data} tone="frost" />
 
           <h1 style={{ fontSize: "2.5rem", fontWeight: 900, lineHeight: 1.1, margin: "0 0 12px 0", letterSpacing: "-0.03em" }}>
             Status<br />{risk}
           </h1>
 
-          <p style={{ fontSize: "1rem", lineHeight: 1.5, color: "rgba(255,255,255,0.9)", margin: "0 0 24px 0" }}>
-            {data
-              ? (data.guidance_message ?? "Pantau kondisi rob di sekitar Anda dan ikuti arahan BPBD.")
-              : (dataLoaded ? "Lokasi di luar wilayah pantauan Lampung. Pilih lokasi dari daftar." : "Menganalisis status rob...")}
-          </p>
+          <GuidanceText data={data} dataLoaded={dataLoaded} compact />
 
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ flex: 1, background: "rgba(0,0,0,0.15)", borderRadius: 16, padding: "12px 16px" }}>
@@ -791,19 +642,7 @@ function CitizenModeMobile({
         )}
         <div className="mobile-forecast-scroller">
           {forecastDays.map(({ day, label, percent, color }, i) => (
-            <div key={day} className="mobile-forecast-card">
-              <div style={{ fontSize: 12, color: "var(--ink-soft)", fontWeight: 700, marginBottom: 12 }}>{day}</div>
-              <div style={{ height: 100, width: 14, borderRadius: 999, background: "var(--line)", position: "relative", margin: "0 auto 12px auto" }}>
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: `${Math.min(percent, 100)}%` }}
-                  transition={{ delay: 0.3 + (i * 0.1), duration: 0.8, type: "spring" }}
-                  style={{ position: "absolute", bottom: 0, left: 0, width: "100%", background: color, borderRadius: 999 }}
-                />
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: color as string }}>{label}</div>
-              <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{percent}%</div>
-            </div>
+            <ForecastDayColumn key={day} day={day} label={label} percent={percent} color={color} index={i} className="mobile-forecast-card" compact />
           ))}
         </div>
       </motion.section>
@@ -812,25 +651,9 @@ function CitizenModeMobile({
       <motion.section variants={itemVariants} initial="hidden" animate="show" style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: "1.1rem", margin: "0 0 16px 0", fontWeight: 700 }}>Langkah Mitigasi</h2>
         <div className="mobile-bento-grid">
-          {actionCards.map(([title, copy, icon], i) => {
-            const isReportBtn = title === "Laporkan kejadian";
-            return (
-              <div 
-                key={title} 
-                className="mobile-action-card"
-                onClick={() => isReportBtn && (window.location.hash = "#/reports")}
-                style={{ cursor: isReportBtn ? "pointer" : "default", border: isReportBtn ? "1px solid var(--accent-blue)" : undefined }}
-              >
-                <div style={{ width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: isReportBtn ? "rgba(37,99,235,0.1)" : "var(--surface-soft)", color: isReportBtn ? "var(--accent-blue)" : "var(--ink-soft)" }}>
-                  <Icon name={icon} style={{ fontSize: 20 }} />
-                </div>
-                <div>
-                  <strong style={{ display: "block", fontSize: "13px", lineHeight: 1.3, marginBottom: 4, color: isReportBtn ? "var(--accent-blue)" : "var(--ink-primary)" }}>{title}</strong>
-                  <p style={{ margin: 0, fontSize: "12px", color: "var(--ink-soft)", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{copy}</p>
-                </div>
-              </div>
-            );
-          })}
+          {actionCards.map((card) => (
+            <CitizenActionCard key={card[0]} card={card} variant="mobile" />
+          ))}
         </div>
       </motion.section>
 
@@ -850,21 +673,15 @@ function CitizenModeMobile({
             </div>
           )}
           {data?.nearby_reports.map((report) => {
-            const region = [report.region?.village, report.region?.district].filter(Boolean).join(", ") || "Wilayah pesisir";
-            const time = new Date(report.incident_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
             return (
               <div key={report.id} className="mobile-report-card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <strong style={{ fontSize: 14, color: "var(--ink-primary)" }}>{region}</strong>
-                  <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>{time} WIB</span>
+                  <strong style={{ fontSize: 14, color: "var(--ink-primary)" }}>{reportRegionLabel(report, false)}</strong>
+                  <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>{reportTimeLabel(report)}</span>
                 </div>
                 <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                  <span className={`badge severity-${report.severity}`} style={{ padding: "4px 8px", fontSize: 11 }}>
-                    {report.water_height_cm ? `${report.water_height_cm} cm` : severityLabels[report.severity as ReportSeverity]}
-                  </span>
-                  <span className="badge status-divalidasi" style={{ padding: "4px 8px", fontSize: 11 }}>
-                    <Icon name="verified" style={{ fontSize: 12 }} /> BPBD
-                  </span>
+                  <ReportSeverityBadge report={report} dense />
+                  <ReportValidatedBadge label="BPBD" dense />
                 </div>
               </div>
             );
@@ -876,15 +693,8 @@ function CitizenModeMobile({
       <motion.section variants={itemVariants} initial="hidden" animate="show" style={{ marginBottom: 32, paddingBottom: 24 }}>
         <h2 style={{ fontSize: "1.1rem", margin: "0 0 4px 0", fontWeight: 700 }}>Sebarkan Peringatan</h2>
         <p style={{ margin: "0 0 16px 0", color: "var(--ink-soft)", fontSize: "13px" }}>Bantu kerabat bersiap dengan membagikan informasi ini</p>
-        
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <button className="btn primary" type="button" onClick={handleShareWhatsApp} style={{ width: "100%", justifyContent: "center", background: "#16a34a", borderColor: "#16a34a", fontSize: "13.5px", padding: "12px", gap: 8 }}>
-            <Icon name="share" style={{ fontSize: 18 }} /> Bagikan via WhatsApp
-          </button>
-          <button className="btn secondary" type="button" onClick={handleCopyWarning} style={{ width: "100%", justifyContent: "center", fontSize: "13.5px", padding: "12px", gap: 8 }}>
-            <Icon name="content_copy" style={{ fontSize: 18 }} /> Salin Teks Peringatan
-          </button>
-        </div>
+
+        <ShareWarningButtons onWhatsApp={handleShareWhatsApp} onCopy={handleCopyWarning} compact />
       </motion.section>
       
     </AppShell>
