@@ -145,6 +145,7 @@ final class DeletedAccountRestoreTest extends TestCase
         $socialiteUser->id = $id;
         $socialiteUser->name = $name;
         $socialiteUser->email = $email;
+        $socialiteUser['email_verified'] = true;
 
         Socialite::extend('google', fn () => new class($socialiteUser) {
             public function __construct(private readonly SocialiteUser $user) {}

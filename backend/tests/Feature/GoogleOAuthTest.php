@@ -181,6 +181,63 @@ final class GoogleOAuthTest extends TestCase
         }
     }
 
+    public function test_unverified_email_is_rejected_and_never_linked(): void
+    {
+        $email = Str::uuid().'@example.test';
+        $googleId = 'google-uid-'.Str::uuid();
+
+        // Akun Google yang emailnya belum diverifikasi tidak boleh menaut ke
+        // akun SIPERAH yang sudah ada maupun mendaftarkan akun baru.
+        $this->fakeGoogleUser($googleId, 'Belum Terverifikasi', $email, emailVerified: false);
+
+        $this->get('/api/auth/google/callback')
+            ->assertRedirect(self::FRONTEND.'/#/login?error=google_email_unverified');
+
+        self::assertNull(User::where('email', $email)->first(), 'Tidak boleh ada akun yang dibuat dari email tak terverifikasi.');
+
+        self::assertTrue(
+            AuditLog::where('action', 'login')->where('outcome', 'denied')
+                ->where('target_resource', $email)
+                ->where('payload->reason', 'google_email_unverified')->exists(),
+            'Penolakan email tak terverifikasi harus tercatat di audit log.',
+        );
+    }
+
+    public function test_unverified_email_cannot_link_an_existing_account(): void
+    {
+        $email = Str::uuid().'@example.test';
+        $user = $this->makeUser($email, 'aktif');
+        self::assertNull($user->google_id);
+
+        // Penyerang mengklaim email orang lain lewat akun Google yang belum
+        // diverifikasi: email SIPERAH sudah ada, tapi google_id TIDAK boleh
+        // ditempel dan status verifikasi tidak boleh diubah.
+        $this->fakeGoogleUser('google-uid-'.Str::uuid(), 'Penyusup', $email, emailVerified: false);
+
+        $this->get('/api/auth/google/callback')
+            ->assertRedirect(self::FRONTEND.'/#/login?error=google_email_unverified');
+
+        $user->refresh();
+        self::assertNull($user->google_id, 'Akun existing tidak boleh tertaut ke Google tak terverifikasi.');
+        self::assertNotNull($user->email_verified_at, 'Verifikasi yang sudah ada tidak boleh hilang.');
+        self::assertSame(0, $user->tokens()->count());
+    }
+
+    public function test_socialite_failure_redirects_to_google_auth_failed(): void
+    {
+        Socialite::extend('google', fn () => new class {
+            public function stateless(): static { return $this; }
+            public function user(): never
+            {
+                throw new \RuntimeException('sengaja gagal');
+            }
+        });
+        Socialite::forgetDrivers();
+
+        $this->get('/api/auth/google/callback')
+            ->assertRedirect(self::FRONTEND.'/#/login?error=google_auth_failed');
+    }
+
     /** Jalankan callback dan ambil kode sekali pakai dari URL redirect. */
     private function codeFromCallback(): string
     {
@@ -197,12 +254,13 @@ final class GoogleOAuthTest extends TestCase
      * `extend()` agar `Socialite::driver('google')` mengembalikan objek yang
      * meniru rantai `->stateless()->user()` yang dipakai controller.
      */
-    private function fakeGoogleUser(string $id, string $name, string $email): void
+    private function fakeGoogleUser(string $id, string $name, string $email, bool $emailVerified = true): void
     {
         $socialiteUser = new SocialiteUser();
         $socialiteUser->id = $id;
         $socialiteUser->name = $name;
         $socialiteUser->email = $email;
+        $socialiteUser['email_verified'] = $emailVerified;
 
         Socialite::extend('google', fn () => new class($socialiteUser) {
             public function __construct(private readonly SocialiteUser $user) {}

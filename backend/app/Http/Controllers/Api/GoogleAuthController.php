@@ -41,6 +41,23 @@ class GoogleAuthController
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
 
+            // Klaim email_verified dari Google WAJIB true. Tanpa ini, akun
+            // Google dengan email yang belum diverifikasi (mis. Workspace yang
+            // dikelola sendiri) bisa menaut ke akun SIPERAH yang sudah ada
+            // dan langsung masuk — email bisa diklaim tanpa bukti kepemilikan.
+            // `getRaw()` daripada ArrayAccess: bentuk klaim mentah lebih tahan
+            // bila stub Socialite tidak mengisinya (null dibaca sebagai tidak
+            // terverifikasi — sikap aman).
+            $googleRaw = (array) $googleUser->getRaw();
+            if (!(bool) ($googleRaw['email_verified'] ?? false)) {
+                $this->audit->write($request, 'login', 'denied', $googleUser->email ?? null, [
+                    'reason' => 'google_email_unverified',
+                    'provider' => 'google',
+                ]);
+
+                return redirect($frontendUrl . '/#/login?error=google_email_unverified');
+            }
+
             // withTrashed WAJIB: akun yang dihapus admin disembunyikan global
             // scope soft-delete, sehingga pencarian biasa mengembalikan null dan
             // alur di bawah mencoba INSERT email yang sebenarnya masih ada —
