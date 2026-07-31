@@ -243,7 +243,7 @@ final class DashboardController
     public function operatorReportsExport(Request $request): StreamedResponse
     {
         $rows = $this->reports->accessible($request->user())
-            ->with('region')
+            ->with(['region', 'reporter'])
             ->latest()
             ->limit(1000)
             ->get();

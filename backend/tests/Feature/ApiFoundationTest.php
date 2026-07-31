@@ -478,6 +478,58 @@ final class ApiFoundationTest extends TestCase
         $this->assertStringContainsString($reportCode, $export->streamedContent());
     }
 
+    public function test_operator_reports_export_does_not_lazy_load_reporter_per_row(): void
+    {
+        // Regresi AU-10: export dulu hanya eager-load region, padahal
+        // reportSummary() membaca $report->reporter — satu query SELECT per baris
+        // untuk nilai yang bahkan tidak ditulis ke CSV. Jumlah query harus
+        // konstan, tidak bergantung jumlah laporan.
+        $region = $this->insertRegionForPoint(-5.610, 105.310, true, 'Uji N1 Export');
+        $admin = $this->createUser('admin', $region->id);
+        $reporters = [];
+        for ($i = 0; $i < 8; $i++) {
+            $reporters[] = $this->createUser('warga');
+        }
+
+        foreach ($reporters as $reporter) {
+            GroundTruthReport::create([
+                'id' => (string) Str::uuid(),
+                'report_code' => 'RB-N1-'.Str::upper(Str::random(8)),
+                'user_id' => $reporter->id,
+                'region_id' => $region->id,
+                'latitude' => -5.610,
+                'longitude' => 105.310,
+                'severity' => 'sedang',
+                'water_height_cm' => 30,
+                'incident_time' => now(),
+                'description' => 'Laporan regresi N+1 export.',
+                'status' => 'menunggu',
+                'is_within_monitoring_area' => true,
+            ]);
+        }
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->actingAs($admin)->get('/api/dashboard/operator/reports/export')
+            ->assertOk()
+            ->streamedContent();
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        // Eager-load region + reporter = 2 query tambahan di atas query dasar
+        // (select laporan + audit). Bila reporter di-lazy-load per baris, akan
+        // ada 8+ query SELECT users lagi.
+        $selectQueries = array_filter(
+            $queries,
+            fn (array $q): bool => str_starts_with(trim(mb_strtolower($q['query'])), 'select'),
+        );
+        self::assertLessThan(
+            8,
+            count($selectQueries),
+            'Export melakukan lazy-load per baris: '.count($selectQueries).' SELECT dijalankan.',
+        );
+    }
+
     public function test_report_photo_is_public_only_after_validation(): void
     {
         Storage::fake('public');
