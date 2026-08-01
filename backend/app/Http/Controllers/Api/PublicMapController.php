@@ -46,7 +46,8 @@ final class PublicMapController
             fn (): array => $this->map->buildPayload($filters),
         );
 
-        return response()->json(['data' => $payload]);
+        return response()->json(['data' => $payload])
+            ->withHeaders(['Cache-Control' => 'public, max-age=300']);
     }
 
     public function predictions(Request $request)
@@ -75,7 +76,9 @@ final class PublicMapController
             }
         }
 
-        return PredictionResource::collection($query->paginate($filters['per_page'] ?? 200));
+        return PredictionResource::collection($query->paginate($filters['per_page'] ?? 200))
+            ->response()
+            ->withHeaders(['Cache-Control' => 'public, max-age=300']);
     }
 
     public function mapExport(Request $request): StreamedResponse
@@ -118,7 +121,8 @@ final class PublicMapController
     public function region(string $region): JsonResponse
     {
         $data = Region::findOrFail($region);
-        return response()->json(['data' => new RegionResource($data)]);
+        return response()->json(['data' => new RegionResource($data)])
+            ->withHeaders(['Cache-Control' => 'public, max-age=3600']);
     }
 
     public function resolveRegion(Request $request): JsonResponse
@@ -145,7 +149,7 @@ final class PublicMapController
         return response()->json([
             'data' => $data,
             'message' => $region ? null : 'Koordinat berada di luar batas administrasi Lampung yang tersedia.',
-        ]);
+        ])->withHeaders(['Cache-Control' => 'public, max-age=3600']);
     }
 
     public function modeAwam(Request $request): JsonResponse
@@ -176,7 +180,7 @@ final class PublicMapController
                 return response()->json([
                     'data' => null,
                     'message' => 'Lokasi yang dipilih belum ada di data administrasi Lampung. Coba geser pin ke daratan Lampung terdekat.',
-                ]);
+                ])->withHeaders(['Cache-Control' => 'public, max-age=3600']);
             }
         }
 
@@ -293,7 +297,7 @@ final class PublicMapController
                 'regency' => $filters['regency'] ?? null,
                 'days' => count($rows),
             ],
-        ]);
+        ])->withHeaders(['Cache-Control' => 'public, max-age=3600']);
     }
 
     public function onboarding(): JsonResponse
@@ -302,6 +306,6 @@ final class PublicMapController
             'data' => [
                 'topics' => ['banjir rob', 'klasifikasi risiko', 'cara melapor', 'FAQ'],
             ],
-        ]);
+        ])->withHeaders(['Cache-Control' => 'public, max-age=86400']);
     }
 }
