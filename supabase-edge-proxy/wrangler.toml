@@ -1,0 +1,7 @@
+name = "supabase-edge-proxy"
+main = "src/index.js"
+compatibility_date = "2023-10-30"
+
+# Ganti dengan URL Supabase Anda
+[vars]
+SUPABASE_URL = "https://your-project-id.supabase.co"
