@@ -8,7 +8,7 @@ import { api } from "../api/client";
 import { roleLabels } from "../constants/roles";
 import { clearSession, getCurrentUser, isLoggedIn } from "../auth/session";
 
-const SIDEBAR_STORAGE_KEY = "siperah-sidebar";
+const SIDEBAR_STORAGE_KEY = "saiba-sidebar";
 
 type InboxItem = { id: string; title: string; body: string; read_at: string | null; created_at: string };
 type InboxResponse = { data: InboxItem[] };
@@ -23,13 +23,13 @@ function notifMeta(title: string): { icon: string; color: string } {
   return { icon: "notifications", color: "var(--accent)" };
 }
 
-// Tanggal + jam ringkas, mis. "25 Jul 2026 · 14.30".
+// Tanggal + jam ringkas, mis. "25 Jul 2026 Â· 14.30".
 function formatNotifWhen(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   const date = d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
   const time = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-  return `${date} · ${time}`;
+  return `${date} Â· ${time}`;
 }
 
 export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
@@ -44,17 +44,17 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [isNotificationOpen, setNotificationOpen] = useState(false);
-  const [isDarkMode, setDarkMode] = useState(() => localStorage.getItem("siperah-theme") === "dark");
+  const [isDarkMode, setDarkMode] = useState(() => localStorage.getItem("saiba-theme") === "dark");
   const [notifications, setNotifications] = useState<InboxItem[]>([]);
   const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.setAttribute("data-theme", "dark");
-      localStorage.setItem("siperah-theme", "dark");
+      localStorage.setItem("saiba-theme", "dark");
     } else {
       document.documentElement.removeAttribute("data-theme");
-      localStorage.setItem("siperah-theme", "light");
+      localStorage.setItem("saiba-theme", "light");
     }
   }, [isDarkMode]);
 
@@ -90,8 +90,8 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
     const handleAuthExpired = () => {
       toast.error("Sesi Anda telah habis. Silakan login kembali.");
     };
-    window.addEventListener("siperah-auth-expired", handleAuthExpired);
-    return () => window.removeEventListener("siperah-auth-expired", handleAuthExpired);
+    window.addEventListener("saiba-auth-expired", handleAuthExpired);
+    return () => window.removeEventListener("saiba-auth-expired", handleAuthExpired);
   }, []);
 
   const user = getCurrentUser();
@@ -162,9 +162,9 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
       <aside className={`sidebar ${isMobileSidebarOpen ? "mobile-open" : ""}`} style={{ display: "flex", flexDirection: "column" }}>
         <div className="sidebar-top">
           <a className="brand-block" href="#/">
-            <img src="/logo.png" alt="Logo SIPERAH" style={{ width: "32px", height: "32px", objectFit: "contain", borderRadius: "8px" }} />
+            <img src="/logo.png" alt="Logo SAIBA" style={{ width: "32px", height: "32px", objectFit: "contain", borderRadius: "8px" }} />
             <span className="brand-copy">
-              <strong>SIPERAH-RoB</strong>
+              <strong>SAIBA</strong>
             </span>
           </a>
           <button
@@ -224,7 +224,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
               <Icon name="menu" />
             </button>
             {/* Halaman yang mengirim `breadcrumbs` menampilkan jejak aslinya;
-                sisanya tetap memakai jejak bawaan "beranda › judul". */}
+                sisanya tetap memakai jejak bawaan "beranda â€º judul". */}
             {breadcrumbs && breadcrumbs.length > 0 ? (
               <Breadcrumbs items={breadcrumbs} />
             ) : (
@@ -404,3 +404,4 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
     </div>
   );
 }
+

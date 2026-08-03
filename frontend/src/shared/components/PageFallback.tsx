@@ -2,7 +2,7 @@
  * Fallback layar-penuh untuk Suspense (lazy route) & sebagai indikator memuat
  * halaman yang konsisten. Ringan, tanpa dependensi berat, sadar tema.
  */
-export function PageFallback({ label = "Memuat halaman…" }: { label?: string }) {
+export function PageFallback({ label = "Memuat halamanâ€¦" }: { label?: string }) {
   return (
     <div
       role="status"
@@ -25,11 +25,12 @@ export function PageFallback({ label = "Memuat halaman…" }: { label?: string }
           borderRadius: "50%",
           border: "3px solid var(--line, #e2e8f0)",
           borderTopColor: "var(--accent, #1e40af)",
-          animation: "siperah-spin 0.7s linear infinite",
+          animation: "saiba-spin 0.7s linear infinite",
         }}
       />
       <span style={{ fontSize: 14, fontWeight: 600 }}>{label}</span>
-      <style>{"@keyframes siperah-spin{to{transform:rotate(360deg)}}"}</style>
+      <style>{"@keyframes saiba-spin{to{transform:rotate(360deg)}}"}</style>
     </div>
   );
 }
+

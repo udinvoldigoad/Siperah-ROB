@@ -1,4 +1,4 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
+﻿import { Component, type ErrorInfo, type ReactNode } from "react";
 
 type Props = { children: ReactNode };
 type State = { hasError: boolean; message?: string };
@@ -17,7 +17,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     // Log ke konsol untuk diagnosis; bisa diarahkan ke layanan monitoring nanti.
-    console.error("[SIPERAH] Uncaught UI error:", error, info.componentStack);
+    console.error("[SAIBA] Uncaught UI error:", error, info.componentStack);
   }
 
   private handleReload = (): void => {
@@ -56,7 +56,7 @@ export class ErrorBoundary extends Component<Props, State> {
             boxShadow: "0 10px 40px rgba(0,0,0,0.08)",
           }}
         >
-          <div style={{ fontSize: 48, lineHeight: 1, marginBottom: 16 }}>⚠️</div>
+          <div style={{ fontSize: 48, lineHeight: 1, marginBottom: 16 }}>âš ï¸</div>
           <h1 style={{ fontSize: "1.4rem", fontWeight: 800, margin: "0 0 10px" }}>
             Terjadi kesalahan tak terduga
           </h1>
@@ -106,3 +106,4 @@ export class ErrorBoundary extends Component<Props, State> {
     );
   }
 }
+

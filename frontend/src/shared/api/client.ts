@@ -9,7 +9,7 @@ export const apiBase = import.meta.env.VITE_API_BASE_URL ?? "/api";
  * status akun & alur verifikasi email di LoginPage/OAuthCallbackPage), jadi
  * diketikkan eksplisit. Index signature-nya menampung sisa field yang
  * dikirim backend tanpa memaksa tipe ini ikut berubah setiap kali endpoint
- * baru menambah sesuatu — tetap `unknown`, jadi tak bisa dipakai sembarangan.
+ * baru menambah sesuatu â€” tetap `unknown`, jadi tak bisa dipakai sembarangan.
  */
 export interface ApiErrorBody {
   message?: string;
@@ -34,7 +34,7 @@ export class ApiError extends Error {
 /**
  * Ambil pesan yang layak ditampilkan dari nilai apa pun yang tertangkap `catch`.
  *
- * `catch` di TypeScript memberi `unknown` — bukan `Error` — karena JavaScript
+ * `catch` di TypeScript memberi `unknown` â€” bukan `Error` â€” karena JavaScript
  * memang bisa melempar apa saja. Pola lama `catch (err: any)` lalu `err.message`
  * menutupi itu: kalau yang terlempar ternyata string atau objek biasa,
  * `err.message` diam-diam `undefined` dan pengguna melihat pesan kosong.
@@ -63,7 +63,7 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     headers.set("Content-Type", "application/json");
   }
 
-  const token = localStorage.getItem("siperah-token");
+  const token = localStorage.getItem("saiba-token");
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   } else if (options.token) {
@@ -75,8 +75,8 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
   if (!response.ok) {
     const isLoginPath = path.includes("/login");
     if (response.status === 401 && !isLoginPath) {
-      localStorage.removeItem("siperah-token");
-      window.dispatchEvent(new CustomEvent("siperah-auth-expired"));
+      localStorage.removeItem("saiba-token");
+      window.dispatchEvent(new CustomEvent("saiba-auth-expired"));
       window.location.hash = "#/login";
     }
 
@@ -106,7 +106,7 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
  *
  * Sebelumnya blok ini disalin di 4 halaman dengan dua gaya URL berbeda
  * (`${apiBase}/...` vs `apiUrl('/api/...')`) sehingga path-nya bisa menyimpang,
- * dan semuanya melewati `fetch` mentah — artinya melewati juga penanganan 401
+ * dan semuanya melewati `fetch` mentah â€” artinya melewati juga penanganan 401
  * terpusat, jadi sesi kedaluwarsa hanya memunculkan "Export gagal (401)".
  *
  * @param path Path relatif tanpa prefiks `/api`, mis. `/admin/users/export`.
@@ -124,7 +124,7 @@ export async function downloadFile(
   }
 
   const headers = new Headers({ Accept: "text/csv" });
-  const token = localStorage.getItem("siperah-token");
+  const token = localStorage.getItem("saiba-token");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const response = await fetch(`${apiBase}${path}${query.size ? `?${query}` : ""}`, { headers });
@@ -133,8 +133,8 @@ export async function downloadFile(
     // Perlakuan 401 disamakan dengan api(): sesi dibersihkan & pengguna
     // diarahkan login, bukan sekadar melempar kode status.
     if (response.status === 401) {
-      localStorage.removeItem("siperah-token");
-      window.dispatchEvent(new CustomEvent("siperah-auth-expired"));
+      localStorage.removeItem("saiba-token");
+      window.dispatchEvent(new CustomEvent("saiba-auth-expired"));
       window.location.hash = "#/login";
       throw new ApiError("Sesi Anda telah habis. Silakan login kembali.", 401, null);
     }
@@ -150,8 +150,9 @@ export async function downloadFile(
     anchor.click();
     anchor.remove();
   } finally {
-    // Selalu dilepas, termasuk bila klik/anchor gagal — kalau tidak,
+    // Selalu dilepas, termasuk bila klik/anchor gagal â€” kalau tidak,
     // blob-nya menggantung di memori sampai tab ditutup.
     URL.revokeObjectURL(url);
   }
 }
+
