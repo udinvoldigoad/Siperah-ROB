@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Notifications;
 
@@ -9,7 +9,7 @@ use NotificationChannels\WebPush\WebPushMessage;
 /**
  * Notifikasi uji untuk memastikan Web Push benar-benar sampai ke perangkat.
  * Sengaja PUSH-ONLY: via() hanya WebPushChannel sehingga TIDAK menulis apa pun
- * ke database (tak ada baris inbox) — aman dipakai menguji tanpa mengotori data.
+ * ke database (tak ada baris inbox) â€” aman dipakai menguji tanpa mengotori data.
  */
 class TestPushNotification extends Notification
 {
@@ -26,7 +26,7 @@ class TestPushNotification extends Notification
         $body = trim(($this->note !== '' ? $this->note.' ' : 'Push berhasil sampai di perangkat ini. ')."({$time} WIB)");
 
         return (new WebPushMessage)
-            ->title('🔔 Notifikasi Uji SIPERAH-RoB')
+            ->title('ðŸ”” Notifikasi Uji SAIBA')
             ->icon('/logo.png')
             ->badge('/logo.png')
             ->body($body)
@@ -34,3 +34,4 @@ class TestPushNotification extends Notification
             ->data(['url' => '/#/notifications']);
     }
 }
+
