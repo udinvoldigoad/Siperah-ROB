@@ -1,4 +1,4 @@
-# Skrip Pengambilan Data — ML Prediksi Banjir Rob
+﻿# Skrip Pengambilan Data â€” ML Prediksi Banjir Rob
 
 > **File terkait:** `ml-api/files/data_fetcher.py`  
 > **Tujuan:** Mengambil data historis dan prakiraan dari sumber eksternal untuk training & inferensi model.
@@ -7,9 +7,9 @@
 
 ## Daftar Isi
 1. [Persiapan & Instalasi](#1-persiapan--instalasi)
-2. [Open-Meteo — Data Historis Cuaca (Training)](#2-open-meteo--data-historis-cuaca-training)
-3. [Open-Meteo — Data Historis Gelombang Laut (Training)](#3-open-meteo--data-historis-gelombang-laut-training)
-4. [BMKG — Prakiraan Cuaca (Inferensi Harian)](#4-bmkg--prakiraan-cuaca-inferensi-harian)
+2. [Open-Meteo â€” Data Historis Cuaca (Training)](#2-open-meteo--data-historis-cuaca-training)
+3. [Open-Meteo â€” Data Historis Gelombang Laut (Training)](#3-open-meteo--data-historis-gelombang-laut-training)
+4. [BMKG â€” Prakiraan Cuaca (Inferensi Harian)](#4-bmkg--prakiraan-cuaca-inferensi-harian)
 5. [Cara Menjalankan](#5-cara-menjalankan)
 6. [Output yang Dihasilkan](#6-output-yang-dihasilkan)
 
@@ -45,7 +45,7 @@ retry-requests>=2.0.0
 
 ---
 
-## 2. Open-Meteo — Data Historis Cuaca (Training)
+## 2. Open-Meteo â€” Data Historis Cuaca (Training)
 
 **File:** `ml-api/files/data_fetcher.py`
 
@@ -64,7 +64,7 @@ import numpy as np
 import requests
 from pathlib import Path
 
-# ─── Koordinat Wilayah Pesisir Lampung ──────────────────────────────────────
+# â”€â”€â”€ Koordinat Wilayah Pesisir Lampung â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Dapat ditambahkan lebih banyak titik untuk region lain
 STATIONS = {
     "teluk_betung":  {"lat": -5.4500, "lon": 105.2600, "label": "Telukbetung Selatan"},
@@ -143,7 +143,7 @@ def fetch_historical_weather(
 
 ---
 
-## 3. Open-Meteo — Data Historis Gelombang Laut (Training)
+## 3. Open-Meteo â€” Data Historis Gelombang Laut (Training)
 
 Tambahkan fungsi berikut ke file `data_fetcher.py`:
 
@@ -197,7 +197,7 @@ def fetch_historical_marine(
 
 ---
 
-## 4. BMKG — Prakiraan Cuaca (Inferensi Harian)
+## 4. BMKG â€” Prakiraan Cuaca (Inferensi Harian)
 
 Tambahkan fungsi berikut ke `data_fetcher.py` untuk mengambil data prakiraan **real-time** saat model sedang berjalan di produksi:
 
@@ -305,7 +305,7 @@ def fetch_openmeteo_forecast_fallback(lat: float, lon: float, days: int = 7) -> 
 
 ---
 
-## 5. Fungsi Utama — Jalankan Semua Pengambilan Data
+## 5. Fungsi Utama â€” Jalankan Semua Pengambilan Data
 
 Tambahkan di bagian bawah `data_fetcher.py`:
 
@@ -325,12 +325,12 @@ def fetch_all_historical(start_date: str = "2015-01-01", end_date: str = "2025-1
         lon = station["lon"]
         label = station["label"]
 
-        print(f"  → Cuaca: {label} ({lat}, {lon})")
+        print(f"  â†’ Cuaca: {label} ({lat}, {lon})")
         df_w = fetch_historical_weather(lat, lon, start_date, end_date)
         df_w["station"] = station_key
         all_weather.append(df_w)
 
-        print(f"  → Gelombang: {label} ({lat}, {lon})")
+        print(f"  â†’ Gelombang: {label} ({lat}, {lon})")
         df_m = fetch_historical_marine(lat, lon, start_date, end_date)
         df_m["station"] = station_key
         all_marine.append(df_m)
@@ -367,12 +367,12 @@ def fetch_daily_forecast_for_inference():
 
         # Coba BMKG terlebih dahulu
         if adm4:
-            print(f"  → BMKG prakiraan: {label}")
+            print(f"  â†’ BMKG prakiraan: {label}")
             df = fetch_bmkg_forecast(adm4)
 
         # Fallback ke Open-Meteo jika BMKG gagal
         if df.empty:
-            print(f"  → Fallback Open-Meteo: {label}")
+            print(f"  â†’ Fallback Open-Meteo: {label}")
             df = fetch_openmeteo_forecast_fallback(
                 station["lat"], station["lon"], days=7
             )
@@ -382,11 +382,11 @@ def fetch_daily_forecast_for_inference():
     return forecasts
 
 
-# ─── Entry Point ─────────────────────────────────────────────────────────────
+# â”€â”€â”€ Entry Point â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Siperah-ROB Data Fetcher")
+    parser = argparse.ArgumentParser(description="SAIBA Data Fetcher")
     parser.add_argument(
         "--mode",
         choices=["historical", "forecast"],
@@ -412,13 +412,13 @@ if __name__ == "__main__":
 
 ## 5. Cara Menjalankan
 
-### A. Unduh Data Historis (untuk Training — lakukan SEKALI SAJA)
+### A. Unduh Data Historis (untuk Training â€” lakukan SEKALI SAJA)
 ```bash
 # Dari direktori ml-api/
 python -m files.data_fetcher --mode=historical --start=2015-01-01 --end=2025-12-31
 ```
 
-Proses ini memakan waktu **~2–5 menit** (pertama kali). Hasilnya akan di-*cache* otomatis di folder `.cache/`.
+Proses ini memakan waktu **~2â€“5 menit** (pertama kali). Hasilnya akan di-*cache* otomatis di folder `.cache/`.
 
 ### B. Ambil Prakiraan Hari Ini (untuk Inferensi Harian)
 ```bash
@@ -433,10 +433,10 @@ Jalankan perintah ini di dalam CRON job Laravel atau task scheduler harian.
 
 ```
 ml-api/
-└── data/
-    └── raw/
-        ├── weather_historical.csv     ← Cuaca harian 2015–2025 (4 stasiun)
-        └── marine_historical.csv      ← Gelombang laut harian 2015–2025 (4 stasiun)
+â””â”€â”€ data/
+    â””â”€â”€ raw/
+        â”œâ”€â”€ weather_historical.csv     â† Cuaca harian 2015â€“2025 (4 stasiun)
+        â””â”€â”€ marine_historical.csv      â† Gelombang laut harian 2015â€“2025 (4 stasiun)
 ```
 
 ### Struktur `weather_historical.csv`
@@ -465,7 +465,7 @@ ml-api/
 > Ganti `18.71.01` dengan kode kecamatan yang dicari, lihat respons JSON-nya untuk `adm4` yang sesuai.
 
 > [!NOTE]
-> Data Open-Meteo menggunakan model reanalisis **ERA5** dari ECMWF — ini adalah standar ilmiah yang digunakan para peneliti iklim global, sehingga kualitasnya sangat terpercaya untuk keperluan ML.
+> Data Open-Meteo menggunakan model reanalisis **ERA5** dari ECMWF â€” ini adalah standar ilmiah yang digunakan para peneliti iklim global, sehingga kualitasnya sangat terpercaya untuk keperluan ML.
 
 > [!TIP]
 > Setelah data historis berhasil diunduh, lanjutkan ke langkah berikutnya:
@@ -474,3 +474,4 @@ ml-api/
 > python -m files.train_model            # Latih model XGBoost
 > python main.py --mode=predict          # Generate prediksi
 > ```
+

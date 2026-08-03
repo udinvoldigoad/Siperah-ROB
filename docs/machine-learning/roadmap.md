@@ -1,14 +1,14 @@
-# Roadmap Pengembangan ML Prediksi Banjir Rob — Siperah-ROB
+﻿# Roadmap Pengembangan ML Prediksi Banjir Rob â€” SAIBA
 
-> **Versi:** 1.0 · **Terakhir diperbarui:** Juli 2026  
+> **Versi:** 1.0 Â· **Terakhir diperbarui:** Juli 2026  
 > **Konteks:** Dokumen ini merupakan kelanjutan dan penjabaran implementasi dari `planning_ml_prediksi_rob_lampung (1).md`.  
-> Pendekatan: **Dua model paralel** — klasifikasi biner (Rob/Tidak Rob) + regresi probabilitas ketinggian air laut.
+> Pendekatan: **Dua model paralel** â€” klasifikasi biner (Rob/Tidak Rob) + regresi probabilitas ketinggian air laut.
 
 ---
 
 ## Ringkasan Eksekutif
 
-Pipeline ML Siperah-ROB akan mengintegrasikan **3 sumber data eksternal** (BMKG, Open-Meteo, BIG) ke dalam satu sistem pelatihan dan inferensi yang terhubung langsung ke `ml-api` yang sudah ada. Sistem dirancang bertahap (4 fase) dari pengumpulan data mentah hingga model hidup di produksi.
+Pipeline ML SAIBA akan mengintegrasikan **3 sumber data eksternal** (BMKG, Open-Meteo, BIG) ke dalam satu sistem pelatihan dan inferensi yang terhubung langsung ke `ml-api` yang sudah ada. Sistem dirancang bertahap (4 fase) dari pengumpulan data mentah hingga model hidup di produksi.
 
 ---
 
@@ -35,32 +35,32 @@ joblib>=1.3.0
 
 ```
 ml-api/
-├── main.py                     # (Sudah ada) Entry point pipeline
-├── requirements.txt
-├── models/                     # [BARU] Artefak model .joblib tersimpan di sini
-│   ├── flood_classifier_v1.joblib
-│   └── scaler_v1.joblib
-├── data/                       # [BARU] Data mentah dan data olahan
-│   ├── raw/
-│   │   ├── tide_historical.csv
-│   │   └── weather_historical.csv
-│   └── processed/
-│       └── training_features.csv
-├── files/
-│   ├── feature_engineering.py  # (Sudah ada, akan dikembangkan)
-│   ├── train_model.py           # (Sudah ada, akan diperbarui)
-│   ├── predict_forecast.py      # (Sudah ada, akan diperbarui)
-│   ├── data_fetcher.py          # [BARU] Pengambil data dari API eksternal
-│   └── labeler.py               # [BARU] Sistem pelabelan data historis
-└── notebooks/                   # [BARU] Analisis eksplorasi EDA
-    └── 01_eda_exploration.ipynb
+â”œâ”€â”€ main.py                     # (Sudah ada) Entry point pipeline
+â”œâ”€â”€ requirements.txt
+â”œâ”€â”€ models/                     # [BARU] Artefak model .joblib tersimpan di sini
+â”‚   â”œâ”€â”€ flood_classifier_v1.joblib
+â”‚   â””â”€â”€ scaler_v1.joblib
+â”œâ”€â”€ data/                       # [BARU] Data mentah dan data olahan
+â”‚   â”œâ”€â”€ raw/
+â”‚   â”‚   â”œâ”€â”€ tide_historical.csv
+â”‚   â”‚   â””â”€â”€ weather_historical.csv
+â”‚   â””â”€â”€ processed/
+â”‚       â””â”€â”€ training_features.csv
+â”œâ”€â”€ files/
+â”‚   â”œâ”€â”€ feature_engineering.py  # (Sudah ada, akan dikembangkan)
+â”‚   â”œâ”€â”€ train_model.py           # (Sudah ada, akan diperbarui)
+â”‚   â”œâ”€â”€ predict_forecast.py      # (Sudah ada, akan diperbarui)
+â”‚   â”œâ”€â”€ data_fetcher.py          # [BARU] Pengambil data dari API eksternal
+â”‚   â””â”€â”€ labeler.py               # [BARU] Sistem pelabelan data historis
+â””â”€â”€ notebooks/                   # [BARU] Analisis eksplorasi EDA
+    â””â”€â”€ 01_eda_exploration.ipynb
 ```
 
 ---
 
-## Fase 1: Akuisisi & Pelabelan Data Historis (Minggu 1–2)
+## Fase 1: Akuisisi & Pelabelan Data Historis (Minggu 1â€“2)
 
-### 1.1 Open-Meteo — Data Cuaca & Gelombang Historis (GRATIS, Tanpa API Key)
+### 1.1 Open-Meteo â€” Data Cuaca & Gelombang Historis (GRATIS, Tanpa API Key)
 
 Ini adalah sumber data historis **utama dan paling mudah** untuk fase training. Koordinat yang digunakan: wilayah pesisir Lampung (Teluk Betung: `-5.45, 105.26`).
 
@@ -93,7 +93,7 @@ https://marine-api.open-meteo.com/v1/marine
 | Tinggi gelombang maks | `wave_height_max` | meter |
 | Tinggi alun (swell) | `swell_wave_height_max` | meter, indikator rob jauh |
 
-### 1.2 BMKG — Data Prakiraan Real-time (Untuk Inferensi)
+### 1.2 BMKG â€” Data Prakiraan Real-time (Untuk Inferensi)
 
 API BMKG (`api.bmkg.go.id/publik/prakiraan-cuaca`) digunakan saat **model sudah terlatih** untuk mengambil input fitur prediksi masa depan.
 
@@ -105,11 +105,11 @@ Kode wilayah pesisir Lampung yang perlu dicari via API:
 | Panjang | `api.bmkg.go.id/publik/prakiraan-cuaca?adm3=18.71.04` |
 | Kalianda | `api.bmkg.go.id/publik/prakiraan-cuaca?adm3=18.01.17` |
 
-### 1.3 BIG/Pushidrosal — Data Pasang Surut
+### 1.3 BIG/Pushidrosal â€” Data Pasang Surut
 
 Untuk data pasang surut historis, gunakan dua pendekatan (dari yang termudah):
 
-**Opsi A (Rekomendasi — sudah ada di codebase):** Gunakan model harmonik yang sudah ada di `ml-api/main.py` (fungsi `fit_harmonic_model`) berbasis data sensor IoT internal dari tabel `datasets` di database Siperah-ROB. Proyeksikan ke depan menggunakan konstanta harmonik yang sudah dikalibrasi.
+**Opsi A (Rekomendasi â€” sudah ada di codebase):** Gunakan model harmonik yang sudah ada di `ml-api/main.py` (fungsi `fit_harmonic_model`) berbasis data sensor IoT internal dari tabel `datasets` di database SAIBA. Proyeksikan ke depan menggunakan konstanta harmonik yang sudah dikalibrasi.
 
 **Opsi B (Data Eksternal):** Unduh arsip pasut historis dari UHSLC (University of Hawaii Sea Level Center) untuk stasiun Pelabuhan Panjang, Lampung:
 ```
@@ -121,7 +121,7 @@ https://uhslc.soest.hawaii.edu/data/csv/fd/uhslc_fd011.csv
 Karena data historis kejadian rob dari BPBD sangat terbatas, digunakan **Proxy Labeling** dua level:
 
 ```python
-# Ambang batas SEMENTARA — wajib divalidasi dengan BPBD/BMKG Lampung
+# Ambang batas SEMENTARA â€” wajib divalidasi dengan BPBD/BMKG Lampung
 TIDE_THRESHOLD_CM   = 185   # Pasang > 185 cm di atas MSL
 RAINFALL_THRESHOLD  = 25    # Curah hujan > 25 mm/hari
 
@@ -131,11 +131,11 @@ label = (max_tide_cm >= TIDE_THRESHOLD_CM) AND (rainfall_mm >= RAINFALL_THRESHOL
 
 **Validasi Silang:** Cocokkan hasil pelabelan proxy dengan:
 - Laporan tervalidasi di tabel `ground_truth_reports` (status = `divalidasi`)
-- Berita lokal (Tribun Lampung, Radar Lampung) dari tahun 2015–2025
+- Berita lokal (Tribun Lampung, Radar Lampung) dari tahun 2015â€“2025
 
 ---
 
-## Fase 2: Feature Engineering & Training Pipeline (Minggu 2–3)
+## Fase 2: Feature Engineering & Training Pipeline (Minggu 2â€“3)
 
 ### 2.1 Fitur Baru yang Akan Ditambahkan ke `feature_engineering.py`
 
@@ -151,68 +151,68 @@ Fitur dasar yang sudah ada diperluas dengan:
 | **Laut** | `swell_wave_height` | Alun dari luar (indikator rob jauh) |
 | **Interaksi** | `tide_x_wave` | `max_tide_cm * wave_height_max` |
 | **Interaksi** | `rain_x_wind` | `rainfall_mm * wind_speed_max` |
-| **Waktu** | `is_wet_season` | 1 untuk bulan Nov–Mar (musim hujan) |
+| **Waktu** | `is_wet_season` | 1 untuk bulan Novâ€“Mar (musim hujan) |
 | **Topografi** | `elevation_m` | Elevasi titik dari DEMNAS (fitur statis per region) |
 
 ### 2.2 Pipeline Training Lengkap
 
 ```
 Raw Data (Open-Meteo + Pasut Internal)
-    ↓
+    â†“
 Pembersihan & Sinkronisasi Timestamp (harian)
-    ↓
+    â†“
 Feature Engineering (tambah rolling, interaksi, bulan)
-    ↓
+    â†“
 Proxy Labeling (+ validasi laporan BPBD)
-    ↓
+    â†“
 Time-based Split:
-  Train: 2015–2022 (70%)
+  Train: 2015â€“2022 (70%)
   Validation: 2023 (15%)
-  Test: 2024–2025 (15%)
-    ↓
+  Test: 2024â€“2025 (15%)
+    â†“
 SMOTE Oversampling (hanya pada data training)
-    ↓
+    â†“
 XGBClassifier + RandomizedSearchCV (TimeSeriesSplit k=5)
-    ↓
+    â†“
 Evaluasi: Recall, F1-Score, ROC-AUC, PR-AUC
-    ↓
-Simpan artefak model → models/flood_classifier_v1.joblib
+    â†“
+Simpan artefak model â†’ models/flood_classifier_v1.joblib
 ```
 
 ### 2.3 Target Performa Minimum
 
 | Metrik | Target Minimum | Alasan |
 |---|---|---|
-| **Recall (kelas Rob)** | ≥ 0.80 | Prioritas utama: jangan sampai miss kejadian rob |
-| **Precision** | ≥ 0.60 | False alarm masih dapat ditoleransi |
-| **F1-Score** | ≥ 0.70 | Keseimbangan secara keseluruhan |
-| **PR-AUC** | ≥ 0.65 | Indikator andal untuk imbalanced dataset |
+| **Recall (kelas Rob)** | â‰¥ 0.80 | Prioritas utama: jangan sampai miss kejadian rob |
+| **Precision** | â‰¥ 0.60 | False alarm masih dapat ditoleransi |
+| **F1-Score** | â‰¥ 0.70 | Keseimbangan secara keseluruhan |
+| **PR-AUC** | â‰¥ 0.65 | Indikator andal untuk imbalanced dataset |
 
 ---
 
-## Fase 3: Integrasi dengan Backend Siperah-ROB (Minggu 3–4)
+## Fase 3: Integrasi dengan Backend SAIBA (Minggu 3â€“4)
 
 ### 3.1 Alur Inferensi Harian (Otomatis)
 
 ```
-[CRON Job Harian — tiap pukul 06:00 WIB]
-    ↓
+[CRON Job Harian â€” tiap pukul 06:00 WIB]
+    â†“
 Ambil prakiraan 7 hari dari BMKG API (per kode ADM4 per region)
-    ↓
+    â†“
 Proyeksikan tinggi pasang 7 hari (model harmonik di main.py)
-    ↓
+    â†“
 Jalankan feature engineering pada input baru
-    ↓
-Kirim ke model → output: [risk_class, risk_probability] per hari × per region
-    ↓
+    â†“
+Kirim ke model â†’ output: [risk_class, risk_probability] per hari Ã— per region
+    â†“
 Push hasil ke tabel `ml_predictions` di database
-    ↓
+    â†“
 Dashboard Operator & Mode Awam membaca dari database
 ```
 
 ### 3.2 Perubahan Backend Laravel yang Dibutuhkan
 
-**Endpoint baru** (opsional — jika ingin ml-api PUSH via HTTP daripada tulis DB langsung):
+**Endpoint baru** (opsional â€” jika ingin ml-api PUSH via HTTP daripada tulis DB langsung):
 ```
 POST /api/internal/predictions/ingest
 Authorization: Bearer [INTERNAL_ML_API_KEY]
@@ -261,7 +261,7 @@ Laporan warga tervalidasi di `ground_truth_reports` (status = `divalidasi`) digu
 
 | Minggu | Aktivitas | Output |
 |:---:|---|---|
-| **1** | Setup env, akuisisi data Open-Meteo (2015–2025) & data pasut dari DB internal | `data/raw/*.csv` siap |
+| **1** | Setup env, akuisisi data Open-Meteo (2015â€“2025) & data pasut dari DB internal | `data/raw/*.csv` siap |
 | **2** | Feature engineering, pelabelan, EDA notebook | `data/processed/training_features.csv` |
 | **3** | Training model, hyperparameter tuning, evaluasi | `models/flood_classifier_v1.joblib` |
 | **4** | Integrasi inferensi harian ke CRON, integrasi ke Laravel, testing end-to-end | Prediksi live di dashboard |
@@ -274,11 +274,12 @@ Laporan warga tervalidasi di `ground_truth_reports` (status = `divalidasi`) digu
 | Risiko | Dampak | Mitigasi |
 |---|---|---|
 | Data pasut historis Lampung tidak tersedia | Tinggi | Gunakan model harmonik internal (`main.py`) + data UHSLC |
-| Threshold proxy label tidak akurat | Tinggi | Kalibrasi dengan ≥ 20 laporan tervalidasi BPBD |
+| Threshold proxy label tidak akurat | Tinggi | Kalibrasi dengan â‰¥ 20 laporan tervalidasi BPBD |
 | Open-Meteo rate limit / downtime | Rendah | Cache data lokal setelah download pertama |
 | BMKG API tidak tersedia saat inferensi | Menengah | Fallback ke Open-Meteo forecast jika BMKG error |
 | Class imbalance ekstrem (rob vs normal) | Tinggi | SMOTE + `class_weight='balanced'` + threshold tuning |
 
 ---
 
-> 📌 Dokumen ini bersifat hidup (*living document*). Perbarui setiap ada perubahan arsitektur atau sumber data baru.
+> ðŸ“Œ Dokumen ini bersifat hidup (*living document*). Perbarui setiap ada perubahan arsitektur atau sumber data baru.
+
