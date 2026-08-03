@@ -33,7 +33,7 @@ export function LoginPage() {
     if (hash.includes("error=menunggu")) {
       // Pendaftaran mandiri (email maupun Google) kini langsung aktif, jadi
       // status "menunggu" hanya muncul untuk akun yang SENGAJA dibuat admin
-      // dalam keadaan menunggu — pesannya tak boleh lagi menyebut pendaftaran.
+      // dalam keadaan menunggu â€” pesannya tak boleh lagi menyebut pendaftaran.
       setLoginNotice({ message: "Akun Anda masih menunggu persetujuan admin.", status: "menunggu" });
     } else if (hash.includes("error=nonaktif")) {
       setLoginNotice({ message: "Akun Anda telah dinonaktifkan.", status: "nonaktif" });
@@ -91,7 +91,7 @@ export function LoginPage() {
       }, 500);
 
     } catch (err: unknown) {
-      // Akun belum aktif (menunggu/nonaktif/ditolak) → tampilkan panel status
+      // Akun belum aktif (menunggu/nonaktif/ditolak) â†’ tampilkan panel status
       // yang jelas & persisten, bukan sekadar toast sesaat.
       // Belum verifikasi email punya jalan keluar sendiri (masukkan OTP),
       // jadi jangan disamakan dengan panel status "tunggu admin".
@@ -187,7 +187,7 @@ export function LoginPage() {
         method: "POST",
         body: JSON.stringify({ email: verifyEmail }),
       });
-      // Pesan backend sengaja generik (anti-enumeration) — diteruskan apa adanya.
+      // Pesan backend sengaja generik (anti-enumeration) â€” diteruskan apa adanya.
       toast.info("Jika email tersebut belum terverifikasi, kode baru telah dikirim.");
     } catch (err: unknown) {
       toast.error(errorMessage(err, "Gagal mengirim ulang kode."));
@@ -241,7 +241,7 @@ export function LoginPage() {
             <div style={{ width: "36px", height: "36px", background: "rgba(255,255,255,0.2)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(10px)" }}>
               <Icon name="water_drop" style={{ fontSize: "20px" }} />
             </div>
-            SIPERAH-RoB
+            SAIBA
           </a>
         </div>
 
@@ -280,7 +280,7 @@ export function LoginPage() {
             <div className="mobile-logo-badge">
               <Icon name="water_drop" style={{ fontSize: "26px" }} />
             </div>
-            <h2 className="mobile-brand-title">SIPERAH-RoB</h2>
+            <h2 className="mobile-brand-title">SAIBA</h2>
           </div>
 
 
@@ -346,7 +346,7 @@ export function LoginPage() {
                     </div>
                   </div>
                 {/* "Ingat saya" dihapus: checkbox lama tidak tersambung ke
-                    apa pun (sesi selalu tersimpan di localStorage) — kontrol
+                    apa pun (sesi selalu tersimpan di localStorage) â€” kontrol
                     mati hanya menyesatkan. */}
                 <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: "32px" }}>
                   <a href="#/forgot-password" className="link-btn" style={{ fontSize: "14px", color: "var(--accent)", textDecoration: "none", fontWeight: 600 }}>Lupa sandi?</a>
@@ -380,20 +380,20 @@ export function LoginPage() {
                 Masuk dengan Google
               </a>
 
-              {/* DEV ONLY: Quick Login Shortcuts — hanya tampil saat `npm run dev`.
+              {/* DEV ONLY: Quick Login Shortcuts â€” hanya tampil saat `npm run dev`.
                   import.meta.env.DEV = false di build produksi, sehingga blok ini
                   di-tree-shake (tidak ikut ke bundle & password demo tak terekspos). */}
               {import.meta.env.DEV && (
               <details style={{ marginTop: "32px" }}>
                 <summary className="dev-shortcut-summary" style={{ fontSize: "12px", color: "var(--ink-soft)", fontWeight: 600, textAlign: "center", cursor: "pointer", padding: "8px" }}>
-                  ⚡ DEV SHORTCUTS
+                  âš¡ DEV SHORTCUTS
                 </summary>
                 <div className="dev-shortcut-box" style={{ marginTop: "12px", padding: "16px", background: "var(--surface-soft)", borderRadius: "12px", border: "1px dashed var(--line)" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                    <button type="button" onClick={() => { setEmail("warga@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>👤 Warga</button>
-                    <button type="button" onClick={() => { setEmail("admin@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>⚙️ Admin</button>
-                    <button type="button" onClick={() => { setEmail("peneliti@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>🔬 Peneliti</button>
-                    <button type="button" onClick={() => { setEmail("demo@siperah.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>⚙️ Admin 2</button>
+                    <button type="button" onClick={() => { setEmail("warga@saiba.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>ðŸ‘¤ Warga</button>
+                    <button type="button" onClick={() => { setEmail("admin@saiba.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>âš™ï¸ Admin</button>
+                    <button type="button" onClick={() => { setEmail("peneliti@saiba.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>ðŸ”¬ Peneliti</button>
+                    <button type="button" onClick={() => { setEmail("demo@saiba.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>âš™ï¸ Admin 2</button>
                   </div>
                 </div>
               </details>
@@ -452,8 +452,8 @@ export function LoginPage() {
                   <Icon name={isPeneliti ? "gavel" : "info"} style={{ fontSize: "18px", color: "#3b82f6", flexShrink: 0, marginTop: "2px" }} />
                   <span style={{ lineHeight: "1.5" }}>
                     {isPeneliti
-                      ? "Akun peneliti membuka data mentah laporan & prediksi, jadi permohonan Anda ditinjau admin lebih dulu. Isi keterangan di bawah selengkap mungkin — admin memakainya untuk memastikan kepentingan Anda."
-                      : "Butuh akun BPBD? Hubungi admin — akun instansi dibuat & diverifikasi langsung oleh admin."}
+                      ? "Akun peneliti membuka data mentah laporan & prediksi, jadi permohonan Anda ditinjau admin lebih dulu. Isi keterangan di bawah selengkap mungkin â€” admin memakainya untuk memastikan kepentingan Anda."
+                      : "Butuh akun BPBD? Hubungi admin â€” akun instansi dibuat & diverifikasi langsung oleh admin."}
                   </span>
                 </div>
 
@@ -486,7 +486,7 @@ export function LoginPage() {
                     autoComplete="organization"
                     value={regInstitution}
                     onChange={(e) => setRegInstitution(e.target.value)}
-                    placeholder={isPeneliti ? "mis. Universitas Lampung — Fakultas Teknik" : ""}
+                    placeholder={isPeneliti ? "mis. Universitas Lampung â€” Fakultas Teknik" : ""}
                     style={inputStyle}
                     required={isPeneliti}
                   />
@@ -506,7 +506,7 @@ export function LoginPage() {
                   />
                   {isPeneliti && (
                     <p style={{ margin: "6px 0 0", fontSize: "12.5px", color: "var(--ink-soft)", lineHeight: 1.5 }}>
-                      Sebisa mungkin pakai email resmi instansi — alamat institusional mempercepat admin memastikan permohonan Anda.
+                      Sebisa mungkin pakai email resmi instansi â€” alamat institusional mempercepat admin memastikan permohonan Anda.
                     </p>
                   )}
                 </div>
@@ -858,3 +858,4 @@ export function LoginPage() {
     </main>
   );
 }
+

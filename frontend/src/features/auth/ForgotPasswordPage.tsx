@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { Icon } from "../../shared/components/Icon";
 import { api, errorMessage } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";
@@ -25,7 +25,7 @@ export function ForgotPasswordPage() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
-  // ── Step 1: Kirim email ──
+  // â”€â”€ Step 1: Kirim email â”€â”€
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) { toast.error("Email wajib diisi."); return; }
@@ -39,7 +39,7 @@ export function ForgotPasswordPage() {
       setStep("otp");
       setCooldown(60);
       // Backend sengaja tidak membocorkan apakah email terdaftar
-      // (anti-enumeration) — jangan mengklaim OTP pasti terkirim.
+      // (anti-enumeration) â€” jangan mengklaim OTP pasti terkirim.
       toast.success("Jika email terdaftar, kode OTP telah dikirim. Berlaku 10 menit.");
     } catch (err: unknown) {
       toast.error(errorMessage(err, "Gagal mengirim kode OTP."));
@@ -48,7 +48,7 @@ export function ForgotPasswordPage() {
     }
   };
 
-  // ── Step 2: Lanjut ke step password (verifikasi OTP dilakukan di backend) ──
+  // â”€â”€ Step 2: Lanjut ke step password (verifikasi OTP dilakukan di backend) â”€â”€
   const handleVerifyOtp = (e: React.FormEvent) => {
     e.preventDefault();
     const code = otp.join("");
@@ -56,7 +56,7 @@ export function ForgotPasswordPage() {
     setStep("password");
   };
 
-  // ── Step 3: Set password baru ──
+  // â”€â”€ Step 3: Set password baru â”€â”€
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 8) { toast.error("Kata sandi minimal 8 karakter."); return; }
@@ -86,7 +86,7 @@ export function ForgotPasswordPage() {
     }
   };
 
-  // ── Resend OTP ──
+  // â”€â”€ Resend OTP â”€â”€
   const handleResend = async () => {
     if (cooldown > 0) return;
     setIsLoading(true);
@@ -105,7 +105,7 @@ export function ForgotPasswordPage() {
     }
   };
 
-  // ── OTP input handlers ──
+  // â”€â”€ OTP input handlers â”€â”€
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
     const next = [...otp];
@@ -166,7 +166,7 @@ export function ForgotPasswordPage() {
             <div style={{ width: "36px", height: "36px", background: "rgba(255,255,255,0.2)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(10px)" }}>
               <Icon name="water_drop" style={{ fontSize: "20px" }} />
             </div>
-            SIPERAH-RoB
+            SAIBA
           </a>
         </div>
 
@@ -202,7 +202,7 @@ export function ForgotPasswordPage() {
             <div className="mobile-logo-badge">
               <Icon name="water_drop" style={{ fontSize: "26px" }} />
             </div>
-            <h2 className="mobile-brand-title">SIPERAH-RoB</h2>
+            <h2 className="mobile-brand-title">SAIBA</h2>
           </div>
 
           {/* Step indicator */}
@@ -243,7 +243,7 @@ export function ForgotPasswordPage() {
                 <p style={{ color: "var(--ink-soft)", fontSize: "0.92rem", margin: 0 }}>{stepDescriptions[step]}</p>
               </div>
 
-              {/* ── Step: Email ── */}
+              {/* â”€â”€ Step: Email â”€â”€ */}
               {step === "email" && (
                 <form onSubmit={handleSendOtp}>
                   <div style={{ marginBottom: "24px" }}>
@@ -270,7 +270,7 @@ export function ForgotPasswordPage() {
                 </form>
               )}
 
-              {/* ── Step: OTP ── */}
+              {/* â”€â”€ Step: OTP â”€â”€ */}
               {step === "otp" && (
                 <form onSubmit={handleVerifyOtp}>
                   {/* Instruksi cek email */}
@@ -354,7 +354,7 @@ export function ForgotPasswordPage() {
                 </form>
               )}
 
-              {/* ── Step: New Password ── */}
+              {/* â”€â”€ Step: New Password â”€â”€ */}
               {step === "password" && (
                 <form onSubmit={handleResetPassword}>
                   <div style={{ marginBottom: "20px" }}>
@@ -555,3 +555,4 @@ export function ForgotPasswordPage() {
     </main>
   );
 }
+
