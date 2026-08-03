@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\EnsureActiveUser;
@@ -16,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         then: function (): void {
             Route::get('/', fn () => response()->json([
-                'name' => 'SIPERAH-RoB API',
+                'name' => 'SAIBA API',
                 'status' => 'ok',
                 'frontend' => 'http://127.0.0.1:5173',
                 'sample_api' => '/api/public/mode-awam',
@@ -63,7 +63,7 @@ return Application::configure(basePath: dirname(__DIR__))
             ->withoutOverlapping();
         // Observability minimal: agregasi kegagalan pipeline/job/log jadi satu
         // ringkasan tiap jam. Belum ada kanal alert aktif (production tanpa
-        // MAIL_*) — temuan masuk log warning agar terlihat saat log dicek.
+        // MAIL_*) â€” temuan masuk log warning agar terlihat saat log dicek.
         $schedule->command('system:health-check --hours=1')
             ->hourly()
             ->timezone('Asia/Jakarta')
@@ -95,3 +95,4 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->create();
+
