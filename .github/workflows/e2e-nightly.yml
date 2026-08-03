@@ -1,10 +1,10 @@
 name: E2E Nightly (Playwright)
 
-# Suite Playwright (frontend/e2e) hanya berjalan di mesin lokal — tidak ada
+# Suite Playwright (frontend/e2e) hanya berjalan di mesin lokal â€” tidak ada
 # workflow yang memanggilnya, jadi bisa membusuk tanpa ketahuan. Job ini
 # menjalankannya tiap malam (02:30 UTC = 09:30 WIB) dan bisa dipicu manual.
 # Ini memakai server & DB uji yang sama dengan dev lokal: backend artisan
-# serve --env=testing di port 8123, vite dev di 5273, DB siperah_rob_test
+# serve --env=testing di port 8123, vite dev di 5273, DB saiba_test
 # di-reset (migrate:fresh --seed) oleh global-setup.
 
 on:
@@ -21,7 +21,7 @@ jobs:
       postgres:
         image: postgis/postgis:17-3.4-alpine
         env:
-          POSTGRES_DB: siperah_rob_test
+          POSTGRES_DB: saiba_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
@@ -39,7 +39,7 @@ jobs:
       DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
-      DB_DATABASE: siperah_rob_test
+      DB_DATABASE: saiba_test
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       CACHE_STORE: array
@@ -83,11 +83,13 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Pastikan ekstensi PostGIS aktif
-        run: PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d siperah_rob_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+        run: PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d saiba_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 
       # global-setup Playwright menjalankan migrate:fresh --seed --env=testing
-      # sendiri, jadi cukup panggil `npm run e2e` — kedua server (backend 8123,
+      # sendiri, jadi cukup panggil `npm run e2e` â€” kedua server (backend 8123,
       # vite 5273) di-orchestrate oleh config playwright.
       - name: Run Playwright E2E
         working-directory: frontend
         run: npm run e2e
+
+
