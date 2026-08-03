@@ -1,4 +1,4 @@
-# Arsitektur SIPERAH-RoB
+﻿# Arsitektur SAIBA
 
 ## Prinsip
 
@@ -47,3 +47,4 @@ database/schema.sql            -> bootstrap schema awal/legacy reference
 - `/api/notifications/*`
 
 Skipped: CQRS/event sourcing. Add only if audit and import pipeline become hard to reason about with plain Laravel controllers.
+

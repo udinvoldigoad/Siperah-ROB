@@ -1,6 +1,6 @@
-# Entity-Relationship Diagram (ERD) - SIPERAH-RoB
+﻿# Entity-Relationship Diagram (ERD) - SAIBA
 
-Dokumen ini mendokumentasikan skema database relasional **SIPERAH-RoB** menggunakan diagram Mermaid.
+Dokumen ini mendokumentasikan skema database relasional **SAIBA** menggunakan diagram Mermaid.
 
 ---
 
@@ -137,3 +137,4 @@ erDiagram
    * Terikat ke `regions` sebagai kelurahan terasosiasi (ditentukan secara otomatis secara spasial melalui `ST_Contains` koordinat geospasial).
    * Terikat kembali ke `users` (sebagai `validator_id`) saat operator melakukan verifikasi.
 4. **Foto Laporan (`report_photos`)**: Menyimpan berkas bukti fisik kejadian rob (WebP terkompresi) yang terikat langsung ke laporan.
+
