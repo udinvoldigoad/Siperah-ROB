@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\EnsureActiveUser;
