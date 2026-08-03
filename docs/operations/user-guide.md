@@ -1,8 +1,8 @@
-# 📘 Panduan Pengguna (User Guide) — SIPERAH-RoB v1.2.0
+﻿# ðŸ“˜ Panduan Pengguna (User Guide) â€” SAIBA v1.2.0
 
-> **Sistem Informasi Prediksi Risiko Banjir Rob Terpadu Provinsi Lampung**
+> **Sistem Informasi Risiko Banjir Rob Terpadu Provinsi Lampung**
 
-Dokumen ini menjelaskan secara lengkap cara menggunakan seluruh fitur dan modul dalam sistem SIPERAH-RoB. Panduan disusun berdasarkan **3 peran (role)** utama pengguna, beserta fitur-fitur publik yang dapat diakses tanpa login.
+Dokumen ini menjelaskan secara lengkap cara menggunakan seluruh fitur dan modul dalam sistem SAIBA. Panduan disusun berdasarkan **3 peran (role)** utama pengguna, beserta fitur-fitur publik yang dapat diakses tanpa login.
 
 ---
 
@@ -23,19 +23,19 @@ Dokumen ini menjelaskan secara lengkap cara menggunakan seluruh fitur dan modul 
 
 ## 1. Pengantar Sistem
 
-SIPERAH-RoB adalah **Sistem Informasi Geografis (SIG)** berbasis WebGIS terpadu yang memanfaatkan kecerdasan buatan (_Machine Learning_) untuk memproyeksikan, memantau, dan memitigasi bencana banjir rob (genangan pasang air laut) di wilayah pesisir **Provinsi Lampung**.
+SAIBA adalah **Sistem Informasi Geografis (SIG)** berbasis WebGIS terpadu yang memanfaatkan kecerdasan buatan (_Machine Learning_) untuk memproyeksikan, memantau, dan memitigasi bencana banjir rob (genangan pasang air laut) di wilayah pesisir **Provinsi Lampung**.
 
 ### Fitur Utama
 
 | Fitur                                | Deskripsi                                                                                             |
 | :----------------------------------- | :---------------------------------------------------------------------------------------------------- |
-| 🗺️ **Peta Risiko Interaktif**        | Visualisasi WebGIS zonasi bahaya rob 4 kelas per kelurahan dengan clustering berbasis MapLibre GL.    |
-| 📱 **Mode Awam**                     | Deteksi lokasi GPS otomatis untuk menampilkan ringkasan risiko dalam bahasa non-teknis secara instan. |
-| 📸 **Pelaporan Ground Truth**        | Pelaporan kejadian banjir rob terintegrasi dengan peta dan kompresi WebP gambar otomatis.             |
-| 📊 **Dashboard Operator & Provinsi** | Pemantauan _real-time_ antrean laporan, KPI wilayah, dan tren prediksi 30 hari.                       |
-| 🔬 **Portal Peneliti**               | Unduh dataset historis dan integrasi API untuk keperluan riset akademik.                              |
-| 🔔 **Notifikasi Multi-Kanal**        | Alert via Email dan Push Browser dengan kustomisasi jenis event dan wilayah pantauan.                 |
-| 🛡️ **Audit Log**                     | Pencatatan riwayat transaksi sensitif untuk transparansi dan keperluan audit.                         |
+| ðŸ—ºï¸ **Peta Risiko Interaktif**        | Visualisasi WebGIS zonasi bahaya rob 4 kelas per kelurahan dengan clustering berbasis MapLibre GL.    |
+| ðŸ“± **Mode Awam**                     | Deteksi lokasi GPS otomatis untuk menampilkan ringkasan risiko dalam bahasa non-teknis secara instan. |
+| ðŸ“¸ **Pelaporan Ground Truth**        | Pelaporan kejadian banjir rob terintegrasi dengan peta dan kompresi WebP gambar otomatis.             |
+| ðŸ“Š **Dashboard Operator & Provinsi** | Pemantauan _real-time_ antrean laporan, KPI wilayah, dan tren prediksi 30 hari.                       |
+| ðŸ”¬ **Portal Peneliti**               | Unduh dataset historis dan integrasi API untuk keperluan riset akademik.                              |
+| ðŸ”” **Notifikasi Multi-Kanal**        | Alert via Email dan Push Browser dengan kustomisasi jenis event dan wilayah pantauan.                 |
+| ðŸ›¡ï¸ **Audit Log**                     | Pencatatan riwayat transaksi sensitif untuk transparansi dan keperluan audit.                         |
 
 ### Wilayah Cakupan
 
@@ -78,18 +78,18 @@ Sistem mencakup **8 kabupaten/kota pesisir** di Provinsi Lampung:
 
 ### A. Registrasi Akun Baru
 
-1. Buka halaman aplikasi SIPERAH-RoB.
+1. Buka halaman aplikasi SAIBA.
 2. Klik tombol **Masuk / Daftar** pada halaman portal utama.
 3. Pada halaman login, klik tab **Daftar**.
 4. Pilih jenis akun yang diinginkan:
    - **Warga**: Akun langsung aktif setelah verifikasi email.
    - **Peneliti**: Akun memerlukan persetujuan admin setelah verifikasi email.
 5. Isi formulir pendaftaran:
-   - **Nama Lengkap** — nama yang akan ditampilkan di sistem.
-   - **Email** — harus email valid (digunakan untuk verifikasi OTP).
-   - **Kata Sandi** — minimal 8 karakter.
-   - **Institusi** _(khusus Peneliti)_ — nama universitas/lembaga riset.
-   - **Tujuan Penelitian** _(khusus Peneliti)_ — deskripsi singkat tujuan penggunaan data.
+   - **Nama Lengkap** â€” nama yang akan ditampilkan di sistem.
+   - **Email** â€” harus email valid (digunakan untuk verifikasi OTP).
+   - **Kata Sandi** â€” minimal 8 karakter.
+   - **Institusi** _(khusus Peneliti)_ â€” nama universitas/lembaga riset.
+   - **Tujuan Penelitian** _(khusus Peneliti)_ â€” deskripsi singkat tujuan penggunaan data.
 6. Klik tombol **Daftar**.
 7. Sistem akan mengirimkan **kode OTP 6 digit** ke email Anda.
 8. Masukkan kode OTP pada halaman verifikasi. Kode berlaku selama **10 menit**.
@@ -103,9 +103,9 @@ Sistem mencakup **8 kabupaten/kota pesisir** di Provinsi Lampung:
 2. Masukkan **email** dan **kata sandi** yang terdaftar.
 3. Klik tombol **Masuk**.
 4. Setelah berhasil login, Anda akan diarahkan ke halaman default sesuai peran:
-   - **Warga** → Peta Risiko (`#/map`)
-   - **Peneliti** → Arsip Data (`#/research`)
-   - **Admin** → Pengguna & Perizinan (`#/admin`)
+   - **Warga** â†’ Peta Risiko (`#/map`)
+   - **Peneliti** â†’ Arsip Data (`#/research`)
+   - **Admin** â†’ Pengguna & Perizinan (`#/admin`)
 
 ### C. Login dengan Google
 
@@ -154,12 +154,12 @@ Peta publik menampilkan zonasi bahaya rob per kelurahan pesisir se-Provinsi Lamp
 
      | Lapisan              |   Ikon   | Deskripsi                                               |
      | :------------------- | :------: | :------------------------------------------------------ |
-     | Zona Bahaya Rob      | 🔴🟠🟡🟢 | Pewarnaan kelurahan berdasarkan tingkat risiko.         |
-     | Laporan Warga        |    📍    | Titik-titik lokasi laporan banjir rob yang tervalidasi. |
-     | Pasang Surut         |    🌊    | Posisi stasiun pengamatan pasang surut.                 |
-     | Garis Pantai         |    〰️    | Garis pantai Provinsi Lampung.                          |
-     | Infrastruktur Kritis |    🏗️    | Lokasi infrastruktur penting di pesisir.                |
-     | Rute Evakuasi        |    🛤️    | Jalur evakuasi yang tersedia.                           |
+     | Zona Bahaya Rob      | ðŸ”´ðŸŸ ðŸŸ¡ðŸŸ¢ | Pewarnaan kelurahan berdasarkan tingkat risiko.         |
+     | Laporan Warga        |    ðŸ“    | Titik-titik lokasi laporan banjir rob yang tervalidasi. |
+     | Pasang Surut         |    ðŸŒŠ    | Posisi stasiun pengamatan pasang surut.                 |
+     | Garis Pantai         |    ã€°ï¸    | Garis pantai Provinsi Lampung.                          |
+     | Infrastruktur Kritis |    ðŸ—ï¸    | Lokasi infrastruktur penting di pesisir.                |
+     | Rute Evakuasi        |    ðŸ›¤ï¸    | Jalur evakuasi yang tersedia.                           |
 
 4. **Filter Kabupaten/Kota**:
    - Gunakan dropdown **Kabupaten** untuk memfokuskan peta ke wilayah tertentu.
@@ -189,17 +189,17 @@ Mode Awam dirancang untuk menyajikan informasi risiko banjir rob dalam **bahasa 
 
 1. Buka menu **Mode Awam** dari navigasi samping.
 2. Tentukan lokasi Anda dengan salah satu cara:
-   - **🎯 Gunakan Lokasi Saya**: Klik tombol ini untuk mendeteksi posisi GPS perangkat secara otomatis (memerlukan izin akses lokasi dari browser).
-   - **🔍 Cari Wilayah**: Ketik nama kelurahan/kecamatan/kabupaten pada kolom pencarian, lalu pilih dari daftar yang muncul.
+   - **ðŸŽ¯ Gunakan Lokasi Saya**: Klik tombol ini untuk mendeteksi posisi GPS perangkat secara otomatis (memerlukan izin akses lokasi dari browser).
+   - **ðŸ” Cari Wilayah**: Ketik nama kelurahan/kecamatan/kabupaten pada kolom pencarian, lalu pilih dari daftar yang muncul.
 3. Sistem akan menampilkan **kartu risiko** dengan informasi:
    - **Status Risiko**: Ditampilkan dalam bahasa sederhana:
 
      | Status             | Warna Kartu | Makna                                                    |
      | :----------------- | :---------: | :------------------------------------------------------- |
-     | **Aman**           |   🔵 Biru   | Risiko rendah, tidak ada ancaman signifikan.             |
-     | **Waspada**        |  🟡 Kuning  | Risiko sedang, pantau perkembangan kondisi.              |
-     | **Siaga**          |  🟠 Oranye  | Risiko tinggi, bersiap dan waspada terhadap potensi rob. |
-     | **Bahaya Ekstrem** |  🔴 Merah   | Risiko sangat tinggi, segera ikuti arahan evakuasi.      |
+     | **Aman**           |   ðŸ”µ Biru   | Risiko rendah, tidak ada ancaman signifikan.             |
+     | **Waspada**        |  ðŸŸ¡ Kuning  | Risiko sedang, pantau perkembangan kondisi.              |
+     | **Siaga**          |  ðŸŸ  Oranye  | Risiko tinggi, bersiap dan waspada terhadap potensi rob. |
+     | **Bahaya Ekstrem** |  ðŸ”´ Merah   | Risiko sangat tinggi, segera ikuti arahan evakuasi.      |
 
    - **Pesan Panduan**: Rekomendasi tindakan keselamatan sesuai level risiko.
    - **Tinggi Muka Air Laut Maksimum**: Estimasi ketinggian pasang tertinggi.
@@ -210,7 +210,7 @@ Mode Awam dirancang untuk menyajikan informasi risiko banjir rob dalam **bahasa 
 
 ### C. Halaman Panduan (`#/onboarding`)
 
-Halaman panduan interaktif yang menjelaskan cara menggunakan SIPERAH-RoB. Berisi:
+Halaman panduan interaktif yang menjelaskan cara menggunakan SAIBA. Berisi:
 
 - Penjelasan cara membaca peta risiko.
 - Panduan melapor kejadian banjir rob.
@@ -227,17 +227,17 @@ Pengguna dengan peran **Warga** memiliki seluruh hak akses fitur publik, ditamba
 
 | Menu               | Rute           | Deskripsi                                   |
 | :----------------- | :------------- | :------------------------------------------ |
-| 🗺️ Peta Risiko     | `#/map`        | Peta interaktif zonasi bahaya rob.          |
-| 📱 Mode Awam       | `#/awam`       | Cek risiko lokasi dalam bahasa sederhana.   |
-| ❓ Panduan         | `#/onboarding` | Halaman panduan penggunaan sistem.          |
-| 📝 Lapor           | `#/reports`    | Formulir pelaporan kejadian banjir rob.     |
-| 📋 Riwayat Laporan | `#/history`    | Daftar riwayat laporan yang pernah dikirim. |
+| ðŸ—ºï¸ Peta Risiko     | `#/map`        | Peta interaktif zonasi bahaya rob.          |
+| ðŸ“± Mode Awam       | `#/awam`       | Cek risiko lokasi dalam bahasa sederhana.   |
+| â“ Panduan         | `#/onboarding` | Halaman panduan penggunaan sistem.          |
+| ðŸ“ Lapor           | `#/reports`    | Formulir pelaporan kejadian banjir rob.     |
+| ðŸ“‹ Riwayat Laporan | `#/history`    | Daftar riwayat laporan yang pernah dikirim. |
 
 ### A. Melaporkan Banjir Rob (Ground Truth)
 
 Pelaporan menggunakan **wizard 3 langkah** yang memandu Anda secara bertahap:
 
-#### Langkah 1 — Lokasi & Waktu
+#### Langkah 1 â€” Lokasi & Waktu
 
 1. Buka menu **Lapor** (`#/reports`).
 2. **Tentukan lokasi kejadian** dengan salah satu cara:
@@ -250,30 +250,30 @@ Pelaporan menggunakan **wizard 3 langkah** yang memandu Anda secara bertahap:
 
 > **Peringatan**: Jika lokasi yang Anda pilih berada **di luar area pesisir yang dipantau**, sistem akan menampilkan peringatan. Laporan tetap dapat dikirim, tetapi mungkin tidak muncul di peta publik.
 
-#### Langkah 2 — Detail Kejadian
+#### Langkah 2 â€” Detail Kejadian
 
 1. **Tinggi Air (cm)**: Masukkan estimasi ketinggian genangan air rob dalam sentimeter.
    - Sistem otomatis menghitung tingkat keparahan berdasarkan tinggi air:
 
      | Tinggi Air | Keparahan           |
      | :--------- | :------------------ |
-     | < 10 cm    | 🟢 **Ringan**       |
-     | 10–30 cm   | 🟡 **Sedang**       |
-     | 31–80 cm   | 🟠 **Parah**        |
-     | > 80 cm    | 🔴 **Sangat Parah** |
+     | < 10 cm    | ðŸŸ¢ **Ringan**       |
+     | 10â€“30 cm   | ðŸŸ¡ **Sedang**       |
+     | 31â€“80 cm   | ðŸŸ  **Parah**        |
+     | > 80 cm    | ðŸ”´ **Sangat Parah** |
 
    - Anda juga dapat memilih tingkat keparahan secara manual melalui kartu pilihan.
 
 2. **Deskripsi Kejadian**: Jelaskan kondisi yang Anda amati secara singkat (wajib diisi).
 
-#### Langkah 3 — Bukti Foto
+#### Langkah 3 â€” Bukti Foto
 
 1. **Unggah Foto**: Klik area unggah atau seret file foto ke dalamnya.
    - Maksimal **5 foto** per laporan.
    - Ukuran maksimal **2 MB** per foto.
    - Format yang didukung: **JPG, PNG, WebP**.
    - Foto akan **otomatis dikompres ke format WebP** di sisi browser untuk menghemat bandwidth (resolusi maksimal 1600px).
-2. Pratinjau foto akan ditampilkan beserta ukuran file. Klik ikon ❌ untuk menghapus foto yang tidak diinginkan.
+2. Pratinjau foto akan ditampilkan beserta ukuran file. Klik ikon âŒ untuk menghapus foto yang tidak diinginkan.
 3. Klik **Kirim Laporan** untuk menyelesaikan pelaporan.
 
 #### Setelah Laporan Terkirim
@@ -286,19 +286,19 @@ Pelaporan menggunakan **wizard 3 langkah** yang memandu Anda secara bertahap:
 
 1. Buka menu **Riwayat Laporan**.
 2. Daftar seluruh laporan yang pernah Anda kirim ditampilkan, termasuk:
-   - **Kode Laporan** — identifikasi unik.
+   - **Kode Laporan** â€” identifikasi unik.
    - **Tanggal & Waktu Kejadian**.
-   - **Lokasi** — kelurahan/kecamatan/kabupaten.
-   - **Tingkat Keparahan** — Ringan/Sedang/Parah/Sangat Parah.
+   - **Lokasi** â€” kelurahan/kecamatan/kabupaten.
+   - **Tingkat Keparahan** â€” Ringan/Sedang/Parah/Sangat Parah.
    - **Status Validasi**:
 
      | Status         | Badge | Arti                                                 |
      | :------------- | :---: | :--------------------------------------------------- |
-     | `menunggu`     |  🟡   | Belum ditinjau operator.                             |
-     | `perlu_review` |  🟠   | Ditandai untuk ditinjau ulang.                       |
-     | `divalidasi`   |  🟢   | Disetujui oleh operator, data masuk ke ground truth. |
-     | `ditolak`      |  🔴   | Ditolak beserta alasan penolakan.                    |
-     | `duplikat`     |  ⚪   | Sudah ada laporan serupa untuk kejadian yang sama.   |
+     | `menunggu`     |  ðŸŸ¡   | Belum ditinjau operator.                             |
+     | `perlu_review` |  ðŸŸ    | Ditandai untuk ditinjau ulang.                       |
+     | `divalidasi`   |  ðŸŸ¢   | Disetujui oleh operator, data masuk ke ground truth. |
+     | `ditolak`      |  ðŸ”´   | Ditolak beserta alasan penolakan.                    |
+     | `duplikat`     |  âšª   | Sudah ada laporan serupa untuk kejadian yang sama.   |
 
 ---
 
@@ -310,9 +310,9 @@ Pengguna dengan peran **Peneliti** memiliki akses ke **Portal Peneliti** untuk m
 
 | Menu               | Rute         | Deskripsi                               |
 | :----------------- | :----------- | :-------------------------------------- |
-| 🗺️ Peta Risiko     | `#/map`      | Peta interaktif zonasi bahaya rob.      |
-| 📋 Riwayat Laporan | `#/history`  | Daftar laporan yang pernah dikirim.     |
-| 🔬 Arsip Data      | `#/research` | Portal unduh dataset dan manajemen API. |
+| ðŸ—ºï¸ Peta Risiko     | `#/map`      | Peta interaktif zonasi bahaya rob.      |
+| ðŸ“‹ Riwayat Laporan | `#/history`  | Daftar laporan yang pernah dikirim.     |
+| ðŸ”¬ Arsip Data      | `#/research` | Portal unduh dataset dan manajemen API. |
 
 ### A. Mengunduh Dataset Historis
 
@@ -328,7 +328,7 @@ Pengguna dengan peran **Peneliti** memiliki akses ke **Portal Peneliti** untuk m
 3. Untuk setiap dataset, informasi yang ditampilkan:
    - Nama dan deskripsi dataset.
    - Tipe dataset (_prediction_, _ground_truth_, _tidal_).
-   - Periode data (tanggal awal – akhir).
+   - Periode data (tanggal awal â€“ akhir).
    - Resolusi (_harian_, _per jam_).
    - Jumlah rekaman (record count).
    - Lisensi penggunaan data.
@@ -361,9 +361,9 @@ Peneliti dapat mengakses data secara terprogram melalui REST API.
 1. Buka tab **Kredensial API** pada halaman Arsip Data.
 2. Jika ini pertama kali, Anda perlu **Mengajukan Permohonan Akses API**:
    - Isi formulir permohonan:
-     - **Tujuan Penggunaan** — jelaskan untuk apa API akan digunakan.
-     - **Organisasi/Institusi** — nama lembaga Anda.
-     - **Judul Proyek** — judul riset/proyek.
+     - **Tujuan Penggunaan** â€” jelaskan untuk apa API akan digunakan.
+     - **Organisasi/Institusi** â€” nama lembaga Anda.
+     - **Judul Proyek** â€” judul riset/proyek.
    - Klik **Ajukan Permohonan**.
    - Permohonan akan ditinjau oleh admin sistem.
 3. Setelah permohonan **disetujui**, Anda dapat membuat API Key:
@@ -402,22 +402,22 @@ Tab **Referensi API** pada halaman Arsip Data menyediakan dokumentasi lengkap en
 
 ## 7. Peran: Admin Sistem
 
-Admin Sistem memiliki **akses penuh ke seluruh fitur** dalam SIPERAH-RoB, termasuk kemampuan mengelola pengguna, memvalidasi laporan, dan memantau seluruh wilayah provinsi.
+Admin Sistem memiliki **akses penuh ke seluruh fitur** dalam SAIBA, termasuk kemampuan mengelola pengguna, memvalidasi laporan, dan memantau seluruh wilayah provinsi.
 
 ### Menu Navigasi Admin
 
 | Menu                    | Rute           | Deskripsi                                    |
 | :---------------------- | :------------- | :------------------------------------------- |
-| 🗺️ Peta Risiko          | `#/map`        | Peta interaktif zonasi bahaya rob.           |
-| 📱 Mode Awam            | `#/awam`       | Cek risiko lokasi dalam bahasa sederhana.    |
-| ❓ Panduan              | `#/onboarding` | Halaman panduan penggunaan sistem.           |
-| 📝 Lapor                | `#/reports`    | Formulir pelaporan kejadian banjir rob.      |
-| 📋 Riwayat Laporan      | `#/history`    | Daftar riwayat laporan.                      |
-| ✅ Operator             | `#/operator`   | Dashboard operator — validasi laporan warga. |
-| 📈 Pantauan Provinsi    | `#/province`   | Dashboard eksekutif tingkat provinsi.        |
-| 🔬 Arsip Data           | `#/research`   | Portal unduh dataset dan manajemen API.      |
-| 👤 Pengguna & Perizinan | `#/admin`      | Manajemen pengguna dan permohonan akses.     |
-| 🛡️ Audit                | `#/audit`      | Log audit aktivitas sistem.                  |
+| ðŸ—ºï¸ Peta Risiko          | `#/map`        | Peta interaktif zonasi bahaya rob.           |
+| ðŸ“± Mode Awam            | `#/awam`       | Cek risiko lokasi dalam bahasa sederhana.    |
+| â“ Panduan              | `#/onboarding` | Halaman panduan penggunaan sistem.           |
+| ðŸ“ Lapor                | `#/reports`    | Formulir pelaporan kejadian banjir rob.      |
+| ðŸ“‹ Riwayat Laporan      | `#/history`    | Daftar riwayat laporan.                      |
+| âœ… Operator             | `#/operator`   | Dashboard operator â€” validasi laporan warga. |
+| ðŸ“ˆ Pantauan Provinsi    | `#/province`   | Dashboard eksekutif tingkat provinsi.        |
+| ðŸ”¬ Arsip Data           | `#/research`   | Portal unduh dataset dan manajemen API.      |
+| ðŸ‘¤ Pengguna & Perizinan | `#/admin`      | Manajemen pengguna dan permohonan akses.     |
+| ðŸ›¡ï¸ Audit                | `#/audit`      | Log audit aktivitas sistem.                  |
 
 ---
 
@@ -454,9 +454,9 @@ Di bagian atas dashboard, terdapat 4 kartu metrik utama:
 
    | Aksi            | Efek                                                                                                                      |
    | :-------------- | :------------------------------------------------------------------------------------------------------------------------ |
-   | ✅ **Validasi** | Laporan disetujui. Status berubah menjadi `divalidasi`, data masuk ke _ground truth_, dan langsung muncul di peta publik. |
-   | ❌ **Tolak**    | Laporan ditolak. Wajib mengisi **alasan penolakan** (mis. "Bukan banjir rob, melainkan genangan drainase").               |
-   | 📋 **Duplikat** | Laporan ditandai sebagai duplikat dari laporan lain pada kejadian dan lokasi yang sama.                                   |
+   | âœ… **Validasi** | Laporan disetujui. Status berubah menjadi `divalidasi`, data masuk ke _ground truth_, dan langsung muncul di peta publik. |
+   | âŒ **Tolak**    | Laporan ditolak. Wajib mengisi **alasan penolakan** (mis. "Bukan banjir rob, melainkan genangan drainase").               |
+   | ðŸ“‹ **Duplikat** | Laporan ditandai sebagai duplikat dari laporan lain pada kejadian dan lokasi yang sama.                                   |
 
 6. Tab **Riwayat** menampilkan seluruh laporan yang sudah diproses (`divalidasi` atau `ditolak`).
 
@@ -515,7 +515,7 @@ Tabel interaktif yang menampilkan ringkasan per kabupaten/kota:
 | Sangat Tinggi     | Jumlah kelurahan risiko sangat tinggi.                                |
 | Populasi Berisiko | Estimasi total penduduk terdampak.                                    |
 | Probabilitas Maks | Probabilitas tertinggi di kabupaten tsb.                              |
-| Tren              | Perubahan dibanding periode sebelumnya (↑ naik / ↓ turun / ─ stabil). |
+| Tren              | Perubahan dibanding periode sebelumnya (â†‘ naik / â†“ turun / â”€ stabil). |
 
 - Tabel dapat **diurutkan** dengan mengklik header kolom.
 - Gunakan **filter kabupaten** atau **filter bulan** di bagian atas untuk menyaring data.
@@ -562,13 +562,13 @@ Halaman ini memungkinkan admin untuk mengelola seluruh akun pengguna dalam siste
 
    | Aksi           | Deskripsi                                                            |
    | :------------- | :------------------------------------------------------------------- |
-   | ✅ **Setujui** | Menyetujui akun yang berstatus `menunggu` (khususnya akun peneliti). |
-   | ❌ **Tolak**   | Menolak permohonan akun.                                             |
-   | ✏️ **Edit**    | Mengubah data pengguna secara _inline_ langsung pada tabel:          |
-   |                | • **Peran**: Warga → Peneliti → Admin (dan sebaliknya).              |
-   |                | • **Status**: Aktif ↔ Nonaktif (nonaktifkan akun secara instan).     |
-   |                | • **Wilayah Kerja**: Menetapkan wilayah untuk operator.              |
-   | 🗑️ **Hapus**   | Menghapus akun secara permanen.                                      |
+   | âœ… **Setujui** | Menyetujui akun yang berstatus `menunggu` (khususnya akun peneliti). |
+   | âŒ **Tolak**   | Menolak permohonan akun.                                             |
+   | âœï¸ **Edit**    | Mengubah data pengguna secara _inline_ langsung pada tabel:          |
+   |                | â€¢ **Peran**: Warga â†’ Peneliti â†’ Admin (dan sebaliknya).              |
+   |                | â€¢ **Status**: Aktif â†” Nonaktif (nonaktifkan akun secara instan).     |
+   |                | â€¢ **Wilayah Kerja**: Menetapkan wilayah untuk operator.              |
+   | ðŸ—‘ï¸ **Hapus**   | Menghapus akun secara permanen.                                      |
 
 4. **Membuat Pengguna Baru**:
    - Klik tombol **Tambah Pengguna**.
@@ -627,18 +627,18 @@ Setiap pengguna yang login dapat mengkustomisasi **preferensi notifikasi** melal
 
 | Kanal                 | Deskripsi                                                      |
 | :-------------------- | :------------------------------------------------------------- |
-| 🔔 **Browser (Push)** | Notifikasi push langsung di browser (memerlukan izin browser). |
-| 📧 **Email**          | Notifikasi dikirim ke email terdaftar.                         |
+| ðŸ”” **Browser (Push)** | Notifikasi push langsung di browser (memerlukan izin browser). |
+| ðŸ“§ **Email**          | Notifikasi dikirim ke email terdaftar.                         |
 
 ### Jenis Event yang Dapat Dipantau
 
 | Event                       | Deskripsi                                                         |
 | :-------------------------- | :---------------------------------------------------------------- |
-| 🔴 **Bahaya Sangat Tinggi** | Saat ada kelurahan mencapai level risiko Sangat Tinggi.           |
-| 📸 **Laporan Ground Truth** | Saat ada laporan baru dari warga di wilayah pantauan.             |
-| 🔄 **Pembaruan Model**      | Saat model ML diperbarui atau prediksi harian selesai dijalankan. |
-| 📊 **Ringkasan Harian**     | Rangkuman kondisi risiko harian untuk wilayah pantauan.           |
-| ⚠️ **Peringatan BMKG**      | Saat ada peringatan cuaca/pasang ekstrem dari BMKG.               |
+| ðŸ”´ **Bahaya Sangat Tinggi** | Saat ada kelurahan mencapai level risiko Sangat Tinggi.           |
+| ðŸ“¸ **Laporan Ground Truth** | Saat ada laporan baru dari warga di wilayah pantauan.             |
+| ðŸ”„ **Pembaruan Model**      | Saat model ML diperbarui atau prediksi harian selesai dijalankan. |
+| ðŸ“Š **Ringkasan Harian**     | Rangkuman kondisi risiko harian untuk wilayah pantauan.           |
+| âš ï¸ **Peringatan BMKG**      | Saat ada peringatan cuaca/pasang ekstrem dari BMKG.               |
 
 ### Wilayah Pantauan
 
@@ -649,7 +649,7 @@ Setiap pengguna yang login dapat mengkustomisasi **preferensi notifikasi** melal
 
 ### Cara Mengatur
 
-1. Buka menu profil → **Pengaturan Notifikasi** (`#/notifications`).
+1. Buka menu profil â†’ **Pengaturan Notifikasi** (`#/notifications`).
 2. Centang kanal notifikasi yang diinginkan (Browser / Email).
 3. Centang jenis event yang ingin dipantau.
 4. Tambahkan wilayah pantauan dengan mengklik **Tambah Wilayah** dan memilih kabupaten dari dropdown.
@@ -667,10 +667,10 @@ Kelas risiko dihasilkan oleh model **XGBoost Classifier** yang dijalankan setiap
 
 |       Kelas       |    Warna     | Keterangan                                                         |
 | :---------------: | :----------: | :----------------------------------------------------------------- |
-|    **Rendah**     | 🟢 `#16a34a` | Probabilitas rendah, tidak ada indikasi ancaman rob signifikan.    |
-|    **Sedang**     | 🟡 `#d97706` | Probabilitas moderat, perlu memantau perkembangan pasang surut.    |
-|    **Tinggi**     | 🟠 `#f4510b` | Probabilitas tinggi, siaga terhadap potensi genangan rob.          |
-| **Sangat Tinggi** | 🔴 `#e52421` | Probabilitas sangat tinggi, ancaman rob serius — siapkan mitigasi. |
+|    **Rendah**     | ðŸŸ¢ `#16a34a` | Probabilitas rendah, tidak ada indikasi ancaman rob signifikan.    |
+|    **Sedang**     | ðŸŸ¡ `#d97706` | Probabilitas moderat, perlu memantau perkembangan pasang surut.    |
+|    **Tinggi**     | ðŸŸ  `#f4510b` | Probabilitas tinggi, siaga terhadap potensi genangan rob.          |
+| **Sangat Tinggi** | ðŸ”´ `#e52421` | Probabilitas sangat tinggi, ancaman rob serius â€” siapkan mitigasi. |
 
 ### Tingkat Keparahan Laporan (Ground Truth)
 
@@ -678,10 +678,10 @@ Tingkat keparahan ditentukan berdasarkan **tinggi genangan air** yang dilaporkan
 
 | Keparahan        | Tinggi Air |    Warna     |
 | :--------------- | :--------- | :----------: |
-| **Ringan**       | < 10 cm    | 🟢 `#16a34a` |
-| **Sedang**       | 10–30 cm   | 🟡 `#d97706` |
-| **Parah**        | 31–80 cm   | 🟠 `#ea580c` |
-| **Sangat Parah** | > 80 cm    | 🔴 `#dc2626` |
+| **Ringan**       | < 10 cm    | ðŸŸ¢ `#16a34a` |
+| **Sedang**       | 10â€“30 cm   | ðŸŸ¡ `#d97706` |
+| **Parah**        | 31â€“80 cm   | ðŸŸ  `#ea580c` |
+| **Sangat Parah** | > 80 cm    | ðŸ”´ `#dc2626` |
 
 ---
 
@@ -689,7 +689,7 @@ Tingkat keparahan ditentukan berdasarkan **tinggi genangan air** yang dilaporkan
 
 ### Umum
 
-**Q: Seberapa akurat prediksi banjir rob SIPERAH-RoB?**
+**Q: Seberapa akurat prediksi banjir rob SAIBA?**
 
 > Prediksi adalah alat kewaspadaan, **bukan kepastian kejadian**. Gunakan informasi risiko bersama arahan resmi BPBD dan kondisi nyata di lapangan.
 
@@ -697,7 +697,7 @@ Tingkat keparahan ditentukan berdasarkan **tinggi genangan air** yang dilaporkan
 
 > Model memadukan: (1) data cuaca dan gelombang laut historis dari Open-Meteo (reanalisis ERA5), (2) proyeksi pasang surut berbasis model harmonik per stasiun, (3) faktor spasial elevasi & jarak ke pantai per kelurahan, (4) kejadian rob riil (BNPB DIBI), serta (5) laporan lapangan warga yang telah divalidasi BPBD.
 
-**Q: Siapa saja yang bisa menggunakan SIPERAH-RoB?**
+**Q: Siapa saja yang bisa menggunakan SAIBA?**
 
 > Peta publik dapat diakses oleh siapa saja tanpa login. Fitur pelaporan tersedia untuk warga terdaftar. Dashboard BPBD dikhususkan untuk admin sistem. Portal penelitian untuk peneliti yang disetujui.
 
@@ -709,11 +709,11 @@ Tingkat keparahan ditentukan berdasarkan **tinggi genangan air** yang dilaporkan
 
 **Q: Mengapa lokasi GPS saya tidak terdeteksi?**
 
-> Pastikan Anda telah memberikan **izin akses lokasi** di browser Anda. Pada Chrome: klik ikon gembok di address bar → Site Settings → Location → Allow.
+> Pastikan Anda telah memberikan **izin akses lokasi** di browser Anda. Pada Chrome: klik ikon gembok di address bar â†’ Site Settings â†’ Location â†’ Allow.
 
 **Q: Format foto apa yang didukung untuk pelaporan?**
 
-> JPG, PNG, dan WebP. Maksimal 5 foto dengan ukuran masing-masing ≤ 2 MB. Foto akan otomatis dikompres ke WebP.
+> JPG, PNG, dan WebP. Maksimal 5 foto dengan ukuran masing-masing â‰¤ 2 MB. Foto akan otomatis dikompres ke WebP.
 
 **Q: Bagaimana jika saya lupa kata sandi?**
 
@@ -727,4 +727,5 @@ Tingkat keparahan ditentukan berdasarkan **tinggi genangan air** yang dilaporkan
 
 > **Versi Dokumen**: 1.2.0  
 > **Terakhir Diperbarui**: Juli 2026  
-> **Kontak Teknis**: Tim Pengembang SIPERAH-RoB — Provinsi Lampung
+> **Kontak Teknis**: Tim Pengembang SAIBA â€” Provinsi Lampung
+
