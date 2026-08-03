@@ -12,7 +12,7 @@ use Tests\TestCase;
  *
  * Latar: di produksi baris `.env` VAPID_PRIVATE_KEY kehilangan newline sehingga
  * menyatu dengan VAPID_SUBJECT. Nilainya jadi 90 karakter berisi `=` dan `/`,
- * dan setiap pengiriman push gagal di `Base64Url::decode()` — tak terdeteksi
+ * dan setiap pengiriman push gagal di `Base64Url::decode()` â€” tak terdeteksi
  * selama dua hari karena satu-satunya gejalanya adalah job antrean gagal.
  */
 final class VapidHealthCheckTest extends TestCase
@@ -70,7 +70,7 @@ final class VapidHealthCheckTest extends TestCase
         self::assertStringContainsString('VAPID_PRIVATE_KEY salah bentuk', $this->runCheck());
     }
 
-    /** Base64 standar (mengandung + / =) juga salah — harus base64url. */
+    /** Base64 standar (mengandung + / =) juga salah â€” harus base64url. */
     public function test_standard_base64_private_key_is_caught(): void
     {
         config([
@@ -99,7 +99,7 @@ final class VapidHealthCheckTest extends TestCase
         config([
             'webpush.vapid.public_key' => $this->validPublic(),
             'webpush.vapid.private_key' => $this->validPrivate(),
-            'webpush.vapid.subject' => 'siperah-rob.example.test',
+            'webpush.vapid.subject' => 'saiba.example.test',
         ]);
 
         self::assertStringContainsString('VAPID_SUBJECT', $this->runCheck());
@@ -117,3 +117,4 @@ final class VapidHealthCheckTest extends TestCase
         self::assertStringNotContainsString('VAPID', $this->runCheck());
     }
 }
+

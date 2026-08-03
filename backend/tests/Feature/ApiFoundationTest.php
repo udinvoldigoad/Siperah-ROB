@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Tests\Feature;
 
@@ -144,7 +144,7 @@ final class ApiFoundationTest extends TestCase
             ->assertJsonPath('data.monitoring_status', 'outside_monitoring_area')
             ->assertJsonPath('data.status_label', 'Di luar wilayah pantauan prediksi rob')
             ->assertJsonPath('data.region.id', $region->id)
-            // Tanpa prediksi, probabilitas harus null (tidak diketahui) —
+            // Tanpa prediksi, probabilitas harus null (tidak diketahui) â€”
             // bukan 0 yang berarti "aman" tanpa dasar data.
             ->assertJsonPath('data.risk_probability', null);
     }
@@ -376,7 +376,7 @@ final class ApiFoundationTest extends TestCase
 
     /**
      * Dulu: operator hanya melihat triase di kabupaten kerjanya. Pembatasan itu
-     * hilang bersama peran `bpbd_operator` — antrean kini dipegang admin yang
+     * hilang bersama peran `bpbd_operator` â€” antrean kini dipegang admin yang
      * cakupannya se-provinsi. Yang dikunci sekarang: laporan dari kabupaten
      * MANA PUN sama-sama masuk antrean triase admin.
      */
@@ -420,7 +420,7 @@ final class ApiFoundationTest extends TestCase
     public function test_operator_summary_kpi_export_and_report_list_share_access_scope(): void
     {
         // Regency unik & tak lazim agar KPI tak tercampur data lain (termasuk
-        // seed demo di DB test siperah_rob_test — lihat .env.testing).
+        // seed demo di DB test saiba_test â€” lihat .env.testing).
         $uniqueRegency = 'Uji Operator Selatan';
         $otherRegency = 'Uji Operator Timur';
         $operatorRegion = $this->insertRegionForPoint(-5.620, 105.320, true, $uniqueRegency);
@@ -462,7 +462,7 @@ final class ApiFoundationTest extends TestCase
             ->assertJsonFragment(['report_code' => $reportCode]);
 
         // pending_reports kini dihitung se-provinsi (admin melihat semua laporan),
-        // jadi yang dijamin adalah laporan ini IKUT terhitung — bukan angka
+        // jadi yang dijamin adalah laporan ini IKUT terhitung â€” bukan angka
         // persisnya, yang juga memuat data seed.
         $summary = $this->getJson('/api/dashboard/operator/summary')
             ->assertOk()
@@ -481,7 +481,7 @@ final class ApiFoundationTest extends TestCase
     public function test_operator_reports_export_does_not_lazy_load_reporter_per_row(): void
     {
         // Regresi AU-10: export dulu hanya eager-load region, padahal
-        // reportSummary() membaca $report->reporter — satu query SELECT per baris
+        // reportSummary() membaca $report->reporter â€” satu query SELECT per baris
         // untuk nilai yang bahkan tidak ditulis ke CSV. Jumlah query harus
         // konstan, tidak bergantung jumlah laporan.
         $region = $this->insertRegionForPoint(-5.610, 105.310, true, 'Uji N1 Export');
@@ -561,18 +561,18 @@ final class ApiFoundationTest extends TestCase
         ]);
         $plainUrl = '/api/reports/photo/'.$photo->id;
 
-        // Belum divalidasi + URL polos (tanpa tanda tangan) → ditolak.
+        // Belum divalidasi + URL polos (tanpa tanda tangan) â†’ ditolak.
         $this->get($plainUrl)->assertStatus(403);
 
-        // Belum divalidasi + signed URL valid → boleh (mekanisme untuk pihak
+        // Belum divalidasi + signed URL valid â†’ boleh (mekanisme untuk pihak
         // berwenang; dibuat ReportResource, bekerja dengan tag <img>).
         $signedUrl = URL::temporarySignedRoute('reports.photo', now()->addHour(), ['photo' => $photo->id], false);
         $this->get($signedUrl)->assertOk();
 
-        // Tanda tangan yang dirusak → ditolak.
+        // Tanda tangan yang dirusak â†’ ditolak.
         $this->get($signedUrl.'tamper')->assertStatus(403);
 
-        // Setelah divalidasi → publik boleh tanpa tanda tangan (tampil di peta publik & Mode Awam).
+        // Setelah divalidasi â†’ publik boleh tanpa tanda tangan (tampil di peta publik & Mode Awam).
         $report->update(['status' => 'divalidasi', 'validated_at' => now()]);
         $this->get($plainUrl)->assertOk();
     }
@@ -584,7 +584,7 @@ final class ApiFoundationTest extends TestCase
         $citizen = $this->createUser('warga');
         $operator = $this->createUser('admin', $region->id);
 
-        // 1) Warga mengirim laporan di titik luar pantauan → status perlu_review.
+        // 1) Warga mengirim laporan di titik luar pantauan â†’ status perlu_review.
         $created = $this->actingAs($citizen)->postJson('/api/reports', [
             'latitude' => -5.905,
             'longitude' => 105.405,
@@ -601,7 +601,7 @@ final class ApiFoundationTest extends TestCase
             ->assertOk()
             ->assertJsonFragment(['report_code' => $reportCode, 'status' => 'perlu_review']);
 
-        // 3) Operator memvalidasi → status divalidasi & keluar dari antrean.
+        // 3) Operator memvalidasi â†’ status divalidasi & keluar dari antrean.
         $this->postJson("/api/reports/{$reportId}/validate")->assertOk();
         $this->getJson('/api/reports?status=menunggu,perlu_review&per_page=50')
             ->assertOk()
@@ -922,3 +922,5 @@ final class ApiFoundationTest extends TestCase
         ]);
     }
 }
+
+

@@ -12,7 +12,7 @@ use Tests\TestCase;
 /**
  * Pipeline import data: tulis-nyata CSV pasut (idempotent + label wajib),
  * sinkron wilayah BIG mode tulis (upsert + catatan data_import_runs),
- * command ml:predict (sukses/gagal mengikuti exit code pipeline — interpreter
+ * command ml:predict (sukses/gagal mengikuti exit code pipeline â€” interpreter
  * di-stub dengan PHP_BINARY agar tak butuh Python), dan registrasi scheduler
  * harian. Validasi dry-run dicakup unit test BigRegionSync/TidalCsvImporter.
  */
@@ -104,7 +104,7 @@ final class DataImportPipelineTest extends TestCase
             ->push(['type' => 'FeatureCollection', 'features' => [$feature]])
             ->push(['count' => 1])
             ->push(['type' => 'FeatureCollection', 'features' => [$feature]]);
-        // Mode tulis menyimpan file backup per provinsi — pakai nama provinsi
+        // Mode tulis menyimpan file backup per provinsi â€” pakai nama provinsi
         // uji agar tidak menimpa backup Lampung sungguhan, lalu dibersihkan.
         $this->cleanupPaths[] = storage_path('app/geo/big_sync_lampung-uji_backup.json');
 
@@ -167,10 +167,11 @@ final class DataImportPipelineTest extends TestCase
 
     private function tempFile(string $content): string
     {
-        $path = tempnam(sys_get_temp_dir(), 'siperah-import-test');
+        $path = tempnam(sys_get_temp_dir(), 'saiba-import-test');
         file_put_contents($path, $content);
         $this->cleanupPaths[] = $path;
 
         return $path;
     }
 }
+
