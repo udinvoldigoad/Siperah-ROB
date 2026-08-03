@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers\Api;
 
@@ -16,7 +16,7 @@ class GoogleAuthController
 {
     /**
      * Kode tukar sekali pakai berumur pendek: cukup untuk satu round-trip
-     * redirect → POST dari SPA, tapi terlalu singkat untuk berguna bila bocor
+     * redirect â†’ POST dari SPA, tapi terlalu singkat untuk berguna bila bocor
      * lewat riwayat peramban.
      */
     private const CODE_TTL_SECONDS = 120;
@@ -43,11 +43,11 @@ class GoogleAuthController
 
             // Klaim email_verified dari Google WAJIB true. Tanpa ini, akun
             // Google dengan email yang belum diverifikasi (mis. Workspace yang
-            // dikelola sendiri) bisa menaut ke akun SIPERAH yang sudah ada
-            // dan langsung masuk — email bisa diklaim tanpa bukti kepemilikan.
+            // dikelola sendiri) bisa menaut ke akun SAIBA yang sudah ada
+            // dan langsung masuk â€” email bisa diklaim tanpa bukti kepemilikan.
             // `getRaw()` daripada ArrayAccess: bentuk klaim mentah lebih tahan
             // bila stub Socialite tidak mengisinya (null dibaca sebagai tidak
-            // terverifikasi — sikap aman).
+            // terverifikasi â€” sikap aman).
             $googleRaw = (array) $googleUser->getRaw();
             if (!(bool) ($googleRaw['email_verified'] ?? false)) {
                 $this->audit->write($request, 'login', 'denied', $googleUser->email ?? null, [
@@ -60,7 +60,7 @@ class GoogleAuthController
 
             // withTrashed WAJIB: akun yang dihapus admin disembunyikan global
             // scope soft-delete, sehingga pencarian biasa mengembalikan null dan
-            // alur di bawah mencoba INSERT email yang sebenarnya masih ada —
+            // alur di bawah mencoba INSERT email yang sebenarnya masih ada â€”
             // index unik `users_email_key` menolaknya (23505) dan pengguna cuma
             // melihat "Gagal masuk dengan Google" tanpa penjelasan.
             $user = User::withTrashed()
@@ -70,7 +70,7 @@ class GoogleAuthController
                 ->first();
 
             // Profil Google terverifikasi = kepemilikan terbukti, jadi akun boleh
-            // dipulihkan — tapi kembali ke antrean persetujuan admin.
+            // dipulihkan â€” tapi kembali ke antrean persetujuan admin.
             if ($user && $user->trashed()) {
                 AuthController::restoreDeletedAccount($request, $user, $this->audit);
             }
@@ -78,7 +78,7 @@ class GoogleAuthController
             if (!$user) {
                 // Pendaftaran lewat Google = pendaftaran biasa, hanya beda cara
                 // membuktikan kepemilikan email. Kebijakannya WAJIB sama dengan
-                // /auth/register — kalau berbeda, salah satu jalur jadi celah
+                // /auth/register â€” kalau berbeda, salah satu jalur jadi celah
                 // (dulu Google auto-aktif sementara email/password harus antre).
                 // Keduanya kini langsung aktif sebagai warga.
                 $user = new User([
@@ -86,7 +86,7 @@ class GoogleAuthController
                     'name' => $googleUser->name,
                     'email' => $googleUser->email,
                 ]);
-                // Di luar $fillable — disetel eksplisit dari sumber tepercaya
+                // Di luar $fillable â€” disetel eksplisit dari sumber tepercaya
                 // (profil Google terverifikasi), bukan dari payload request.
                 $user->google_id = $googleUser->id;
                 $user->role = 'warga';
@@ -109,13 +109,13 @@ class GoogleAuthController
                     $user->google_id = $googleUser->id;
                     // Menautkan Google membuktikan kepemilikan email yang sama,
                     // jadi verifikasi yang tertunda ikut selesai. `status` TIDAK
-                    // disentuh — akun yang ditahan/ditolak admin tetap tertahan.
+                    // disentuh â€” akun yang ditahan/ditolak admin tetap tertahan.
                     $user->email_verified_at ??= now();
                     $user->save();
                 }
             }
 
-            // Cek status user sebelum menerbitkan apa pun — user nonaktif/
+            // Cek status user sebelum menerbitkan apa pun â€” user nonaktif/
             // ditolak/menunggu tidak boleh login, langsung redirect dengan pesan
             // sesuai status. Sejalan dengan AuthController::login yang membalas 403.
             if ($user->status !== 'aktif') {
@@ -146,7 +146,7 @@ class GoogleAuthController
                 'client_secret_set' => !empty(config('services.google.client_secret')),
                 'frontend_url' => $frontendUrl,
             ]);
-            // Router frontend berbasis hash — path "/login?..." tidak pernah
+            // Router frontend berbasis hash â€” path "/login?..." tidak pernah
             // dibaca; harus "/#/login?..." agar pesan errornya tampil.
             return redirect($frontendUrl . '/#/login?error=google_auth_failed');
         }
@@ -161,7 +161,7 @@ class GoogleAuthController
     {
         $request->validate(['code' => ['required', 'string', 'max:255']]);
 
-        // pull() = ambil sekaligus hapus → kode mati setelah pemakaian pertama,
+        // pull() = ambil sekaligus hapus â†’ kode mati setelah pemakaian pertama,
         // termasuk bila seseorang memutar ulang URL dari riwayat peramban.
         $userId = Cache::pull($this->codeCacheKey($request->string('code')->value()));
         $user = $userId ? User::find($userId) : null;
@@ -176,7 +176,7 @@ class GoogleAuthController
         }
 
         // Status bisa berubah antara callback dan penukaran (mis. admin
-        // menonaktifkan akun) — periksa ulang, jangan percaya kode saja.
+        // menonaktifkan akun) â€” periksa ulang, jangan percaya kode saja.
         if ($user->status !== 'aktif') {
             $this->audit->write($request, 'login', 'denied', $user->email, [
                 'actor_name' => $user->name,
@@ -220,3 +220,4 @@ class GoogleAuthController
         return 'oauth:google:code:' . hash('sha256', $code);
     }
 }
+

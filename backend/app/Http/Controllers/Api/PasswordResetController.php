@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers\Api;
 
@@ -55,12 +55,12 @@ class PasswordResetController
 
                 try {
                     Mail::raw(
-                        "Halo {$user->name},\n\nKode OTP untuk reset kata sandi akun SIPERAH-RoB Anda adalah:\n\n{$otp}\n\nKode ini berlaku selama 10 menit.\nJika Anda tidak meminta reset kata sandi, abaikan email ini.\n\nSalam,\nTim SIPERAH-RoB",
+                        "Halo {$user->name},\n\nKode OTP untuk reset kata sandi akun SAIBA Anda adalah:\n\n{$otp}\n\nKode ini berlaku selama 10 menit.\nJika Anda tidak meminta reset kata sandi, abaikan email ini.\n\nSalam,\nTim SAIBA",
                         function ($message) use ($user) {
                             // Pakai From default (config mail.from) agar selaras SPF/DKIM
-                            // transport SMTP produksi — bukan domain hardcoded.
+                            // transport SMTP produksi â€” bukan domain hardcoded.
                             $message->to($user->email)
-                                    ->subject('Kode OTP Reset Kata Sandi - SIPERAH-RoB');
+                                    ->subject('Kode OTP Reset Kata Sandi - SAIBA');
                         }
                     );
                 } catch (\Throwable $e) {
@@ -132,3 +132,4 @@ class PasswordResetController
         ]);
     }
 }
+
