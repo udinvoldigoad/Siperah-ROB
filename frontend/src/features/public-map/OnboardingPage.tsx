@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,7 +11,7 @@ type PredictionResponse = { data: Prediction[] };
 
 const faqData = [
   {
-    q: "Seberapa akurat prediksi banjir rob SIPERAH-RoB?",
+    q: "Seberapa akurat prediksi banjir rob SAIBA?",
     a: "Prediksi adalah alat kewaspadaan, bukan kepastian kejadian. Gunakan informasi risiko bersama arahan resmi BPBD dan kondisi nyata di lapangan."
   },
   {
@@ -19,7 +19,7 @@ const faqData = [
     a: "Model memadukan data cuaca dan gelombang laut historis dari Open-Meteo (reanalisis ERA5), proyeksi pasang surut berbasis model harmonik per stasiun, faktor spasial elevasi & jarak ke pantai per kelurahan, serta kejadian rob riil (BNPB DIBI) dan laporan lapangan warga yang telah divalidasi BPBD. Integrasi sumber resmi seperti pasang surut BIG/Pushidrosal dan prakiraan BMKG sedang disiapkan secara bertahap."
   },
   {
-    q: "Siapa saja yang bisa menggunakan SIPERAH-RoB?",
+    q: "Siapa saja yang bisa menggunakan SAIBA?",
     a: "Peta publik dapat diakses oleh siapa saja tanpa login. Fitur pelaporan tersedia untuk warga terdaftar. Dashboard BPBD dikhususkan untuk operator kabupaten/kota dan BPBD Provinsi Lampung."
   },
   {
@@ -169,7 +169,7 @@ export function OnboardingPage() {
           </p>
           <div className="citizen-hero-metrics" style={{ margin: "24px auto 0", maxWidth: 620, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="panel" style={{ padding: 14, textAlign: "left" }}><span className="dark-text-soft" style={{ display: "block", fontSize: 12 }}>Zona risiko tinggi dipantau</span><strong className="dark-text" style={{ fontSize: 22 }}>{highRiskCount}</strong></div>
-            <div className="panel" style={{ padding: 14, textAlign: "left" }}><span className="dark-text-soft" style={{ display: "block", fontSize: 12 }}>Risiko tertinggi saat ini</span><strong className="dark-text" style={{ fontSize: 14 }}>{highestRisk ? `${highestRisk.region?.village ?? "Wilayah pesisir"} · ${Math.round(highestRisk.risk_probability)}%` : "Memuat data…"}</strong></div>
+            <div className="panel" style={{ padding: 14, textAlign: "left" }}><span className="dark-text-soft" style={{ display: "block", fontSize: 12 }}>Risiko tertinggi saat ini</span><strong className="dark-text" style={{ fontSize: 14 }}>{highestRisk ? `${highestRisk.region?.village ?? "Wilayah pesisir"} Â· ${Math.round(highestRisk.risk_probability)}%` : "Memuat dataâ€¦"}</strong></div>
           </div>
         </motion.div>
 
@@ -212,8 +212,8 @@ export function OnboardingPage() {
             </p>
             <div style={{ display: "grid", gap: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "var(--critical)" }}></div><strong className="dark-text" style={{ minWidth: "120px" }}>Sangat Tinggi</strong><span className="dark-text-soft" style={{ fontSize: "0.95rem" }}>(&gt;75% Probabilitas)</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "var(--high)" }}></div><strong className="dark-text" style={{ minWidth: "120px" }}>Tinggi</strong><span className="dark-text-soft" style={{ fontSize: "0.95rem" }}>(55–75% Probabilitas)</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "var(--medium)" }}></div><strong className="dark-text" style={{ minWidth: "120px" }}>Sedang</strong><span className="dark-text-soft" style={{ fontSize: "0.95rem" }}>(30–55% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "var(--high)" }}></div><strong className="dark-text" style={{ minWidth: "120px" }}>Tinggi</strong><span className="dark-text-soft" style={{ fontSize: "0.95rem" }}>(55â€“75% Probabilitas)</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "var(--medium)" }}></div><strong className="dark-text" style={{ minWidth: "120px" }}>Sedang</strong><span className="dark-text-soft" style={{ fontSize: "0.95rem" }}>(30â€“55% Probabilitas)</span></div>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "var(--low)" }}></div><strong className="dark-text" style={{ minWidth: "120px" }}>Rendah</strong><span className="dark-text-soft" style={{ fontSize: "0.95rem" }}>(&lt;30% Probabilitas)</span></div>
             </div>
           </div>
@@ -264,7 +264,7 @@ export function OnboardingPage() {
           <div>
             <h2 className="dark-text" style={{ fontSize: "2rem", fontWeight: 800, marginBottom: "16px", letterSpacing: "-0.02em" }}>FAQ</h2>
             <p className="dark-text-soft" style={{ fontSize: "1.05rem", lineHeight: 1.7 }}>
-              Pertanyaan umum mengenai penggunaan portal SIPERAH-RoB dan akurasi model prediksinya.
+              Pertanyaan umum mengenai penggunaan portal SAIBA dan akurasi model prediksinya.
             </p>
           </div>
           
@@ -305,3 +305,4 @@ export function OnboardingPage() {
     </AppShell>
   );
 }
+

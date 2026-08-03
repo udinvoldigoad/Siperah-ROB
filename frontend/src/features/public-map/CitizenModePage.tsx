@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+﻿import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { api } from "../../shared/api/client";
 import { AppShell } from "../../shared/components/AppShell";
 import { Icon } from "../../shared/components/Icon";
@@ -48,7 +48,7 @@ type PublicMapResponse = {
 };
 
 /**
- * Props `CitizenModeDesktop` & `CitizenModeMobile` — keduanya menerima
+ * Props `CitizenModeDesktop` & `CitizenModeMobile` â€” keduanya menerima
  * PERSIS daftar yang sama (lihat `commonProps` di bawah).
  *
  * Sebelumnya keduanya diketik `: any`, sehingga 6 callback `.map()` di dalamnya
@@ -113,7 +113,7 @@ const getCardStyle = (riskClass?: RiskClass) => {
   }
 };
 
-// Titik tengah bounding box dari geometry GeoJSON (Polygon/MultiPolygon) → [lon, lat].
+// Titik tengah bounding box dari geometry GeoJSON (Polygon/MultiPolygon) â†’ [lon, lat].
 function bboxCenter(coordinates: unknown): [number, number] | null {
   const points: [number, number][] = [];
   const collect = (value: unknown): void => {
@@ -166,7 +166,7 @@ function WilayahPicker({ options, currentLocation, onSelectWilayah, onRequestGps
         <div className="wilayah-popover" role="listbox">
           <div className="wilayah-search">
             <Icon name="search" style={{ fontSize: 18, color: "var(--ink-soft)" }} />
-            <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari kelurahan atau kabupaten…" aria-label="Cari wilayah" />
+            <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari kelurahan atau kabupatenâ€¦" aria-label="Cari wilayah" />
           </div>
           <button type="button" className="wilayah-option gps" onClick={() => { onRequestGps(); setOpen(false); }}>
             <Icon name="my_location" style={{ fontSize: 18 }} /> Gunakan lokasi perangkat
@@ -378,13 +378,13 @@ function CitizenModeDesktop({
           <motion.section variants={itemVariants} className="panel flush">
             <div style={{ padding: "24px", borderBottom: "1px solid var(--line)" }}>
               <h2 style={{ fontSize: "1.25rem", margin: 0, marginBottom: 4 }}>Prakiraan 7 Hari ke Depan</h2>
-              <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Sumber: model prediksi SIPERAH-RoB. Waspada saat indikator merah mendominasi.</p>
+              <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Sumber: model prediksi SAIBA. Waspada saat indikator merah mendominasi.</p>
             </div>
 
             {forecastDays.length === 0 ? (
               <div style={{ padding: "32px 24px", textAlign: "center", color: "var(--ink-soft)", fontSize: 14 }}>
                 Prakiraan belum tersedia untuk lokasi ini
-                {dataLoaded ? "." : " — memuat data..."}
+                {dataLoaded ? "." : " â€” memuat data..."}
               </div>
             ) : (
             <div className="citizen-forecast-grid">
@@ -637,7 +637,7 @@ function CitizenModeMobile({
         
         {forecastDays.length === 0 && (
           <div style={{ padding: "20px 0", color: "var(--ink-soft)", fontSize: 13 }}>
-            Prakiraan belum tersedia untuk lokasi ini{dataLoaded ? "." : " — memuat data..."}
+            Prakiraan belum tersedia untuk lokasi ini{dataLoaded ? "." : " â€” memuat data..."}
           </div>
         )}
         <div className="mobile-forecast-scroller">
@@ -744,7 +744,7 @@ export function CitizenModePage() {
       setError("Browser ini belum mendukung GPS. Silakan pilih wilayah secara manual.");
       return;
     }
-    setLocationNote("Mencari lokasi perangkat…");
+    setLocationNote("Mencari lokasi perangkatâ€¦");
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const lat = position.coords.latitude;
@@ -754,7 +754,7 @@ export function CitizenModePage() {
         // Nominatim = layanan pihak ketiga gratis: bisa lambat, bisa membalas
         // 429, dan tak menjanjikan SLA apa pun. Karena namanya cuma pemanis di
         // atas koordinat yang SUDAH didapat, kegagalan apa pun tak boleh
-        // menggantung UI — batasi 8 detik lalu jatuh ke label generik.
+        // menggantung UI â€” batasi 8 detik lalu jatuh ke label generik.
         const controller = new AbortController();
         const timeout = window.setTimeout(() => controller.abort(), 8000);
         try {
@@ -764,7 +764,7 @@ export function CitizenModePage() {
             { signal: controller.signal },
           );
           // 429 (kena rate limit) & 5xx tetap punya body JSON, jadi status
-          // harus diperiksa eksplisit — bukan diserahkan ke parse error.
+          // harus diperiksa eksplisit â€” bukan diserahkan ke parse error.
           if (!res.ok) throw new Error(`Nominatim ${res.status}`);
 
           const geo = await res.json();
@@ -834,7 +834,7 @@ export function CitizenModePage() {
     };
   }, [coordinates]);
 
-  // Jangan pernah memicu dialog izin tanpa gestur pengguna — dulu halaman ini
+  // Jangan pernah memicu dialog izin tanpa gestur pengguna â€” dulu halaman ini
   // langsung meminta GPS saat dibuka, dan penolakan memunculkan banner error
   // sebelum warga sempat melihat isinya. GPS kini hanya berjalan otomatis bila
   // izinnya SUDAH diberikan sebelumnya (query ini tidak memunculkan dialog);
@@ -848,7 +848,7 @@ export function CitizenModePage() {
       .then((status) => {
         if (alive && status.state === "granted") requestGpsLocation();
       })
-      // Browser lama tak mengenal nama izin ini — biarkan manual saja.
+      // Browser lama tak mengenal nama izin ini â€” biarkan manual saja.
       .catch(() => undefined);
 
     return () => { alive = false; };
@@ -863,7 +863,7 @@ export function CitizenModePage() {
     ? [data.region.village, data.region.district, data.region.regency].filter(Boolean).join(", ") 
     : locationNote;
 
-  // Prakiraan menampilkan data apa adanya bila wilayah terpantau — status
+  // Prakiraan menampilkan data apa adanya bila wilayah terpantau â€” status
   // "stale" cukup ditandai lewat prediction_notice, TIDAK dengan menolkan
   // grafik (dulu hero bisa "Sangat Tinggi" sementara 7 bar di bawahnya
   // dipaksa "Rendah 0%": kontradiksi di layar peringatan).
@@ -879,7 +879,7 @@ export function CitizenModePage() {
         };
       })
     : [];
-  // Tidak ada data prakiraan → biarkan kosong; bagian render menampilkan
+  // Tidak ada data prakiraan â†’ biarkan kosong; bagian render menampilkan
   // pesan "belum tersedia", BUKAN tujuh hari "Rendah 0%" karangan.
 
   const user = getCurrentUser();
@@ -892,7 +892,7 @@ export function CitizenModePage() {
   ];
 
   const shareText = [
-    "⚠️ Peringatan Banjir Rob — SIPERAH-RoB",
+    "âš ï¸ Peringatan Banjir Rob â€” SAIBA",
     `Lokasi: ${currentLocation}`,
     `Status: ${risk}`,
     ...(data ? [
@@ -901,7 +901,7 @@ export function CitizenModePage() {
         ? [`Peluang rob ${Math.round(Number(data.risk_probability))}%${data.peak_time ? `, puncak pasang ${data.peak_time} WIB` : ""}.`]
         : []),
     ] : []),
-    "Sumber: SIPERAH-RoB",
+    "Sumber: SAIBA",
   ].join("\n");
 
   const handleShareWhatsApp = () => {
@@ -930,3 +930,4 @@ export function CitizenModePage() {
 
   return <CitizenModeDesktop {...commonProps} />;
 }
+
