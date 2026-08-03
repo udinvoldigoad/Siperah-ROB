@@ -23,7 +23,7 @@ class CleanDemoAccounts extends Command
 
     public function handle(): int
     {
-        $emails = ['operator@siperah.local', 'provinsi@siperah.local'];
+        $emails = ['operator@saiba.local', 'provinsi@saiba.local'];
         $users = User::whereIn('email', $emails)->get();
 
         if ($users->isEmpty()) {
@@ -35,7 +35,7 @@ class CleanDemoAccounts extends Command
         $this->warn('Akun demo ditemukan:');
         foreach ($users as $user) {
             $lastLogin = $user->last_login_at?->toDateTimeString() ?? 'tidak pernah';
-            $this->line("  {$user->email} ({$user->name}) — login terakhir: {$lastLogin}");
+            $this->line("  {$user->email} ({$user->name}) â€” login terakhir: {$lastLogin}");
         }
 
         if ($this->option('dry-run')) {
@@ -67,3 +67,4 @@ class CleanDemoAccounts extends Command
         return self::SUCCESS;
     }
 }
+

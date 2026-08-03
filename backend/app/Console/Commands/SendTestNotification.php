@@ -10,13 +10,13 @@ use Illuminate\Console\Command;
 /**
  * Kirim satu notifikasi uji. Default: push (WebPush) ke perangkat yang sudah
  * subscribe. Dengan --mail, kirim via email untuk memverifikasi SMTP.
- * Tidak menulis data domain apa pun (tanpa laporan/prediksi) — hanya memicu
+ * Tidak menulis data domain apa pun (tanpa laporan/prediksi) â€” hanya memicu
  * saluran notifikasi, sehingga aman untuk menguji tanpa mengotori database.
  *
  * Contoh:
- *   php artisan notify:test warga@siperah.local
- *   php artisan notify:test admin@siperah.local --mail
- *   php artisan notify:test admin@siperah.local --mail --note="Tes SMTP"
+ *   php artisan notify:test warga@saiba.local
+ *   php artisan notify:test admin@saiba.local --mail
+ *   php artisan notify:test admin@saiba.local --mail --note="Tes SMTP"
  */
 class SendTestNotification extends Command
 {
@@ -60,3 +60,4 @@ class SendTestNotification extends Command
         return self::SUCCESS;
     }
 }
+
