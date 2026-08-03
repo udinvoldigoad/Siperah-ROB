@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+﻿import { expect, test, type Page } from "@playwright/test";
 import { SEED_PASSWORD, SEED_USERS } from "./helpers";
 
 // P2 6.2: admin menyetujui, menolak, dan menonaktifkan user. Semua target aksi
@@ -6,12 +6,12 @@ import { SEED_PASSWORD, SEED_USERS } from "./helpers";
 // terganggu.
 //
 // Sejak pendaftaran mandiri langsung aktif, akun berstatus "menunggu" hanya
-// lahir dari admin yang SENGAJA membuatnya begitu — jadi fixture-nya dibuat
+// lahir dari admin yang SENGAJA membuatnya begitu â€” jadi fixture-nya dibuat
 // lewat POST /admin/users, bukan lewat /auth/register seperti dulu.
 /**
  * Login admin SATU KALI lalu pakai tokennya untuk dua hal: memanggil API
  * fixture dan menyuntik sesi ke browser. Limiter login dibatasi 10/menit per
- * (email + IP) dan dipakai bersama seluruh spec dalam satu run — login admin
+ * (email + IP) dan dipakai bersama seluruh spec dalam satu run â€” login admin
  * kedua di file ini pernah membuat login.spec ikut kena 429.
  */
 async function loginAdminOnce(page: Page): Promise<string> {
@@ -24,8 +24,8 @@ async function loginAdminOnce(page: Page): Promise<string> {
   await page.goto("/#/login");
   await page.evaluate(
     ([token, user]) => {
-      localStorage.setItem("siperah-token", token);
-      localStorage.setItem("siperah-user", user);
+      localStorage.setItem("saiba-token", token);
+      localStorage.setItem("saiba-user", user);
     },
     [body.access_token as string, JSON.stringify(body.user)],
   );
@@ -36,7 +36,7 @@ async function loginAdminOnce(page: Page): Promise<string> {
 /**
  * Aksi per baris kini berada di menu titik tiga, bukan tombol berjajar.
  * Panelnya di-render lewat portal ke <body>, jadi menuitem-nya TIDAK bisa
- * dicari dari dalam `tr` — dicari di level halaman.
+ * dicari dari dalam `tr` â€” dicari di level halaman.
  */
 async function openRowMenu(page: Page, name: string) {
   await page.locator("tr", { hasText: name }).getByRole("button", { name: `Aksi untuk ${name}` }).click();
@@ -106,7 +106,7 @@ test("permohonan akun peneliti tertahan dan alasannya terbaca admin", async ({ p
   await page.goto("/#/admin");
   await page.reload();
 
-  // Menu baris peneliti menunggu TIDAK memuat "Setujui" — admin harus membuka
+  // Menu baris peneliti menunggu TIDAK memuat "Setujui" â€” admin harus membuka
   // permohonannya lebih dulu.
   const row = page.locator("tr", { hasText: name });
   await expect(row).toBeVisible();
@@ -131,7 +131,7 @@ test("admin approve, reject, dan nonaktifkan user", async ({ page }) => {
   await page.goto("/#/admin");
   await page.reload();
 
-  // ── Approve: user menunggu -> aktif ─────────────────────────────
+  // â”€â”€ Approve: user menunggu -> aktif â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Badge memakai label berkapitalisasi dari shared/constants/userStatus.ts
   // (dulu menampilkan enum mentah huruf kecil).
   const approveRow = page.locator("tr", { hasText: approveName });
@@ -139,13 +139,13 @@ test("admin approve, reject, dan nonaktifkan user", async ({ page }) => {
   await runRowAction(page, approveName, "Setujui");
   await expect(approveRow.getByText("Aktif", { exact: true })).toBeVisible();
 
-  // ── Reject: user menunggu -> ditolak (lewat modal konfirmasi) ───
+  // â”€â”€ Reject: user menunggu -> ditolak (lewat modal konfirmasi) â”€â”€â”€
   const rejectRow = page.locator("tr", { hasText: rejectName });
   await runRowAction(page, rejectName, "Tolak");
   await page.getByRole("dialog").getByRole("button", { name: "Ya, tolak akun" }).click();
   await expect(rejectRow.getByText("Ditolak", { exact: true })).toBeVisible();
 
-  // ── Nonaktifkan: user aktif tadi -> nonaktif ────────────────────
+  // â”€â”€ Nonaktifkan: user aktif tadi -> nonaktif â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   await runRowAction(page, approveName, "Nonaktifkan");
   await page.getByRole("dialog").getByRole("button", { name: "Ya, nonaktifkan" }).click();
   await expect(approveRow.getByText("Nonaktif", { exact: true })).toBeVisible();
@@ -157,3 +157,4 @@ test("admin approve, reject, dan nonaktifkan user", async ({ page }) => {
   expect(blockedLogin.status()).toBe(403);
   expect((await blockedLogin.json()).account_status).toBe("nonaktif");
 });
+

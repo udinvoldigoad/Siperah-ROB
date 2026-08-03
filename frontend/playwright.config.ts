@@ -1,10 +1,10 @@
-import { defineConfig } from "@playwright/test";
+﻿import { defineConfig } from "@playwright/test";
 
 // E2E smoke test per role (checklist Tahap 6.2).
 //
 // Kedua server dijalankan otomatis di port khusus E2E (bukan 8000/5173) agar
 // tidak pernah menyasar server dev yang menghadap DB dev: backend artisan serve
-// --env=testing membaca .env.testing -> DB siperah_rob_test, vite dev di 5273
+// --env=testing membaca .env.testing -> DB saiba_test, vite dev di 5273
 // dengan proxy /api ke backend E2E. globalSetup me-reset DB test (migrate:fresh
 // --seed) sehingga tiap run mulai dari state seed yang sama.
 export const E2E_BACKEND_PORT = 8123;
@@ -45,3 +45,5 @@ export default defineConfig({
     },
   ],
 });
+
+
