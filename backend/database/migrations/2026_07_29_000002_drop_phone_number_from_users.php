@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Schema;
  * sisanya tertinggal sebagai permukaan mati.
  *
  * Aman dibuang: di produksi hanya 5 baris yang terisi, semuanya akun demo
- * `@siperah.local` dengan nomor placeholder dari seeder. Tak ada pengguna
+ * `@saiba.local` dengan nomor placeholder dari seeder. Tak ada pengguna
  * sungguhan yang punya nomor.
  *
  * IDEMPOTEN - `database/schema.sql` sudah tidak lagi memuat kolom ini, jadi
@@ -45,3 +45,4 @@ return new class extends Migration
         });
     }
 };
+

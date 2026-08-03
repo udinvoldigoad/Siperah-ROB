@@ -29,7 +29,7 @@ final class DatabaseSeeder extends Seeder
         $this->seedDatasets();
     }
 
-    // ── Regions ────────────────────────────────────────────────────
+    // â”€â”€ Regions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function seedRegions(): void
     {
@@ -61,13 +61,13 @@ final class DatabaseSeeder extends Seeder
     }
 
     /**
-     * 7 kabupaten/kota pesisir × beberapa kelurahan rawan rob.
+     * 7 kabupaten/kota pesisir Ã— beberapa kelurahan rawan rob.
      * Geometry: bounding-box MULTIPOLYGON representatif (bukan presisi kadaster).
      */
     private function regionData(): array
     {
         return [
-            // ── Kota Bandar Lampung ──────────────────────────────
+            // â”€â”€ Kota Bandar Lampung â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             [
                 'id' => '11111111-1111-4111-8111-111111111111',
                 'regency' => 'Kota Bandar Lampung',
@@ -125,7 +125,7 @@ final class DatabaseSeeder extends Seeder
                 'population' => 5400,
             ],
 
-            // ── Kabupaten Pesawaran ──────────────────────────────
+            // â”€â”€ Kabupaten Pesawaran â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             [
                 'id' => '11111111-1111-4111-8111-222222222221',
                 'regency' => 'Pesawaran',
@@ -151,7 +151,7 @@ final class DatabaseSeeder extends Seeder
                 'population' => 3900,
             ],
 
-            // ── Kabupaten Tanggamus ──────────────────────────────
+            // â”€â”€ Kabupaten Tanggamus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             [
                 'id' => '11111111-1111-4111-8111-333333333331',
                 'regency' => 'Tanggamus',
@@ -169,7 +169,7 @@ final class DatabaseSeeder extends Seeder
                 'population' => 2800,
             ],
 
-            // ── Kabupaten Lampung Selatan ────────────────────────
+            // â”€â”€ Kabupaten Lampung Selatan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             [
                 'id' => '11111111-1111-4111-8111-444444444441',
                 'regency' => 'Lampung Selatan',
@@ -195,7 +195,7 @@ final class DatabaseSeeder extends Seeder
                 'population' => 3800,
             ],
 
-            // ── Kabupaten Pesisir Barat ──────────────────────────
+            // â”€â”€ Kabupaten Pesisir Barat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             [
                 'id' => '11111111-1111-4111-8111-555555555551',
                 'regency' => 'Pesisir Barat',
@@ -213,7 +213,7 @@ final class DatabaseSeeder extends Seeder
                 'population' => 3100,
             ],
 
-            // ── Kabupaten Lampung Timur ──────────────────────────
+            // â”€â”€ Kabupaten Lampung Timur â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             [
                 'id' => '11111111-1111-4111-8111-666666666661',
                 'regency' => 'Lampung Timur',
@@ -231,7 +231,7 @@ final class DatabaseSeeder extends Seeder
                 'population' => 4200,
             ],
 
-            // ── Kabupaten Mesuji (pesisir timur) ─────────────────
+            // â”€â”€ Kabupaten Mesuji (pesisir timur) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             [
                 'id' => '11111111-1111-4111-8111-777777777771',
                 'regency' => 'Mesuji',
@@ -243,22 +243,22 @@ final class DatabaseSeeder extends Seeder
         ];
     }
 
-    // ── Users ──────────────────────────────────────────────────────
+    // â”€â”€ Users â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function seedUsers(): void
     {
         // Empat akun demo, satu per peran yang benar-benar ada (warga, admin,
-        // peneliti) — plus admin KEDUA. Admin kedua bukan peran berbeda: ia ada
+        // peneliti) â€” plus admin KEDUA. Admin kedua bukan peran berbeda: ia ada
         // semata supaya suite e2e bisa memakai email berbeda antar-spec,
         // sebab limiter login membatasi 10 percobaan/menit per (email + IP).
         //
         // Akun `operator@` & `provinsi@` sudah dihapus: sejak peran
-        // disederhanakan 5→3 keduanya cuma admin bernama peran yang tak ada lagi.
+        // disederhanakan 5â†’3 keduanya cuma admin bernama peran yang tak ada lagi.
         $users = [
             [
                 'id' => '22222222-2222-4222-8222-222222222222',
                 'name' => 'Warga Mode Awam',
-                'email' => 'warga@siperah.local',
+                'email' => 'warga@saiba.local',
                 'password_hash' => Hash::make('password'),
                 'role' => 'warga',
                 'region_id' => '11111111-1111-4111-8111-111111111111',
@@ -267,7 +267,7 @@ final class DatabaseSeeder extends Seeder
             [
                 'id' => '22222222-2222-4222-8222-aaaaaaaaaaaa',
                 'name' => 'Admin Sistem',
-                'email' => 'admin@siperah.local',
+                'email' => 'admin@saiba.local',
                 'password_hash' => Hash::make('password'),
                 'role' => 'admin',
                 'region_id' => null,
@@ -276,7 +276,7 @@ final class DatabaseSeeder extends Seeder
             [
                 'id' => '22222222-2222-4222-8222-dddddddddddd',
                 'name' => 'Dr. Peneliti Unila',
-                'email' => 'peneliti@siperah.local',
+                'email' => 'peneliti@saiba.local',
                 'password_hash' => Hash::make('password'),
                 'role' => 'peneliti',
                 'region_id' => null,
@@ -290,7 +290,7 @@ final class DatabaseSeeder extends Seeder
             [
                 'id' => '22222222-2222-4222-8222-eeeeeeeeeeee',
                 'name' => 'Admin Sistem Kedua',
-                'email' => 'demo@siperah.local',
+                'email' => 'demo@saiba.local',
                 'password_hash' => Hash::make('password'),
                 'role' => 'admin',
                 'region_id' => null,
@@ -301,7 +301,7 @@ final class DatabaseSeeder extends Seeder
         foreach ($users as $u) {
             DB::table('users')->updateOrInsert(
                 ['id' => $u['id']],
-                // Akun demo dianggap sudah terverifikasi — verifikasi email hanya
+                // Akun demo dianggap sudah terverifikasi â€” verifikasi email hanya
                 // berlaku untuk pendaftaran mandiri, bukan akun yang disemai.
                 array_merge($u, [
                     'email_verified_at' => now(),
@@ -312,7 +312,7 @@ final class DatabaseSeeder extends Seeder
         }
     }
 
-    // ── Predictions ────────────────────────────────────────────────
+    // â”€â”€ Predictions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function seedPredictions(): void
     {
@@ -370,7 +370,7 @@ final class DatabaseSeeder extends Seeder
         }
     }
 
-    // ── Reports ────────────────────────────────────────────────────
+    // â”€â”€ Reports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function seedReports(): void
     {
@@ -501,7 +501,7 @@ final class DatabaseSeeder extends Seeder
         }
     }
 
-    // ── Datasets ───────────────────────────────────────────────────
+    // â”€â”€ Datasets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function seedDatasets(): void
     {
@@ -561,3 +561,4 @@ final class DatabaseSeeder extends Seeder
         }
     }
 }
+
