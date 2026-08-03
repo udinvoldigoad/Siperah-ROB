@@ -1,5 +1,5 @@
 {
-  "name": "siperah-rob-frontend",
+  "name": "saiba-frontend",
   "engines": {
     "npm": ">=11.0.0"
   },
@@ -29,3 +29,4 @@
     "vite": "^8.1.5"
   }
 }
+
