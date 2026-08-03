@@ -1,6 +1,6 @@
 {
-    "name": "siperah-rob/backend",
-    "description": "SIPERAH-RoB Laravel API backend",
+    "name": "saiba/backend",
+    "description": "SAIBA Laravel API backend",
     "license": "proprietary",
     "type": "project",
     "require": {
@@ -32,3 +32,4 @@
         "test:prepare": "php artisan migrate:fresh --seed --env=testing --force"
     }
 }
+
