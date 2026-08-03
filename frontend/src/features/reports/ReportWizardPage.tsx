@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+﻿import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -20,7 +20,7 @@ type ResolvedRegion = { id: string; village: string | null; district: string | n
 type ResolveRegionResponse = { data: ResolvedRegion | null; message?: string | null };
 
 // Label rentang selaras logika severityFromWaterHeight (<10 / 10-30 / 31-80 / >80)
-// dan perhitungan ulang backend — di angka batas 30 cm hanya satu kartu yang
+// dan perhitungan ulang backend â€” di angka batas 30 cm hanya satu kartu yang
 // mengklaim nilai itu.
 const severityOptions = [
   { key: "ringan", label: "Ringan", note: "Genangan <10 cm", tone: "#16a34a" },
@@ -35,7 +35,7 @@ function toIncidentDateTime(value: string) {
   const now = new Date();
   const incident = new Date();
   incident.setHours(Number(hours), Number(minutes), 0, 0);
-  // Input hanya jam — bila jam itu belum lewat hari ini (mis. lapor 00:30
+  // Input hanya jam â€” bila jam itu belum lewat hari ini (mis. lapor 00:30
   // untuk kejadian 23:30), artinya kejadian SEMALAM, bukan nanti malam.
   if (incident.getTime() > now.getTime() + 5 * 60 * 1000) {
     incident.setDate(incident.getDate() - 1);
@@ -124,7 +124,7 @@ export function ReportWizardPage() {
       zoom: 13,
       style: {
         version: 8,
-        sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap" } },
+        sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "Â© OpenStreetMap" } },
         layers: [{ id: "osm", type: "raster", source: "osm" }],
       },
     });
@@ -223,7 +223,7 @@ export function ReportWizardPage() {
       toast.success(`Laporan terkirim. Kode verifikasi: ${response.data.report_code}.`);
       form.reset();
       setSelectedPhotos([]);
-      // Kosongkan seperti state awal — dulu terisi ulang "45" sehingga laporan
+      // Kosongkan seperti state awal â€” dulu terisi ulang "45" sehingga laporan
       // berikutnya membawa tinggi air yang tidak pernah diketik pengguna.
       setWaterHeight("");
       setIncidentTime(currentTimeValue());
@@ -356,7 +356,7 @@ export function ReportWizardPage() {
                 <span className="material-symbols-outlined" style={{ color: "var(--accent)", fontSize: 20 }}>my_location</span>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>Koordinat Terpilih</div>
-                  <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{coords.lat.toFixed(5)}°, {coords.lng.toFixed(5)}°</div>
+                  <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{coords.lat.toFixed(5)}Â°, {coords.lng.toFixed(5)}Â°</div>
                   <div style={{ fontSize: 12, color: resolvedRegion ? "var(--ink)" : "var(--medium)", marginTop: 4 }}>
                     {isResolvingRegion ? "Mencari nama wilayah..." : resolvedRegion
                       ? `${resolvedRegion.village ?? "-"}, ${resolvedRegion.district ?? "-"}, ${resolvedRegion.regency ?? "-"}`
@@ -409,7 +409,7 @@ export function ReportWizardPage() {
                         water_drop
                       </span>
                       <div style={{ fontSize: 13, fontWeight: 700, color: isSelected ? option.tone : "var(--ink)" }}>
-                        {option.label}{isSelected ? " ✓" : ""}
+                        {option.label}{isSelected ? " âœ“" : ""}
                       </div>
                       <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>{option.note}</div>
                     </div>
@@ -436,7 +436,7 @@ export function ReportWizardPage() {
               <textarea
                 id="description"
                 name="description"
-                placeholder="Deskripsikan kondisi banjir rob yang Anda amati…"
+                placeholder="Deskripsikan kondisi banjir rob yang Anda amatiâ€¦"
                 required
               />
             </section>
@@ -466,9 +466,9 @@ export function ReportWizardPage() {
                   {isProcessingPhotos ? "progress_activity" : "add_photo_alternate"}
                 </span>
                 <strong style={{ fontSize: 14 }}>
-                  {isProcessingPhotos ? "Mengompres foto…" : selectedPhotos.length >= MAX_PHOTOS ? "Batas 5 foto tercapai" : "Seret & letakkan atau klik untuk pilih foto"}
+                  {isProcessingPhotos ? "Mengompres fotoâ€¦" : selectedPhotos.length >= MAX_PHOTOS ? "Batas 5 foto tercapai" : "Seret & letakkan atau klik untuk pilih foto"}
                 </strong>
-                <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>JPG, PNG, atau WebP · dikompres otomatis · maks {MAX_PHOTOS} foto, 2 MB per foto</span>
+                <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>JPG, PNG, atau WebP Â· dikompres otomatis Â· maks {MAX_PHOTOS} foto, 2 MB per foto</span>
               </label>
 
               <p className="form-note" style={{ marginTop: 0, fontSize: 12, color: "var(--ink-soft)" }}>Foto dikompres ke WebP di perangkat Anda agar unggahan ringan. Laporan diverifikasi BPBD maksimal 1x24 jam.</p>
@@ -496,7 +496,7 @@ export function ReportWizardPage() {
               <div className="summary-grid" style={{ display: "grid", gap: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, paddingBottom: 14, borderBottom: "1px solid var(--line)" }}>
                   <span style={{ color: "var(--ink-soft)", fontSize: 13 }}>Koordinat</span>
-                  <strong style={{ fontSize: 14 }}>{coords.lat.toFixed(4)}°, {coords.lng.toFixed(4)}°</strong>
+                  <strong style={{ fontSize: 14 }}>{coords.lat.toFixed(4)}Â°, {coords.lng.toFixed(4)}Â°</strong>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, paddingBottom: 14, borderBottom: "1px solid var(--line)" }}>
                   <span style={{ color: "var(--ink-soft)", fontSize: 13 }}>Keparahan</span>
@@ -504,7 +504,7 @@ export function ReportWizardPage() {
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, paddingBottom: 14, borderBottom: "1px solid var(--line)" }}>
                   <span style={{ color: "var(--ink-soft)", fontSize: 13 }}>Ketinggian air</span>
-                  <strong style={{ fontSize: 14 }}>±{waterHeight || 0} cm</strong>
+                  <strong style={{ fontSize: 14 }}>Â±{waterHeight || 0} cm</strong>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, paddingBottom: 14, borderBottom: "1px solid var(--line)" }}>
                   <span style={{ color: "var(--ink-soft)", fontSize: 13 }}>Waktu kejadian</span>
@@ -519,7 +519,7 @@ export function ReportWizardPage() {
 
             <div style={{ background: "var(--accent-soft)", border: "1px solid rgba(99, 102, 241, 0.2)", borderRadius: 8, padding: 16, display: "flex", alignItems: "start", gap: 12 }}>
               <input type="checkbox" checked={isDeclarationAccepted} onChange={(event) => setDeclarationAccepted(event.target.checked)} required aria-label="Setujui pernyataan kebenaran laporan" style={{ marginTop: 4, width: 16, height: 16, accentColor: "var(--accent)", flexShrink: 0 }} />
-              <span style={{ fontSize: 12.5, color: "var(--ink)", lineHeight: 1.6 }}>Saya menyatakan bahwa data yang dilaporkan adalah informasi nyata yang saya saksikan sendiri. Data ini akan digunakan untuk meningkatkan model prediksi banjir rob SIPERAH-RoB.</span>
+              <span style={{ fontSize: 12.5, color: "var(--ink)", lineHeight: 1.6 }}>Saya menyatakan bahwa data yang dilaporkan adalah informasi nyata yang saya saksikan sendiri. Data ini akan digunakan untuk meningkatkan model prediksi banjir rob SAIBA.</span>
             </div>
 
             {submitError && !isSubmitting && (
@@ -567,3 +567,4 @@ export function ReportWizardPage() {
     </AppShell>
   );
 }
+

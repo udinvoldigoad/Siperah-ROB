@@ -121,7 +121,7 @@ export function CreateUserModal({ isOpen, onClose, regions, onCreated }: {
                 </div>
                 <div className="admin-field">
                   <label><Icon name="lock" /> Password awal</label>
-                  <input required type="password" minLength={8} name="siperah-new-user-pw" autoComplete="new-password" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="Minimal 8 karakter" value={newUser.password} onChange={(e) => setNewUser((u) => ({ ...u, password: e.target.value }))} />
+                  <input required type="password" minLength={8} name="saiba-new-user-pw" autoComplete="new-password" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="Minimal 8 karakter" value={newUser.password} onChange={(e) => setNewUser((u) => ({ ...u, password: e.target.value }))} />
                 </div>
                 {newUser.role === "peneliti" ? (
                   <div className="admin-field">
@@ -154,3 +154,4 @@ export function CreateUserModal({ isOpen, onClose, regions, onCreated }: {
     document.body,
   );
 }
+
