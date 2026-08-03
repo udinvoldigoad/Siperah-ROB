@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Services;
 
@@ -26,7 +26,7 @@ final class EmailVerificationService
 
     /**
      * Terbitkan & kirim OTP baru. Diam saja bila permintaan sebelumnya belum
-     * lewat masa jeda — pemanggil selalu membalas pesan generik, jadi jeda ini
+     * lewat masa jeda â€” pemanggil selalu membalas pesan generik, jadi jeda ini
      * tak membocorkan apa pun.
      */
     public function send(User $user): void
@@ -54,14 +54,14 @@ final class EmailVerificationService
         try {
             Mail::raw(
                 "Halo {$user->name},\n\n"
-                ."Kode verifikasi email akun SIPERAH-RoB Anda adalah:\n\n{$otp}\n\n"
+                ."Kode verifikasi email akun SAIBA Anda adalah:\n\n{$otp}\n\n"
                 ."Masukkan kode ini di halaman pendaftaran untuk mengaktifkan akun.\n"
                 ."Kode berlaku selama ".self::EXPIRY_MINUTES." menit.\n\n"
-                ."Jika Anda tidak mendaftar di SIPERAH-RoB, abaikan email ini.\n\n"
-                ."Salam,\nTim SIPERAH-RoB",
+                ."Jika Anda tidak mendaftar di SAIBA, abaikan email ini.\n\n"
+                ."Salam,\nTim SAIBA",
                 function ($message) use ($user) {
                     // From default (config mail.from) agar selaras SPF/DKIM SMTP produksi.
-                    $message->to($user->email)->subject('Kode Verifikasi Email - SIPERAH-RoB');
+                    $message->to($user->email)->subject('Kode Verifikasi Email - SAIBA');
                 },
             );
         } catch (\Throwable $e) {
@@ -93,7 +93,7 @@ final class EmailVerificationService
         if (!Hash::check($otp, $record->token)) {
             $attempts = ($record->attempts ?? 0) + 1;
             if ($attempts >= self::MAX_ATTEMPTS) {
-                // Kode dimatikan setelah 5 kali salah — pertahanan utama
+                // Kode dimatikan setelah 5 kali salah â€” pertahanan utama
                 // terhadap brute-force 6 digit, berlaku lintas IP.
                 DB::table(self::TABLE)->where('email', $email)->delete();
             } else {
@@ -119,3 +119,4 @@ final class EmailVerificationService
         return $user;
     }
 }
+

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Services;
 
@@ -241,9 +241,9 @@ final class MapService
         return [
             'type' => 'risk_threshold',
             'title' => 'Risiko rob sangat tinggi (prediksi model)',
-            'message' => $critical->count().' zona pantau berada pada kelas sangat tinggi menurut model SIPERAH-RoB. Belum ada peringatan cuaca BMKG aktif.',
+            'message' => $critical->count().' zona pantau berada pada kelas sangat tinggi menurut model SAIBA. Belum ada peringatan cuaca BMKG aktif.',
             'affected_regencies' => $critical->pluck('region.regency')->filter()->unique()->values(),
-            'source' => 'SIPERAH-RoB prediction',
+            'source' => 'SAIBA prediction',
         ];
     }
 
@@ -322,7 +322,7 @@ final class MapService
     public function predictionNotice(string $status, ?string $lastGeneratedAt): ?string
     {
         if ($status === 'unavailable') {
-            return 'Prediksi untuk hari ini belum tersedia. Pipeline mungkin sedang diperbarui — tampilkan prakiraan terdekat yang ada sambil menunggu pembaruan.';
+            return 'Prediksi untuk hari ini belum tersedia. Pipeline mungkin sedang diperbarui â€” tampilkan prakiraan terdekat yang ada sambil menunggu pembaruan.';
         }
         if ($status === 'stale') {
             $when = $lastGeneratedAt
@@ -415,3 +415,4 @@ final class MapService
         }
     }
 }
+
