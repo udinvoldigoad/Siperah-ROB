@@ -1,7 +1,7 @@
-name: Prediksi ML Sore (Pasang Purnama)
+﻿name: Prediksi ML Sore (Pasang Purnama)
 
 # Refresh prediksi kedua di sore hari, HANYA saat jendela pasang purnama/bulan
-# baru (king tide) — risiko rob tertinggi. main.py --only-if-astronomical keluar
+# baru (king tide) â€” risiko rob tertinggi. main.py --only-if-astronomical keluar
 # tanpa aksi di hari biasa, jadi workflow ini murah dijalankan tiap sore.
 
 on:
@@ -14,7 +14,7 @@ jobs:
   predict-sore:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: github.repository == 'udinvoldigoad/Siperah-ROB'
+    if: github.repository == 'udinvoldigoad/SAIBA'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,3 +38,4 @@ jobs:
           DB_USERNAME: ${{ secrets.SUPABASE_DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: timeout --signal=SIGABRT 10m python main.py --mode predict --only-if-astronomical
+

@@ -10,7 +10,7 @@ on:
 jobs:
   migrate:
     runs-on: ubuntu-latest
-    if: github.repository == 'udinvoldigoad/Siperah-ROB'
+    if: github.repository == 'udinvoldigoad/SAIBA'
     steps:
       - uses: actions/checkout@v4
 

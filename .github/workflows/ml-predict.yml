@@ -1,4 +1,4 @@
-name: Prediksi ML Harian
+﻿name: Prediksi ML Harian
 
 on:
   schedule:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Hanya jalan di repo utama (bukan fork) supaya secrets tersedia.
-    if: github.repository == 'udinvoldigoad/Siperah-ROB'
+    if: github.repository == 'udinvoldigoad/SAIBA'
     steps:
       - uses: actions/checkout@v4
 
@@ -36,7 +36,7 @@ jobs:
             "https://archive-api.open-meteo.com/v1/archive?latitude=-5.45&longitude=105.26&start_date=2026-07-01&end_date=2026-07-02&daily=precipitation_sum&timezone=Asia%2FJakarta"; do
             echo "== $url"
             # -f: HTTP >= 400 ikut menggagalkan (curl exit 22); kegagalan jaringan
-            # dicatat dan dijumlahkan, lalu job keluar non-zero di akhir — kalau
+            # dicatat dan dijumlahkan, lalu job keluar non-zero di akhir â€” kalau
             # tidak, step ini tak pernah menggagalkan run walau semua API mati.
             if curl -fsS --max-time 20 -o /dev/null -w "   HTTP %{http_code} dalam %{time_total}s\n" "$url"; then
               :
@@ -62,3 +62,4 @@ jobs:
         # timeout SIGABRT: bila proses menggantung >10 menit, faulthandler
         # mencetak stack trace Python tepat di titik macetnya lalu keluar.
         run: timeout --signal=SIGABRT 10m python main.py --mode predict
+
