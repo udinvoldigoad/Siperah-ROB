@@ -3,7 +3,7 @@ import psycopg2
 def check():
     conn = psycopg2.connect(
         host="127.0.0.1",
-        database="siperah_rob",
+        database="saiba",
         user="postgres",
         password="postgres",
         port="5432"
@@ -39,3 +39,5 @@ def check():
 
 if __name__ == "__main__":
     check()
+
+

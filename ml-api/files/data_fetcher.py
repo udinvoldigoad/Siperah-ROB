@@ -1,4 +1,4 @@
-"""
+﻿"""
 data_fetcher.py
 Mengambil data historis cuaca & gelombang dari Open-Meteo API serta prakiraan
 cuaca (Open-Meteo/BMKG) untuk keperluan training dan inferensi model.
@@ -27,7 +27,7 @@ try:  # cache opsional -- tetap jalan tanpa requests_cache
 except ImportError:
     _HAS_CACHE = False
 
-# ─── Titik pantau: satu per kabupaten/kota pesisir Lampung ───────────────────
+# â”€â”€â”€ Titik pantau: satu per kabupaten/kota pesisir Lampung â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # lat/lon   : titik darat pesisir (untuk cuaca)
 # marine    : titik laut terdekat (untuk gelombang; digeser sedikit lepas pantai)
 STATIONS = {
@@ -89,7 +89,7 @@ def _get_json(session: requests.Session, url: str, params: dict, retries: int = 
     raise ConnectionError(f"Gagal mengambil {url} setelah {retries} percobaan: {last_error}")
 
 
-# ─── Data historis (training) ────────────────────────────────────────────────
+# â”€â”€â”€ Data historis (training) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def fetch_historical_weather(lat: float, lon: float, start_date: str = "2015-01-01",
                              end_date: str = "2025-12-31") -> pd.DataFrame:
@@ -192,7 +192,7 @@ def load_cached_historical() -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
     return weather, marine
 
 
-# ─── Prakiraan (inferensi harian) ────────────────────────────────────────────
+# â”€â”€â”€ Prakiraan (inferensi harian) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def fetch_openmeteo_forecast(lat: float, lon: float, days: int = 7) -> pd.DataFrame:
     """Prakiraan cuaca harian Open-Meteo. Satuan konsisten dg data training."""
@@ -311,7 +311,7 @@ def fetch_daily_forecast_for_inference(days: int = 7, weather_source: str = "ope
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Siperah-ROB Data Fetcher")
+    parser = argparse.ArgumentParser(description="SAIBA Data Fetcher")
     parser.add_argument("--mode", choices=["historical", "forecast"], required=True)
     parser.add_argument("--start", default="2015-01-01")
     parser.add_argument("--end", default="2025-12-31")
@@ -324,3 +324,4 @@ if __name__ == "__main__":
         for station_key, frames in forecasts.items():
             print(f"\n=== {station_key} ===")
             print(frames["weather"].to_string(index=False))
+

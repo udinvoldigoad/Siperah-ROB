@@ -9,7 +9,7 @@ Sumber data (publik, CC BY 4.0, standar di analisis kebencanaan):
 
 Aturan provenance:
 - population_provenance_status = 'estimated' (estimasi ilmiah, BUKAN angka BPS
-  resmi — impor BPS via `php artisan data:import-population` menimpanya dan
+  resmi â€” impor BPS via `php artisan data:import-population` menimpanya dan
   menandai 'official').
 - Baris berstatus 'official' TIDAK PERNAH ditimpa skrip ini.
 - Setiap run tercatat di data_import_runs (dataset_type='population').
@@ -48,7 +48,7 @@ def get_conn():
     return psycopg2.connect(
         host=os.getenv("DB_HOST", "127.0.0.1"),
         port=int(os.getenv("DB_PORT", "5432")),
-        database=os.getenv("DB_DATABASE", "siperah_rob"),
+        database=os.getenv("DB_DATABASE", "saiba"),
         user=os.getenv("DB_USERNAME", "postgres"),
         password=os.getenv("DB_PASSWORD", ""),
         connect_timeout=20,
@@ -126,7 +126,7 @@ def main() -> None:
             try:
                 geom = shape(json.loads(geojson))
                 population = zonal_population(src, geom)
-            except Exception as error:  # noqa: BLE001 — satu poligon rusak jangan mematikan run
+            except Exception as error:  # noqa: BLE001 â€” satu poligon rusak jangan mematikan run
                 print(f"[WARNING] {village}/{regency}: {error}")
                 failed += 1
                 continue
@@ -170,3 +170,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
