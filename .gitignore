@@ -1,4 +1,4 @@
-# === Node / Frontend ===
+﻿# === Node / Frontend ===
 node_modules/
 frontend/node_modules/
 frontend/dist/
@@ -40,10 +40,10 @@ npm-debug.log*
 # === Database ===
 *.sqlite
 backend/database/*.sqlite
-backend/siperah_rob
+backend/saiba_rob
 database/*.sqlite
 database/local-data/
-siperah_dump.sql
+saiba_dump.sql
 *.sql
 pg_server.log
 scratch.json

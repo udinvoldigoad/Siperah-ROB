@@ -1,5 +1,5 @@
-{
-  "name": "siperah-rob",
+﻿{
+  "name": "saiba",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,3 +9,4 @@
     "backend:test": "composer --working-dir=backend test"
   }
 }
+
