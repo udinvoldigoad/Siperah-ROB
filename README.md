@@ -1,18 +1,18 @@
-# 🌊 SIPERAH-RoB
-> **Sistem Informasi Prediksi Risiko Banjir Rob Terpadu Provinsi Lampung**
+﻿# ðŸŒŠ SAIBA
+> **Sistem Informasi Risiko Banjir Rob Terpadu**
 
-[![Version](https://img.shields.io/badge/Version-1.2.0-blue.svg?style=for-the-badge)](https://github.com/udinvoldigoad/Siperah-ROB)
+[![Version](https://img.shields.io/badge/Version-1.2.0-blue.svg?style=for-the-badge)](https://github.com/udinvoldigoad/SAIBA)
 [![Laravel](https://img.shields.io/badge/Laravel-11-red.svg?style=for-the-badge&logo=laravel)](https://laravel.com)
 [![React](https://img.shields.io/badge/React-18-cyan.svg?style=for-the-badge&logo=react)](https://react.dev)
 [![Python](https://img.shields.io/badge/Python-3.11-yellow.svg?style=for-the-badge&logo=python)](https://python.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue.svg?style=for-the-badge&logo=postgresql)](https://postgresql.org)
 [![PostGIS](https://img.shields.io/badge/PostGIS-3.6-darkblue.svg?style=for-the-badge&logo=postgresql)](https://postgis.net)
 
-SIPERAH-RoB adalah **Sistem Informasi Geografis (SIG)** berbasis WebGIS terpadu yang memanfaatkan kecerdasan buatan (*Machine Learning*) untuk memproyeksikan, memantau, dan memitigasi bencana banjir rob (genangan pasang air laut) secara *real-time* di wilayah pesisir Provinsi Lampung.
+SAIBA adalah **Sistem Informasi Geografis (SIG)** berbasis WebGIS terpadu yang memanfaatkan kecerdasan buatan (*Machine Learning*) untuk memproyeksikan, memantau, dan memitigasi bencana banjir rob (genangan pasang air laut) secara *real-time* di wilayah pesisir Provinsi Lampung.
 
 ---
 
-## 🛠️ Stack Teknologi (Tech Stack)
+## ðŸ› ï¸ Stack Teknologi (Tech Stack)
 
 | Lapisan (Layer) | Teknologi Utama | Deskripsi Peran |
 | :--- | :--- | :--- |
@@ -90,28 +90,28 @@ Seluruh modul dan dokumentasi resmi tugas akhir dikompilasi secara rapi di dalam
 ```carousel
 | Berkas Utama | Kode Blok | Deskripsi Utama |
 | :--- | :---: | :--- |
-| 📖 [Panduan Deployment Produksi](docs/operations/deployment.md) | `D1` | Prosedur deploy Hostinger + Supabase + cron worker. |
-| 📋 [Matriks Ketertelusuran SKPL](docs/academic/skpl.md) | `D2` | Pemetaan Kebutuhan FR ke UI, API, dan berkas pengujian. |
-| 🔌 [Kontrak & Referensi API Peneliti](docs/operations/api-contract.md) | `D3` | API key, rate limit, dan endpoint penelitian v1. |
-| 🗄️ [Diagram Skema Database (ERD)](docs/academic/erd.md) | `D4` | Diagram relasi entitas PostgreSQL/PostGIS. |
+| ðŸ“– [Panduan Deployment Produksi](docs/operations/deployment.md) | `D1` | Prosedur deploy Hostinger + Supabase + cron worker. |
+| ðŸ“‹ [Matriks Ketertelusuran SKPL](docs/academic/skpl.md) | `D2` | Pemetaan Kebutuhan FR ke UI, API, dan berkas pengujian. |
+| ðŸ”Œ [Kontrak & Referensi API Peneliti](docs/operations/api-contract.md) | `D3` | API key, rate limit, dan endpoint penelitian v1. |
+| ðŸ—„ï¸ [Diagram Skema Database (ERD)](docs/academic/erd.md) | `D4` | Diagram relasi entitas PostgreSQL/PostGIS. |
 <!-- slide -->
 | Berkas Panduan & Hasil | Kode Blok | Deskripsi Utama |
 | :--- | :---: | :--- |
-| 👤 [Panduan Pengguna per Peran](docs/operations/user-guide.md) | `D5` | Cara pakai aplikasi untuk Warga, Operator, dan Provinsi. |
-| ⚙️ [Runbook Operasional & Insiden](docs/operations/admin-runbook.md) | `D6` | Langkah taktis jika API down, DB down, dan prosedur backup. |
-| 🧪 [Laporan Pengujian UAT](docs/academic/uat-results.md) | `D7` | Hasil pengujian skenario E2E Playwright. |
-| 📝 [Standardisasi Copywriting & Istilah](docs/review/copywriting.md) | `D8` | Penyeragaman glosarium status dan level risiko UI. |
+| ðŸ‘¤ [Panduan Pengguna per Peran](docs/operations/user-guide.md) | `D5` | Cara pakai aplikasi untuk Warga, Operator, dan Provinsi. |
+| âš™ï¸ [Runbook Operasional & Insiden](docs/operations/admin-runbook.md) | `D6` | Langkah taktis jika API down, DB down, dan prosedur backup. |
+| ðŸ§ª [Laporan Pengujian UAT](docs/academic/uat-results.md) | `D7` | Hasil pengujian skenario E2E Playwright. |
+| ðŸ“ [Standardisasi Copywriting & Istilah](docs/review/copywriting.md) | `D8` | Penyeragaman glosarium status dan level risiko UI. |
 ```
 
 ---
 
 ## 4. Fitur Utama Sistem
 
-* **🗺️ Visualisasi WebGIS Interaktif**: Zonasi bahaya rob 4 kelas per kelurahan dengan clustering berbasis MapLibre GL.
-* **📱 Mode Awam (Geolocated EWS)**: Deteksi titik koordinat otomatis menggunakan sensor GPS perangkat pengguna untuk menyajikan ringkasan risiko non-teknis secara instan.
-* **📸 Pelaporan Ground Truth Warga**: Pengiriman laporan kejadian banjir rob terintegrasi dengan penentuan koordinat peta dan kompresi WebP gambar otomatis di sisi klien.
-* **🔔 Notifikasi Multi-Kanal dengan Quiet Hours**: Pengiriman alert via Email dan Push Browser dengan opsi penahanan pengiriman di jam sunyi personal.
-* **🛡️ Audit Logs Transparansi**: Pencatatan riwayat transaksi sensitif untuk keperluan audit (otorisasi, ekspor data, validasi operator).
+* **ðŸ—ºï¸ Visualisasi WebGIS Interaktif**: Zonasi bahaya rob 4 kelas per kelurahan dengan clustering berbasis MapLibre GL.
+* **ðŸ“± Mode Awam (Geolocated EWS)**: Deteksi titik koordinat otomatis menggunakan sensor GPS perangkat pengguna untuk menyajikan ringkasan risiko non-teknis secara instan.
+* **ðŸ“¸ Pelaporan Ground Truth Warga**: Pengiriman laporan kejadian banjir rob terintegrasi dengan penentuan koordinat peta dan kompresi WebP gambar otomatis di sisi klien.
+* **ðŸ”” Notifikasi Multi-Kanal dengan Quiet Hours**: Pengiriman alert via Email dan Push Browser dengan opsi penahanan pengiriman di jam sunyi personal.
+* **ðŸ›¡ï¸ Audit Logs Transparansi**: Pencatatan riwayat transaksi sensitif untuk keperluan audit (otorisasi, ekspor data, validasi operator).
 
 > [!NOTE]
 > **Logika Pewarnaan Klaster Peta (EWS)**: Lingkaran klaster pada peta menampilkan **rata-rata persentase probabilitas** wilayah, namun diwarnai berdasarkan **risiko tertinggi** (`maxRank`) desa di dalamnya. Hal ini memicu kewaspadaan dini bagi pimpinan/warga sebelum melakukan *zoom-in* ke tingkat kelurahan individual.
@@ -149,3 +149,4 @@ Seluruh modul dan dokumentasi resmi tugas akhir dikompilasi secara rapi di dalam
    npm run dev
    ```
 2. Buka browser pada alamat `http://localhost:5173`.
+
