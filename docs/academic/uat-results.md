@@ -1,6 +1,6 @@
-# Hasil Pengujian Penerimaan Pengguna (User Acceptance Testing - UAT)
+﻿# Hasil Pengujian Penerimaan Pengguna (User Acceptance Testing - UAT)
 
-Dokumen ini mencatat skenario, ekspektasi, hasil aktual, dan status penerimaan dari pengujian UAT per peran (*role*) pada sistem SIPERAH-RoB. Seluruh skenario ini telah diuji secara otomatis menggunakan *E2E Test Suite (Playwright)* dan terisolasi menggunakan database pengujian khusus.
+Dokumen ini mencatat skenario, ekspektasi, hasil aktual, dan status penerimaan dari pengujian UAT per peran (*role*) pada sistem SAIBA. Seluruh skenario ini telah diuji secara otomatis menggunakan *E2E Test Suite (Playwright)* dan terisolasi menggunakan database pengujian khusus.
 
 ---
 
@@ -69,3 +69,4 @@ Dokumen ini mencatat skenario, ekspektasi, hasil aktual, dan status penerimaan d
 * **Ekspektasi**: Akun operator berubah status menjadi `aktif`, perubahan wilayah tersimpan di DB, dan operator dapat login ke dashboard wilayah tugas barunya.
 * **Hasil Aktual**: Akun berhasil diaktifkan, perubahan data role/wilayah ter-update inline lewat UI, dan operator sukses masuk ke dashboard dengan batas wilayah barunya.
 * **Status**: `[x] Lolos`
+
