@@ -1,19 +1,19 @@
 # Backup Database Production
 
 Supabase free tier tidak menyediakan backup otomatis, dan Hostinger tidak punya
-`pg_dump`. Backup dijalankan dari **repo GitHub private terpisah** — artifact di
+`pg_dump`. Backup dijalankan dari **repo GitHub private terpisah** â€” artifact di
 repo private hanya bisa diakses pemilik/kolaborator, sehingga dump berisi data
 warga tidak pernah menyentuh repo public ini.
 
-## Setup sekali (±5 menit)
+## Setup sekali (Â±5 menit)
 
-1. Buat repo **private** baru, mis. `siperah-backups` (cukup kosong).
-2. Di repo itu: **Settings → Secrets and variables → Actions**, tambahkan
+1. Buat repo **private** baru, mis. `saiba-backups` (cukup kosong).
+2. Di repo itu: **Settings â†’ Secrets and variables â†’ Actions**, tambahkan
    secret yang sama dengan repo utama: `SUPABASE_DB_HOST`, `SUPABASE_DB_PORT`,
    `SUPABASE_DB_DATABASE`, `SUPABASE_DB_USERNAME`, `SUPABASE_DB_PASSWORD`.
 3. Buat file `.github/workflows/db-backup.yml` di repo private itu dengan isi
    persis di bawah, lalu commit.
-4. Uji: tab **Actions → Backup Database Mingguan → Run workflow**. Hasilnya
+4. Uji: tab **Actions â†’ Backup Database Mingguan â†’ Run workflow**. Hasilnya
    muncul sebagai artifact `db-backup-...` (retensi 90 hari).
 
 ```yaml
@@ -47,8 +47,8 @@ jobs:
             -U "${{ secrets.SUPABASE_DB_USERNAME }}" \
             -d "${{ secrets.SUPABASE_DB_DATABASE }}" \
             --no-owner --no-privileges -F c \
-            -f "siperah-$(date -u +%F).dump"
-          ls -lh siperah-*.dump
+            -f "saiba-$(date -u +%F).dump"
+          ls -lh saiba-*.dump
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -60,10 +60,10 @@ jobs:
 
 ## Cara restore
 
-1. Unduh artifact dari tab Actions repo private → run backup → Artifacts.
+1. Unduh artifact dari tab Actions repo private â†’ run backup â†’ Artifacts.
 2. Ekstrak zip, lalu:
    ```
-   pg_restore -h <host> -p 5432 -U <user> -d <db> --no-owner --no-privileges --clean --if-exists siperah-YYYY-MM-DD.dump
+   pg_restore -h <host> -p 5432 -U <user> -d <db> --no-owner --no-privileges --clean --if-exists saiba-YYYY-MM-DD.dump
    ```
 
 ## Catatan
@@ -73,4 +73,5 @@ jobs:
 - Kalau password database diganti, perbarui secret di **kedua** repo
   (utama untuk prediksi ML, private untuk backup).
 - Foto laporan warga tersimpan di Hostinger (`storage/app/public`), bukan di
-  database — backup terpisah bila diperlukan (mis. unduh berkala via SFTP).
+  database â€” backup terpisah bila diperlukan (mis. unduh berkala via SFTP).
+

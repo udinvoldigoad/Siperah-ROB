@@ -73,7 +73,8 @@ Dokumen ini panduan bagi administrator sistem untuk memantau kesehatan sistem, m
 ---
 
 ## 3. Strategi Pencadangan (Backup Policy)
-1. **Pencadangan Database**: Rutin dijalankan otomatis setiap minggu menggunakan GitHub Actions di repositori private terpisah (`siperah-backups`) dengan perintah `pg_dump` versi 17. Berkas backup diunggah sebagai *build artifact* dengan retensi penyimpanan selama **90 hari**.
+1. **Pencadangan Database**: Rutin dijalankan otomatis setiap minggu menggunakan GitHub Actions di repositori private terpisah (`saiba-backups`) dengan perintah `pg_dump` versi 17. Berkas backup diunggah sebagai *build artifact* dengan retensi penyimpanan selama **90 hari**.
 2. **Pencadangan File Gambar/Foto**: Foto laporan warga disimpan secara fisik di folder server Hostinger:
    `backend/storage/app/public/reports/`
    Lakukan pencadangan manual folder tersebut minimal sebulan sekali via SFTP atau perintah `rsync` dari folder server ke local storage BPBD.
+
