@@ -1,5 +1,5 @@
 """
-main.py -- Orkestrator pipeline ML prediksi banjir rob SIPERAH-RoB.
+main.py -- Orkestrator pipeline ML prediksi banjir rob SAIBA.
 
 Mode CLI (Fase 3 roadmap):
   python main.py --mode fetch     Unduh data historis Open-Meteo -> data/raw/*.csv
@@ -47,12 +47,12 @@ load_dotenv(dotenv_path=base_dir / "backend" / ".env")
 DB_CONN = os.getenv("DB_CONNECTION", "mysql")
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
 DB_PORT = os.getenv("DB_PORT", "3306")
-DB_DATABASE = os.getenv("DB_DATABASE", "siperah_rob")
+DB_DATABASE = os.getenv("DB_DATABASE", "saiba")
 DB_USERNAME = os.getenv("DB_USERNAME", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 
 # Datum pasut: tidal_data memakai sea_level_height_msl Open-Meteo Marine (model
-# FES), yaitu meter RELATIF MSL. Seluruh pipeline bekerja native di datum MSL —
+# FES), yaitu meter RELATIF MSL. Seluruh pipeline bekerja native di datum MSL â€”
 # tidak ada offset karangan. Env ini hanya diisi bila kelak ada nilai datum
 # resmi BIG/BMKG hasil pengukuran (default 0 = tetap MSL).
 TIDE_DATUM_OFFSET_CM = float(os.getenv("ML_TIDE_DATUM_OFFSET_CM", 0))
@@ -137,7 +137,7 @@ def load_tide_models(conn) -> dict[str, tuple]:
     Fit model harmonik PER STASIUN dari tabel tidal_data.
 
     Fase & amplitudo pasut berbeda nyata antar perairan (Samudra Hindia di
-    Pesisir Barat vs Laut Jawa di Tulang Bawang/Mesuji vs Teluk Lampung) —
+    Pesisir Barat vs Laut Jawa di Tulang Bawang/Mesuji vs Teluk Lampung) â€”
     satu model gabungan mencampur fase semua stasiun dan meratakan sinyal.
     """
     cursor = conn.cursor()
@@ -157,7 +157,7 @@ def load_tide_models(conn) -> dict[str, tuple]:
         df_tide = _prepare_tide_frame(group[["recorded_at", "tidal_height"]].values.tolist())
         t0, beta = fit_harmonic_model(df_tide)
         if t0 is None or beta is None:
-            print(f"[WARNING] Stasiun {station}: data pasut < 10 baris — dilewati.")
+            print(f"[WARNING] Stasiun {station}: data pasut < 10 baris â€” dilewati.")
             continue
         t0 = strip_timezone(t0.to_pydatetime() if isinstance(t0, pd.Timestamp) else t0)
         models[station] = (t0, beta)
@@ -173,7 +173,7 @@ def tide_model_for(models: dict[str, tuple], station: str) -> tuple:
     if station in models:
         return models[station]
     fallback = next(iter(sorted(models)))
-    print(f"[WARNING] Stasiun {station} tidak punya model pasut — memakai {fallback}.")
+    print(f"[WARNING] Stasiun {station} tidak punya model pasut â€” memakai {fallback}.")
     return models[fallback]
 
 
@@ -222,7 +222,7 @@ def build_training_frame(conn):
     df = pd.concat(frames, ignore_index=True)
 
     # Ambang proxy dikalibrasi terhadap kejadian riil (DIBI BNPB + episode
-    # terkurasi) — bukan konstanta tetap. Hasil kalibrasi disimpan ke models/.
+    # terkurasi) â€” bukan konstanta tetap. Hasil kalibrasi disimpan ke models/.
     calibration = labeler.calibrate_proxy_thresholds(df)
     print(f"[INFO] Kalibrasi ambang proxy: tide_q={calibration['tide_quantile']} "
           f"rain_q={calibration['rain_quantile']} "
@@ -311,7 +311,7 @@ def run_predict(conn):
         print("[INFO] Model tersimpan belum ada -- menjalankan training terlebih dahulu...")
         model = run_train(conn)
 
-    # Pasang surut 30 hari ke depan — harmonik PER STASIUN dari tidal_data
+    # Pasang surut 30 hari ke depan â€” harmonik PER STASIUN dari tidal_data
     tide_models = load_tide_models(conn)
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
 
@@ -418,7 +418,7 @@ def run_predict(conn):
 
         if spatial_missing:
             # Data spasial hilang: probabilitas risiko tidak boleh maksimal.
-            # Pakai nilai konservatif (elevasi 2m, jarak 500m) → faktor ~0.37
+            # Pakai nilai konservatif (elevasi 2m, jarak 500m) â†’ faktor ~0.37
             # agar wilayah ini TIDAK tampak lebih berisiko daripada yang datanya
             # lengkap, dan tandai provenance_status agar operator bisa memprioritaskan.
             avg_elevation_m = 2.0
@@ -449,7 +449,7 @@ def run_predict(conn):
             final_prob = base_prob * spatial_factor
             
             raw_prob = round(final_prob * 100.0, 2)
-            # confidence dari model mencerminkan prob_rob mentah — skalakan
+            # confidence dari model mencerminkan prob_rob mentah â€” skalakan
             # sebanding agar tetap sejalan dengan final_prob yang sudah
             # disesuaikan secara spasial.
             adj_confidence = float(row["confidence"]) * spatial_factor
@@ -495,7 +495,7 @@ def run_predict(conn):
     total = cursor.fetchone()[0]
 
     # Audit trail: catat run prediksi ke data_import_runs (kapan, versi model,
-    # jumlah, sumber) — ml-api menulis langsung ke DB, jadi ini jejak resminya.
+    # jumlah, sumber) â€” ml-api menulis langsung ke DB, jadi ini jejak resminya.
     _log_prediction_run(conn, written, data_source, False)
     cursor.close()
 
@@ -533,7 +533,7 @@ def _log_prediction_run(conn, written, data_source, tide_simulated):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Pipeline Prediksi Banjir Rob SIPERAH-RoB")
+    parser = argparse.ArgumentParser(description="Pipeline Prediksi Banjir Rob SAIBA")
     parser.add_argument("--mode", choices=["fetch", "train", "predict"], default="predict",
                         help="Mode eksekusi (default: predict)")
     parser.add_argument("--start", default="2015-01-01", help="Awal data historis (mode fetch)")
@@ -547,9 +547,9 @@ def main():
         import pandas as pd
         from files.feature_engineering import is_full_moon_period
         if not bool(is_full_moon_period(pd.Series([datetime.now()])).iloc[0]):
-            print("[INFO] Hari ini di luar jendela pasang purnama/bulan baru — refresh sore dilewati.")
+            print("[INFO] Hari ini di luar jendela pasang purnama/bulan baru â€” refresh sore dilewati.")
             return
-        print("[INFO] Jendela pasang purnama/bulan baru aktif — menjalankan refresh ekstra.")
+        print("[INFO] Jendela pasang purnama/bulan baru aktif â€” menjalankan refresh ekstra.")
 
     if args.mode == "fetch":
         data_fetcher.fetch_all_historical(args.start, args.end)
@@ -573,3 +573,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
