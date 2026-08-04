@@ -380,25 +380,6 @@ export function LoginPage() {
                 Masuk dengan Google
               </a>
 
-              {/* DEV ONLY: Quick Login Shortcuts â€” hanya tampil saat `npm run dev`.
-                  import.meta.env.DEV = false di build produksi, sehingga blok ini
-                  di-tree-shake (tidak ikut ke bundle & password demo tak terekspos). */}
-              {import.meta.env.DEV && (
-              <details style={{ marginTop: "32px" }}>
-                <summary className="dev-shortcut-summary" style={{ fontSize: "12px", color: "var(--ink-soft)", fontWeight: 600, textAlign: "center", cursor: "pointer", padding: "8px" }}>
-                  âš¡ DEV SHORTCUTS
-                </summary>
-                <div className="dev-shortcut-box" style={{ marginTop: "12px", padding: "16px", background: "var(--surface-soft)", borderRadius: "12px", border: "1px dashed var(--line)" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                    <button type="button" onClick={() => { setEmail("warga@saibar.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>ðŸ‘¤ Warga</button>
-                    <button type="button" onClick={() => { setEmail("admin@saibar.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>âš™ï¸ Admin</button>
-                    <button type="button" onClick={() => { setEmail("peneliti@saibar.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>ðŸ”¬ Peneliti</button>
-                    <button type="button" onClick={() => { setEmail("demo@saibar.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>âš™ï¸ Admin 2</button>
-                  </div>
-                </div>
-              </details>
-              )}
-
                 <div style={{ marginTop: "40px", textAlign: "center", fontSize: "14px", color: "var(--ink-soft)" }}>
                   <span className="or-text">Belum punya akun?</span>{" "}
                   <button 
@@ -804,7 +785,7 @@ export function LoginPage() {
           .mobile-brand-title, .auth-card-wrapper h2, .auth-card-wrapper label {
             color: #ffffff !important;
           }
-          .auth-card-wrapper .auth-header-text p, .auth-card-wrapper .or-text, .auth-card-wrapper .dev-shortcut-summary {
+          .auth-card-wrapper .auth-header-text p, .auth-card-wrapper .or-text {
             color: rgba(255, 255, 255, 0.7) !important;
           }
           .auth-card-wrapper input {
@@ -827,15 +808,6 @@ export function LoginPage() {
           }
           .auth-card-wrapper .divider-line {
             background: rgba(255, 255, 255, 0.2) !important;
-          }
-          .auth-card-wrapper .dev-shortcut-box {
-            background: rgba(255, 255, 255, 0.05) !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
-          }
-          .auth-card-wrapper .dev-shortcut-box button {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border-color: rgba(255, 255, 255, 0.15) !important;
-            color: #ffffff !important;
           }
           .auth-card-wrapper .link-btn {
             color: #60a5fa !important;
