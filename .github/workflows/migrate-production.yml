@@ -1,4 +1,4 @@
-﻿name: Migrasi DB Produksi
+name: Migrasi DB Produksi
 
 on:
   push:

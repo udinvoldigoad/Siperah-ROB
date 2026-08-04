@@ -1,4 +1,4 @@
-﻿# Entity-Relationship Diagram (ERD) - SAIBAR
+# Entity-Relationship Diagram (ERD) - SAIBAR
 
 Dokumen ini mendokumentasikan skema database relasional **SAIBAR** menggunakan diagram Mermaid.
 

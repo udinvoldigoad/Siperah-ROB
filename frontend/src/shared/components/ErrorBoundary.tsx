@@ -1,4 +1,4 @@
-﻿import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 
 type Props = { children: ReactNode };
 type State = { hasError: boolean; message?: string };

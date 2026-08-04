@@ -1,4 +1,4 @@
-﻿import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { SEED_PASSWORD, SEED_USERS } from "./helpers";
 
 // P2 6.2: admin menyetujui, menolak, dan menonaktifkan user. Semua target aksi

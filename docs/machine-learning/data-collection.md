@@ -1,4 +1,4 @@
-﻿# Skrip Pengambilan Data â€” ML Prediksi Banjir Rob
+# Skrip Pengambilan Data â€” ML Prediksi Banjir Rob
 
 > **File terkait:** `ml-api/files/data_fetcher.py`  
 > **Tujuan:** Mengambil data historis dan prakiraan dari sumber eksternal untuk training & inferensi model.

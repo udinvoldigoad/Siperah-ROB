@@ -1,4 +1,4 @@
-﻿# Penjelasan Prediksi Machine Learning SAIBAR
+# Penjelasan Prediksi Machine Learning SAIBAR
 
 Dokumen ini menjelaskan secara teknis bagaimana model Machine Learning (ML) bekerja dalam memprediksi risiko banjir rob di pesisir Provinsi Lampung, serta integrasinya ke dalam sistem **SAIBAR**.
 

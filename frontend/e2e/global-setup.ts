@@ -1,4 +1,4 @@
-﻿import { execSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import path from "node:path";
 
 // Reset DB test (saibar_test) ke state seed sebelum seluruh suite jalan,

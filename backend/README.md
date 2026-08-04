@@ -1,4 +1,4 @@
-﻿# Backend
+# Backend
 
 Laravel API boundary untuk SAIBAR.
 

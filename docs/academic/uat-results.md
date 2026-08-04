@@ -1,4 +1,4 @@
-﻿# Hasil Pengujian Penerimaan Pengguna (User Acceptance Testing - UAT)
+# Hasil Pengujian Penerimaan Pengguna (User Acceptance Testing - UAT)
 
 Dokumen ini mencatat skenario, ekspektasi, hasil aktual, dan status penerimaan dari pengujian UAT per peran (*role*) pada sistem SAIBAR. Seluruh skenario ini telah diuji secara otomatis menggunakan *E2E Test Suite (Playwright)* dan terisolasi menggunakan database pengujian khusus.
 

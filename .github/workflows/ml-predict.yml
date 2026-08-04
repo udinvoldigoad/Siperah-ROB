@@ -1,4 +1,4 @@
-﻿name: Prediksi ML Harian
+name: Prediksi ML Harian
 
 on:
   schedule:

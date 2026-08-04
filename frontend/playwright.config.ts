@@ -1,4 +1,4 @@
-﻿import { defineConfig } from "@playwright/test";
+import { defineConfig } from "@playwright/test";
 
 // E2E smoke test per role (checklist Tahap 6.2).
 //

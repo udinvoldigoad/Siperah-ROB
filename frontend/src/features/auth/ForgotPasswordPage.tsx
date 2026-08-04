@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Icon } from "../../shared/components/Icon";
 import { api, errorMessage } from "../../shared/api/client";
 import { useToast } from "../../shared/components/Toast";

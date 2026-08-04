@@ -1,4 +1,4 @@
-﻿# Product Requirements Document â€” SAIBAR
+# Product Requirements Document â€” SAIBAR
 
 | | |
 |---|---|

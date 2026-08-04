@@ -1,4 +1,4 @@
-﻿"""
+"""
 data_fetcher.py
 Mengambil data historis cuaca & gelombang dari Open-Meteo API serta prakiraan
 cuaca (Open-Meteo/BMKG) untuk keperluan training dan inferensi model.

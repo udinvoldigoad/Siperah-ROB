@@ -1,4 +1,4 @@
-﻿# ðŸŒŠ SAIBAR
+# ðŸŒŠ SAIBAR
 > **Sistem Informasi Risiko Banjir Rob Terpadu**
 
 [![Version](https://img.shields.io/badge/Version-1.2.0-blue.svg?style=for-the-badge)](https://github.com/udinvoldigoad/SAIBAR)

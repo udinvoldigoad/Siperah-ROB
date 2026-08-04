@@ -1,4 +1,4 @@
-﻿# ðŸ“˜ Panduan Pengguna (User Guide) â€” SAIBAR v1.2.0
+# ðŸ“˜ Panduan Pengguna (User Guide) â€” SAIBAR v1.2.0
 
 > **Sistem Informasi Risiko Banjir Rob Terpadu Provinsi Lampung**
 

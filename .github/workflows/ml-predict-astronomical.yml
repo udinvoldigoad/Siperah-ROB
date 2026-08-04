@@ -1,4 +1,4 @@
-﻿name: Prediksi ML Sore (Pasang Purnama)
+name: Prediksi ML Sore (Pasang Purnama)
 
 # Refresh prediksi kedua di sore hari, HANYA saat jendela pasang purnama/bulan
 # baru (king tide) â€” risiko rob tertinggi. main.py --only-if-astronomical keluar

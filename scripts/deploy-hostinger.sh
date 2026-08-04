@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Deploy SAIBAR ke Hostinger shared hosting.
 # Jalankan dari root repo: bash scripts/deploy-hostinger.sh
 #
