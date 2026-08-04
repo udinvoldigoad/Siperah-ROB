@@ -25,11 +25,11 @@ export function PageFallback({ label = "Memuat halamanâ€¦" }: { label?: stri
           borderRadius: "50%",
           border: "3px solid var(--line, #e2e8f0)",
           borderTopColor: "var(--accent, #1e40af)",
-          animation: "saiba-spin 0.7s linear infinite",
+          animation: "saibar-spin 0.7s linear infinite",
         }}
       />
       <span style={{ fontSize: 14, fontWeight: 600 }}>{label}</span>
-      <style>{"@keyframes saiba-spin{to{transform:rotate(360deg)}}"}</style>
+      <style>{"@keyframes saibar-spin{to{transform:rotate(360deg)}}"}</style>
     </div>
   );
 }

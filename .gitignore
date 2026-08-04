@@ -40,10 +40,10 @@ npm-debug.log*
 # === Database ===
 *.sqlite
 backend/database/*.sqlite
-backend/saiba_rob
+backend/saibar_rob
 database/*.sqlite
 database/local-data/
-saiba_dump.sql
+saibar_dump.sql
 *.sql
 pg_server.log
 scratch.json

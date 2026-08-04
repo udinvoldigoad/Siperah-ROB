@@ -99,7 +99,7 @@ final class VapidHealthCheckTest extends TestCase
         config([
             'webpush.vapid.public_key' => $this->validPublic(),
             'webpush.vapid.private_key' => $this->validPrivate(),
-            'webpush.vapid.subject' => 'saiba.example.test',
+            'webpush.vapid.subject' => 'saibar.example.test',
         ]);
 
         self::assertStringContainsString('VAPID_SUBJECT', $this->runCheck());

@@ -54,14 +54,14 @@ final class EmailVerificationService
         try {
             Mail::raw(
                 "Halo {$user->name},\n\n"
-                ."Kode verifikasi email akun SAIBA Anda adalah:\n\n{$otp}\n\n"
+                ."Kode verifikasi email akun SAIBAR Anda adalah:\n\n{$otp}\n\n"
                 ."Masukkan kode ini di halaman pendaftaran untuk mengaktifkan akun.\n"
                 ."Kode berlaku selama ".self::EXPIRY_MINUTES." menit.\n\n"
-                ."Jika Anda tidak mendaftar di SAIBA, abaikan email ini.\n\n"
-                ."Salam,\nTim SAIBA",
+                ."Jika Anda tidak mendaftar di SAIBAR, abaikan email ini.\n\n"
+                ."Salam,\nTim SAIBAR",
                 function ($message) use ($user) {
                     // From default (config mail.from) agar selaras SPF/DKIM SMTP produksi.
-                    $message->to($user->email)->subject('Kode Verifikasi Email - SAIBA');
+                    $message->to($user->email)->subject('Kode Verifikasi Email - SAIBAR');
                 },
             );
         } catch (\Throwable $e) {

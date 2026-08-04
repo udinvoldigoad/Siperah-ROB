@@ -1,4 +1,4 @@
-﻿# Dokumentasi SAIBA
+﻿# Dokumentasi SAIBAR
 
 Dokumen dikelompokkan per tujuan. Nama berkas memakai huruf kecil dan tanda
 hubung (`kebab-case`); akronim resmi dokumen (PRD, SKPL, ERD, UAT) dipertahankan.

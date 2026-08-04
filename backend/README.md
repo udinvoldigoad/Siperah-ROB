@@ -1,6 +1,6 @@
 ﻿# Backend
 
-Laravel API boundary untuk SAIBA.
+Laravel API boundary untuk SAIBAR.
 
 ## Modul
 

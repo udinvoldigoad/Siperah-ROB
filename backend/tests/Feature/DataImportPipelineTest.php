@@ -167,7 +167,7 @@ final class DataImportPipelineTest extends TestCase
 
     private function tempFile(string $content): string
     {
-        $path = tempnam(sys_get_temp_dir(), 'saiba-import-test');
+        $path = tempnam(sys_get_temp_dir(), 'saibar-import-test');
         file_put_contents($path, $content);
         $this->cleanupPaths[] = $path;
 

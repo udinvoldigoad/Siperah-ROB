@@ -187,7 +187,7 @@ final class GoogleOAuthTest extends TestCase
         $googleId = 'google-uid-'.Str::uuid();
 
         // Akun Google yang emailnya belum diverifikasi tidak boleh menaut ke
-        // akun SAIBA yang sudah ada maupun mendaftarkan akun baru.
+        // akun SAIBAR yang sudah ada maupun mendaftarkan akun baru.
         $this->fakeGoogleUser($googleId, 'Belum Terverifikasi', $email, emailVerified: false);
 
         $this->get('/api/auth/google/callback')
@@ -210,7 +210,7 @@ final class GoogleOAuthTest extends TestCase
         self::assertNull($user->google_id);
 
         // Penyerang mengklaim email orang lain lewat akun Google yang belum
-        // diverifikasi: email SAIBA sudah ada, tapi google_id TIDAK boleh
+        // diverifikasi: email SAIBAR sudah ada, tapi google_id TIDAK boleh
         // ditempel dan status verifikasi tidak boleh diubah.
         $this->fakeGoogleUser('google-uid-'.Str::uuid(), 'Penyusup', $email, emailVerified: false);
 

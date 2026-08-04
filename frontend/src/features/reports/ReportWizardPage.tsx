@@ -519,7 +519,7 @@ export function ReportWizardPage() {
 
             <div style={{ background: "var(--accent-soft)", border: "1px solid rgba(99, 102, 241, 0.2)", borderRadius: 8, padding: 16, display: "flex", alignItems: "start", gap: 12 }}>
               <input type="checkbox" checked={isDeclarationAccepted} onChange={(event) => setDeclarationAccepted(event.target.checked)} required aria-label="Setujui pernyataan kebenaran laporan" style={{ marginTop: 4, width: 16, height: 16, accentColor: "var(--accent)", flexShrink: 0 }} />
-              <span style={{ fontSize: 12.5, color: "var(--ink)", lineHeight: 1.6 }}>Saya menyatakan bahwa data yang dilaporkan adalah informasi nyata yang saya saksikan sendiri. Data ini akan digunakan untuk meningkatkan model prediksi banjir rob SAIBA.</span>
+              <span style={{ fontSize: 12.5, color: "var(--ink)", lineHeight: 1.6 }}>Saya menyatakan bahwa data yang dilaporkan adalah informasi nyata yang saya saksikan sendiri. Data ini akan digunakan untuk meningkatkan model prediksi banjir rob SAIBAR.</span>
             </div>
 
             {submitError && !isSubmitting && (

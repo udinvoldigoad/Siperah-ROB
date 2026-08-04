@@ -3,7 +3,7 @@ import { api } from "../api/client";
 /**
  * Satu-satunya pintu baca/tulis sesi di localStorage.
  *
- * Sebelumnya blok `try { JSON.parse(localStorage.getItem("saiba-user")) }
+ * Sebelumnya blok `try { JSON.parse(localStorage.getItem("saibar-user")) }
  * catch {}` disalin di 9 file, masing-masing dengan bentuk tipe sendiri dan
  * pengecekan "sudah login" yang tidak seragam. Selain berulang, itu berarti
  * satu perubahan bentuk sesi harus dikejar ke sembilan tempat.
@@ -16,11 +16,11 @@ import { api } from "../api/client";
  * sebenarnya tak boleh dilihat.
  */
 
-const TOKEN_KEY = "saiba-token";
-const USER_KEY = "saiba-user";
+const TOKEN_KEY = "saibar-token";
+const USER_KEY = "saibar-user";
 
 /** Dipancarkan tiap sesi berubah agar komponen yang sudah ter-mount ikut menyegarkan diri. */
-export const SESSION_CHANGED_EVENT = "SAIBA-session-changed";
+export const SESSION_CHANGED_EVENT = "SAIBAR-session-changed";
 
 export interface SessionUser {
   id?: string;
@@ -69,7 +69,7 @@ export function clearSession(): void {
 /**
  * Tanyakan identitas asli ke server dan TIMPA cache lokal dengan jawabannya.
  *
- * Tanpa ini, mengubah `saiba-user.role` jadi "admin" di DevTools membuat UI
+ * Tanpa ini, mengubah `saibar-user.role` jadi "admin" di DevTools membuat UI
  * menampilkan menu & halaman admin (isinya tetap gagal 403, tapi tampilannya
  * menyesatkan dan membocorkan struktur halaman internal). Setelah ini, peran
  * yang dipakai UI selalu berasal dari `/auth/me`.

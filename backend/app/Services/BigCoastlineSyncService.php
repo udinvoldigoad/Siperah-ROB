@@ -80,7 +80,7 @@ final class BigCoastlineSyncService
 
     private function http(): PendingRequest
     {
-        return Http::acceptJson()->withUserAgent('SAIBA/1.0 (BIG coastline synchronization)')
+        return Http::acceptJson()->withUserAgent('SAIBAR/1.0 (BIG coastline synchronization)')
             ->connectTimeout(15)->timeout(90)->retry(3, 1000, throw: false);
     }
 

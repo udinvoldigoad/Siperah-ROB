@@ -7,7 +7,7 @@ import { getCurrentUser, isLoggedIn } from "../shared/auth/session";
 
 const faqData = [
   {
-    q: "Seberapa akurat prediksi banjir rob SAIBA?",
+    q: "Seberapa akurat prediksi banjir rob SAIBAR?",
     a: "Prediksi digunakan sebagai alat kewaspadaan, bukan kepastian kejadian. Selalu gunakan informasi risiko bersama arahan resmi BPBD dan kondisi nyata di lapangan."
   },
   {
@@ -15,7 +15,7 @@ const faqData = [
     a: "Model memadukan data cuaca dan gelombang laut historis dari Open-Meteo (reanalisis ERA5), proyeksi pasang surut berbasis model harmonik per stasiun, faktor spasial elevasi & jarak ke pantai per kelurahan, serta kejadian rob riil (BNPB DIBI) dan laporan lapangan warga yang telah divalidasi BPBD. Integrasi sumber resmi seperti pasang surut BIG/Pushidrosal dan prakiraan BMKG sedang disiapkan secara bertahap."
   },
   {
-    q: "Siapa saja yang bisa menggunakan SAIBA?",
+    q: "Siapa saja yang bisa menggunakan SAIBAR?",
     a: "Peta publik dapat diakses oleh siapa saja tanpa login. Fitur pelaporan tersedia untuk warga terdaftar. Dashboard BPBD dikhususkan untuk operator kabupaten/kota dan BPBD Provinsi Lampung."
   },
   {
@@ -26,16 +26,16 @@ const faqData = [
 
 export function PortalPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [isDarkMode, setDarkMode] = useState(() => localStorage.getItem("saiba-theme") === "dark" || document.documentElement.getAttribute("data-theme") === "dark");
+  const [isDarkMode, setDarkMode] = useState(() => localStorage.getItem("saibar-theme") === "dark" || document.documentElement.getAttribute("data-theme") === "dark");
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.setAttribute("data-theme", "dark");
-      localStorage.setItem("saiba-theme", "dark");
+      localStorage.setItem("saibar-theme", "dark");
     } else {
       document.documentElement.removeAttribute("data-theme");
-      localStorage.setItem("saiba-theme", "light");
+      localStorage.setItem("saibar-theme", "light");
     }
   }, [isDarkMode]);
 
@@ -57,7 +57,7 @@ export function PortalPage() {
   const dashboardRoute = currentUser ? dashboardHashForRole(currentUser.role) : "#/login";
 
   return (
-    <div className="saiba-landing-root">
+    <div className="saibar-landing-root">
       {/* Google Fonts Load */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -65,7 +65,7 @@ export function PortalPage() {
 
       <style>{`
         /* Elite Design System Styles */
-        .saiba-landing-root {
+        .saibar-landing-root {
           --bg-primary: var(--bg);
           --bg-card: var(--surface);
           --bg-card-dark: var(--ink);
@@ -82,7 +82,7 @@ export function PortalPage() {
           --bg-footer: var(--footer-bg);
         }
 
-        [data-theme="dark"] .saiba-landing-root {
+        [data-theme="dark"] .saibar-landing-root {
           --bg-primary: var(--bg);
           --bg-card: var(--surface);
           --bg-card-dark: var(--surface);
@@ -100,15 +100,15 @@ export function PortalPage() {
         }
 
         /* Component-Specific Dark Mode Overrides */
-        [data-theme="dark"] .saiba-landing-root .bento-card-el.dark-theme { background: var(--surface); border-color: var(--line); }
-        [data-theme="dark"] .saiba-landing-root .warning-factor-box { background: var(--surface); border-color: var(--line); }
-        [data-theme="dark"] .saiba-landing-root .warning-factor-label { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber-text); }
-        [data-theme="dark"] .saiba-landing-root .reporting-step { background: var(--surface); border-color: var(--line); }
-        [data-theme="dark"] .saiba-landing-root .reporting-step-icon { background: var(--surface); color: var(--ocean-dark); }
-        [data-theme="dark"] .saiba-landing-root .landing-map-frame { background: var(--surface); border-color: var(--line); box-shadow: 0 16px 40px rgba(0, 0, 0, .4); }
-        [data-theme="dark"] .saiba-landing-root .reporting-step-number { background: var(--ocean-mid); border-color: var(--surface); box-shadow: 0 0 0 1px var(--ocean-mid); }
+        [data-theme="dark"] .saibar-landing-root .bento-card-el.dark-theme { background: var(--surface); border-color: var(--line); }
+        [data-theme="dark"] .saibar-landing-root .warning-factor-box { background: var(--surface); border-color: var(--line); }
+        [data-theme="dark"] .saibar-landing-root .warning-factor-label { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber-text); }
+        [data-theme="dark"] .saibar-landing-root .reporting-step { background: var(--surface); border-color: var(--line); }
+        [data-theme="dark"] .saibar-landing-root .reporting-step-icon { background: var(--surface); color: var(--ocean-dark); }
+        [data-theme="dark"] .saibar-landing-root .landing-map-frame { background: var(--surface); border-color: var(--line); box-shadow: 0 16px 40px rgba(0, 0, 0, .4); }
+        [data-theme="dark"] .saibar-landing-root .reporting-step-number { background: var(--ocean-mid); border-color: var(--surface); box-shadow: 0 0 0 1px var(--ocean-mid); }
 
-        .saiba-landing-root {
+        .saibar-landing-root {
           color: var(--ink-primary);
           font-family: 'Inter', sans-serif;
           min-height: 100vh;
@@ -121,7 +121,7 @@ export function PortalPage() {
         /* Section adalah flex item; min-width:auto default membuatnya melar
            mengikuti min-content konten lebar dan terpotong overflow-x di layar
            sempit. min-width:0 mengizinkannya menyusut ke lebar layar. */
-        .saiba-landing-root > * { min-width: 0; }
+        .saibar-landing-root > * { min-width: 0; }
 
         /* Full-Width Editorial Header */
         .landing-header-full {
@@ -319,7 +319,7 @@ export function PortalPage() {
         }
 
         /* Abstract Grid / Radial Background Details */
-        .saiba-landing-root .ambient-grid {
+        .saibar-landing-root .ambient-grid {
           position: absolute;
           top: 0;
           left: 0;
@@ -808,8 +808,8 @@ export function PortalPage() {
       {/* Full-Width Header */}
         <header className={`landing-header-full${isScrolled ? " is-scrolled" : ""}`}>
           <a className="brand-link" href="#/" style={{ gap: "12px" }}>
-            <img src="/logo.png" alt="Logo SAIBA" style={{ width: "48px", height: "48px", objectFit: "contain", borderRadius: "12px" }} />
-            SAIBA
+            <img src="/logo.png" alt="Logo SAIBAR" style={{ width: "48px", height: "48px", objectFit: "contain", borderRadius: "12px" }} />
+            SAIBAR
           </a>
         <nav className="nav-links-wrap">
           <a href="#/map">Peta Risiko</a>
@@ -1091,7 +1091,7 @@ export function PortalPage() {
           <div>
             <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink-primary)", marginBottom: "16px", letterSpacing: "-0.02em" }}>FAQ</h2>
             <p style={{ fontSize: "1.05rem", color: "var(--ink-muted)", lineHeight: 1.7 }}>
-              Pertanyaan umum mengenai penggunaan portal SAIBA dan akurasi model prediksinya.
+              Pertanyaan umum mengenai penggunaan portal SAIBAR dan akurasi model prediksinya.
             </p>
           </div>
           
@@ -1131,7 +1131,7 @@ export function PortalPage() {
       <footer className="site-footer" style={{ background: "var(--bg-footer)", color: "var(--footer-text)", padding: "60px 40px 40px", marginTop: "auto", borderTop: "1px solid var(--border-color)" }}>
         <div className="site-footer-inner" style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", flexWrap: "wrap", gap: "40px", justifyContent: "space-between" }}>
           <div className="footer-brand-col" style={{ lineHeight: '1.6', maxWidth: "400px" }}>
-            <strong style={{ fontSize: '1.15rem', color: 'var(--ink-inverse)', letterSpacing: '-0.01em' }}>SAIBA</strong>
+            <strong style={{ fontSize: '1.15rem', color: 'var(--ink-inverse)', letterSpacing: '-0.01em' }}>SAIBAR</strong>
             <p style={{ margin: '8px 0 0', fontSize: '0.92rem', color: 'var(--footer-muted)', lineHeight: 1.6 }}>Sistem Informasi Risiko Banjir Rob Terpadu Provinsi Lampung.</p>
           </div>
           <div className="footer-contact-col" style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'right', minWidth: "260px" }}>
@@ -1142,7 +1142,7 @@ export function PortalPage() {
           </div>
         </div>
         <div className="footer-bottom" style={{ maxWidth: "1200px", margin: "40px auto 0", paddingTop: "24px", borderTop: "1px solid var(--footer-line)", textAlign: "center", fontSize: "0.85rem", color: "var(--footer-muted)" }}>
-          SAIBA &copy; 2026. Institut Teknologi Sumatera
+          SAIBAR &copy; 2026. Institut Teknologi Sumatera
         </div>
       </footer>
     </div>

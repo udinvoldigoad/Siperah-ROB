@@ -1,7 +1,7 @@
-# Prosedur Rotasi Secret â€” SAIBA
+# Prosedur Rotasi Secret â€” SAIBAR
 
 > Terakhir diperbarui: 2026-07-18. Konteks: repo **publik**, production di
-> Hostinger shared hosting (`~/apps/saiba-backend/.env`), DB di Supabase,
+> Hostinger shared hosting (`~/apps/saibar-backend/.env`), DB di Supabase,
 > pipeline ML di GitHub Actions. Tidak ada VPS/secret manager â€” secret hidup
 > di tiga tempat: `.env` server, GitHub Actions Secrets, dan dashboard Supabase.
 
@@ -21,7 +21,7 @@
 
 ### 1. `APP_KEY`
 1. SSH ke Hostinger (wajib tethering HP â€” firewall memblokir IP rumah).
-2. `cd ~/apps/saiba-backend && /opt/alt/php84/usr/bin/php -d extension=pdo_pgsql -d extension=pgsql artisan key:generate --force`
+2. `cd ~/apps/saibar-backend && /opt/alt/php84/usr/bin/php -d extension=pdo_pgsql -d extension=pgsql artisan key:generate --force`
 3. `... artisan config:cache`
 4. **Efek samping**: semua signed URL foto yang beredar hangus (maks. 12 jam,
    terbit ulang otomatis), sesi cookie lama tak terbaca. Token Sanctum TIDAK

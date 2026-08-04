@@ -1,6 +1,6 @@
 ﻿# ml-api â€” Pipeline ML Prediksi Banjir Rob
 
-Pipeline Machine Learning SAIBA: klasifikasi risiko rob harian per
+Pipeline Machine Learning SAIBAR: klasifikasi risiko rob harian per
 wilayah pesisir Lampung (8 kabupaten/kota pesisir), horizon H+0 s/d H+30.
 
 ## Arsitektur

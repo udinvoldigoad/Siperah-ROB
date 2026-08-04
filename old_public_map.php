@@ -254,9 +254,9 @@ final class PublicMapController
         return [
             'type' => 'risk_threshold',
             'title' => 'Risiko rob sangat tinggi (prediksi model)',
-            'message' => $critical->count().' zona pantau berada pada kelas sangat tinggi menurut model SAIBA. Belum ada peringatan cuaca BMKG aktif.',
+            'message' => $critical->count().' zona pantau berada pada kelas sangat tinggi menurut model SAIBAR. Belum ada peringatan cuaca BMKG aktif.',
             'affected_regencies' => $critical->pluck('region.regency')->filter()->unique()->values(),
-            'source' => 'SAIBA prediction',
+            'source' => 'SAIBAR prediction',
         ];
     }
 

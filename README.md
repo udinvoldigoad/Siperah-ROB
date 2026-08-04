@@ -1,14 +1,14 @@
-﻿# ðŸŒŠ SAIBA
+﻿# ðŸŒŠ SAIBAR
 > **Sistem Informasi Risiko Banjir Rob Terpadu**
 
-[![Version](https://img.shields.io/badge/Version-1.2.0-blue.svg?style=for-the-badge)](https://github.com/udinvoldigoad/SAIBA)
+[![Version](https://img.shields.io/badge/Version-1.2.0-blue.svg?style=for-the-badge)](https://github.com/udinvoldigoad/SAIBAR)
 [![Laravel](https://img.shields.io/badge/Laravel-11-red.svg?style=for-the-badge&logo=laravel)](https://laravel.com)
 [![React](https://img.shields.io/badge/React-18-cyan.svg?style=for-the-badge&logo=react)](https://react.dev)
 [![Python](https://img.shields.io/badge/Python-3.11-yellow.svg?style=for-the-badge&logo=python)](https://python.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue.svg?style=for-the-badge&logo=postgresql)](https://postgresql.org)
 [![PostGIS](https://img.shields.io/badge/PostGIS-3.6-darkblue.svg?style=for-the-badge&logo=postgresql)](https://postgis.net)
 
-SAIBA adalah **Sistem Informasi Geografis (SIG)** berbasis WebGIS terpadu yang memanfaatkan kecerdasan buatan (*Machine Learning*) untuk memproyeksikan, memantau, dan memitigasi bencana banjir rob (genangan pasang air laut) secara *real-time* di wilayah pesisir Provinsi Lampung.
+SAIBAR adalah **Sistem Informasi Geografis (SIG)** berbasis WebGIS terpadu yang memanfaatkan kecerdasan buatan (*Machine Learning*) untuk memproyeksikan, memantau, dan memitigasi bencana banjir rob (genangan pasang air laut) secara *real-time* di wilayah pesisir Provinsi Lampung.
 
 ---
 

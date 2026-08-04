@@ -16,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         then: function (): void {
             Route::get('/', fn () => response()->json([
-                'name' => 'SAIBA API',
+                'name' => 'SAIBAR API',
                 'status' => 'ok',
                 'frontend' => 'http://127.0.0.1:5173',
                 'sample_api' => '/api/public/mode-awam',

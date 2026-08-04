@@ -24,8 +24,8 @@ async function loginAdminOnce(page: Page): Promise<string> {
   await page.goto("/#/login");
   await page.evaluate(
     ([token, user]) => {
-      localStorage.setItem("saiba-token", token);
-      localStorage.setItem("saiba-user", user);
+      localStorage.setItem("saibar-token", token);
+      localStorage.setItem("saibar-user", user);
     },
     [body.access_token as string, JSON.stringify(body.user)],
   );

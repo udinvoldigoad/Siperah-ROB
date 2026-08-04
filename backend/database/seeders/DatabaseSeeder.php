@@ -258,7 +258,7 @@ final class DatabaseSeeder extends Seeder
             [
                 'id' => '22222222-2222-4222-8222-222222222222',
                 'name' => 'Warga Mode Awam',
-                'email' => 'warga@saiba.local',
+                'email' => 'warga@saibar.local',
                 'password_hash' => Hash::make('password'),
                 'role' => 'warga',
                 'region_id' => '11111111-1111-4111-8111-111111111111',
@@ -267,7 +267,7 @@ final class DatabaseSeeder extends Seeder
             [
                 'id' => '22222222-2222-4222-8222-aaaaaaaaaaaa',
                 'name' => 'Admin Sistem',
-                'email' => 'admin@saiba.local',
+                'email' => 'admin@saibar.local',
                 'password_hash' => Hash::make('password'),
                 'role' => 'admin',
                 'region_id' => null,
@@ -276,7 +276,7 @@ final class DatabaseSeeder extends Seeder
             [
                 'id' => '22222222-2222-4222-8222-dddddddddddd',
                 'name' => 'Dr. Peneliti Unila',
-                'email' => 'peneliti@saiba.local',
+                'email' => 'peneliti@saibar.local',
                 'password_hash' => Hash::make('password'),
                 'role' => 'peneliti',
                 'region_id' => null,
@@ -290,7 +290,7 @@ final class DatabaseSeeder extends Seeder
             [
                 'id' => '22222222-2222-4222-8222-eeeeeeeeeeee',
                 'name' => 'Admin Sistem Kedua',
-                'email' => 'demo@saiba.local',
+                'email' => 'demo@saibar.local',
                 'password_hash' => Hash::make('password'),
                 'role' => 'admin',
                 'region_id' => null,

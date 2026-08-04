@@ -166,7 +166,7 @@ export function ForgotPasswordPage() {
             <div style={{ width: "36px", height: "36px", background: "rgba(255,255,255,0.2)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(10px)" }}>
               <Icon name="water_drop" style={{ fontSize: "20px" }} />
             </div>
-            SAIBA
+            SAIBAR
           </a>
         </div>
 
@@ -202,7 +202,7 @@ export function ForgotPasswordPage() {
             <div className="mobile-logo-badge">
               <Icon name="water_drop" style={{ fontSize: "26px" }} />
             </div>
-            <h2 className="mobile-brand-title">SAIBA</h2>
+            <h2 className="mobile-brand-title">SAIBAR</h2>
           </div>
 
           {/* Step indicator */}

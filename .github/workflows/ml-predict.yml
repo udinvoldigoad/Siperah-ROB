@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Hanya jalan di repo utama (bukan fork) supaya secrets tersedia.
-    if: github.repository == 'udinvoldigoad/SAIBA'
+    if: github.repository == 'udinvoldigoad/SAIBAR'
     steps:
       - uses: actions/checkout@v4
 

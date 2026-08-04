@@ -8,7 +8,7 @@ import { api } from "../api/client";
 import { roleLabels } from "../constants/roles";
 import { clearSession, getCurrentUser, isLoggedIn } from "../auth/session";
 
-const SIDEBAR_STORAGE_KEY = "saiba-sidebar";
+const SIDEBAR_STORAGE_KEY = "saibar-sidebar";
 
 type InboxItem = { id: string; title: string; body: string; read_at: string | null; created_at: string };
 type InboxResponse = { data: InboxItem[] };
@@ -44,17 +44,17 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [isNotificationOpen, setNotificationOpen] = useState(false);
-  const [isDarkMode, setDarkMode] = useState(() => localStorage.getItem("saiba-theme") === "dark");
+  const [isDarkMode, setDarkMode] = useState(() => localStorage.getItem("saibar-theme") === "dark");
   const [notifications, setNotifications] = useState<InboxItem[]>([]);
   const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.setAttribute("data-theme", "dark");
-      localStorage.setItem("saiba-theme", "dark");
+      localStorage.setItem("saibar-theme", "dark");
     } else {
       document.documentElement.removeAttribute("data-theme");
-      localStorage.setItem("saiba-theme", "light");
+      localStorage.setItem("saibar-theme", "light");
     }
   }, [isDarkMode]);
 
@@ -90,8 +90,8 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
     const handleAuthExpired = () => {
       toast.error("Sesi Anda telah habis. Silakan login kembali.");
     };
-    window.addEventListener("saiba-auth-expired", handleAuthExpired);
-    return () => window.removeEventListener("saiba-auth-expired", handleAuthExpired);
+    window.addEventListener("saibar-auth-expired", handleAuthExpired);
+    return () => window.removeEventListener("saibar-auth-expired", handleAuthExpired);
   }, []);
 
   const user = getCurrentUser();
@@ -162,9 +162,9 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
       <aside className={`sidebar ${isMobileSidebarOpen ? "mobile-open" : ""}`} style={{ display: "flex", flexDirection: "column" }}>
         <div className="sidebar-top">
           <a className="brand-block" href="#/">
-            <img src="/logo.png" alt="Logo SAIBA" style={{ width: "32px", height: "32px", objectFit: "contain", borderRadius: "8px" }} />
+            <img src="/logo.png" alt="Logo SAIBAR" style={{ width: "32px", height: "32px", objectFit: "contain", borderRadius: "8px" }} />
             <span className="brand-copy">
-              <strong>SAIBA</strong>
+              <strong>SAIBAR</strong>
             </span>
           </a>
           <button

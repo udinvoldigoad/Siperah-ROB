@@ -4,7 +4,7 @@ name: E2E Nightly (Playwright)
 # workflow yang memanggilnya, jadi bisa membusuk tanpa ketahuan. Job ini
 # menjalankannya tiap malam (02:30 UTC = 09:30 WIB) dan bisa dipicu manual.
 # Ini memakai server & DB uji yang sama dengan dev lokal: backend artisan
-# serve --env=testing di port 8123, vite dev di 5273, DB saiba_test
+# serve --env=testing di port 8123, vite dev di 5273, DB saibar_test
 # di-reset (migrate:fresh --seed) oleh global-setup.
 
 on:
@@ -21,7 +21,7 @@ jobs:
       postgres:
         image: postgis/postgis:17-3.4-alpine
         env:
-          POSTGRES_DB: saiba_test
+          POSTGRES_DB: saibar_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
@@ -39,7 +39,7 @@ jobs:
       DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
-      DB_DATABASE: saiba_test
+      DB_DATABASE: saibar_test
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       CACHE_STORE: array
@@ -83,7 +83,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Pastikan ekstensi PostGIS aktif
-        run: PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d saiba_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+        run: PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d saibar_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 
       # global-setup Playwright menjalankan migrate:fresh --seed --env=testing
       # sendiri, jadi cukup panggil `npm run e2e` â€” kedua server (backend 8123,

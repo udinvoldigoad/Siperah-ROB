@@ -1,4 +1,4 @@
-﻿# Arsitektur SAIBA
+﻿# Arsitektur SAIBAR
 
 ## Prinsip
 

@@ -241,7 +241,7 @@ export function LoginPage() {
             <div style={{ width: "36px", height: "36px", background: "rgba(255,255,255,0.2)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(10px)" }}>
               <Icon name="water_drop" style={{ fontSize: "20px" }} />
             </div>
-            SAIBA
+            SAIBAR
           </a>
         </div>
 
@@ -280,7 +280,7 @@ export function LoginPage() {
             <div className="mobile-logo-badge">
               <Icon name="water_drop" style={{ fontSize: "26px" }} />
             </div>
-            <h2 className="mobile-brand-title">SAIBA</h2>
+            <h2 className="mobile-brand-title">SAIBAR</h2>
           </div>
 
 
@@ -390,10 +390,10 @@ export function LoginPage() {
                 </summary>
                 <div className="dev-shortcut-box" style={{ marginTop: "12px", padding: "16px", background: "var(--surface-soft)", borderRadius: "12px", border: "1px dashed var(--line)" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                    <button type="button" onClick={() => { setEmail("warga@saiba.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>ðŸ‘¤ Warga</button>
-                    <button type="button" onClick={() => { setEmail("admin@saiba.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>âš™ï¸ Admin</button>
-                    <button type="button" onClick={() => { setEmail("peneliti@saiba.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>ðŸ”¬ Peneliti</button>
-                    <button type="button" onClick={() => { setEmail("demo@saiba.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>âš™ï¸ Admin 2</button>
+                    <button type="button" onClick={() => { setEmail("warga@saibar.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>ðŸ‘¤ Warga</button>
+                    <button type="button" onClick={() => { setEmail("admin@saibar.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>âš™ï¸ Admin</button>
+                    <button type="button" onClick={() => { setEmail("peneliti@saibar.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>ðŸ”¬ Peneliti</button>
+                    <button type="button" onClick={() => { setEmail("demo@saibar.local"); setPassword("password"); }} style={{ padding: "8px", fontSize: "11.5px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer", fontWeight: 600 }}>âš™ï¸ Admin 2</button>
                   </div>
                 </div>
               </details>

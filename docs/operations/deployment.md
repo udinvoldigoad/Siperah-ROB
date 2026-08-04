@@ -1,12 +1,12 @@
-# SAIBA Production Deployment Guide
+# SAIBAR Production Deployment Guide
 
-Dokumen ini berisi panduan *deployment* aplikasi SAIBA ke lingkungan produksi menggunakan arsitektur nyata: **Hostinger Shared Hosting + Supabase Database + GitHub Actions**.
+Dokumen ini berisi panduan *deployment* aplikasi SAIBAR ke lingkungan produksi menggunakan arsitektur nyata: **Hostinger Shared Hosting + Supabase Database + GitHub Actions**.
 
 ---
 
 ## 1. Arsitektur Produksi (Production Stack)
 Aplikasi tidak lagi menggunakan VPS/Redis/Nginx yang kompleks. Arsitektur final yang digunakan adalah:
-* **Frontend SPA & Backend API**: Dihosting di **Hostinger Shared Hosting** (subdomain: `saiba.girimulyo.com`, PHP 8.4).
+* **Frontend SPA & Backend API**: Dihosting di **Hostinger Shared Hosting** (subdomain: `saibar.girimulyo.com`, PHP 8.4).
 * **Database Oseanografi & Wilayah**: **Supabase (PostgreSQL 17 + PostGIS)** Singapura via session pooler (port 5432).
 * **Pipeline Machine Learning (ML) & Migrasi**: **GitHub Actions** (menjalankan inferensi ML harian pukul 06:00 WIB, migrasi otomatis, dan pengisian data pasut historis).
 * **Antrean / Queue Worker**: Menggunakan **Database Queue** (dikuras setiap menit menggunakan command `queue:work --stop-when-empty` yang dijalankan oleh Laravel Scheduler).
@@ -30,8 +30,8 @@ Buat berkas `scripts/deploy.env` (jangan di-commit ke Git karena berkas ini beri
 ```bash
 SSH_HOST="username@ip_address"
 SSH_PORT="65002"
-REMOTE_APP="~/apps/saiba"
-SITE_URL="https://saiba.girimulyo.com"
+REMOTE_APP="~/apps/saibar"
+SITE_URL="https://saibar.girimulyo.com"
 ```
 
 ### Langkah 2: Jalankan Skrip Deploy
@@ -55,7 +55,7 @@ Kunci konfigurasi penting pada berkas `.env` di server Hostinger:
 ```env
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://saiba.girimulyo.com
+APP_URL=https://saibar.girimulyo.com
 
 # Database Supabase
 DB_CONNECTION=pgsql
@@ -80,7 +80,7 @@ Karena Hostinger tidak dapat menjalankan worker daemon persisten (seperti Superv
 
 1. **Jadwalkan Laravel Cron** di hPanel Hostinger untuk berjalan **setiap menit**:
    ```bash
-   * * * * * /opt/alt/php84/usr/bin/php -d extension=pdo_pgsql -d extension=pgsql ~/apps/saiba/backend/artisan schedule:run >> /dev/null 2>&1
+   * * * * * /opt/alt/php84/usr/bin/php -d extension=pdo_pgsql -d extension=pgsql ~/apps/saibar/backend/artisan schedule:run >> /dev/null 2>&1
    ```
 2. **Kuras Antrean Otomatis**: Di dalam [bootstrap/app.php](../../backend/bootstrap/app.php), scheduler telah dikonfigurasi untuk menjalankan worker antrean database secara aman setiap menit:
    ```php
@@ -117,6 +117,6 @@ Jika deploy menyertakan migrasi database yang merusak (*breaking migrations*):
 ### C. Restore Database dari Backup Terakhir
 Jika database mengalami kerusakan data parah, lakukan pemulihan (*restore*) menggunakan langkah di [backup-database.md](backup-database.md#L61-L68):
 ```bash
-pg_restore -h aws-0-ap-southeast-1.pooler.supabase.com -p 5432 -U postgres.xxxx -d postgres --no-owner --no-privileges --clean --if-exists SAIBA-YYYY-MM-DD.dump
+pg_restore -h aws-0-ap-southeast-1.pooler.supabase.com -p 5432 -U postgres.xxxx -d postgres --no-owner --no-privileges --clean --if-exists SAIBAR-YYYY-MM-DD.dump
 ```
 

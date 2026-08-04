@@ -11,7 +11,7 @@ type PredictionResponse = { data: Prediction[] };
 
 const faqData = [
   {
-    q: "Seberapa akurat prediksi banjir rob SAIBA?",
+    q: "Seberapa akurat prediksi banjir rob SAIBAR?",
     a: "Prediksi adalah alat kewaspadaan, bukan kepastian kejadian. Gunakan informasi risiko bersama arahan resmi BPBD dan kondisi nyata di lapangan."
   },
   {
@@ -19,7 +19,7 @@ const faqData = [
     a: "Model memadukan data cuaca dan gelombang laut historis dari Open-Meteo (reanalisis ERA5), proyeksi pasang surut berbasis model harmonik per stasiun, faktor spasial elevasi & jarak ke pantai per kelurahan, serta kejadian rob riil (BNPB DIBI) dan laporan lapangan warga yang telah divalidasi BPBD. Integrasi sumber resmi seperti pasang surut BIG/Pushidrosal dan prakiraan BMKG sedang disiapkan secara bertahap."
   },
   {
-    q: "Siapa saja yang bisa menggunakan SAIBA?",
+    q: "Siapa saja yang bisa menggunakan SAIBAR?",
     a: "Peta publik dapat diakses oleh siapa saja tanpa login. Fitur pelaporan tersedia untuk warga terdaftar. Dashboard BPBD dikhususkan untuk operator kabupaten/kota dan BPBD Provinsi Lampung."
   },
   {
@@ -264,7 +264,7 @@ export function OnboardingPage() {
           <div>
             <h2 className="dark-text" style={{ fontSize: "2rem", fontWeight: 800, marginBottom: "16px", letterSpacing: "-0.02em" }}>FAQ</h2>
             <p className="dark-text-soft" style={{ fontSize: "1.05rem", lineHeight: 1.7 }}>
-              Pertanyaan umum mengenai penggunaan portal SAIBA dan akurasi model prediksinya.
+              Pertanyaan umum mengenai penggunaan portal SAIBAR dan akurasi model prediksinya.
             </p>
           </div>
           

@@ -1,6 +1,6 @@
 {
-    "name": "saiba/backend",
-    "description": "SAIBA Laravel API backend",
+    "name": "saibar/backend",
+    "description": "SAIBAR Laravel API backend",
     "license": "proprietary",
     "type": "project",
     "require": {

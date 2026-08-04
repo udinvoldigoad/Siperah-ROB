@@ -1,11 +1,11 @@
-﻿# Penjelasan Prediksi Machine Learning SAIBA
+﻿# Penjelasan Prediksi Machine Learning SAIBAR
 
-Dokumen ini menjelaskan secara teknis bagaimana model Machine Learning (ML) bekerja dalam memprediksi risiko banjir rob di pesisir Provinsi Lampung, serta integrasinya ke dalam sistem **SAIBA**.
+Dokumen ini menjelaskan secara teknis bagaimana model Machine Learning (ML) bekerja dalam memprediksi risiko banjir rob di pesisir Provinsi Lampung, serta integrasinya ke dalam sistem **SAIBAR**.
 
 ---
 
 ## 1. Ikhtisar Model (Model Overview)
-Model prediksi utama yang digunakan dalam SAIBA berpusat pada **XGBoost Classifier** (`flood_classifier_v1`). Model ini bertugas untuk memberikan *daily forecast* (prakiraan harian) ancaman banjir rob pada level kelurahan (region) hingga 7 hari ke depan.
+Model prediksi utama yang digunakan dalam SAIBAR berpusat pada **XGBoost Classifier** (`flood_classifier_v1`). Model ini bertugas untuk memberikan *daily forecast* (prakiraan harian) ancaman banjir rob pada level kelurahan (region) hingga 7 hari ke depan.
 
 - **Tipe Model:** Classification (Supervised Learning)
 - **Algoritma:** XGBoost (dengan SMOTE + class balancing)
@@ -15,7 +15,7 @@ Model prediksi utama yang digunakan dalam SAIBA berpusat pada **XGBoost Classifi
 ---
 
 ## 2. Sumber Data & Parameter Perhitungan (Features)
-Untuk menghasilkan sebuah prediksi, model membutuhkan asupan data (features) dari berbagai dimensi. SAIBA menggunakan fitur-fitur berikut:
+Untuk menghasilkan sebuah prediksi, model membutuhkan asupan data (features) dari berbagai dimensi. SAIBAR menggunakan fitur-fitur berikut:
 
 ### a. Data Astronomis & Oseanografi (Pasang Surut)
 Ini adalah prediktor paling signifikan (feature importance > 60%):
@@ -46,7 +46,7 @@ Setiap hari pada pukul `01:00 WIB` atau `05:00 WIB`, *cron scheduler* akan menja
 4. **Scoring:** Model ML mengevaluasi *features* dan mengembalikan nilai:
    - `probability` (0 - 1.0)
    - `confidence_score` (Tingkat keyakinan prediksi)
-5. **Penyimpanan:** Hasil perhitungan ditulis ke dalam database SAIBA pada tabel `predictions`.
+5. **Penyimpanan:** Hasil perhitungan ditulis ke dalam database SAIBAR pada tabel `predictions`.
 
 ---
 
@@ -64,7 +64,7 @@ Sistem mengubah angka numerik prediksi menjadi 4 tingkat bahaya yang dapat dipah
 
 ## 5. Continuous Learning (Timbal Balik Data)
 
-Hal terpenting dari SAIBA adalah **Validasi Ground Truth**. 
+Hal terpenting dari SAIBAR adalah **Validasi Ground Truth**. 
 
 Setiap kali operator BPBD memvalidasi laporan warga di menu *Validasi Laporan*, data laporan warga (tinggi air, keparahan, foto lapangan) secara otomatis direkam ke dataset **"Geospatial Ground Truth"**. 
 

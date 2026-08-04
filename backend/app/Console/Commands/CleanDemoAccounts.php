@@ -23,7 +23,7 @@ class CleanDemoAccounts extends Command
 
     public function handle(): int
     {
-        $emails = ['operator@saiba.local', 'provinsi@saiba.local'];
+        $emails = ['operator@saibar.local', 'provinsi@saibar.local'];
         $users = User::whereIn('email', $emails)->get();
 
         if ($users->isEmpty()) {

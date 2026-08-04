@@ -1,8 +1,8 @@
-﻿# ðŸ“˜ Panduan Pengguna (User Guide) â€” SAIBA v1.2.0
+﻿# ðŸ“˜ Panduan Pengguna (User Guide) â€” SAIBAR v1.2.0
 
 > **Sistem Informasi Risiko Banjir Rob Terpadu Provinsi Lampung**
 
-Dokumen ini menjelaskan secara lengkap cara menggunakan seluruh fitur dan modul dalam sistem SAIBA. Panduan disusun berdasarkan **3 peran (role)** utama pengguna, beserta fitur-fitur publik yang dapat diakses tanpa login.
+Dokumen ini menjelaskan secara lengkap cara menggunakan seluruh fitur dan modul dalam sistem SAIBAR. Panduan disusun berdasarkan **3 peran (role)** utama pengguna, beserta fitur-fitur publik yang dapat diakses tanpa login.
 
 ---
 
@@ -23,7 +23,7 @@ Dokumen ini menjelaskan secara lengkap cara menggunakan seluruh fitur dan modul 
 
 ## 1. Pengantar Sistem
 
-SAIBA adalah **Sistem Informasi Geografis (SIG)** berbasis WebGIS terpadu yang memanfaatkan kecerdasan buatan (_Machine Learning_) untuk memproyeksikan, memantau, dan memitigasi bencana banjir rob (genangan pasang air laut) di wilayah pesisir **Provinsi Lampung**.
+SAIBAR adalah **Sistem Informasi Geografis (SIG)** berbasis WebGIS terpadu yang memanfaatkan kecerdasan buatan (_Machine Learning_) untuk memproyeksikan, memantau, dan memitigasi bencana banjir rob (genangan pasang air laut) di wilayah pesisir **Provinsi Lampung**.
 
 ### Fitur Utama
 
@@ -78,7 +78,7 @@ Sistem mencakup **8 kabupaten/kota pesisir** di Provinsi Lampung:
 
 ### A. Registrasi Akun Baru
 
-1. Buka halaman aplikasi SAIBA.
+1. Buka halaman aplikasi SAIBAR.
 2. Klik tombol **Masuk / Daftar** pada halaman portal utama.
 3. Pada halaman login, klik tab **Daftar**.
 4. Pilih jenis akun yang diinginkan:
@@ -210,7 +210,7 @@ Mode Awam dirancang untuk menyajikan informasi risiko banjir rob dalam **bahasa 
 
 ### C. Halaman Panduan (`#/onboarding`)
 
-Halaman panduan interaktif yang menjelaskan cara menggunakan SAIBA. Berisi:
+Halaman panduan interaktif yang menjelaskan cara menggunakan SAIBAR. Berisi:
 
 - Penjelasan cara membaca peta risiko.
 - Panduan melapor kejadian banjir rob.
@@ -402,7 +402,7 @@ Tab **Referensi API** pada halaman Arsip Data menyediakan dokumentasi lengkap en
 
 ## 7. Peran: Admin Sistem
 
-Admin Sistem memiliki **akses penuh ke seluruh fitur** dalam SAIBA, termasuk kemampuan mengelola pengguna, memvalidasi laporan, dan memantau seluruh wilayah provinsi.
+Admin Sistem memiliki **akses penuh ke seluruh fitur** dalam SAIBAR, termasuk kemampuan mengelola pengguna, memvalidasi laporan, dan memantau seluruh wilayah provinsi.
 
 ### Menu Navigasi Admin
 
@@ -689,7 +689,7 @@ Tingkat keparahan ditentukan berdasarkan **tinggi genangan air** yang dilaporkan
 
 ### Umum
 
-**Q: Seberapa akurat prediksi banjir rob SAIBA?**
+**Q: Seberapa akurat prediksi banjir rob SAIBAR?**
 
 > Prediksi adalah alat kewaspadaan, **bukan kepastian kejadian**. Gunakan informasi risiko bersama arahan resmi BPBD dan kondisi nyata di lapangan.
 
@@ -697,7 +697,7 @@ Tingkat keparahan ditentukan berdasarkan **tinggi genangan air** yang dilaporkan
 
 > Model memadukan: (1) data cuaca dan gelombang laut historis dari Open-Meteo (reanalisis ERA5), (2) proyeksi pasang surut berbasis model harmonik per stasiun, (3) faktor spasial elevasi & jarak ke pantai per kelurahan, (4) kejadian rob riil (BNPB DIBI), serta (5) laporan lapangan warga yang telah divalidasi BPBD.
 
-**Q: Siapa saja yang bisa menggunakan SAIBA?**
+**Q: Siapa saja yang bisa menggunakan SAIBAR?**
 
 > Peta publik dapat diakses oleh siapa saja tanpa login. Fitur pelaporan tersedia untuk warga terdaftar. Dashboard BPBD dikhususkan untuk admin sistem. Portal penelitian untuk peneliti yang disetujui.
 
@@ -727,5 +727,5 @@ Tingkat keparahan ditentukan berdasarkan **tinggi genangan air** yang dilaporkan
 
 > **Versi Dokumen**: 1.2.0  
 > **Terakhir Diperbarui**: Juli 2026  
-> **Kontak Teknis**: Tim Pengembang SAIBA â€” Provinsi Lampung
+> **Kontak Teknis**: Tim Pengembang SAIBAR â€” Provinsi Lampung
 

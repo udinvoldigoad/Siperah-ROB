@@ -1,6 +1,6 @@
 ﻿# Kontrak & Stabilitas API Publik `/api/v1/*`
 
-Dokumen ini menetapkan spesifikasi, janji stabilitas, dan kebijakan penghentian (deprecation) untuk API peneliti eksternal SAIBA.
+Dokumen ini menetapkan spesifikasi, janji stabilitas, dan kebijakan penghentian (deprecation) untuk API peneliti eksternal SAIBAR.
 
 ---
 

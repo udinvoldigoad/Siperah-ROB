@@ -7,10 +7,10 @@ export const SEED_PASSWORD = "password";
 // limiter login (10 percobaan/menit per email + IP) tidak tertabrak ketika
 // beberapa spec dalam satu run sama-sama butuh sesi admin.
 export const SEED_USERS = {
-  warga: "warga@saiba.local",
-  peneliti: "peneliti@saiba.local",
-  admin: "admin@saiba.local",
-  admin2: "demo@saiba.local",
+  warga: "warga@saibar.local",
+  peneliti: "peneliti@saibar.local",
+  admin: "admin@saibar.local",
+  admin2: "demo@saibar.local",
 } as const;
 
 export async function loginViaUi(page: Page, email: string): Promise<void> {
@@ -37,8 +37,8 @@ export async function loginViaApi(page: Page, email: string, targetHash: string)
   await page.goto("/#/login");
   await page.evaluate(
     ([token, user]) => {
-      localStorage.setItem("saiba-token", token);
-      localStorage.setItem("saiba-user", user);
+      localStorage.setItem("saibar-token", token);
+      localStorage.setItem("saibar-user", user);
     },
     [body.access_token as string, JSON.stringify(body.user)],
   );

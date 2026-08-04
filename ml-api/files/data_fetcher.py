@@ -311,7 +311,7 @@ def fetch_daily_forecast_for_inference(days: int = 7, weather_source: str = "ope
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="SAIBA Data Fetcher")
+    parser = argparse.ArgumentParser(description="SAIBAR Data Fetcher")
     parser.add_argument("--mode", choices=["historical", "forecast"], required=True)
     parser.add_argument("--start", default="2015-01-01")
     parser.add_argument("--end", default="2025-12-31")

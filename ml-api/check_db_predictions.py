@@ -3,7 +3,7 @@ import psycopg2
 def check():
     conn = psycopg2.connect(
         host="127.0.0.1",
-        database="saiba",
+        database="saibar",
         user="postgres",
         password="postgres",
         port="5432"

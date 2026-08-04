@@ -63,7 +63,7 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     headers.set("Content-Type", "application/json");
   }
 
-  const token = localStorage.getItem("saiba-token");
+  const token = localStorage.getItem("saibar-token");
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   } else if (options.token) {
@@ -75,8 +75,8 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
   if (!response.ok) {
     const isLoginPath = path.includes("/login");
     if (response.status === 401 && !isLoginPath) {
-      localStorage.removeItem("saiba-token");
-      window.dispatchEvent(new CustomEvent("saiba-auth-expired"));
+      localStorage.removeItem("saibar-token");
+      window.dispatchEvent(new CustomEvent("saibar-auth-expired"));
       window.location.hash = "#/login";
     }
 
@@ -124,7 +124,7 @@ export async function downloadFile(
   }
 
   const headers = new Headers({ Accept: "text/csv" });
-  const token = localStorage.getItem("saiba-token");
+  const token = localStorage.getItem("saibar-token");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const response = await fetch(`${apiBase}${path}${query.size ? `?${query}` : ""}`, { headers });
@@ -133,8 +133,8 @@ export async function downloadFile(
     // Perlakuan 401 disamakan dengan api(): sesi dibersihkan & pengguna
     // diarahkan login, bukan sekadar melempar kode status.
     if (response.status === 401) {
-      localStorage.removeItem("saiba-token");
-      window.dispatchEvent(new CustomEvent("saiba-auth-expired"));
+      localStorage.removeItem("saibar-token");
+      window.dispatchEvent(new CustomEvent("saibar-auth-expired"));
       window.location.hash = "#/login";
       throw new ApiError("Sesi Anda telah habis. Silakan login kembali.", 401, null);
     }

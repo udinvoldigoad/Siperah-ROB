@@ -420,7 +420,7 @@ final class ApiFoundationTest extends TestCase
     public function test_operator_summary_kpi_export_and_report_list_share_access_scope(): void
     {
         // Regency unik & tak lazim agar KPI tak tercampur data lain (termasuk
-        // seed demo di DB test saiba_test â€” lihat .env.testing).
+        // seed demo di DB test saibar_test â€” lihat .env.testing).
         $uniqueRegency = 'Uji Operator Selatan';
         $otherRegency = 'Uji Operator Timur';
         $operatorRegion = $this->insertRegionForPoint(-5.620, 105.320, true, $uniqueRegency);

@@ -1,8 +1,8 @@
-﻿# Product Requirements Document â€” SAIBA
+﻿# Product Requirements Document â€” SAIBAR
 
 | | |
 |---|---|
-| **Produk** | SAIBA |
+| **Produk** | SAIBAR |
 | **Nama Lengkap** | Sistem Informasi Risiko Banjir Rob Terpadu Provinsi Lampung |
 | **Jenis Dokumen** | Product Requirements Document (PRD) |
 | **Versi** | 0.1 (Draft) |
@@ -16,7 +16,7 @@
 
 ## 1. Ringkasan Eksekutif
 
-SAIBA adalah sistem informasi geografis (SIG) berbasis web yang memprediksi dan memantau risiko **banjir rob** (genangan air laut akibat pasang tinggi) di wilayah pesisir Provinsi Lampung. Sistem menggabungkan model *machine learning* dengan data resmi (BMKG, BIG, BPS) dan laporan lapangan dari warga (*ground truth*) untuk menghasilkan peta risiko yang diperbarui harian, mendukung pengambilan keputusan BPBD di tingkat kabupaten/kota maupun provinsi, serta membuka akses data terstruktur untuk keperluan penelitian.
+SAIBAR adalah sistem informasi geografis (SIG) berbasis web yang memprediksi dan memantau risiko **banjir rob** (genangan air laut akibat pasang tinggi) di wilayah pesisir Provinsi Lampung. Sistem menggabungkan model *machine learning* dengan data resmi (BMKG, BIG, BPS) dan laporan lapangan dari warga (*ground truth*) untuk menghasilkan peta risiko yang diperbarui harian, mendukung pengambilan keputusan BPBD di tingkat kabupaten/kota maupun provinsi, serta membuka akses data terstruktur untuk keperluan penelitian.
 
 ## 2. Latar Belakang & Masalah
 

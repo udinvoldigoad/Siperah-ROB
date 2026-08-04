@@ -48,7 +48,7 @@ def get_conn():
     return psycopg2.connect(
         host=os.getenv("DB_HOST", "127.0.0.1"),
         port=int(os.getenv("DB_PORT", "5432")),
-        database=os.getenv("DB_DATABASE", "saiba"),
+        database=os.getenv("DB_DATABASE", "saibar"),
         user=os.getenv("DB_USERNAME", "postgres"),
         password=os.getenv("DB_PASSWORD", ""),
         connect_timeout=20,

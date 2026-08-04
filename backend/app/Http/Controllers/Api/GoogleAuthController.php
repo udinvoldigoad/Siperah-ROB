@@ -43,7 +43,7 @@ class GoogleAuthController
 
             // Klaim email_verified dari Google WAJIB true. Tanpa ini, akun
             // Google dengan email yang belum diverifikasi (mis. Workspace yang
-            // dikelola sendiri) bisa menaut ke akun SAIBA yang sudah ada
+            // dikelola sendiri) bisa menaut ke akun SAIBAR yang sudah ada
             // dan langsung masuk â€” email bisa diklaim tanpa bukti kepemilikan.
             // `getRaw()` daripada ArrayAccess: bentuk klaim mentah lebih tahan
             // bila stub Socialite tidak mengisinya (null dibaca sebagai tidak

@@ -2,7 +2,7 @@ name: CI Backend
 
 # Sanity check tiap perubahan backend: dependensi terpasang bersih, tidak ada
 # error sintaks PHP, dan seluruh suite PHPUnit hijau di DB Postgres+PostGIS
-# yang meniru saiba_test lokal (lihat backend/.env.testing.example).
+# yang meniru saibar_test lokal (lihat backend/.env.testing.example).
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
       postgres:
         image: postgis/postgis:17-3.4-alpine
         env:
-          POSTGRES_DB: saiba_test
+          POSTGRES_DB: saibar_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
@@ -47,7 +47,7 @@ jobs:
       DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
-      DB_DATABASE: saiba_test
+      DB_DATABASE: saibar_test
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       CACHE_STORE: array
@@ -84,7 +84,7 @@ jobs:
         run: find app bootstrap config database routes tests -name "*.php" -print0 | xargs -0 -n1 -P4 php -l
 
       - name: Pastikan ekstensi PostGIS aktif
-        run: PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d saiba_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+        run: PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d saibar_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 
       - name: Migrasi + seed database uji
         run: php artisan migrate:fresh --seed --force

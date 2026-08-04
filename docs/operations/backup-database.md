@@ -7,7 +7,7 @@ warga tidak pernah menyentuh repo public ini.
 
 ## Setup sekali (Â±5 menit)
 
-1. Buat repo **private** baru, mis. `saiba-backups` (cukup kosong).
+1. Buat repo **private** baru, mis. `saibar-backups` (cukup kosong).
 2. Di repo itu: **Settings â†’ Secrets and variables â†’ Actions**, tambahkan
    secret yang sama dengan repo utama: `SUPABASE_DB_HOST`, `SUPABASE_DB_PORT`,
    `SUPABASE_DB_DATABASE`, `SUPABASE_DB_USERNAME`, `SUPABASE_DB_PASSWORD`.
@@ -47,8 +47,8 @@ jobs:
             -U "${{ secrets.SUPABASE_DB_USERNAME }}" \
             -d "${{ secrets.SUPABASE_DB_DATABASE }}" \
             --no-owner --no-privileges -F c \
-            -f "saiba-$(date -u +%F).dump"
-          ls -lh saiba-*.dump
+            -f "saibar-$(date -u +%F).dump"
+          ls -lh saibar-*.dump
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -63,7 +63,7 @@ jobs:
 1. Unduh artifact dari tab Actions repo private â†’ run backup â†’ Artifacts.
 2. Ekstrak zip, lalu:
    ```
-   pg_restore -h <host> -p 5432 -U <user> -d <db> --no-owner --no-privileges --clean --if-exists saiba-YYYY-MM-DD.dump
+   pg_restore -h <host> -p 5432 -U <user> -d <db> --no-owner --no-privileges --clean --if-exists saibar-YYYY-MM-DD.dump
    ```
 
 ## Catatan

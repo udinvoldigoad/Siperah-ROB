@@ -17,10 +17,10 @@ class TestMailNotification extends Notification
     public function toMail(object $notifiable)
     {
         $time = now()->timezone('Asia/Jakarta')->format('H:i:s');
-        $body = trim(($this->note !== '' ? $this->note.' ' : 'Email uji coba dari SAIBA. ')."({$time} WIB)");
+        $body = trim(($this->note !== '' ? $this->note.' ' : 'Email uji coba dari SAIBAR. ')."({$time} WIB)");
 
         return (new MailMessage)
-            ->subject('ðŸ”” Notifikasi Uji SAIBA (Email)')
+            ->subject('ðŸ”” Notifikasi Uji SAIBAR (Email)')
             ->greeting('Halo, ' . ($notifiable->name ?? ''))
             ->line($body)
             ->line('Jika Anda menerima email ini, konfigurasi SMTP sudah benar.')

@@ -1,5 +1,5 @@
 ﻿#!/usr/bin/env bash
-# Deploy SAIBA ke Hostinger shared hosting.
+# Deploy SAIBAR ke Hostinger shared hosting.
 # Jalankan dari root repo: bash scripts/deploy-hostinger.sh
 #
 # Konfigurasi dibaca dari scripts/deploy.env (TIDAK ikut Git â€” repo ini public).

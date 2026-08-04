@@ -1,4 +1,4 @@
-﻿# Roadmap Pengembangan ML Prediksi Banjir Rob â€” SAIBA
+﻿# Roadmap Pengembangan ML Prediksi Banjir Rob â€” SAIBAR
 
 > **Versi:** 1.0 Â· **Terakhir diperbarui:** Juli 2026  
 > **Konteks:** Dokumen ini merupakan kelanjutan dan penjabaran implementasi dari `planning_ml_prediksi_rob_lampung (1).md`.  
@@ -8,7 +8,7 @@
 
 ## Ringkasan Eksekutif
 
-Pipeline ML SAIBA akan mengintegrasikan **3 sumber data eksternal** (BMKG, Open-Meteo, BIG) ke dalam satu sistem pelatihan dan inferensi yang terhubung langsung ke `ml-api` yang sudah ada. Sistem dirancang bertahap (4 fase) dari pengumpulan data mentah hingga model hidup di produksi.
+Pipeline ML SAIBAR akan mengintegrasikan **3 sumber data eksternal** (BMKG, Open-Meteo, BIG) ke dalam satu sistem pelatihan dan inferensi yang terhubung langsung ke `ml-api` yang sudah ada. Sistem dirancang bertahap (4 fase) dari pengumpulan data mentah hingga model hidup di produksi.
 
 ---
 
@@ -109,7 +109,7 @@ Kode wilayah pesisir Lampung yang perlu dicari via API:
 
 Untuk data pasang surut historis, gunakan dua pendekatan (dari yang termudah):
 
-**Opsi A (Rekomendasi â€” sudah ada di codebase):** Gunakan model harmonik yang sudah ada di `ml-api/main.py` (fungsi `fit_harmonic_model`) berbasis data sensor IoT internal dari tabel `datasets` di database SAIBA. Proyeksikan ke depan menggunakan konstanta harmonik yang sudah dikalibrasi.
+**Opsi A (Rekomendasi â€” sudah ada di codebase):** Gunakan model harmonik yang sudah ada di `ml-api/main.py` (fungsi `fit_harmonic_model`) berbasis data sensor IoT internal dari tabel `datasets` di database SAIBAR. Proyeksikan ke depan menggunakan konstanta harmonik yang sudah dikalibrasi.
 
 **Opsi B (Data Eksternal):** Unduh arsip pasut historis dari UHSLC (University of Hawaii Sea Level Center) untuk stasiun Pelabuhan Panjang, Lampung:
 ```
@@ -190,7 +190,7 @@ Simpan artefak model â†’ models/flood_classifier_v1.joblib
 
 ---
 
-## Fase 3: Integrasi dengan Backend SAIBA (Minggu 3â€“4)
+## Fase 3: Integrasi dengan Backend SAIBAR (Minggu 3â€“4)
 
 ### 3.1 Alur Inferensi Harian (Otomatis)
 

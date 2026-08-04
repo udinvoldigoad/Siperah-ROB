@@ -378,7 +378,7 @@ function CitizenModeDesktop({
           <motion.section variants={itemVariants} className="panel flush">
             <div style={{ padding: "24px", borderBottom: "1px solid var(--line)" }}>
               <h2 style={{ fontSize: "1.25rem", margin: 0, marginBottom: 4 }}>Prakiraan 7 Hari ke Depan</h2>
-              <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Sumber: model prediksi SAIBA. Waspada saat indikator merah mendominasi.</p>
+              <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "14px" }}>Sumber: model prediksi SAIBAR. Waspada saat indikator merah mendominasi.</p>
             </div>
 
             {forecastDays.length === 0 ? (
@@ -892,7 +892,7 @@ export function CitizenModePage() {
   ];
 
   const shareText = [
-    "âš ï¸ Peringatan Banjir Rob â€” SAIBA",
+    "âš ï¸ Peringatan Banjir Rob â€” SAIBAR",
     `Lokasi: ${currentLocation}`,
     `Status: ${risk}`,
     ...(data ? [
@@ -901,7 +901,7 @@ export function CitizenModePage() {
         ? [`Peluang rob ${Math.round(Number(data.risk_probability))}%${data.peak_time ? `, puncak pasang ${data.peak_time} WIB` : ""}.`]
         : []),
     ] : []),
-    "Sumber: SAIBA",
+    "Sumber: SAIBAR",
   ].join("\n");
 
   const handleShareWhatsApp = () => {

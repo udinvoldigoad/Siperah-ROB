@@ -17,7 +17,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     // Log ke konsol untuk diagnosis; bisa diarahkan ke layanan monitoring nanti.
-    console.error("[SAIBA] Uncaught UI error:", error, info.componentStack);
+    console.error("[SAIBAR] Uncaught UI error:", error, info.componentStack);
   }
 
   private handleReload = (): void => {

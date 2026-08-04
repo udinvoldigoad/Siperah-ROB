@@ -223,7 +223,7 @@ final class BigRegionSyncService
     private function http(): PendingRequest
     {
         return Http::acceptJson()
-            ->withUserAgent('SAIBA/1.0 (BIG region synchronization)')
+            ->withUserAgent('SAIBAR/1.0 (BIG region synchronization)')
             ->connectTimeout(15)
             ->timeout(90)
             ->retry(3, 1000, throw: false);

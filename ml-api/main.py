@@ -1,5 +1,5 @@
 """
-main.py -- Orkestrator pipeline ML prediksi banjir rob SAIBA.
+main.py -- Orkestrator pipeline ML prediksi banjir rob SAIBAR.
 
 Mode CLI (Fase 3 roadmap):
   python main.py --mode fetch     Unduh data historis Open-Meteo -> data/raw/*.csv
@@ -47,7 +47,7 @@ load_dotenv(dotenv_path=base_dir / "backend" / ".env")
 DB_CONN = os.getenv("DB_CONNECTION", "mysql")
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
 DB_PORT = os.getenv("DB_PORT", "3306")
-DB_DATABASE = os.getenv("DB_DATABASE", "saiba")
+DB_DATABASE = os.getenv("DB_DATABASE", "saibar")
 DB_USERNAME = os.getenv("DB_USERNAME", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 
@@ -533,7 +533,7 @@ def _log_prediction_run(conn, written, data_source, tide_simulated):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Pipeline Prediksi Banjir Rob SAIBA")
+    parser = argparse.ArgumentParser(description="Pipeline Prediksi Banjir Rob SAIBAR")
     parser.add_argument("--mode", choices=["fetch", "train", "predict"], default="predict",
                         help="Mode eksekusi (default: predict)")
     parser.add_argument("--start", default="2015-01-01", help="Awal data historis (mode fetch)")

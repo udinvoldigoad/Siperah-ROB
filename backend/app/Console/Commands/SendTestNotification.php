@@ -14,9 +14,9 @@ use Illuminate\Console\Command;
  * saluran notifikasi, sehingga aman untuk menguji tanpa mengotori database.
  *
  * Contoh:
- *   php artisan notify:test warga@saiba.local
- *   php artisan notify:test admin@saiba.local --mail
- *   php artisan notify:test admin@saiba.local --mail --note="Tes SMTP"
+ *   php artisan notify:test warga@saibar.local
+ *   php artisan notify:test admin@saibar.local --mail
+ *   php artisan notify:test admin@saibar.local --mail --note="Tes SMTP"
  */
 class SendTestNotification extends Command
 {

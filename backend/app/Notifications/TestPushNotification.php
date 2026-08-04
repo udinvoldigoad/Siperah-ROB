@@ -26,7 +26,7 @@ class TestPushNotification extends Notification
         $body = trim(($this->note !== '' ? $this->note.' ' : 'Push berhasil sampai di perangkat ini. ')."({$time} WIB)");
 
         return (new WebPushMessage)
-            ->title('ðŸ”” Notifikasi Uji SAIBA')
+            ->title('ðŸ”” Notifikasi Uji SAIBAR')
             ->icon('/logo.png')
             ->badge('/logo.png')
             ->body($body)
