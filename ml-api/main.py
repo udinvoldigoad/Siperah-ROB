@@ -477,7 +477,7 @@ def run_predict(conn):
                 generated_at,
                 data_source,
                 f"{train_model.MODEL_VERSION} - {row['horizon_type']} - stasiun {station_key}",
-                "partial" if spatial_missing else "official",
+                "unverified" if spatial_missing else "official",
             ))
 
     # Batch insert: satu roundtrip per ratusan baris. Insert per baris memakan

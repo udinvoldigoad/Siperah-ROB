@@ -80,6 +80,10 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
       window.location.hash = "#/login";
     }
 
+    // Clone SEBELUM membaca body agar clone() tidak gagal dengan
+    // "Response body is already used" jika json() melempar error.
+    const errorClone = response.clone();
+
     let msg = `API ${response.status}: ${response.statusText}`;
     let body: ApiErrorBody | null = null;
     try {
@@ -87,7 +91,7 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
       if (body?.message) msg = body.message;
     } catch {
       if (import.meta.env.DEV) {
-        response.clone().text().then((raw) => console.debug("[api] non-JSON error response", raw));
+        errorClone.text().then((raw) => console.debug("[api] non-JSON error response", raw));
       }
     }
 
