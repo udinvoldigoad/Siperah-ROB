@@ -6,7 +6,7 @@ import { Icon } from "../../shared/components/Icon";
 import { LoadingBlock } from "../../shared/components/LoadingBlock";
 import { EmptyState } from "../../shared/components/EmptyState";
 import { Skeleton } from "../../shared/components/Skeleton";
-import { getCurrentUser, getToken } from "../../shared/auth/session";
+import { getCurrentUser } from "../../shared/auth/session";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface DatasetData {
@@ -140,11 +140,9 @@ export function ResearchPortalPage() {
 
   const handleDatasetDownload = async (dataset: DatasetData, format: "csv" | "json" | "xlsx") => {
     try {
-      const token = getToken();
       const response = await fetch(datasetDownloadUrl(dataset, format), {
         headers: {
           Accept: format === "csv" ? "text/csv" : format === "xlsx" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
       if (!response.ok) throw new Error(`Download gagal (${response.status})`);

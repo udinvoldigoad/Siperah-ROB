@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\EnsureActiveUser;
 use App\Http\Middleware\AuthenticateApiKey;
+use App\Http\Middleware\CookieTokenAuth;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -79,6 +80,9 @@ return Application::configure(basePath: dirname(__DIR__))
             ->when($backupEnabled);
     })
     ->withMiddleware(function (Middleware $middleware): void {
+        // Terjemahkan cookie sesi httpOnly menjadi header Authorization untuk
+        // seluruh rute API, sebelum guard Sanctum berjalan.
+        $middleware->api(prepend: [CookieTokenAuth::class]);
         $middleware->append(SecurityHeaders::class);
         $middleware->alias([
             'active' => EnsureActiveUser::class,

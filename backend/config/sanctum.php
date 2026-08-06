@@ -50,7 +50,10 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Token SPA kini kedaluwarsa (7 hari secara default; sesi aktif otomatis
+    // diperpanjang per request oleh EnsureActiveUser). Token tak lagi hidup
+    // selamanya, sehingga yang bocor ikut mati begitu tidak terpakai.
+    'expiration' => (int) env('SANCTUM_EXPIRATION', 60 * 24 * 7),
 
     /*
     |--------------------------------------------------------------------------

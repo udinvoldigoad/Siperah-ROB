@@ -48,6 +48,13 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
   const [notifications, setNotifications] = useState<InboxItem[]>([]);
   const notificationRef = useRef<HTMLDivElement>(null);
 
+  // Logout: minta server mematikan cookie sesi httpOnly (tak bisa dihapus
+  // JavaScript), lalu kosongkan cache pengguna.
+  const handleLogout = useCallback(async () => {
+    await api("/auth/logout", { method: "POST" }).catch(() => {});
+    clearSession();
+  }, []);
+
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.setAttribute("data-theme", "dark");
@@ -203,7 +210,7 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
                 aria-label="Logout"
                 href="#/"
                 onClick={() => {
-                  clearSession();
+                  void handleLogout();
                 }}
                 style={{ color: "var(--critical)", display: "flex", alignItems: "center", gap: "8px", fontWeight: 600, fontSize: "14px", textDecoration: "none", marginTop: "4px" }}
               >
@@ -386,8 +393,8 @@ export function AppShell({ active, title, subtitle, breadcrumbs, children }: {
                 <a
                   href="#/"
                   onClick={() => {
-                    clearSession();
                     setIsMoreMenuOpen(false);
+                    void handleLogout();
                     window.location.hash = "/";
                     window.location.reload();
                   }}

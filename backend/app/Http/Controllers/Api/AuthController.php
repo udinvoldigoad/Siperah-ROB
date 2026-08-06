@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\UserRole;
+use App\Concerns\SetsSessionCookie;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
@@ -11,11 +12,14 @@ use App\Services\AuditService;
 use App\Services\EmailVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 final class AuthController
 {
+    use SetsSessionCookie;
+
     public function __construct(
         private readonly AuditService $audit,
         private readonly EmailVerificationService $emailVerification,
@@ -94,11 +98,14 @@ final class AuthController
         $request->setUserResolver(fn () => $user);
         $this->audit->write($request, 'login', 'success', $user->email);
 
-        return response()->json([
+        $response = response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => new UserResource($user),
         ]);
+        $response->headers->setCookie($this->sessionCookie($token));
+
+        return $response;
     }
 
     public function register(RegisterRequest $request): JsonResponse
@@ -244,10 +251,31 @@ final class AuthController
         ]);
     }
 
+    /**
+     * Logout sengaja dijadikan publik (di luar grup auth:sanctum) supaya tetap
+     * bisa mematikan cookie meski token sudah kedaluwarsa — jika token masih
+     * sah, ikut dicabut di sini.
+     */
     public function logout(Request $request): JsonResponse
     {
-        $this->audit->write($request, 'logout', 'success', $request->user()->email);
-        $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Logged out successfully']);
+        $user = Auth::guard('sanctum')->user();
+        $token = $user?->currentAccessToken();
+
+        if ($user && $token) {
+            $this->audit->write($request, 'logout', 'success', $user->email);
+            $token->delete();
+        }
+
+        $response = response()->json(['message' => 'Logged out successfully']);
+        $response->headers->clearCookie(
+            \App\Http\Middleware\CookieTokenAuth::SESSION_COOKIE,
+            '/',
+            null,
+            app()->isProduction(),
+            true,
+            'Lax',
+        );
+
+        return $response;
     }
 }

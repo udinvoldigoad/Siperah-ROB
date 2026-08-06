@@ -22,13 +22,16 @@ async function loginAdminOnce(page: Page): Promise<string> {
   const body = await response.json();
 
   await page.goto("/#/login");
-  await page.evaluate(
-    ([token, user]) => {
-      localStorage.setItem("saibar-token", token);
-      localStorage.setItem("saibar-user", user);
+  await page.context().addCookies([
+    {
+      name: "saibar_session",
+      value: body.access_token as string,
+      url: new URL(page.url()).origin,
     },
-    [body.access_token as string, JSON.stringify(body.user)],
-  );
+  ]);
+  await page.evaluate((user) => {
+    localStorage.setItem("saibar-user", user);
+  }, JSON.stringify(body.user));
 
   return body.access_token as string;
 }

@@ -1,4 +1,4 @@
-type ApiOptions = RequestInit & { token?: string };
+type ApiOptions = RequestInit;
 
 export const apiBase = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
@@ -55,6 +55,21 @@ export function apiUrl(path: string): string {
   return path.startsWith("/") ? path : `${apiBase}/${path}`;
 }
 
+/**
+ * Bersihkan sesi saat token tak lagi diterima server (401).
+ *
+ * Token ada di cookie httpOnly yang tak bisa dihapus JavaScript — minta server
+ * mematikan cookie-nya lewat /auth/logout (endpoint publik, aman dipanggil
+ * bahkan saat token sudah kedaluwarsa). `keepalive` agar request tetap selesai
+ * walau halaman sedang dialihkan.
+ */
+function handleAuthExpired(): void {
+  localStorage.removeItem("saibar-user");
+  fetch(`${apiBase}/auth/logout`, { method: "POST", keepalive: true }).catch(() => {});
+  window.dispatchEvent(new CustomEvent("saibar-auth-expired"));
+  window.location.hash = "#/login";
+}
+
 export async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
@@ -63,21 +78,14 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     headers.set("Content-Type", "application/json");
   }
 
-  const token = localStorage.getItem("saibar-token");
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  } else if (options.token) {
-    headers.set("Authorization", `Bearer ${options.token}`);
-  }
-
+  // Token tidak pernah dikirim dari JS — ia dibawa cookie httpOnly `saibar_session`
+  // yang dipasang server saat login/exchange dan ikut pada request same-origin.
   const response = await fetch(`${apiBase}${path}`, { ...options, headers });
 
   if (!response.ok) {
     const isLoginPath = path.includes("/login");
     if (response.status === 401 && !isLoginPath) {
-      localStorage.removeItem("saibar-token");
-      window.dispatchEvent(new CustomEvent("saibar-auth-expired"));
-      window.location.hash = "#/login";
+      handleAuthExpired();
     }
 
     // Clone SEBELUM membaca body agar clone() tidak gagal dengan
@@ -128,8 +136,6 @@ export async function downloadFile(
   }
 
   const headers = new Headers({ Accept: "text/csv" });
-  const token = localStorage.getItem("saibar-token");
-  if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const response = await fetch(`${apiBase}${path}${query.size ? `?${query}` : ""}`, { headers });
 
@@ -137,9 +143,7 @@ export async function downloadFile(
     // Perlakuan 401 disamakan dengan api(): sesi dibersihkan & pengguna
     // diarahkan login, bukan sekadar melempar kode status.
     if (response.status === 401) {
-      localStorage.removeItem("saibar-token");
-      window.dispatchEvent(new CustomEvent("saibar-auth-expired"));
-      window.location.hash = "#/login";
+      handleAuthExpired();
       throw new ApiError("Sesi Anda telah habis. Silakan login kembali.", 401, null);
     }
     throw new ApiError(`Export gagal (${response.status})`, response.status, null);

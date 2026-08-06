@@ -1,22 +1,23 @@
 import { api } from "../api/client";
 
 /**
- * Satu-satunya pintu baca/tulis sesi di localStorage.
+ * Pintu baca/tulis sesi di localStorage — hanya objek pengguna (cache UI),
+ * BUKAN token.
  *
- * Sebelumnya blok `try { JSON.parse(localStorage.getItem("saibar-user")) }
- * catch {}` disalin di 9 file, masing-masing dengan bentuk tipe sendiri dan
- * pengecekan "sudah login" yang tidak seragam. Selain berulang, itu berarti
- * satu perubahan bentuk sesi harus dikejar ke sembilan tempat.
+ * Token Sanctum kini dikirim lewat cookie httpOnly (`saibar_session`) yang
+ * dipasang server saat login/exchange dan ikut terbawa otomatis pada setiap
+ * request ke origin yang sama. Karena httpOnly, JavaScript (termasuk skrip
+ * injeksi/XSS) tidak pernah bisa membaca token dari cookie, tidak seperti
+ * localStorage dulu.
  *
- * PENTING â€” localStorage adalah CACHE, bukan sumber kebenaran. Isinya bisa
- * diubah siapa pun lewat DevTools. Otorisasi yang sesungguhnya ada di server:
- * `EnsureRole` membaca peran dari token Sanctum â†’ database, jadi peran palsu
- * di sini tidak pernah membuka satu endpoint pun. Yang dicegah `verifySession()`
- * adalah UI ikut mempercayai nilai palsu itu lalu menampilkan menu/halaman yang
- * sebenarnya tak boleh dilihat.
+ * localStorage tetap dipakai untuk `saibar-user` sebagai CACHE, bukan sumber
+ * kebenaran — isinya bisa diubah siapa pun lewat DevTools. Otorisasi yang
+ * sesungguhnya ada di server: `EnsureRole` membaca peran dari token Sanctum
+ * → database, jadi peran palsu di sini tidak pernah membuka satu endpoint
+ * pun. Yang dicegah `verifySession()` adalah UI ikut mempercayai nilai palsu
+ * itu lalu menampilkan menu/halaman yang sebenarnya tak boleh dilihat.
  */
 
-const TOKEN_KEY = "saibar-token";
 const USER_KEY = "saibar-user";
 
 /** Dipancarkan tiap sesi berubah agar komponen yang sudah ter-mount ikut menyegarkan diri. */
@@ -32,10 +33,6 @@ export interface SessionUser {
   region_name?: string | null;
 }
 
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
 /** Pengguna tersimpan, atau null bila belum login / datanya rusak. */
 export function getCurrentUser(): SessionUser | null {
   try {
@@ -49,19 +46,17 @@ export function getCurrentUser(): SessionUser | null {
   }
 }
 
-/** Login = punya token DAN data pengguna yang bisa dibaca. */
+/** Login = ada cache pengguna. Validasi sebenarnya tetap di server (cookie + token). */
 export function isLoggedIn(): boolean {
-  return !!getToken() && !!getCurrentUser();
+  return !!getCurrentUser();
 }
 
-export function setSession(token: string, user: SessionUser): void {
-  localStorage.setItem(TOKEN_KEY, token);
+export function setSession(user: SessionUser): void {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
   window.dispatchEvent(new CustomEvent(SESSION_CHANGED_EVENT));
 }
 
 export function clearSession(): void {
-  localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
   window.dispatchEvent(new CustomEvent(SESSION_CHANGED_EVENT));
 }
@@ -74,17 +69,14 @@ export function clearSession(): void {
  * menyesatkan dan membocorkan struktur halaman internal). Setelah ini, peran
  * yang dipakai UI selalu berasal dari `/auth/me`.
  *
- * Batas yang jujur: ini TIDAK membuat pengubahan mustahil â€” siapa pun bisa
+ * Batas yang jujur: ini TIDAK membuat pengubahan mustahil — siapa pun bisa
  * memblokir request `/auth/me` dari DevTools dan menahan cache palsunya.
  * Satu-satunya penjaga sesungguhnya tetap otorisasi server.
  */
 export async function verifySession(): Promise<SessionUser | null> {
-  const token = getToken();
-  if (!token) return null;
-
   try {
     const response = await api<{ data: SessionUser }>("/auth/me");
-    setSession(token, response.data);
+    setSession(response.data);
     return response.data;
   } catch {
     // 401 sudah dibersihkan & dialihkan oleh api(). Sisanya (mis. jaringan

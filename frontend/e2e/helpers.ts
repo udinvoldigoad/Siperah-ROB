@@ -24,8 +24,9 @@ export async function loginViaUi(page: Page, email: string): Promise<void> {
 
 /**
  * Login cepat tanpa UI untuk spec non-login: ambil token via API (lewat proxy
- * vite yang sama dengan aplikasi), suntik ke localStorage, lalu buka rute
- * tujuan. Alur login-nya sendiri diuji terpisah di login.spec.ts.
+ * vite yang sama dengan aplikasi), suntik sebagai cookie sesi httpOnly (nama
+ * sama dengan yang dipasang server saat login), set cache pengguna, lalu buka
+ * rute tujuan. Alur login-nya sendiri diuji terpisah di login.spec.ts.
  */
 export async function loginViaApi(page: Page, email: string, targetHash: string): Promise<void> {
   const response = await page.request.post("/api/auth/login", {
@@ -35,13 +36,16 @@ export async function loginViaApi(page: Page, email: string, targetHash: string)
   const body = await response.json();
 
   await page.goto("/#/login");
-  await page.evaluate(
-    ([token, user]) => {
-      localStorage.setItem("saibar-token", token);
-      localStorage.setItem("saibar-user", user);
+  await page.context().addCookies([
+    {
+      name: "saibar_session",
+      value: body.access_token as string,
+      url: new URL(page.url()).origin,
     },
-    [body.access_token as string, JSON.stringify(body.user)],
-  );
+  ]);
+  await page.evaluate((user) => {
+    localStorage.setItem("saibar-user", user);
+  }, JSON.stringify(body.user));
   await page.goto(`/${targetHash}`);
   await page.reload();
 }

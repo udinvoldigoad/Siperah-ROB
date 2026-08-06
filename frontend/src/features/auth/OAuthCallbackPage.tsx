@@ -28,7 +28,7 @@ export function OAuthCallbackPage() {
       body: JSON.stringify({ code }),
     })
       .then((res) => {
-        setSession(res.access_token, res.user);
+        setSession(res.user);
         window.location.hash = dashboardHashForRole(res.user.role);
       })
       .catch((err: unknown) => {

@@ -43,10 +43,13 @@ Route::get('/reports/photo/{photo}', [ReportController::class, 'photo'])
     ->middleware('throttle:public')
     ->name('reports.photo');
 
+// Logout publik: tetap bisa mematikan cookie walau token sudah kedaluwarsa
+// (token yang masih sah ikut dicabut di controller).
+Route::post('/auth/logout', [AuthController::class, 'logout']);
+
 // ── Authenticated ────────────────────────────────────────────────
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     // Reports — semua user login bisa lihat & buat
     Route::get('/reports', [ReportController::class, 'index']);

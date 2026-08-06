@@ -51,6 +51,16 @@ function riskText(value: unknown) {
   return riskLabels[String(value)] ?? String(value ?? "Belum ada data");
 }
 
+/** Saring nilai sebelum disuntikkan ke HTML popup peta (anti-XSS). */
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function daysFromToday(dateStr: string): number {
   const target = new Date(`${dateStr}T00:00:00`);
   const today = new Date();
@@ -359,7 +369,7 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, user
           // severity memakai kamus keparahan laporan (ringan/sedang/parah/
           // sangat_parah) — bukan kamus kelas risiko; radius lingkaran hanya
           // visualisasi keparahan, bukan hasil pengukuran.
-          const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`<strong>Laporan: ${report.properties.report_code ?? "Warga"}</strong><br>${report.properties.location ?? "Wilayah pesisir"}${incidentDate ? `<br>Waktu kejadian: ${incidentDate}` : ""}<br>Tingkat Genangan: <span style="color:${color}; font-weight:bold;">${severityLabels[severity as ReportSeverity] ?? severity}</span><br>Ketinggian air: ${report.properties.water_height_cm ?? "-"} cm`);
+          const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`<strong>Laporan: ${escapeHtml(report.properties.report_code ?? "Warga")}</strong><br>${escapeHtml(report.properties.location ?? "Wilayah pesisir")}${incidentDate ? `<br>Waktu kejadian: ${escapeHtml(incidentDate)}` : ""}<br>Tingkat Genangan: <span style="color:${color}; font-weight:bold;">${escapeHtml(severityLabels[severity as ReportSeverity] ?? severity)}</span><br>Ketinggian air: ${escapeHtml(report.properties.water_height_cm ?? "-")} cm`);
 
           reportMarkers.current.push(
             new maplibregl.Marker({ color })
@@ -374,7 +384,7 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, user
         layers.tidal_stations.features.forEach((station) => {
           const coordinates = station.geometry.coordinates;
           if (!Array.isArray(coordinates) || typeof coordinates[0] !== "number" || typeof coordinates[1] !== "number") return;
-          const popup = new maplibregl.Popup({ offset: 20 }).setHTML(`<strong>Stasiun pasang surut</strong><br>${station.properties.name ?? station.properties.code ?? "-"}<br>Sumber: ${station.properties.source ?? "-"}`);
+          const popup = new maplibregl.Popup({ offset: 20 }).setHTML(`<strong>Stasiun pasang surut</strong><br>${escapeHtml(station.properties.name ?? station.properties.code ?? "-")}<br>Sumber: ${escapeHtml(station.properties.source ?? "-")}`);
           tidalMarkers.current.push(
             new maplibregl.Marker({ color: "#0284c7" })
               .setLngLat([coordinates[0], coordinates[1]])
@@ -388,7 +398,7 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, user
         layers.critical_infrastructure.features.forEach((infra) => {
           const coordinates = infra.geometry.coordinates;
           if (!Array.isArray(coordinates) || typeof coordinates[0] !== "number" || typeof coordinates[1] !== "number") return;
-          const popup = new maplibregl.Popup({ offset: 20 }).setHTML(`<strong>Infrastruktur Kritis</strong><br>${infra.properties.name ?? "-"}<br>Tipe: ${infra.properties.type ?? "-"}`);
+          const popup = new maplibregl.Popup({ offset: 20 }).setHTML(`<strong>Infrastruktur Kritis</strong><br>${escapeHtml(infra.properties.name ?? "-")}<br>Tipe: ${escapeHtml(infra.properties.type ?? "-")}`);
           infraMarkers.current.push(
             new maplibregl.Marker({ color: "#9333ea" })
               .setLngLat([coordinates[0], coordinates[1]])
@@ -402,7 +412,7 @@ function RiskMap({ regions, reports, layers, activeLayers, selectedRegency, user
         layers.evacuation_routes.features.forEach((route) => {
           const coordinates = route.geometry.coordinates;
           if (!Array.isArray(coordinates) || typeof coordinates[0] !== "number" || typeof coordinates[1] !== "number") return;
-          const popup = new maplibregl.Popup({ offset: 20 }).setHTML(`<strong>Rute Evakuasi</strong><br>${route.properties.name ?? "-"}`);
+          const popup = new maplibregl.Popup({ offset: 20 }).setHTML(`<strong>Rute Evakuasi</strong><br>${escapeHtml(route.properties.name ?? "-")}`);
           evacMarkers.current.push(
             new maplibregl.Marker({ color: "#16a34a" })
               .setLngLat([coordinates[0], coordinates[1]])

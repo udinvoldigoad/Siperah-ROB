@@ -5,7 +5,7 @@ import { navItems } from "./navigation";
 import { ToastProvider } from "../shared/components/Toast";
 import { ErrorBoundary } from "../shared/components/ErrorBoundary";
 import { PageFallback } from "../shared/components/PageFallback";
-import { SESSION_CHANGED_EVENT, getCurrentUser, getToken, isLoggedIn, verifySession } from "../shared/auth/session";
+import { SESSION_CHANGED_EVENT, getCurrentUser, isLoggedIn, verifySession } from "../shared/auth/session";
 
 import { OAuthCallbackPage } from "../features/auth/OAuthCallbackPage";
 import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
@@ -103,8 +103,8 @@ function routeComponent(route: string) {
 
 export function App() {
   const [route, setRoute] = useState(currentRoute);
-  // "checking" hanya saat ada token yang perlu dikonfirmasi ke server.
-  const [isVerifying, setIsVerifying] = useState(() => !!getToken());
+  // "checking" hanya saat ada sesi yang perlu dikonfirmasi ke server.
+  const [isVerifying, setIsVerifying] = useState(() => !!getCurrentUser());
   // Sesi disimpan di localStorage (bukan state React), jadi perubahannya tak
   // otomatis memicu render. Counter ini yang menyegarkan seluruh pohon saat
   // `/auth/me` menimpa peran yang dipalsukan.
@@ -124,7 +124,7 @@ export function App() {
   // Konfirmasi identitas sekali di awal: peran yang dipakai UI harus datang
   // dari server, bukan dari nilai yang bisa diketik ulang di DevTools.
   useEffect(() => {
-    if (!getToken()) {
+    if (!getCurrentUser()) {
       setIsVerifying(false);
       return;
     }

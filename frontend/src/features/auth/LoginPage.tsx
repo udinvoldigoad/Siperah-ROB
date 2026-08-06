@@ -79,7 +79,7 @@ export function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      setSession(res.access_token, res.user);
+      setSession(res.user);
 
       toast.success(`Selamat datang kembali, ${res.user.name}!`);
 

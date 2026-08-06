@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Concerns\SetsSessionCookie;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AuditService;
@@ -14,6 +15,7 @@ use Illuminate\Support\Str;
 
 class GoogleAuthController
 {
+    use SetsSessionCookie;
     /**
      * Kode tukar sekali pakai berumur pendek: cukup untuk satu round-trip
      * redirect â†’ POST dari SPA, tapi terlalu singkat untuk berguna bila bocor
@@ -200,11 +202,14 @@ class GoogleAuthController
         $request->setUserResolver(fn () => $user);
         $this->audit->write($request, 'login', 'success', $user->email, ['provider' => 'google']);
 
-        return response()->json([
+        $response = response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => new UserResource($user),
         ]);
+        $response->headers->setCookie($this->sessionCookie($token));
+
+        return $response;
     }
 
     private function issueExchangeCode(User $user): string
