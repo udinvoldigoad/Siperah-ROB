@@ -1562,39 +1562,23 @@ code {
   z-index: 9999;
   pointer-events: none;
 }
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-@keyframes fadeOut {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
 .toast {
   pointer-events: auto;
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   min-width: 300px;
   max-width: 420px;
   padding: 14px 18px;
+  padding-bottom: 18px;
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   border-left: 4px solid var(--accent);
-  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   font-size: 0.9rem;
   font-weight: 600;
+  overflow: hidden;
 }
 .toast-success {
   border-left-color: var(--low);
@@ -1614,6 +1598,37 @@ code {
 .toast-info .material-symbols-outlined {
   color: var(--accent);
 }
+.toast-warning {
+  border-left-color: var(--medium);
+}
+.toast-warning .material-symbols-outlined {
+  color: var(--medium);
+}
+/* Garis progres di bawah toast: menyusut seiring waktu tersisa. Lama animasi
+   ikut durasi auto-dismiss (var --toast-duration, dipasang inline dari React). */
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  border-radius: 0 var(--radius) 0 var(--radius);
+  background: var(--accent);
+  animation: toastShrink var(--toast-duration, 4s) linear forwards;
+  transform-origin: left;
+}
+.toast-success .toast-progress { background: var(--low); }
+.toast-warning .toast-progress { background: var(--medium); }
+.toast-info .toast-progress { background: var(--accent); }
+.toast-error .toast-progress { background: var(--critical); }
+/* Timer JS dijeda saat hover/fokus — sejajarkan animasi garismya. */
+.toast:hover .toast-progress,
+.toast:focus-within .toast-progress {
+  animation-play-state: paused;
+}
+@keyframes toastShrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
 .toast-close {
   margin-left: auto;
   background: transparent;
@@ -1632,6 +1647,21 @@ code {
 .toast-close .material-symbols-outlined {
   font-size: 18px;
   color: inherit;
+}
+
+/* Di layar kecil toast dipindah ke atas supaya tidak menutupi aksi utama
+   (form submit, tombol bawah) yang biasanya berada di bawah layar. */
+@media (max-width: 640px) {
+  .toast-container {
+    top: 16px;
+    right: 16px;
+    bottom: auto;
+    left: 16px;
+  }
+  .toast {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 /* User Profile */
