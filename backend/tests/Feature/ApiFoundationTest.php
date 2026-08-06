@@ -10,7 +10,7 @@ use App\Models\Region;
 use App\Models\ReportPhoto;
 use App\Models\User;
 use App\Services\AuditService;
-use Carbon\CarbonImmutable;
+use App\Support\AppTime;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -87,7 +87,7 @@ final class ApiFoundationTest extends TestCase
         Prediction::create([
             'id' => (string) Str::uuid(),
             'region_id' => $region->id,
-            'prediction_date' => CarbonImmutable::today()->toDateString(),
+            'prediction_date' => AppTime::todayString(),
             'risk_probability' => 72.5,
             'risk_class' => 'tinggi',
             'confidence_score' => 88.0,
@@ -255,7 +255,7 @@ final class ApiFoundationTest extends TestCase
         Prediction::create([
             'id' => (string) Str::uuid(),
             'region_id' => $region->id,
-            'prediction_date' => CarbonImmutable::today()->toDateString(),
+            'prediction_date' => AppTime::todayString(),
             'risk_probability' => 62,
             'risk_class' => 'tinggi',
             'confidence_score' => 80,
@@ -321,7 +321,7 @@ final class ApiFoundationTest extends TestCase
         Prediction::create([
             'id' => (string) Str::uuid(),
             'region_id' => $region->id,
-            'prediction_date' => CarbonImmutable::today()->toDateString(),
+            'prediction_date' => AppTime::todayString(),
             'risk_probability' => 70,
             'risk_class' => 'tinggi',
             'confidence_score' => 85,
@@ -433,7 +433,7 @@ final class ApiFoundationTest extends TestCase
             Prediction::create([
                 'id' => (string) Str::uuid(),
                 'region_id' => $region->id,
-                'prediction_date' => now()->toDateString(),
+                'prediction_date' => AppTime::todayString(),
                 'risk_probability' => $probability,
                 'risk_class' => 'sangat_tinggi',
                 'confidence_score' => 95,

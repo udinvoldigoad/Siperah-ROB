@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Prediction;
 use App\Models\Region;
-use Carbon\CarbonImmutable;
+use App\Support\AppTime;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -54,7 +54,7 @@ final class ResolveRegionTest extends TestCase
         Prediction::create([
             'id' => (string) Str::uuid(),
             'region_id' => $region->id,
-            'prediction_date' => CarbonImmutable::today()->toDateString(),
+            'prediction_date' => AppTime::todayString(),
             'risk_probability' => 55,
             'risk_class' => 'sedang',
             'confidence_score' => 80,

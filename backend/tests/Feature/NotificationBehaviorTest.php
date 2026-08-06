@@ -7,7 +7,7 @@ use App\Models\Region;
 use App\Models\User;
 use App\Notifications\HighRiskWarningNotification;
 use App\Services\NotificationService;
-use Carbon\CarbonImmutable;
+use App\Support\AppTime;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -27,7 +27,7 @@ final class NotificationBehaviorTest extends TestCase
         $this->makePrediction($region, 'sangat_tinggi');
 
         $sent = app(NotificationService::class)
-            ->notifyHighRiskPredictions(CarbonImmutable::today()->toDateString());
+            ->notifyHighRiskPredictions(AppTime::todayString());
 
         $this->assertGreaterThanOrEqual(1, $sent);
         Notification::assertSentTo(
@@ -55,7 +55,7 @@ final class NotificationBehaviorTest extends TestCase
         $admin = $this->makeUser('admin');
 
         app(NotificationService::class)
-            ->notifyHighRiskPredictions(CarbonImmutable::today()->toDateString());
+            ->notifyHighRiskPredictions(AppTime::todayString());
 
         Notification::assertSentTo($wargaSubscribed, HighRiskWarningNotification::class);
         Notification::assertNotSentTo($wargaElsewhere, HighRiskWarningNotification::class);
@@ -70,7 +70,7 @@ final class NotificationBehaviorTest extends TestCase
         $this->makePrediction($region, 'sangat_tinggi');
 
         $service = app(NotificationService::class);
-        $date = CarbonImmutable::today()->toDateString();
+        $date = AppTime::todayString();
         $service->notifyHighRiskPredictions($date);
         $service->notifyHighRiskPredictions($date);
 
@@ -96,7 +96,7 @@ final class NotificationBehaviorTest extends TestCase
 
         DB::flushQueryLog();
         DB::enableQueryLog();
-        app(NotificationService::class)->notifyHighRiskPredictions(CarbonImmutable::today()->toDateString());
+        app(NotificationService::class)->notifyHighRiskPredictions(AppTime::todayString());
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
 
@@ -136,7 +136,7 @@ final class NotificationBehaviorTest extends TestCase
         return Prediction::create([
             'id' => (string) Str::uuid(),
             'region_id' => $region->id,
-            'prediction_date' => CarbonImmutable::today()->toDateString(),
+            'prediction_date' => AppTime::todayString(),
             'risk_probability' => 91.0,
             'risk_class' => $riskClass,
             'confidence_score' => 88.0,
