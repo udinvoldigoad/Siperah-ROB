@@ -30,7 +30,7 @@ function currentRoute() {
   if (window.location.pathname.startsWith('/oauth-callback')) {
     return "oauth-callback";
   }
-  // Buang query string dari hash (mis. "#/login?error=menunggu") — tanpa ini
+  // Buang query string dari hash (mis. "#/login?error=menunggu") - tanpa ini
   // route "login?error=..." tidak cocok dengan cabang mana pun dan pengguna
   // OAuth yang gagal terlempar ke portal tanpa pesan apa pun.
   return (window.location.hash.replace("#/", "") || "").split("?")[0];
@@ -38,13 +38,13 @@ function currentRoute() {
 
 /**
  * Rute tujuan bila pengguna tak berhak membuka `route`; null berarti boleh
- * lanjut. Fungsi ini MURNI menghitung — tidak pernah menyentuh
+ * lanjut. Fungsi ini MURNI menghitung - tidak pernah menyentuh
  * `window.location`. Mutasinya dilakukan di `useEffect` (lihat App), karena
  * mengubah hash saat render memicu render ulang di tengah render.
  */
 /**
  * Apakah rute ini hanya untuk peran tertentu? Rute seperti itu TIDAK boleh
- * dirender sebelum sesi diverifikasi ke server — kalau tidak, peran palsu di
+ * dirender sebelum sesi diverifikasi ke server - kalau tidak, peran palsu di
  * localStorage sempat menampilkan halaman admin selama satu round-trip.
  * Rute publik (punya "guest") tetap tampil seketika.
  */
@@ -66,7 +66,7 @@ function guardRedirect(route: string): string | null {
   const navItem = navItems.find(item => item.href === `#/${baseRoute}`);
 
   // Melapor genangan terbuka untuk SEMUA pengguna yang sudah login (termasuk
-  // petugas BPBD, demi pelaporan darurat) — beda dari menu "Lapor" di nav yang
+  // petugas BPBD, demi pelaporan darurat) - beda dari menu "Lapor" di nav yang
   // sengaja tetap khusus warga. Tamu diarahkan login lebih dulu.
   if (baseRoute === "reports") {
     return isUserLoggedIn ? null : "#/login";

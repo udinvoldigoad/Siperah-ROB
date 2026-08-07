@@ -59,3 +59,9 @@ frontend/playwright-report/
 .env.testing
 scripts/deploy.env
 scratch/
+job_log.txt
+mt2_diff*.txt
+old_*.php
+runs.json
+run*.log
+
